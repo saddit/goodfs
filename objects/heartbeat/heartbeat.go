@@ -1,0 +1,5 @@
+package heartbeat
+
+func StartHeartbeat() {
+
+}
