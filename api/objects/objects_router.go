@@ -1,6 +1,10 @@
 package objects
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	m := r.Method
@@ -11,4 +15,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
+}
+
+func Router(r gin.IRouter) {
+	r.PUT("/objects/:name", xput)
+	r.GET("/objects/:name", xget)
 }

@@ -1,15 +1,34 @@
 package objects
 
 import (
+	"fmt"
 	"goodfs/objects/config"
 	"goodfs/objects/heartbeat"
-	"log"
-	"net/http"
+	"goodfs/objects/locate"
+	"os"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
+func initalize() {
+	hn, e := os.Hostname()
+	if e != nil {
+		panic(e)
+	}
+	config.LocalAddr = fmt.Sprintf("%v:%v", hn, config.Port)
+}
+
 func Start() {
+	initalize()
+
 	go heartbeat.StartHeartbeat()
-	http.HandleFunc("/objects/", Handler)
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(config.Port), nil))
+	go locate.StartLocate()
+
+	router := gin.Default()
+
+	//init router
+	Router(router)
+
+	router.Run(":" + strconv.Itoa(config.Port))
 }

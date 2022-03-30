@@ -1,0 +1,60 @@
+package service
+
+import (
+	"goodfs/api/config"
+	"goodfs/api/model/dataserv"
+	"goodfs/util"
+	"log"
+	"math/rand"
+	"time"
+)
+
+var dataServMap = util.NewSyncMap[string, dataserv.DataServ]()
+
+func IsSuspendServer(srv *dataserv.DataServ) bool {
+	return srv.LastBeat.Add(config.SuspendTimeout * time.Second).Before(time.Now())
+}
+
+func IsDeadServer(srv *dataserv.DataServ) bool {
+	return srv.LastBeat.Add(config.DeadTimeout * time.Second).Before(time.Now())
+}
+
+func ReceiveDataServer(ip string) {
+	if ds, ok := dataServMap.Get(ip); ok {
+		ds.State = dataserv.Healthy
+		ds.LastBeat = time.Now()
+	} else {
+		dataServMap.Put(ip, dataserv.New(ip))
+	}
+}
+
+func GetDataServers() []string {
+	ds := make([]string, 16)
+	dataServMap.ForEach(func(key string, value *dataserv.DataServ) {
+		ds = append(ds, key)
+	})
+	return ds
+}
+
+func RandomDataServer() (string, bool) {
+	ds := GetDataServers()
+	size := len(ds)
+	if size == 0 {
+		return "", false
+	}
+	return ds[rand.Intn(size)], true
+}
+
+func CheckServerState() {
+	dataServMap.ForEach(func(key string, value *dataserv.DataServ) {
+		if value.IsAvailable() {
+			if IsSuspendServer(value) {
+				value.State = dataserv.Suspend
+			}
+		} else if IsDeadServer(value) {
+			//第二次检查 未响应则移除
+			log.Printf("Remove ip %v from data server map\n", key)
+			dataServMap.Remove(key)
+		}
+	})
+}
