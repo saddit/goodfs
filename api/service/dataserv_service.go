@@ -28,10 +28,10 @@ func ReceiveDataServer(ip string) {
 	}
 }
 
-func GetDataServers() []string {
-	ds := make([]string, 16)
+func GetDataServers() []*dataserv.DataServ {
+	ds := make([]*dataserv.DataServ, 16)
 	dataServMap.ForEach(func(key string, value *dataserv.DataServ) {
-		ds = append(ds, key)
+		ds = append(ds, value)
 	})
 	return ds
 }
@@ -42,7 +42,7 @@ func RandomDataServer() (string, bool) {
 	if size == 0 {
 		return "", false
 	}
-	return ds[rand.Intn(size)], true
+	return ds[rand.Intn(size)].Ip, true
 }
 
 func CheckServerState() {

@@ -1,25 +1,22 @@
-package api
+package main
 
 import (
 	"goodfs/api/config"
-	"goodfs/api/heartbeat"
-	"goodfs/api/locate"
-	"goodfs/api/objects"
+	"goodfs/api/controller"
+	"goodfs/api/controller/heartbeat"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Start() {
+func main() {
 	go heartbeat.ListenHearbeat()
 
 	router := gin.Default()
+
 	api := router.Group("/api")
-	objects.Router(api)
-	locate.Router(api)
+
+	controller.Router(api)
 
 	router.Run(":" + strconv.Itoa(config.Port))
-
-	// http.HandleFunc("/api/objects/", objects.Handler)
-	// http.HandleFunc("/api/locate/", locate.Handler)
 }

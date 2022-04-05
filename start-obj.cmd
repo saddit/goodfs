@@ -1,0 +1,1 @@
+go run ./objects/objects_server.go 

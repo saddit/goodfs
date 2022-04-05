@@ -38,6 +38,14 @@ func New(s string) *RabbitMQ {
 	return mq
 }
 
+func NewConn(s string) *amqp.Connection {
+	conn, e := amqp.Dial(s)
+	if e != nil {
+		log.Panicf("Dail %v failed, %v", s, e)
+	}
+	return conn
+}
+
 /*
 	创建一个直接消费队列
 	Not durable, auto delete

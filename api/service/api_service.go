@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"goodfs/api/config"
-	"goodfs/api/objectstream"
+	"goodfs/api/service/objectstream"
+	"goodfs/api/service/selector"
+	"goodfs/lib/rabbitmq"
 	"io"
 	"log"
 	"strconv"
@@ -16,7 +18,8 @@ import (
 var (
 	ErrorServiceUnavailable = errors.New("DataServer unavailable")
 	ErrorInternalServer     = errors.New("Internal server error")
-	amqpConn, _             = amqp.Dial(config.AmqpAddress)
+	amqpConn                = rabbitmq.NewConn(config.AmqpAddress)
+	balancer                = selector.NewSelector(config.SelectStrategy)
 )
 
 func LocateFile(name string) (string, bool) {
@@ -69,9 +72,10 @@ func GetObject(ip string, name string) (io.Reader, error) {
 }
 
 func dataServerStream(name string) (io.WriteCloser, error) {
-	serv, ok := RandomDataServer()
-	if !ok {
+	ds := GetDataServers()
+	if len(ds) == 0 {
 		return nil, ErrorServiceUnavailable
 	}
+	serv := balancer.Select(ds)
 	return objectstream.NewPutStream(serv, name), nil
 }

@@ -1,8 +1,9 @@
-package objects
+package main
 
 import (
 	"fmt"
 	"goodfs/objects/config"
+	"goodfs/objects/controller"
 	"goodfs/objects/heartbeat"
 	"goodfs/objects/locate"
 	"os"
@@ -19,7 +20,7 @@ func initalize() {
 	config.LocalAddr = fmt.Sprintf("%v:%v", hn, config.Port)
 }
 
-func Start() {
+func main() {
 	initalize()
 
 	go heartbeat.StartHeartbeat()
@@ -28,7 +29,7 @@ func Start() {
 	router := gin.Default()
 
 	//init router
-	Router(router)
+	controller.Router(router)
 
 	router.Run(":" + strconv.Itoa(config.Port))
 }
