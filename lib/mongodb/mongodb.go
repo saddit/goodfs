@@ -11,10 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-const (
-	mongoSessionKey = "MongoSessionKey"
-)
-
 type MongoDB struct {
 	client    *mongo.Client
 	db        *mongo.Database
@@ -23,9 +19,9 @@ type MongoDB struct {
 }
 
 func New(addr string) *MongoDB {
-	parms := strings.Split(addr, "#")
+	params := strings.Split(addr, "#")
 
-	if len(parms) < 5 {
+	if len(params) < 5 {
 		log.Panic("Init MongoDB fail, require addr, dbName, authType, username and password join by '#'")
 	}
 
@@ -34,11 +30,11 @@ func New(addr string) *MongoDB {
 	defer cancel()
 
 	credential := options.Credential{
-		AuthMechanism: parms[2],
-		Username:      parms[3],
-		Password:      parms[4],
+		AuthMechanism: params[2],
+		Username:      params[3],
+		Password:      params[4],
 	}
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(parms[0]).SetAuth(credential))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(params[0]).SetAuth(credential))
 
 	if err != nil {
 		panic(err)
@@ -46,7 +42,7 @@ func New(addr string) *MongoDB {
 
 	return &MongoDB{
 		client:    client,
-		db:        client.Database(parms[1]),
+		db:        client.Database(params[1]),
 		context:   rootCxt,
 		connected: false,
 	}

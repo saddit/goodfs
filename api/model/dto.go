@@ -13,7 +13,7 @@ type PutResp struct {
 
 type PutReq struct {
 	Name string `uri:"name" binding:"required"`
-	Hash string `header:"Digist" binding:"required"`
+	Hash string `header:"Digit" binding:"required"`
 }
 
 type GetReq struct {
@@ -36,6 +36,6 @@ func (p *GetReq) Bind(c *gin.Context) error {
 		return err
 	}
 	p.Version = metadata.VerModeLast
-	c.ShouldBindQuery(p)
+	_ = c.ShouldBindQuery(p)
 	return nil
 }

@@ -4,13 +4,14 @@ import (
 	"goodfs/api/config"
 	"goodfs/api/controller"
 	"goodfs/api/controller/heartbeat"
+	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	go heartbeat.ListenHearbeat()
+	go heartbeat.ListenHeartbeat()
 
 	router := gin.Default()
 
@@ -18,5 +19,8 @@ func main() {
 
 	controller.Router(api)
 
-	router.Run(":" + strconv.Itoa(config.Port))
+	err := router.Run(":" + strconv.Itoa(config.Port))
+	if err == nil {
+		log.Fatal(err)
+	}
 }

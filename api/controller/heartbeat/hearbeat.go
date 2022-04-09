@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func ListenHearbeat() {
+func ListenHeartbeat() {
 	mq := rabbitmq.New(config.AmqpAddress)
 	mq.DeclareQueue("heartbeat.queue")
 	mq.CreateBind("apiServers", "heartbeat.queue")

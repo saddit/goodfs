@@ -17,7 +17,7 @@ const (
 	ErrVersion = -1
 )
 
-//为metadata添加一个版本，添加到版本数组的末尾，版本号为数组序号
+// Add 为metadata添加一个版本，添加到版本数组的末尾，版本号为数组序号
 //返回对应版本号,如果失败返回ErrVersion -1
 func Add(ctx context.Context, id string, ver *meta.MetaVersion) int {
 	if ctx == nil {

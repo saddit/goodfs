@@ -24,13 +24,13 @@ func Put(c *gin.Context) {
 	})
 
 	if err == service.ErrBadRequest {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	} else if err == service.ErrServiceUnavailable {
-		c.AbortWithError(http.StatusServiceUnavailable, err)
+		c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	} else if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func Get(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
 		return
 	}
-	
+
 	if metaVer, ok := service.GetMetaVersion(req.Name, req.Version); ok {
 		stream, e := service.GetObject(req.Name, metaVer)
 		if e == service.ErrBadRequest {
@@ -55,8 +55,13 @@ func Get(c *gin.Context) {
 			log.Println(e)
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 		} else {
-			io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
-			c.Status(http.StatusOK)
+			_, e = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
+			if e == nil {
+				c.Status(http.StatusOK)
+			} else {
+				log.Println(e)
+				c.AbortWithStatus(http.StatusInternalServerError)
+			}
 		}
 	} else {
 		c.AbortWithStatus(http.StatusNotFound)

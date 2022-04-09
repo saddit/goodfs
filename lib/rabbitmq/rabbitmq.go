@@ -99,7 +99,7 @@ func (q *RabbitMQ) Send(queue string, body interface{}) {
 		false,
 		amqp.Publishing{
 			ReplyTo: q.Name,
-			Body:    []byte(str),
+			Body:    str,
 		})
 	if e != nil {
 		panic(e)
@@ -117,7 +117,7 @@ func (q *RabbitMQ) Publish(exchange string, body interface{}) error {
 		false,
 		amqp.Publishing{
 			ReplyTo: q.Name,
-			Body:    []byte(str),
+			Body:    str,
 		})
 	if e != nil {
 		return e
@@ -128,7 +128,7 @@ func (q *RabbitMQ) Publish(exchange string, body interface{}) error {
 func (q *RabbitMQ) Consume(name string) <-chan amqp.Delivery {
 	c, e := q.channel.Consume(
 		q.Name,
-		name, //consuemr name
+		name, //consumer name
 		true, //auto ack
 		false,
 		false,
@@ -151,12 +151,18 @@ func (q *RabbitMQ) NewChannel() error {
 }
 
 func (q *RabbitMQ) Close() {
-	q.channel.Close()
-	q.conn.Close()
+	err := q.channel.Close()
+	err = q.conn.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (q *RabbitMQ) CloseChannel() {
-	q.channel.Close()
+	err := q.channel.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (q *RabbitMQ) IsClose() bool {

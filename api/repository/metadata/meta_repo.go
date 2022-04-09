@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	//查询全部版本
+	//VerModeALL 查询全部版本
 	VerModeALL = -128
-	//只查询最后一个版本
+	//VerModeLast 只查询最后一个版本
 	VerModeLast = -2
-	//不查询任何版本
+	// VerModeNot 不查询任何版本
 	VerModeNot = -1
 )
 
@@ -129,8 +129,8 @@ func Exist(filter bson.M) bool {
 	return true
 }
 
-//暂时没什么用
-//不允许在这个方法上直接更新versions数组
+// Update 暂时没什么用
+// 不允许在这个方法上直接更新versions数组
 func Update(data *meta.MetaData) error {
 	if data == nil || util.GetObjectID(data.Id).IsZero() {
 		return errors.New("metadata is nil or id is empty")

@@ -53,7 +53,11 @@ func (r *GetStream) Close() error {
 }
 
 func (p *PutStream) Close() error {
-	p.writer.Close()
+	defer close(p.errorChan)
+	err := p.writer.Close()
+	if err != nil {
+		return err
+	}
 	return <-p.errorChan
 }
 
