@@ -19,6 +19,13 @@ func IsDeadServer(srv *dataserv.DataServ) bool {
 	return srv.LastBeat.Add(config.DeadTimeout * time.Second).Before(time.Now())
 }
 
+func IsAvailable(ip string) bool {
+	if ds, ok := dataServMap.Get(ip); ok {
+		return ds.IsAvailable()
+	}
+	return false
+}
+
 func ReceiveDataServer(ip string) {
 	if ds, ok := dataServMap.Get(ip); ok {
 		ds.State = dataserv.Healthy

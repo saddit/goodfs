@@ -11,6 +11,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+const (
+	mongoSessionKey = "MongoSessionKey"
+)
+
 type MongoDB struct {
 	client    *mongo.Client
 	db        *mongo.Database
@@ -72,4 +76,17 @@ func (m *MongoDB) Close() {
 func (m *MongoDB) Collection(name string) *mongo.Collection {
 
 	return m.db.Collection(name)
+}
+
+func (m *MongoDB) WithTx(fn func(sessCtx mongo.SessionContext) (interface{}, error)) (interface{}, bool) {
+	var res interface{}
+	err := m.client.UseSession(m.context, func(mctx mongo.SessionContext) error {
+		a, e := mctx.WithTransaction(mctx, fn)
+		res = a
+		return e
+	})
+	if err != nil {
+		log.Println(err)
+	}
+	return res, err != nil
 }

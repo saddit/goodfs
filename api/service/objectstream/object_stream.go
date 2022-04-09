@@ -9,11 +9,13 @@ import (
 var client = http.Client{}
 
 type PutStream struct {
+	Locate    string
 	writer    *io.PipeWriter
 	errorChan chan error
 }
 
 type GetStream struct {
+	Locate string
 	reader io.ReadCloser
 }
 
@@ -28,7 +30,7 @@ func NewPutStream(ip, name string) *PutStream {
 		}
 		c <- e
 	}()
-	return &PutStream{writer, c}
+	return &PutStream{writer: writer, errorChan: c, Locate: ip}
 }
 
 func NewGetStream(ip, name string) (*GetStream, error) {
@@ -39,7 +41,7 @@ func NewGetStream(ip, name string) (*GetStream, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("dataServer return http code %v", resp.StatusCode)
 	}
-	return &GetStream{resp.Body}, nil
+	return &GetStream{ip, resp.Body}, nil
 }
 
 func (r *GetStream) Read(b []byte) (int, error) {

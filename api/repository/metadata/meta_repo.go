@@ -15,10 +15,36 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func find(filter interface{}) (*meta.MetaData, error) {
+const (
+	//查询全部版本
+	VerModeALL = -128
+	//只查询最后一个版本
+	VerModeLast = -2
+	//不查询任何版本
+	VerModeNot = -1
+)
+
+func Find(filter interface{}, verMode int) (*meta.MetaData, error) {
 	collection := repository.GetMongo().Collection("metadata")
 	var data meta.MetaData
-	err := collection.FindOne(context.TODO(), filter).Decode(&data)
+	opt := options.FindOne()
+	if verMode == VerModeNot {
+		//不查询版本
+		opt.SetProjection(bson.M{"versions": 0})
+	} else if verMode == VerModeLast {
+		//只查询最新版本
+		opt.SetProjection(bson.M{
+			"versions": bson.M{"$slice": -1},
+		})
+	} else if verMode >= 0 {
+		//查询指定版本
+		opt.SetProjection(bson.M{
+			"$slice": bson.A{
+				"versions", verMode, 1,
+			},
+		})
+	}
+	err := collection.FindOne(context.TODO(), filter, opt).Decode(&data)
 	return &data, err
 }
 
@@ -30,7 +56,7 @@ func FindById(id string) *meta.MetaData {
 		return nil
 	}
 
-	data, err := find(bson.M{"_id": oid})
+	data, err := Find(bson.M{"_id": oid}, VerModeALL)
 
 	if err == mongo.ErrNoDocuments {
 		log.Printf("Not found document with id %v", id)
@@ -43,7 +69,11 @@ func FindById(id string) *meta.MetaData {
 }
 
 func FindByName(name string) *meta.MetaData {
-	data, err := find(bson.M{"name": name})
+	return FindByNameAndVerMode(name, VerModeALL)
+}
+
+func FindByNameAndVerMode(name string, verMode int) *meta.MetaData {
+	data, err := Find(bson.M{"name": name}, verMode)
 	if err == mongo.ErrNoDocuments {
 		log.Printf("Not found document with name %v", name)
 		return nil
@@ -55,7 +85,7 @@ func FindByName(name string) *meta.MetaData {
 }
 
 func FindByHash(hash string) *meta.MetaData {
-	data, err := find(bson.M{"hash": hash})
+	data, err := Find(bson.M{"hash": hash}, VerModeALL)
 	if err == mongo.ErrNoDocuments {
 		log.Printf("Not found document with hash %v", hash)
 		return nil
@@ -66,9 +96,9 @@ func FindByHash(hash string) *meta.MetaData {
 	return data
 }
 
-func InsertNew(data *meta.MetaData) (*meta.MetaData, error) {
+func Insert(data *meta.MetaData) (*meta.MetaData, error) {
 	if data.Versions == nil {
-		data.Versions = make([]meta.MetaVersion, 0)
+		data.Versions = make([]*meta.MetaVersion, 0)
 	} else {
 		tn := time.Now()
 		for _, v := range data.Versions {
@@ -89,7 +119,19 @@ func InsertNew(data *meta.MetaData) (*meta.MetaData, error) {
 	return data, nil
 }
 
-func UpdateBasic(data *meta.MetaData) error {
+func Exist(filter bson.M) bool {
+	collection := repository.GetMongo().Collection("metadata")
+	cnt, e := collection.CountDocuments(nil, filter)
+	if e != nil || cnt == 0 {
+		log.Println(e)
+		return false
+	}
+	return true
+}
+
+//暂时没什么用
+//不允许在这个方法上直接更新versions数组
+func Update(data *meta.MetaData) error {
 	if data == nil || util.GetObjectID(data.Id).IsZero() {
 		return errors.New("metadata is nil or id is empty")
 	}
@@ -99,58 +141,4 @@ func UpdateBasic(data *meta.MetaData) error {
 		"tags": data.Tags,
 	})
 	return err
-}
-
-func AddVersion(id string, ver *meta.MetaVersion) *meta.MetaData {
-	oid, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		log.Printf("id error %v", id)
-		return nil
-	}
-
-	ver.Ts = time.Now()
-	collection := repository.GetMongo().Collection("metadata")
-	var data meta.MetaData
-	err = collection.FindOneAndUpdate(context.TODO(), bson.M{
-		"_id": oid,
-	}, bson.M{
-		"$push": bson.M{
-			"versions": ver,
-		},
-	}).Decode(&data)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-	return &data
-}
-
-func DeleteVersion(id string, ver *meta.MetaVersion) error {
-	oid, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		log.Printf("id error %v", id)
-		return nil
-	}
-
-	collection := repository.GetMongo().Collection("metadata")
-	res, err := collection.UpdateOne(context.TODO(), bson.M{
-		"_id": oid,
-	}, bson.M{
-		"$set": bson.M{
-			"versions.$[elem].hash": "",
-			"versions.$[elem].size": 0,
-		},
-	}, options.Update().SetArrayFilters(options.ArrayFilters{
-		Filters: []interface{}{bson.M{
-			"elem.hash": ver.Hash,
-		}},
-	}).SetHint("metadata_versions_hash"))
-	if err != nil {
-		return err
-	} else if res.ModifiedCount == 0 {
-		return errors.New("Delete fail")
-	}
-	return nil
 }

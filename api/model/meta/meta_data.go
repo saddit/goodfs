@@ -10,12 +10,12 @@ type MetaData struct {
 	Tags       []string      `bson:"tags"`
 	CreateTime time.Time     `bson:"create_time,omitempty"`
 	UpdateTime time.Time     `bson:"update_time,omitempty"`
-	Versions   []MetaVersion `bson:"versions,omitempty"`
+	Versions   []*MetaVersion `bson:"versions,omitempty"`
 }
 
 type MetaVersion struct {
 	Hash   string    `bson:"hash,omitempty"`
-	Size   int32     `bson:"size"`
+	Size   int64     `bson:"size"`
 	Ts     time.Time `bson:"ts,omitempty"`
 	Locate string    `bson:"locate"`
 }

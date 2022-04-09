@@ -22,3 +22,14 @@ func GetObjectID(id string) primitive.ObjectID {
 	}
 	return primitive.NilObjectID
 }
+
+func GetFileExt(fileName string, withDot bool) (string, bool) {
+	idx := strings.LastIndex(fileName, ".")
+	if idx == -1 {
+		return "", false
+	}
+	if !withDot {
+		idx++
+	}
+	return fileName[idx:], true
+}

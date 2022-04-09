@@ -3,13 +3,19 @@ package metadata
 import (
 	"encoding/json"
 	"goodfs/api/model/meta"
+	"goodfs/api/repository/metadata/version"
+	"goodfs/util"
 	"math/rand"
 	"testing"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 func randStringRunes(n int) string {
+	rand.Seed(time.Now().Unix())
 	b := make([]rune, n)
 	for i := range b {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
@@ -18,7 +24,21 @@ func randStringRunes(n int) string {
 }
 
 func TestFindById(t *testing.T) {
-	res := FindById("624bdb6b2266000007007824")
+	res, e := Find(bson.M{"_id": util.GetObjectID("624bdb6b2266000007007824")}, VerModeLast)
+	if e != nil {
+		t.Error("Not found", e)
+	} else {
+		j, e := json.MarshalIndent(res, "  ", "  ")
+		if e != nil {
+			t.Error(e)
+			return
+		}
+		t.Logf("Found data\n %v", string(j))
+	}
+}
+
+func TestFindByName(t *testing.T) {
+	res := FindByNameAndVerMode("Vivi3.mp4", VerModeLast)
 	if res == nil {
 		t.Error("Not found")
 	} else {
@@ -31,23 +51,14 @@ func TestFindById(t *testing.T) {
 	}
 }
 
-func TestFindByName(t *testing.T) {
-	res := FindByName("Vivi3.mp4")
-	if res == nil {
-		t.Error("Not found")
-	} else {
-		t.Logf("Found data\n %v", res)
-	}
-}
-
 func TestInsert(t *testing.T) {
-	res, err := InsertNew(&meta.MetaData{
+	res, err := Insert(&meta.MetaData{
 		Name: randStringRunes(10) + ".txt",
 		Tags: []string{"text"},
-		Versions: []meta.MetaVersion{{
+		Versions: []*meta.MetaVersion{{
 			Hash:   randStringRunes(32),
 			Locate: "0.0.0.0",
-			Size:   rand.Int31n(9999999),
+			Size:   rand.Int63n(9999999),
 		}},
 	})
 	if err != nil {
@@ -58,32 +69,16 @@ func TestInsert(t *testing.T) {
 }
 
 func TestAddVersion(t *testing.T) {
-	res := FindByName("Vivi3.mp4")
-	if res == nil {
-		t.Error("Not found")
-		return
-	}
-	j, e := json.MarshalIndent(res, "  ", "  ")
-	if e != nil {
-		t.Error(e)
-		return
-	}
-	t.Logf("Found data\n %v", string(j))
-	res = AddVersion(res.Id, &meta.MetaVersion{
+	verCode := version.Add(nil, "624c0c0cf0a7aab7f5628498", &meta.MetaVersion{
 		Hash:   randStringRunes(32),
-		Size:   rand.Int31n(999999),
+		Size:   rand.Int63n(999999),
 		Locate: "0.0.0.0",
 	})
-	if res == nil {
+	if verCode == version.ErrVersion {
 		t.Error("Add version fail")
 		return
 	}
-	j, e = json.MarshalIndent(res, "  ", "  ")
-	if e != nil {
-		t.Error(e)
-		return
-	}
-	t.Logf("After add new version\n %v", string(j))
+	t.Logf("After add new version, verCode is %v", verCode)
 }
 
 func TestDelVer(t *testing.T) {
@@ -98,7 +93,7 @@ func TestDelVer(t *testing.T) {
 		return
 	}
 	t.Logf("Found data\n %v", string(j))
-	e = DeleteVersion(res.Id, &res.Versions[0])
+	e = version.Delete(nil, res.Id, res.Versions[0])
 	if e != nil {
 		t.Error(e)
 	}
