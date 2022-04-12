@@ -40,6 +40,9 @@ func Add(ctx context.Context, id string, ver *meta.MetaVersion) int {
 	err = collection.FindOneAndUpdate(ctx, bson.M{
 		"_id": oid,
 	}, bson.M{
+		"$set": bson.M {
+			"update_time": time.Now(),
+		},
 		"$push": bson.M{
 			"versions": ver,
 		},

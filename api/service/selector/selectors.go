@@ -14,11 +14,7 @@ type Selector interface {
 	Strategy() SelectStrategy
 }
 
-type SelectorDelegrate struct {
-	selector Selector
-}
-
-func NewSelector(str SelectStrategy) *SelectorDelegrate {
+func NewSelector(str SelectStrategy) Selector {
 	var sec Selector
 
 	switch strings.ToLower(config.SelectStrategy) {
@@ -29,13 +25,5 @@ func NewSelector(str SelectStrategy) *SelectorDelegrate {
 	default:
 		log.Panicf("Not allowed selector strategy %v", str)
 	}
-
-	del := &SelectorDelegrate{
-		selector: sec,
-	}
-	return del
-}
-
-func (s *SelectorDelegrate) Select(ds []*dataserv.DataServ) string {
-	return s.selector.Select(ds)
+	return sec
 }

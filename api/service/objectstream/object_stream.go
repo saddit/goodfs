@@ -23,9 +23,9 @@ func NewPutStream(ip, name string) *PutStream {
 	reader, writer := io.Pipe()
 	c := make(chan error)
 	go func() {
-		req, _ := http.NewRequest("Put", "http://"+ip+"/objects/"+name, reader)
+		req, _ := http.NewRequest(http.MethodPut, "http://"+ip+"/objects/"+name, reader)
 		resp, e := client.Do(req)
-		if e == nil && resp.StatusCode != http.StatusOK {
+		if resp.StatusCode != http.StatusOK {
 			e = fmt.Errorf("dataServer return http code %v", resp.StatusCode)
 		}
 		c <- e

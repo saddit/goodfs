@@ -48,6 +48,11 @@ func Get(c *gin.Context) {
 	}
 
 	if metaVer, ok := service.GetMetaVersion(req.Name, req.Version); ok {
+		//表示此版本已经移被删除
+		if (metaVer.Size == 0 || metaVer.Hash == "") {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
 		stream, e := service.GetObject(req.Name, metaVer)
 		if e == service.ErrBadRequest {
 			c.AbortWithStatus(http.StatusBadRequest)
@@ -66,4 +71,8 @@ func Get(c *gin.Context) {
 	} else {
 		c.AbortWithStatus(http.StatusNotFound)
 	}
+}
+
+func Delete(c *gin.Context) {
+	
 }

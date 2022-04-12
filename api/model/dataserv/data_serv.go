@@ -7,8 +7,7 @@ import (
 type ServState int8
 
 const (
-	Dead ServState = iota
-	Healthy
+	Healthy ServState = iota
 	Suspend
 )
 

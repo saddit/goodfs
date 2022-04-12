@@ -24,7 +24,7 @@ const (
 	VerModeNot = -1
 )
 
-func Find(filter interface{}, verMode int) (*meta.MetaData, error) {
+func Find(filter bson.M, verMode int) (*meta.MetaData, error) {
 	collection := repository.GetMongo().Collection("metadata")
 	var data meta.MetaData
 	opt := options.FindOne()

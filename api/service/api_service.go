@@ -70,13 +70,20 @@ func GetMetaVersion(name string, ver int) (*meta.MetaVersion, bool) {
 
 func StoreObject(reader io.Reader, name string, ver *meta.MetaVersion) (int, error) {
 	if ext, ok := util.GetFileExt(name, true); ok {
+		//stream to store
 		stream, e := dataServerStream(ver.Hash + ext)
 		if e != nil {
 			return -1, e
 		}
-		defer stream.Close()
 		io.CopyBuffer(stream, reader, make([]byte, 2048))
 
+		//bolck by chan
+		e = stream.Close()
+		if e != nil {
+			return -1, ErrServiceUnavailable
+		}
+
+		//store meta data
 		ver.Locate = stream.Locate
 		metaD := metadata.FindByNameAndVerMode(name, metadata.VerModeNot)
 		var verNum int
@@ -89,7 +96,14 @@ func StoreObject(reader io.Reader, name string, ver *meta.MetaVersion) (int, err
 				Versions: []*meta.MetaVersion{ver},
 			})
 		}
-		return verNum, nil
+
+		//meta data save error
+		if verNum == version.ErrVersion {
+			go objectstream.DeleteObject(name, ver)
+			return -1, ErrInternalServer
+		} else {
+			return verNum, nil
+		}
 	}
 	return -1, ErrBadRequest
 }

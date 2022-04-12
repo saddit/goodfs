@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func initalize() {
+func initialize() {
 	hn, e := os.Hostname()
 	if e != nil {
 		panic(e)
@@ -21,7 +21,7 @@ func initalize() {
 }
 
 func main() {
-	initalize()
+	initialize()
 
 	go heartbeat.StartHeartbeat()
 	go locate.StartLocate()

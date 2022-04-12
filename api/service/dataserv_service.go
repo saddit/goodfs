@@ -36,9 +36,11 @@ func ReceiveDataServer(ip string) {
 }
 
 func GetDataServers() []*dataserv.DataServ {
-	ds := make([]*dataserv.DataServ, 16)
+	ds := make([]*dataserv.DataServ, 0)
 	dataServMap.ForEach(func(key string, value *dataserv.DataServ) {
-		ds = append(ds, value)
+		if value != nil {
+			ds = append(ds, value)
+		}
 	})
 	return ds
 }

@@ -5,6 +5,9 @@ import (
 )
 
 func Router(r gin.IRouter) {
-	r.GET("/objects/:name", xget)
-	r.PUT("/objects/:name", xput)
+	const rest = "/objects/:name"
+
+	r.GET(rest, xget)
+	r.PUT(rest, xput)
+	r.DELETE(rest, delete)
 }

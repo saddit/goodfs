@@ -30,3 +30,11 @@ func Get(name string, writer io.Writer) error {
 	io.Copy(writer, f)
 	return nil
 }
+
+func Delete(name string) error {
+	e := os.Remove(config.StoragePath + name)
+	if e != nil {
+		return e
+	}
+	return nil
+}

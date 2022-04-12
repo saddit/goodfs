@@ -3,28 +3,48 @@ package heartbeat
 import (
 	"goodfs/api/config"
 	"goodfs/api/service"
-	"goodfs/lib/rabbitmq"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/838239178/goodmq"
 )
 
 func ListenHeartbeat() {
-	mq := rabbitmq.New(config.AmqpAddress)
-	mq.DeclareQueue("heartbeat.queue")
-	mq.CreateBind("apiServers", "heartbeat.queue")
-	consumeChan := mq.Consume("")
+	mq := goodmq.NewAmqpConnection(config.AmqpAddress)
+	consumer, err := mq.NewConsumer()
+	if err != nil {
+		panic(err)
+	}
+	defer consumer.Close()
+	consumer.QueName = "heartbeat.queue"
+	consumer.Exchange = "apiServers"
+	consumeChan, ok := consumer.Consume()
+	// mq := rabbitmq.New(config.AmqpAddress)
+	// mq.DeclareQueue("heartbeat.queue")
+	// mq.CreateBind("apiServers", "heartbeat.queue")
+	// consumeChan := mq.Consume("")
 
 	go removeExpiredDataServer()
 
-	//no ack to keep connection alive
-	for msg := range consumeChan {
-		dataServIp, e := strconv.Unquote(string(msg.Body))
-		if e != nil {
-			log.Printf("Consume heartbeat from data server fail, %v\n", e)
+	//断线重连策略
+	for range time.Tick(5 * time.Second) {
+		if ok {
+			log.Println("Hearbeat connect success")
+			for msg := range consumeChan {
+				dataServIp, e := strconv.Unquote(string(msg.Body))
+				if e != nil {
+					log.Printf("Consume heartbeat from data server fail, %v\n", e)
+				} else {
+					// log.Printf("Receive heartbeat from %v\n", dataServIp)
+					service.ReceiveDataServer(dataServIp)
+				}
+			}
+			ok = false
 		} else {
-			// log.Printf("Receive heartbeat from %v\n", dataServIp)
-			service.ReceiveDataServer(dataServIp)
+			log.Println("Hearbeat connection closed! Recovering...")
+			//重试直到成功
+			consumeChan, ok = consumer.Consume()
 		}
 	}
 }
