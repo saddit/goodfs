@@ -138,7 +138,9 @@ func Update(data *meta.MetaData) error {
 	data.UpdateTime = time.Now()
 	collection := repository.GetMongo().Collection("metadata")
 	_, err := collection.UpdateByID(context.TODO(), data.Id, bson.M{
-		"tags": data.Tags,
+		"$set": bson.M{
+			"tags": data.Tags,
+		},
 	})
 	return err
 }

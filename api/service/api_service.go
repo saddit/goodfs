@@ -3,12 +3,12 @@ package service
 import (
 	"encoding/json"
 	"goodfs/api/config"
+	"goodfs/api/global"
 	"goodfs/api/model/meta"
 	"goodfs/api/repository/metadata"
 	"goodfs/api/repository/metadata/version"
 	"goodfs/api/service/objectstream"
 	"goodfs/api/service/selector"
-	"goodfs/lib/rabbitmq"
 	"goodfs/util"
 	"io"
 	"log"
@@ -19,44 +19,46 @@ import (
 )
 
 var (
-	amqpConn = rabbitmq.NewConn(config.AmqpAddress)
 	balancer = selector.NewSelector(config.SelectStrategy)
 )
 
 func LocateFile(name string) (string, bool) {
-	chl, e := amqpConn.Channel()
+	//初始化一个消息发送方
+	prov, e := global.AmqpConnection.NewProvider()
 	if e != nil {
 		return "", false
 	}
-	defer chl.Close()
-	//reply 队列
-	que, e := chl.QueueDeclare("", false, true, false, false, nil)
+	defer prov.Close()
+	prov.Exchange = "dataServers"
+	//初始化一个消息接收方（无交换机直接入队）
+	conm, e := global.AmqpConnection.NewConsumer()
 	if e != nil {
 		return "", false
 	}
-	//监听 reply
-	ch, e := chl.Consume(que.Name, "", true, false, false, false, nil)
-	if e != nil {
-		return "", false
-	}
-	//发送定位请求
-	jn, e := json.Marshal(name)
-	if e != nil {
-		return "", false
-	}
-	chl.Publish("dataServers", "", false, false, amqp.Publishing{
-		ReplyTo: que.Name,
-		Body:    []byte(jn),
-	})
+	defer conm.Close()
+	conm.DeleteUnused = true
 
-	select {
-	case <-time.After(1 * time.Second):
-		log.Println("Locate message timeout")
-		return "", false
-	case resp := <-ch:
-		s, ok := strconv.Unquote(string(resp.Body))
-		return s, ok == nil
+	if ch, ok := conm.Consume(); ok {
+		//发送定位请求
+		jn, e := json.Marshal(name)
+		if e != nil {
+			return "", false
+		}
+		prov.Publish(amqp.Publishing{
+			ReplyTo: conm.QueName,
+			Body:    []byte(jn),
+		})
+
+		select {
+		case <-time.After(1 * time.Second):
+			log.Println("Locate message timeout")
+			return "", false
+		case resp := <-ch:
+			s, ok := strconv.Unquote(string(resp.Body))
+			return s, ok == nil
+		}
 	}
+	return "", false
 }
 
 func GetMetaVersion(name string, ver int) (*meta.MetaVersion, bool) {

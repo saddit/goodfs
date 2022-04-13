@@ -2,28 +2,22 @@ package heartbeat
 
 import (
 	"goodfs/api/config"
+	"goodfs/api/global"
 	"goodfs/api/service"
 	"log"
 	"strconv"
 	"time"
-
-	"github.com/838239178/goodmq"
 )
 
 func ListenHeartbeat() {
-	mq := goodmq.NewAmqpConnection(config.AmqpAddress)
-	consumer, err := mq.NewConsumer()
+	consumer, err := global.AmqpConnection.NewConsumer()
 	if err != nil {
 		panic(err)
 	}
 	defer consumer.Close()
-	consumer.QueName = "heartbeat.queue"
+	consumer.DeleteUnused = true
 	consumer.Exchange = "apiServers"
 	consumeChan, ok := consumer.Consume()
-	// mq := rabbitmq.New(config.AmqpAddress)
-	// mq.DeclareQueue("heartbeat.queue")
-	// mq.CreateBind("apiServers", "heartbeat.queue")
-	// consumeChan := mq.Consume("")
 
 	go removeExpiredDataServer()
 
