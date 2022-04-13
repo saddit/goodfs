@@ -1,9 +1,10 @@
 package model
 
 import (
-	"github.com/gin-gonic/gin/binding"
 	"goodfs/apiserver/repository/metadata"
 	"goodfs/util"
+
+	"github.com/gin-gonic/gin/binding"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +21,7 @@ type PutReq struct {
 
 type GetReq struct {
 	Name    string `uri:"name" binding:"required"`
-	Version int    `form:"version"`
+	Version int32  `form:"version"`
 }
 
 func (p *PutReq) Bind(c *gin.Context) error {
@@ -31,7 +32,7 @@ func (p *PutReq) Bind(c *gin.Context) error {
 }
 
 func (p *GetReq) Bind(c *gin.Context) error {
-	p.Version = metadata.VerModeLast
+	p.Version = int32(metadata.VerModeLast)
 	if err := util.BindAll(c, p, binding.Query, binding.Uri); err != nil {
 		return err
 	}

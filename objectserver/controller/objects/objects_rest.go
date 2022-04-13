@@ -1,4 +1,4 @@
-package controller
+package objects
 
 import (
 	"goodfs/objectserver/service"
@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func xput(c *gin.Context) {
+func Put(c *gin.Context) {
 	fileName := c.Param("name")
 	err := service.Put(fileName, c.Request.Body)
 	if err != nil {
@@ -19,7 +19,7 @@ func xput(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func delete(c *gin.Context) {
+func Delete(c *gin.Context) {
 	name := c.Param("name")
 	e := service.Delete(name)
 	if e != nil {
@@ -30,7 +30,7 @@ func delete(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func xget(c *gin.Context) {
+func Get(c *gin.Context) {
 	fileName := c.Param("name")
 	e := service.Get(fileName, c.Writer)
 	if e != nil {

@@ -11,7 +11,7 @@ import (
 func Get(g *gin.Context) {
 	name := g.Param("name")
 
-	if meta, ok := service.GetMetaData(name, metadata.VerModeALL); ok {
+	if meta, ok := service.GetMetaData(name, int32(metadata.VerModeALL)); ok {
 		g.JSON(http.StatusOK, meta)
 	} else {
 		g.AbortWithStatus(http.StatusNotFound)

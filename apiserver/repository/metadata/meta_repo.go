@@ -15,16 +15,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type VerMode int32
+
 const (
 	//VerModeALL 查询全部版本
-	VerModeALL = -128
+	VerModeALL VerMode = -128
 	//VerModeLast 只查询最后一个版本
-	VerModeLast = -2
+	VerModeLast VerMode = -2
 	// VerModeNot 不查询任何版本
-	VerModeNot = -1
+	VerModeNot VerMode = -1
 )
 
-func Find(filter bson.M, verMode int) (*meta.MetaData, error) {
+//Find 根据自定义条件查找元数据并根据verMode返回版本
+func Find(filter bson.M, verMode VerMode) (*meta.MetaData, error) {
 	collection := repository.GetMongo().Collection("metadata")
 	var data meta.MetaData
 	opt := options.FindOne()
@@ -48,6 +51,7 @@ func Find(filter bson.M, verMode int) (*meta.MetaData, error) {
 	return &data, err
 }
 
+//FindById 根据Id查找元数据并返回所有版本
 func FindById(id string) *meta.MetaData {
 	oid, err := primitive.ObjectIDFromHex(id)
 
@@ -68,11 +72,13 @@ func FindById(id string) *meta.MetaData {
 	return data
 }
 
+//FindByName 根据文件名查找元数据并返回所有版本
 func FindByName(name string) *meta.MetaData {
 	return FindByNameAndVerMode(name, VerModeALL)
 }
 
-func FindByNameAndVerMode(name string, verMode int) *meta.MetaData {
+//FindByNameAndVerMode 根据文件名查找元数据 verMode筛选版本数据
+func FindByNameAndVerMode(name string, verMode VerMode) *meta.MetaData {
 	data, err := Find(bson.M{"name": name}, verMode)
 	if err == mongo.ErrNoDocuments {
 		log.Printf("Not found document with name %v", name)
@@ -84,8 +90,18 @@ func FindByNameAndVerMode(name string, verMode int) *meta.MetaData {
 	return data
 }
 
+//FindByHash 按照版本的Hash值查找元数据 只返回一个版本
 func FindByHash(hash string) *meta.MetaData {
-	data, err := Find(bson.M{"hash": hash}, VerModeALL)
+	collection := repository.GetMongo().Collection("metadata")
+	var data meta.MetaData
+	err := collection.FindOne(
+		nil,
+		bson.M{"versions.hash": hash},
+		options.FindOne().SetProjection(bson.M{
+			"versions.$": 1,
+		}),
+	).Decode(&data)
+
 	if err == mongo.ErrNoDocuments {
 		log.Printf("Not found document with hash %v", hash)
 		return nil
@@ -93,7 +109,8 @@ func FindByHash(hash string) *meta.MetaData {
 		log.Print(err)
 		return nil
 	}
-	return data
+
+	return &data
 }
 
 func Insert(data *meta.MetaData) (*meta.MetaData, error) {

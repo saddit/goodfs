@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/controller"
+	"goodfs/objectserver/controller/heartbeat"
+	"goodfs/objectserver/controller/locate"
 	"goodfs/objectserver/global"
-	"goodfs/objectserver/heartbeat"
-	"goodfs/objectserver/locate"
 	"os"
 	"strconv"
 

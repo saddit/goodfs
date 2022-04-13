@@ -61,8 +61,8 @@ func LocateFile(name string) (string, bool) {
 	return "", false
 }
 
-func GetMetaData(name string, ver int) (*meta.MetaData, bool) {
-	res := metadata.FindByNameAndVerMode(name, ver)
+func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
+	res := metadata.FindByNameAndVerMode(name, metadata.VerMode(ver))
 	if res == nil {
 		return nil, false
 	}

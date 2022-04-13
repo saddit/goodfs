@@ -62,7 +62,7 @@ func CheckServerState() {
 			}
 		} else if IsDeadServer(value) {
 			//第二次检查 未响应则移除
-			log.Printf("Remove ip %v from data server map\n", key)
+			log.Printf("Remove ip %v from dataServer map\n", key)
 			dataServMap.Remove(key)
 		}
 	})
