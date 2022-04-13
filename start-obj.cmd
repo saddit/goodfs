@@ -1,1 +1,1 @@
-go run ./objects/objects_server.go 
+go run ./objectserver/objects_server.go 
