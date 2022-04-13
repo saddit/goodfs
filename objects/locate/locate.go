@@ -7,6 +7,7 @@ import (
 	"goodfs/objects/service"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/streadway/amqp"
 )
@@ -34,19 +35,26 @@ func StartLocate() {
 		panic(e)
 	}
 
-	if consumeChan, ok := conm.Consume(); ok {
-		for msg := range consumeChan {
-			object, e := strconv.Unquote(string(msg.Body))
-			if e != nil {
-				log.Printf("Locate consume fail, %v\n", e)
-			} else if service.Exist(object) {
-				prov.RouteKey = msg.ReplyTo
-				prov.Publish(amqp.Publishing{
-					Body: locate,
-				})
+	consumeChan, ok := conm.Consume()
+
+	for range time.Tick(5 * time.Second) {
+		if ok {
+			log.Println("Start locate server")
+			for msg := range consumeChan {
+				object, e := strconv.Unquote(string(msg.Body))
+				if e != nil {
+					log.Printf("Locate consume fail, %v\n", e)
+				} else if service.Exist(object) {
+					prov.RouteKey = msg.ReplyTo
+					prov.Publish(amqp.Publishing{
+						Body: locate,
+					})
+				}
 			}
+			ok = false
+		} else {
+			log.Println("Oops! Recovering locate server")
+			consumeChan, ok = conm.Consume()
 		}
-	} else {
-		panic("Consume Locate Error")
 	}
 }
