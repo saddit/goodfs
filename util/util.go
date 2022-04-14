@@ -1,9 +1,13 @@
 package util
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"io"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -39,4 +43,15 @@ func BindAll(c *gin.Context, obj interface{}, bindings ...interface{}) error {
 		}
 	}
 	return e
+}
+
+//SHA256Hash
+func SHA256Hash(reader io.Reader) string {
+	cryt := sha256.New()
+	if _, e := io.CopyBuffer(cryt, reader, make([]byte, 2048)); e == nil {
+		b := make([]byte, 0)
+		_ = cryt.Sum(b)
+		return base64.StdEncoding.EncodeToString(b)
+	}
+	return ""
 }

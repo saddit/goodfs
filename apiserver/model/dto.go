@@ -3,6 +3,7 @@ package model
 import (
 	"goodfs/apiserver/repository/metadata"
 	"goodfs/util"
+	"io"
 
 	"github.com/gin-gonic/gin/binding"
 
@@ -11,12 +12,15 @@ import (
 
 type PutResp struct {
 	Name    string `json:"name"`
-	Version int    `json:"version"`
+	Version int32  `json:"version"`
 }
 
 type PutReq struct {
-	Name string `uri:"name" binding:"required"`
-	Hash string `header:"digest" binding:"required"`
+	Name     string `uri:"name" binding:"required"`
+	Hash     string `header:"digest" binding:"required"`
+	Locate   string
+	FileName string
+	Body     io.Reader
 }
 
 type GetReq struct {

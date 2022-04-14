@@ -98,7 +98,11 @@ func FindByHash(hash string) *meta.MetaData {
 		nil,
 		bson.M{"versions.hash": hash},
 		options.FindOne().SetProjection(bson.M{
-			"versions.$": 1,
+			"name":        1,
+			"tags":        1,
+			"create_time": 1,
+			"update_time": 1,
+			"versions.$":  1,
 		}),
 	).Decode(&data)
 

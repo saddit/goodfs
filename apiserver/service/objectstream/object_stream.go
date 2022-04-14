@@ -10,6 +10,7 @@ var client = http.Client{}
 
 type PutStream struct {
 	Locate    string
+	name      string
 	writer    *io.PipeWriter
 	errorChan chan error
 }
@@ -19,18 +20,19 @@ type GetStream struct {
 	reader io.ReadCloser
 }
 
-func NewPutStream(ip, name string) *PutStream {
+func NewPutStream(ip, name string, size int64) *PutStream {
 	reader, writer := io.Pipe()
-	c := make(chan error)
+	c := make(chan error, 1)
 	go func() {
 		req, _ := http.NewRequest(http.MethodPut, "http://"+ip+"/objects/"+name, reader)
+		req.Header.Add("Size", fmt.Sprint(size))
 		resp, e := client.Do(req)
 		if resp.StatusCode != http.StatusOK {
 			e = fmt.Errorf("dataServer return http code %v", resp.StatusCode)
 		}
 		c <- e
 	}()
-	return &PutStream{writer: writer, errorChan: c, Locate: ip}
+	return &PutStream{writer: writer, errorChan: c, Locate: ip, name: name}
 }
 
 func NewGetStream(ip, name string) (*GetStream, error) {
@@ -63,4 +65,15 @@ func (p *PutStream) Close() error {
 
 func (p *PutStream) Write(b []byte) (n int, err error) {
 	return p.writer.Write(b)
+}
+
+//Commit send commit message and close stream
+func (p *PutStream) Commit(ok bool) error {
+	if e := p.Close(); e != nil {
+		return e
+	}
+	if !ok {
+		go DeleteObject(p.Locate, p.name)
+	}
+	return nil
 }

@@ -1,9 +1,11 @@
 package service
 
 import (
+	"bufio"
 	"encoding/json"
 	"goodfs/apiserver/config"
 	"goodfs/apiserver/global"
+	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/repository/metadata"
 	"goodfs/apiserver/repository/metadata/version"
@@ -61,6 +63,14 @@ func LocateFile(name string) (string, bool) {
 	return "", false
 }
 
+func GetMetaVersion(hash string) (*meta.MetaVersion, int32, bool) {
+	res, num := version.Find(hash)
+	if res == nil {
+		return nil, -1, false
+	}
+	return res, num, true
+}
+
 func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
 	res := metadata.FindByNameAndVerMode(name, metadata.VerMode(ver))
 	if res == nil {
@@ -69,44 +79,58 @@ func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
 	return res, true
 }
 
-func StoreObject(reader io.Reader, name string, ver *meta.MetaVersion) (int, error) {
-	if ext, ok := util.GetFileExt(name, true); ok {
-		//stream to store
-		stream, e := dataServerStream(ver.Hash + ext)
-		if e != nil {
+func StoreObject(req *model.PutReq, md *meta.MetaData) (int32, error) {
+	ver := md.Versions[0]
+
+	//文件数据保存
+	if req.Locate == "" {
+		var e error
+		if ver.Locate, e = streamToDataServer(req, ver.Size); e != nil {
 			return -1, e
 		}
-		io.CopyBuffer(stream, reader, make([]byte, 2048))
-
-		//bolck by chan
-		e = stream.Close()
-		if e != nil {
-			return -1, ErrServiceUnavailable
-		}
-
-		//store meta data
-		ver.Locate = stream.Locate
-		metaD := metadata.FindByNameAndVerMode(name, metadata.VerModeNot)
-		var verNum int
-		if metaD != nil {
-			verNum = version.Add(nil, metaD.Id, ver)
-		} else {
-			verNum = 0
-			metaD, e = metadata.Insert(&meta.MetaData{
-				Name:     name,
-				Versions: []*meta.MetaVersion{ver},
-			})
-		}
-
-		//meta data save error
-		if verNum == version.ErrVersion {
-			go objectstream.DeleteObject(name, ver)
-			return -1, ErrInternalServer
-		} else {
-			return verNum, nil
-		}
+	} else {
+		ver.Locate = req.Locate
 	}
-	return -1, ErrBadRequest
+
+	//元数据保存
+	metaD := metadata.FindByNameAndVerMode(md.Name, metadata.VerModeNot)
+	var verNum int32
+	if metaD != nil {
+		verNum = version.Add(nil, metaD.Id, ver)
+	} else {
+		verNum = 0
+		metaD, _ = metadata.Insert(md)
+	}
+
+	if verNum == version.ErrVersion {
+		return -1, ErrInternalServer
+	} else {
+		return verNum, nil
+	}
+}
+
+func streamToDataServer(req *model.PutReq, size int64) (string, error) {
+	//stream to store
+	stream, e := dataServerStream(req.FileName, size)
+	if e != nil {
+		return "", e
+	}
+
+	//digest validation
+	reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
+	hash := util.SHA256Hash(reader)
+	if hash != req.Hash {
+		if e = stream.Commit(false); e != nil {
+			log.Println(e)
+		}
+		return "", ErrBadRequest
+	}
+
+	if e = stream.Commit(true); e != nil {
+		log.Println(e)
+		return "", ErrServiceUnavailable
+	}
+	return stream.Locate, e
 }
 
 func GetObject(name string, ver *meta.MetaVersion) (io.Reader, error) {
@@ -120,11 +144,11 @@ func GetObject(name string, ver *meta.MetaVersion) (io.Reader, error) {
 	return nil, ErrBadRequest
 }
 
-func dataServerStream(name string) (*objectstream.PutStream, error) {
+func dataServerStream(name string, size int64) (*objectstream.PutStream, error) {
 	ds := GetDataServers()
 	if len(ds) == 0 {
 		return nil, ErrServiceUnavailable
 	}
 	serv := balancer.Select(ds)
-	return objectstream.NewPutStream(serv, name), nil
+	return objectstream.NewPutStream(serv, name, size), nil
 }

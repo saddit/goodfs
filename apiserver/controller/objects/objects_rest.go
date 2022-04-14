@@ -12,15 +12,14 @@ import (
 )
 
 func Put(c *gin.Context) {
-	var req model.PutReq
-	if err := req.Bind(c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
-		return
-	}
+	req := c.Keys["PutReq"].(*model.PutReq)
 
-	verNum, err := service.StoreObject(c.Request.Body, req.Name, &meta.MetaVersion{
-		Hash: req.Hash,
-		Size: c.Request.ContentLength,
+	verNum, err := service.StoreObject(req, &meta.MetaData{
+		Name: req.Name,
+		Versions: []*meta.MetaVersion{{
+			Size: c.Request.ContentLength,
+			Hash: req.Hash,
+		}},
 	})
 
 	if err == service.ErrBadRequest {

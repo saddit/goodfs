@@ -9,7 +9,7 @@ import (
 )
 
 func Router(r gin.IRouter) {
-	r.PUT("/objects/:name", objects.Put)
+	r.PUT("/objects/:name", objects.ValidatePut, objects.Put)
 	r.GET("/objects/:name", objects.Get)
 
 	r.GET("/versions/:name", versions.Get)
