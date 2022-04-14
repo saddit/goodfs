@@ -1,8 +1,10 @@
 package util
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/gob"
 	"io"
 	"strings"
 
@@ -53,4 +55,35 @@ func SHA256Hash(reader io.Reader) string {
 		return base64.StdEncoding.EncodeToString(b)
 	}
 	return ""
+}
+
+func GobEncode(v interface{}) []byte {
+	// encode
+	buf := new(bytes.Buffer)   // 创建一个buffer区
+	enc := gob.NewEncoder(buf) // 创建新的需要转化二进制区域对象
+	// 将数据转化为二进制流
+	if err := enc.Encode(v); err != nil {
+		return nil
+	}
+	return buf.Bytes()
+}
+
+func GobDecode(bt []byte) interface{} {
+	var res interface{}
+	dec := gob.NewDecoder(bytes.NewBuffer(bt)) // 创建一个对象 把需要转化的对象放入
+	// 进行流转化
+	if err := dec.Decode(&res); err != nil {
+		return nil
+	}
+	return &res
+}
+
+func GobDecodeGen[T interface{}](bt []byte) (*T, bool) {
+	var res T
+	dec := gob.NewDecoder(bytes.NewBuffer(bt)) // 创建一个对象 把需要转化的对象放入
+	// 进行流转化
+	if err := dec.Decode(&res); err != nil {
+		return nil, false
+	}
+	return &res, true
 }

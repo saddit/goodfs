@@ -6,34 +6,48 @@ import (
 	"goodfs/objectserver/controller"
 	"goodfs/objectserver/controller/heartbeat"
 	"goodfs/objectserver/controller/locate"
+	"goodfs/objectserver/controller/temp"
 	"goodfs/objectserver/global"
+	"goodfs/util/cache"
 	"os"
 	"strconv"
 
 	"github.com/838239178/goodmq"
-	"github.com/VictoriaMetrics/fastcache"
+	"github.com/allegro/bigcache"
 	"github.com/gin-gonic/gin"
 )
 
 func initialize() {
-	hn, e := os.Hostname()
-	if e != nil {
-		panic(e)
+	//init amqp
+	{
+		hn, e := os.Hostname()
+		if e != nil {
+			panic(e)
+		}
+		config.LocalAddr = fmt.Sprintf("%v:%v", hn, config.Port)
+		global.AmqpConnection = goodmq.NewAmqpConnection(config.AmqpAddress)
 	}
-	config.LocalAddr = fmt.Sprintf("%v:%v", hn, config.Port)
-	global.AmqpConnection = goodmq.NewAmqpConnection(config.AmqpAddress)
-	global.Cache = fastcache.New(config.CacheSize.IntValue())
+
+	//init cache
+	{
+		cacheConf := bigcache.DefaultConfig(config.CacheTTL)
+		cacheConf.CleanWindow = config.CacheCleanInterval
+		cacheConf.HardMaxCacheSize = config.CacheMaxSize.IntValue()
+		cacheConf.MaxEntrySize = config.CacheItemMaxSize.IntValue()
+		global.Cache = cache.NewCache(cacheConf)
+	}
 }
 
 func close() {
 	global.AmqpConnection.Close()
-	global.Cache.Reset()
+	global.Cache.Close()
 }
 
 func main() {
 	initialize()
 	defer close()
 
+	go temp.HandleTempRemove(global.Cache.NotifyEvicted())
 	go heartbeat.StartHeartbeat()
 	go locate.StartLocate()
 

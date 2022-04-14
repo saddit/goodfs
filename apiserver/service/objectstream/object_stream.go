@@ -6,11 +6,10 @@ import (
 	"net/http"
 )
 
-var client = http.Client{}
-
 type PutStream struct {
 	Locate    string
 	name      string
+	tmpId     string
 	writer    *io.PipeWriter
 	errorChan chan error
 }
@@ -20,23 +19,19 @@ type GetStream struct {
 	reader io.ReadCloser
 }
 
-func NewPutStream(ip, name string, size int64) *PutStream {
-	reader, writer := io.Pipe()
+func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 	c := make(chan error, 1)
-	go func() {
-		req, _ := http.NewRequest(http.MethodPut, "http://"+ip+"/objects/"+name, reader)
-		req.Header.Add("Size", fmt.Sprint(size))
-		resp, e := client.Do(req)
-		if resp.StatusCode != http.StatusOK {
-			e = fmt.Errorf("dataServer return http code %v", resp.StatusCode)
-		}
-		c <- e
-	}()
-	return &PutStream{writer: writer, errorChan: c, Locate: ip, name: name}
+	id, e := PostTmpObject(ip, name, size)
+	if e != nil {
+		return nil, e
+	}
+	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id}
+	res.StartWrite()
+	return res, nil
 }
 
 func NewGetStream(ip, name string) (*GetStream, error) {
-	resp, err := client.Get("http://" + ip + "/objects/" + name)
+	resp, err := GetObject(ip, name)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +59,18 @@ func (p *PutStream) Close() error {
 }
 
 func (p *PutStream) Write(b []byte) (n int, err error) {
+	if p.writer == nil {
+		return 0, fmt.Errorf("call StartWrite before your writing!")
+	}
 	return p.writer.Write(b)
+}
+
+func (p *PutStream) StartWrite() {
+	reader, writer := io.Pipe()
+	p.writer = writer
+	go func() {
+		p.errorChan <- PatchTmpObject(p.Locate, p.tmpId, reader)
+	}()
 }
 
 //Commit send commit message and close stream
@@ -72,8 +78,11 @@ func (p *PutStream) Commit(ok bool) error {
 	if e := p.Close(); e != nil {
 		return e
 	}
+
 	if !ok {
-		go DeleteObject(p.Locate, p.name)
+		go DeleteTmpObject(p.Locate, p.tmpId)
+		return nil
 	}
-	return nil
+
+	return PutTmpObject(p.Locate, p.tmpId, p.name)
 }

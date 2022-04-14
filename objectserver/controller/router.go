@@ -12,7 +12,6 @@ func Router(r gin.IRouter) {
 	r.PUT("/objects/:name", objects.SaveToCache, objects.Put, objects.RemoveCache)
 	r.DELETE("/objects/:name", objects.Delete, objects.RemoveCache)
 
-	r.GET("/temp/:name", temp.Get)
 	r.POST("/temp/:name", temp.Post)
 	r.PATCH("/temp/:name", temp.Patch)
 	r.DELETE("/temp/:name", temp.Delete)

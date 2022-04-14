@@ -1,11 +1,12 @@
 package global
 
 import (
+	"goodfs/util/cache"
+
 	"github.com/838239178/goodmq"
-	"github.com/VictoriaMetrics/fastcache"
 )
 
 var (
 	AmqpConnection *goodmq.AmqpConnection
-	Cache          *fastcache.Cache
+	Cache          *cache.Cache
 )

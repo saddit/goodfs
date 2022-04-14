@@ -38,3 +38,25 @@ func Delete(name string) error {
 	}
 	return nil
 }
+
+func DeleteFile(path, name string) error {
+	e := os.Remove(config.StoragePath + name)
+	if e != nil {
+		return e
+	}
+	return nil
+}
+
+func PutFile(path, fileName string, fileStream io.Reader) error {
+	file, err := os.Create(path + fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	io.Copy(file, fileStream)
+	return nil
+}
+
+func MvTmpToStorage(tmpName, fileName string) error {
+	return os.Rename(config.TempPath+tmpName, config.StoragePath+fileName)
+}

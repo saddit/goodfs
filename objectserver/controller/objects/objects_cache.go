@@ -1,8 +1,8 @@
 package objects
 
 import (
+	"goodfs/objectserver/config"
 	"goodfs/objectserver/global"
-	"goodfs/util/datasize"
 	"io"
 	"log"
 	"net/http"
@@ -12,7 +12,7 @@ import (
 
 func GetFromCache(g *gin.Context) {
 	name := g.Param("name")
-	if bt, ok := global.Cache.HasGet([]byte(name), make([]byte, 1024)); ok {
+	if bt, ok := global.Cache.HasGet(name); ok {
 		if _, e := g.Writer.Write(bt); e != nil {
 			log.Printf("Match file cache %v, but written to response error: %v\n", name, e)
 			g.AbortWithStatus(http.StatusInternalServerError)
@@ -36,15 +36,10 @@ func getBody(req *http.Request) (io.ReadCloser, error) {
 func SaveToCache(g *gin.Context) {
 	name := g.Param("name")
 	if body, e := getBody(g.Request); e == nil {
-		if g.Request.ContentLength < datasize.GB.Int64Value() {
+		if g.Request.ContentLength < config.CacheItemMaxSize.Int64Value() {
 			bt := make([]byte, 0, g.Request.ContentLength)
 			if _, e = body.Read(bt); e == nil {
-				big := 64 * datasize.KB
-				if len(bt) >= big.IntValue() {
-					global.Cache.SetBig([]byte(name), bt)
-				} else {
-					global.Cache.Set([]byte(name), bt)
-				}
+				global.Cache.Set(name, bt)
 				g.Keys["Evict"] = false
 				log.Printf("Save %v to cache success\n", name)
 			}
@@ -57,7 +52,7 @@ func SaveToCache(g *gin.Context) {
 func RemoveCache(g *gin.Context) {
 	name := g.Param("name")
 	if evict := g.Keys["Evict"].(bool); evict {
-		global.Cache.Del([]byte(name))
+		global.Cache.Delete(name)
 		log.Printf("Success evict cache %v\n", name)
 	}
 }

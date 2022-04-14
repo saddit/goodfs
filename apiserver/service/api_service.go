@@ -150,5 +150,5 @@ func dataServerStream(name string, size int64) (*objectstream.PutStream, error) 
 		return nil, ErrServiceUnavailable
 	}
 	serv := balancer.Select(ds)
-	return objectstream.NewPutStream(serv, name, size), nil
+	return objectstream.NewPutStream(serv, name, size)
 }

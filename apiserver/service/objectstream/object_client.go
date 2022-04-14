@@ -2,27 +2,74 @@ package objectstream
 
 import (
 	"fmt"
-	"goodfs/apiserver/config"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
+
 )
 
-//DeleteObject send delete message to object server
-//if delete fail write to logs
-func DeleteObject(locate, fileName string) {
-	req, _ := http.NewRequest(http.MethodDelete, "http://"+locate+"/objects/"+fileName, nil)
+var client = http.Client{}
+
+func DeleteTmpObject(locate, id string) {
+	req, _ := http.NewRequest(http.MethodDelete, "http://"+locate+"/temp/"+id, nil)
 	resp, e := client.Do(req)
 	if e != nil || resp.StatusCode != http.StatusOK {
-		f, ef := os.OpenFile(config.LogDir+"/delete_object_undo.log", os.O_WRONLY|os.O_CREATE, os.ModeAppend)
-		if ef != nil {
-			log.Print(ef)
-		}
-		defer f.Close()
-		_, ef = f.WriteString(fmt.Sprintf("delete %v from %v\n", fileName, locate))
-		if ef != nil {
-			log.Print(ef)
-		}
+		log.Println(e, resp.StatusCode)
 	}
-	return
+}
+
+func PostTmpObject(ip, name string, size int64) (string, error) {
+	req, _ := http.NewRequest(http.MethodPost, "http://"+ip+"/temp/"+name, nil)
+	req.Header.Add("Size", fmt.Sprint(size))
+	resp, e := client.Do(req)
+	if e != nil {
+		return "", e
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Post temp object name=%v, return code=%v", name, resp.Status)
+	}
+	res, e := ioutil.ReadAll(resp.Body)
+	if e != nil {
+		return "", fmt.Errorf("Post temp object name=%v, return error response body", name)
+	}
+	return string(res), nil
+}
+
+func PatchTmpObject(ip, id string, body io.Reader) error {
+	req, _ := http.NewRequest(http.MethodPatch, "http://"+ip+"/temp/"+id, body)
+	resp, e := client.Do(req)
+	if e != nil {
+		return e
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Patch temp object id=%v, return code=%v", id, resp.Status)
+	}
+	return nil
+}
+
+func PutTmpObject(ip, id, name string) error {
+	req, _ := http.NewRequest(http.MethodPatch, "http://"+ip+"/temp/"+id, nil)
+	req.Form.Add("name", name)
+	resp, e := client.Do(req)
+	if e != nil {
+		return e
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Put temp object id=%v, return code=%v", id, resp.Status)
+	}
+	return nil
+}
+
+func PutObject(ip, name string, body io.Reader) error {
+	req, _ := http.NewRequest(http.MethodPut, "http://"+ip+"/objects/"+name, body)
+	resp, e := client.Do(req)
+	if resp.StatusCode != http.StatusOK {
+		e = fmt.Errorf("dataServer return http code %v", resp.StatusCode)
+	}
+	return e
+}
+
+func GetObject(ip, name string) (*http.Response, error) {
+	return client.Get("http://" + ip + "/objects/" + name)
 }

@@ -3,6 +3,8 @@ package main
 import "testing"
 
 func TestKeyValue(t *testing.T) {
-	mp := make(map[string]interface{})
-	println(mp["Evict"].(bool))
+	var e interface{}
+	if e == nil {
+		t.Error("Nil")
+	}
 }
