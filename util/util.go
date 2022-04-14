@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -86,4 +87,19 @@ func GobDecodeGen[T interface{}](bt []byte) (*T, bool) {
 		return nil, false
 	}
 	return &res, true
+}
+
+//ImmediaTick Immedialy tick once then tick interval
+//alloc 2 chan, one from time.Tick()
+func ImmediaTick(t time.Duration) <-chan time.Time {
+	ch := make(chan time.Time, 1)
+	tk := time.Tick(t)
+	go func() {
+		defer close(ch)
+		for t := range tk {
+			ch <- t
+		}
+	}()
+	ch <- time.Now()
+	return ch
 }

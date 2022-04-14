@@ -4,6 +4,7 @@ import (
 	"goodfs/apiserver/config"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/service"
+	"goodfs/util"
 	"log"
 	"strconv"
 	"time"
@@ -22,7 +23,7 @@ func ListenHeartbeat() {
 	go removeExpiredDataServer()
 
 	//断线重连策略
-	for range time.Tick(5 * time.Second) {
+	for range util.ImmediaTick(5 * time.Second) {
 		if ok {
 			log.Println("Hearbeat connect success")
 			for msg := range consumeChan {

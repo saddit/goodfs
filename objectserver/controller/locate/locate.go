@@ -5,6 +5,7 @@ import (
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/global"
 	"goodfs/objectserver/service"
+	"goodfs/util"
 	"log"
 	"strconv"
 	"time"
@@ -37,7 +38,7 @@ func StartLocate() {
 
 	consumeChan, ok := conm.Consume()
 
-	for range time.Tick(5 * time.Second) {
+	for range util.ImmediaTick(5 * time.Second) {
 		if ok {
 			log.Println("Start locate server")
 			for msg := range consumeChan {

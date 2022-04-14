@@ -72,6 +72,7 @@ func Put(g *gin.Context) {
 }
 
 func HandleTempRemove(ch <-chan cache.CacheEntry) {
+	log.Println("Start handle temp file removal..")
 	for entry := range ch {
 		if strings.HasPrefix(entry.Key, TempKeyPrefix) {
 			if ti, ok := util.GobDecodeGen[TempInfo](entry.Value); ok {

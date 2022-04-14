@@ -9,6 +9,7 @@ import (
 	"goodfs/objectserver/controller/temp"
 	"goodfs/objectserver/global"
 	"goodfs/util/cache"
+	"goodfs/util/datasize"
 	"os"
 	"strconv"
 
@@ -32,8 +33,8 @@ func initialize() {
 	{
 		cacheConf := bigcache.DefaultConfig(config.CacheTTL)
 		cacheConf.CleanWindow = config.CacheCleanInterval
-		cacheConf.HardMaxCacheSize = config.CacheMaxSize.IntValue()
-		cacheConf.MaxEntrySize = config.CacheItemMaxSize.IntValue()
+		cacheConf.HardMaxCacheSize = config.CacheMaxSizeMB
+		cacheConf.Shards = ((config.CacheMaxSizeMB * datasize.MB) / config.CacheItemMaxSize).IntValue()
 		global.Cache = cache.NewCache(cacheConf)
 	}
 }
