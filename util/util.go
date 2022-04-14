@@ -49,8 +49,7 @@ func BindAll(c *gin.Context, obj interface{}, bindings ...interface{}) error {
 func SHA256Hash(reader io.Reader) string {
 	cryt := sha256.New()
 	if _, e := io.CopyBuffer(cryt, reader, make([]byte, 2048)); e == nil {
-		b := make([]byte, 0)
-		_ = cryt.Sum(b)
+		b := cryt.Sum(make([]byte, 0, cryt.Size()))
 		return base64.StdEncoding.EncodeToString(b)
 	}
 	return ""

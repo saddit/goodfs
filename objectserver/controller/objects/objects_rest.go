@@ -10,13 +10,13 @@ import (
 
 func Put(c *gin.Context) {
 	fileName := c.Param("name")
-	err := service.Put(fileName, c.Request.Body)
-	if err != nil {
+	if err := service.Put(fileName, c.Request.Body); err != nil {
 		log.Println(err)
-		c.AbortWithStatus(http.StatusInternalServerError)
-		return
+		c.Keys["Evict"] = true
+		c.Status(http.StatusInternalServerError)
+	} else {
+		c.Status(http.StatusOK)
 	}
-	c.Status(http.StatusOK)
 }
 
 func Delete(c *gin.Context) {
@@ -27,6 +27,7 @@ func Delete(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
+	c.Keys["Evict"] = true
 	c.Status(http.StatusOK)
 }
 

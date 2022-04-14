@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/838239178/goodmq"
+	"github.com/VictoriaMetrics/fastcache"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,10 +22,12 @@ func initialize() {
 	}
 	config.LocalAddr = fmt.Sprintf("%v:%v", hn, config.Port)
 	global.AmqpConnection = goodmq.NewAmqpConnection(config.AmqpAddress)
+	global.Cache = fastcache.New(config.CacheSize.IntValue())
 }
 
 func close() {
 	global.AmqpConnection.Close()
+	global.Cache.Reset()
 }
 
 func main() {

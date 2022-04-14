@@ -8,9 +8,9 @@ import (
 )
 
 func Router(r gin.IRouter) {
-	r.GET("/objects/:name", objects.Get)
-	r.PUT("/objects/:name", objects.Put)
-	r.DELETE("/objects/:name", objects.Delete)
+	r.GET("/objects/:name", objects.GetFromCache, objects.Get, objects.SaveToCache)
+	r.PUT("/objects/:name", objects.SaveToCache, objects.Put, objects.RemoveCache)
+	r.DELETE("/objects/:name", objects.Delete, objects.RemoveCache)
 
 	r.GET("/temp/:name", temp.Get)
 	r.POST("/temp/:name", temp.Post)
