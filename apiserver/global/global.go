@@ -7,5 +7,6 @@ import (
 
 var (
 	AmqpConnection *goodmq.AmqpConnection
-	ExistFilter    *cfilter.CFilter
+	// ExistFilter TODO 改造为可持久化的布谷鸟过滤器
+	ExistFilter *cfilter.CFilter
 )
