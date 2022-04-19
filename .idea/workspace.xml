@@ -4,11 +4,21 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="格式修缮">
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="添加泛型的V2版Get方法，使用比较规范的指针传值法代替泛型实例化">
+      <change afterPath="$PROJECT_DIR$/apiserver/controller/locate/locate_mid.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/cache/Cache.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/cache/Cache.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/util.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/util.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/api_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/api_server.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/locate/locate_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/locate/locate_rest.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/object_validator.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/router.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/global/global.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/global/global.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/model/dto.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/dto.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/api_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/api_service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,7 +70,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../goodmq" />
     <property name="settings.editor.selected.configurable" value="go.sdk" />
   </component>
-  <component name="RunManager" selected="Go 测试.goodfs/objectserver/controller/temp 中的 TestCache">
+  <component name="RunManager" selected="Go 构建.go build goodfs/apiserver">
     <configuration name="dev_server" type="CompoundRunConfigurationType">
       <toRun name="go build goodfs/api" type="GoApplicationRunConfiguration" />
       <toRun name="go build goodfs/objects" type="GoApplicationRunConfiguration" />
@@ -73,6 +83,15 @@
       <package value="goodfs/api" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$/api/api_server.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build goodfs/apiserver" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="goodfs" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="goodfs/apiserver" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/apiserver/api_server.go" />
       <method v="2" />
     </configuration>
     <configuration name="go build goodfs/objects" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
@@ -101,9 +120,11 @@
       <item itemvalue="Go 构建.go build goodfs/objects" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestCache" />
       <item itemvalue="复合.dev_server" />
+      <item itemvalue="Go 构建.go build goodfs/apiserver" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go 构建.go build goodfs/apiserver" />
         <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestCache" />
       </list>
     </recent_temporary>
@@ -128,7 +149,8 @@
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="格式修缮" />
-    <option name="LAST_COMMIT_MESSAGE" value="格式修缮" />
+    <MESSAGE value="添加泛型的V2版Get方法，使用比较规范的指针传值法代替泛型实例化" />
+    <option name="LAST_COMMIT_MESSAGE" value="添加泛型的V2版Get方法，使用比较规范的指针传值法代替泛型实例化" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>

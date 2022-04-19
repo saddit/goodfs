@@ -23,13 +23,14 @@ func Put(c *gin.Context) {
 	})
 
 	if err == service.ErrBadRequest {
-		c.AbortWithStatus(http.StatusBadRequest)
+		c.Status(http.StatusBadRequest)
 		return
 	} else if err == service.ErrServiceUnavailable {
-		c.AbortWithStatus(http.StatusServiceUnavailable)
+		c.Status(http.StatusServiceUnavailable)
 		return
 	} else if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		log.Println(err)
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
@@ -62,6 +63,9 @@ func Get(c *gin.Context) {
 		} else {
 			_, e = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
 			if e == nil {
+				if service.SendExistingSyncMsg([]byte(metaVer.Hash), model.SyncInsert) != nil {
+					log.Printf("Sync existing value %v error\n", metaVer.Hash)
+				}
 				c.Status(http.StatusOK)
 			} else {
 				log.Println(e)

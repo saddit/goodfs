@@ -10,6 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type SyncTyping string
+
+const (
+	SyncInsert SyncTyping = "insert"
+	SyncDelete SyncTyping = "delete"
+)
+
 type PutResp struct {
 	Name    string `json:"name"`
 	Version int32  `json:"version"`

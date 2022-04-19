@@ -10,4 +10,5 @@ const (
 	SuspendTimeout = 10
 	DeadTimeout    = 30
 	SelectStrategy = "random"
+	MachineCode    = "1"
 )

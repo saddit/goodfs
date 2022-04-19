@@ -71,6 +71,20 @@ func GetMetaVersion(hash string) (*meta.MetaVersion, int32, bool) {
 	return res, num, true
 }
 
+func SendExistingSyncMsg(hv []byte, typing model.SyncTyping) error {
+	//初始化一个消息发送方
+	prov, e := global.AmqpConnection.NewProvider()
+	if e != nil {
+		return e
+	}
+	defer prov.Close()
+	prov.Exchange = "existSync"
+	if prov.Publish(amqp.Publishing{Body: hv, Type: string(typing)}) {
+		return nil
+	}
+	return ErrServiceUnavailable
+}
+
 func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
 	res := metadata.FindByNameAndVerMode(name, metadata.VerMode(ver))
 	if res == nil {

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"github.com/irfansharif/cfilter"
 	"goodfs/apiserver/config"
 	"goodfs/apiserver/controller"
 	"goodfs/apiserver/controller/heartbeat"
+	"goodfs/apiserver/controller/locate"
 	"goodfs/apiserver/global"
 	"log"
 	"strconv"
@@ -16,17 +18,22 @@ import (
 func initialize() {
 	goodmq.RecoverDelay = 3 * time.Second
 	global.AmqpConnection = goodmq.NewAmqpConnection(config.AmqpAddress)
+	global.ExistFilter = cfilter.New()
 }
 
-func close() {
-	global.AmqpConnection.Close()
+func shutdown() {
+	err := global.AmqpConnection.Close()
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func main() {
 	initialize()
-	defer close()
+	defer shutdown()
 
 	go heartbeat.ListenHeartbeat()
+	go locate.SyncExistFilter()
 
 	router := gin.Default()
 
