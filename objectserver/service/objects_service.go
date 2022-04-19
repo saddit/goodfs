@@ -27,7 +27,9 @@ func Get(name string, writer io.Writer) error {
 		return e
 	}
 	defer f.Close()
-	io.Copy(writer, f)
+	if _, e = io.Copy(writer, f); e != nil {
+		return e
+	}
 	return nil
 }
 
@@ -40,7 +42,7 @@ func Delete(name string) error {
 }
 
 func DeleteFile(path, name string) error {
-	e := os.Remove(config.StoragePath + name)
+	e := os.Remove(path + name)
 	if e != nil {
 		return e
 	}
@@ -53,7 +55,9 @@ func PutFile(path, fileName string, fileStream io.Reader) error {
 		return err
 	}
 	defer file.Close()
-	io.Copy(file, fileStream)
+	if _, err = io.Copy(file, fileStream); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -48,11 +48,11 @@ func BindAll(c *gin.Context, obj interface{}, bindings ...interface{}) error {
 	return e
 }
 
-//SHA256Hash
+//SHA256Hash sha256算法对二进制流进行计算
 func SHA256Hash(reader io.Reader) string {
-	cryt := sha256.New()
-	if _, e := io.CopyBuffer(cryt, reader, make([]byte, 2048)); e == nil {
-		b := cryt.Sum(make([]byte, 0, cryt.Size()))
+	crypto := sha256.New()
+	if _, e := io.CopyBuffer(crypto, reader, make([]byte, 2048)); e == nil {
+		b := crypto.Sum(make([]byte, 0, crypto.Size()))
 		return base64.StdEncoding.EncodeToString(b)
 	}
 	return ""
@@ -69,16 +69,6 @@ func GobEncode(v interface{}) []byte {
 	return buf.Bytes()
 }
 
-func GobDecode(bt []byte) interface{} {
-	var res interface{}
-	dec := gob.NewDecoder(bytes.NewBuffer(bt)) // 创建一个对象 把需要转化的对象放入
-	// 进行流转化
-	if err := dec.Decode(&res); err != nil {
-		return nil
-	}
-	return &res
-}
-
 func GobDecodeGen[T interface{}](bt []byte) (*T, bool) {
 	var res T
 	dec := gob.NewDecoder(bytes.NewBuffer(bt)) // 创建一个对象 把需要转化的对象放入
@@ -89,9 +79,9 @@ func GobDecodeGen[T interface{}](bt []byte) (*T, bool) {
 	return &res, true
 }
 
-//ImmediaTick Immedialy tick once then tick interval
+//ImmediateTick Immediately tick once then tick interval
 //alloc 2 chan, one from time.Tick()
-func ImmediaTick(t time.Duration) <-chan time.Time {
+func ImmediateTick(t time.Duration) <-chan time.Time {
 	ch := make(chan time.Time, 1)
 	tk := time.Tick(t)
 	go func() {

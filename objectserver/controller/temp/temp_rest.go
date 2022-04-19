@@ -3,6 +3,7 @@ package temp
 import (
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/global"
+	"goodfs/objectserver/model"
 	"goodfs/objectserver/service"
 	"goodfs/util"
 	"goodfs/util/cache"
@@ -14,23 +15,10 @@ import (
 	"github.com/google/uuid"
 )
 
-type PostReq struct {
-	Name string `uri:"name" binding:"required"`
-	Size int64  `header:"Size" binding:"required"`
-}
-
-const TempKeyPrefix = "TempInfo#"
-
-type TempInfo struct {
-	Name string
-	Id   string
-	Size int64
-}
-
 func Patch(g *gin.Context) {
 	id := g.Param("name")
 	if e := service.PutFile(config.TempPath, id, g.Request.Body); e != nil {
-		g.AbortWithError(http.StatusInternalServerError, e)
+		_ = g.AbortWithError(http.StatusInternalServerError, e)
 		return
 	}
 	g.Status(http.StatusOK)
@@ -38,20 +26,20 @@ func Patch(g *gin.Context) {
 
 func Delete(g *gin.Context) {
 	id := g.Param("name")
-	defer global.Cache.Delete(TempKeyPrefix + id)
+	defer global.Cache.Delete(id)
 	g.Status(http.StatusOK)
 }
 
 func Post(g *gin.Context) {
-	var req PostReq
+	var req model.TempPostReq
 	_ = g.ShouldBindHeader(&req)
 	if e := g.ShouldBindUri(&req); e != nil {
 		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
 		return
 	}
-	ti := &TempInfo{Name: req.Name, Size: req.Size}
-	ti.Id = uuid.NewString()
-	if !global.Cache.SetGob(TempKeyPrefix+ti.Id, ti) {
+	ti := &model.TempInfo{Name: req.Name, Size: req.Size}
+	ti.Id = model.TempKeyPrefix + uuid.NewString()
+	if !global.Cache.SetGob(ti.Id, ti) {
 		g.AbortWithStatus(http.StatusServiceUnavailable)
 	}
 	g.JSON(http.StatusOK, ti.Id)
@@ -59,9 +47,9 @@ func Post(g *gin.Context) {
 
 func Put(g *gin.Context) {
 	id := g.Param("name")
-	if ti, ok := cache.GetGob[TempInfo](global.Cache, TempKeyPrefix+id); ok {
+	if ti, ok := cache.GetGob[model.TempInfo](global.Cache, id); ok {
 		if e := service.MvTmpToStorage(id, ti.Name); e != nil {
-			g.AbortWithError(http.StatusServiceUnavailable, e)
+			_ = g.AbortWithError(http.StatusServiceUnavailable, e)
 			return
 		}
 	} else {
@@ -74,8 +62,8 @@ func Put(g *gin.Context) {
 func HandleTempRemove(ch <-chan cache.CacheEntry) {
 	log.Println("Start handle temp file removal..")
 	for entry := range ch {
-		if strings.HasPrefix(entry.Key, TempKeyPrefix) {
-			if ti, ok := util.GobDecodeGen[TempInfo](entry.Value); ok {
+		if strings.HasPrefix(entry.Key, model.TempKeyPrefix) {
+			if ti, ok := util.GobDecodeGen[model.TempInfo](entry.Value); ok {
 				if e := service.DeleteFile(config.TempPath, ti.Id); e != nil {
 					log.Printf("Remove temp %v(name=%v) error, %v", ti.Id, ti.Name, e)
 				}

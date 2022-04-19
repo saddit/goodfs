@@ -23,7 +23,7 @@ func ListenHeartbeat() {
 	go removeExpiredDataServer()
 
 	//断线重连策略
-	for range util.ImmediaTick(5 * time.Second) {
+	for range util.ImmediateTick(5 * time.Second) {
 		if ok {
 			log.Println("Hearbeat connect success")
 			for msg := range consumeChan {

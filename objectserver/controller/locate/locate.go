@@ -38,7 +38,7 @@ func StartLocate() {
 
 	consumeChan, ok := conm.Consume()
 
-	for range util.ImmediaTick(5 * time.Second) {
+	for range util.ImmediateTick(5 * time.Second) {
 		if ok {
 			log.Println("Start locate server")
 			for msg := range consumeChan {
