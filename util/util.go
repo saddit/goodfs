@@ -79,6 +79,17 @@ func GobDecodeGen[T interface{}](bt []byte) (*T, bool) {
 	return &res, true
 }
 
+func GobDecodeGen2[T interface{}](bt []byte, v *T) bool {
+	var res T
+	dec := gob.NewDecoder(bytes.NewBuffer(bt)) // 创建一个对象 把需要转化的对象放入
+	// 进行流转化
+	if err := dec.Decode(&res); err != nil {
+		return false
+	}
+	*v = res
+	return true
+}
+
 //ImmediateTick Immediately tick once then tick interval
 //alloc 2 chan, one from time.Tick()
 func ImmediateTick(t time.Duration) <-chan time.Time {

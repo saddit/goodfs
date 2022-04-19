@@ -47,7 +47,8 @@ func Post(g *gin.Context) {
 
 func Put(g *gin.Context) {
 	id := g.Param("name")
-	if ti, ok := cache.GetGob[model.TempInfo](global.Cache, id); ok {
+	var ti model.TempInfo
+	if ok := cache.GetGob2[model.TempInfo](global.Cache, id, &ti); ok {
 		if e := service.MvTmpToStorage(id, ti.Name); e != nil {
 			_ = g.AbortWithError(http.StatusServiceUnavailable, e)
 			return
@@ -63,7 +64,8 @@ func HandleTempRemove(ch <-chan cache.CacheEntry) {
 	log.Println("Start handle temp file removal..")
 	for entry := range ch {
 		if strings.HasPrefix(entry.Key, model.TempKeyPrefix) {
-			if ti, ok := util.GobDecodeGen[model.TempInfo](entry.Value); ok {
+			var ti model.TempInfo
+			if ok := util.GobDecodeGen2[model.TempInfo](entry.Value, &ti); ok {
 				if e := service.DeleteFile(config.TempPath, ti.Id); e != nil {
 					log.Printf("Remove temp %v(name=%v) error, %v", ti.Id, ti.Name, e)
 				}

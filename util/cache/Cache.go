@@ -36,6 +36,17 @@ func GetGob[T interface{}](c *Cache, k string) (*T, bool) {
 	return nil, false
 }
 
+func GetGob2[T interface{}](c *Cache, k string, v *T) bool {
+	if bt := c.Get(k); bt != nil {
+		if r, ok := util.GobDecodeGen[T](bt); ok {
+			*v = *r
+			return true
+		}
+		return false
+	}
+	return false
+}
+
 func (c *Cache) onRemove(k string, v []byte, r bigcache.RemoveReason) {
 	go func() {
 		for _, ch := range c.notifyEvicted {

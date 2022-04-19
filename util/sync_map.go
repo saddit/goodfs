@@ -23,7 +23,16 @@ func (m *SyncMap[K, V]) Get(key K) (*V, bool) {
 	} else {
 		return nil, ok
 	}
+}
 
+func (m *SyncMap[K, V]) Get2(key K, v *V) bool {
+	if val, ok := m.mp.Load(key); ok {
+		if temp, ok := val.(*V); ok {
+			*v = *temp
+			return true
+		}
+	}
+	return false
 }
 
 func (m *SyncMap[K, V]) ForEach(f func(key K, value *V)) {
