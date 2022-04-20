@@ -8,6 +8,7 @@ import (
 	"goodfs/objectserver/controller/locate"
 	"goodfs/objectserver/controller/temp"
 	"goodfs/objectserver/global"
+	"goodfs/objectserver/service"
 	"goodfs/util/cache"
 	"goodfs/util/datasize"
 	"os"
@@ -28,7 +29,18 @@ func initialize() {
 		config.LocalAddr = fmt.Sprintf("%v:%v", hn, config.Port)
 		global.AmqpConnection = goodmq.NewAmqpConnection(config.AmqpAddress)
 	}
-
+	{
+		if !service.Exist(config.TempPath) {
+			if e := os.Mkdir(config.TempPath, os.ModeDir); e != nil {
+				panic(e)
+			}
+		}
+		if !service.Exist(config.StoragePath) {
+			if e := os.Mkdir(config.StoragePath, os.ModeDir); e != nil {
+				panic(e)
+			}
+		}
+	}
 	//init cache
 	{
 		cacheConf := bigcache.DefaultConfig(config.CacheTTL)

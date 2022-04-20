@@ -1,6 +1,7 @@
 package dataserv
 
 import (
+	"log"
 	"sync/atomic"
 	"time"
 )
@@ -10,6 +11,7 @@ type ServState int8
 const (
 	Healthy ServState = iota
 	Suspend
+	Death
 )
 
 type DataServ struct {
@@ -33,7 +35,11 @@ func (d *DataServ) IsAvailable() bool {
 }
 
 func (d *DataServ) GetState() ServState {
-	return d.state.Load().(ServState)
+	if r := d.state.Load(); r != nil {
+		return r.(ServState)
+	}
+	log.Println("Error: atomic.state return nil..")
+	return Death
 }
 
 func (d *DataServ) SetState(state ServState) {

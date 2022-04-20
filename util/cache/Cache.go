@@ -73,6 +73,11 @@ func (c *Cache) HasGet(k string) ([]byte, bool) {
 	return r, r != nil
 }
 
+func (c *Cache) Has(k string) bool {
+	_, ok := c.HasGet(k)
+	return ok
+}
+
 func (c *Cache) Set(k string, v []byte) bool {
 	return c.cache.Set(k, v) != nil
 }

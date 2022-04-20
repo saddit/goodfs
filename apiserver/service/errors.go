@@ -2,8 +2,11 @@ package service
 
 import "errors"
 
+type KnownErr error
+
 var (
-	ErrServiceUnavailable = errors.New("DataServer unavailable")
-	ErrInternalServer     = errors.New("Internal server error")
-	ErrBadRequest         = errors.New("Bad Request")
+	ErrServiceUnavailable KnownErr = errors.New("dataServer unavailable")
+	ErrInternalServer     KnownErr = errors.New("internal server error")
+	ErrBadRequest         KnownErr = errors.New("bad Request")
+	ErrInvalidFile        KnownErr = errors.New("ErrInvalidFile")
 )

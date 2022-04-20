@@ -12,13 +12,7 @@ func Exist(name string) bool {
 }
 
 func Put(fileName string, fileStream io.Reader) error {
-	file, err := os.Create(config.StoragePath + fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	io.Copy(file, fileStream)
-	return nil
+	return PutFile(config.StoragePath, fileName, fileStream)
 }
 
 func Get(name string, writer io.Writer) error {

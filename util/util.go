@@ -15,6 +15,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type RespBodyWriter struct {
+	gin.ResponseWriter
+	Body *bytes.Buffer
+}
+
+func (r RespBodyWriter) Write(b []byte) (int, error) {
+	r.Body.Write(b)
+	return r.ResponseWriter.Write(b)
+}
+
+func (r RespBodyWriter) Read(p []byte) (int, error) {
+	return r.Body.Read(p)
+}
+
+func (r RespBodyWriter) Close() error {
+	return nil
+}
+
 func GetObjectID(id string) primitive.ObjectID {
 	res, e := primitive.ObjectIDFromHex(id)
 	if e == nil {
@@ -103,4 +121,12 @@ func ImmediateTick(t time.Duration) <-chan time.Time {
 	}()
 	ch <- time.Now()
 	return ch
+}
+
+func InstanceOf[T interface{}](obj interface{}) bool {
+	if obj != nil {
+		_, ok := obj.(T)
+		return ok
+	}
+	return false
 }

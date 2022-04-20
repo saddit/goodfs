@@ -12,16 +12,19 @@ import (
 var dataServMap = util.NewSyncMap[string, dataserv.DataServ]()
 
 func IsSuspendServer(srv *dataserv.DataServ) bool {
-	return srv.LastBeat.Add(config.SuspendTimeout * time.Second).Before(time.Now())
+	return srv.GetState() == dataserv.Suspend ||
+		srv.LastBeat.Add(config.SuspendTimeout*time.Second).Before(time.Now())
 }
 
 func IsDeadServer(srv *dataserv.DataServ) bool {
-	return srv.LastBeat.Add(config.DeadTimeout * time.Second).Before(time.Now())
+	return srv.GetState() == dataserv.Death ||
+		srv.LastBeat.Add(config.DeadTimeout*time.Second).Before(time.Now())
 }
 
 func IsAvailable(ip string) bool {
-	var ds dataserv.DataServ
-	if ok := dataServMap.Get2(ip, &ds); ok {
+	var ds *dataserv.DataServ
+	var ok bool
+	if ds, ok = dataServMap.Get(ip); ok {
 		return ds.IsAvailable()
 	}
 	return false
@@ -67,7 +70,8 @@ func CheckServerState() {
 		} else if IsDeadServer(value) {
 			//第二次检查 未响应则移除
 			log.Printf("Remove ip %v from dataServer map, last beat at %v\n", key, value.LastBeat)
-			dataServMap.Remove(key)
+			value.SetState(dataserv.Death)
+			go dataServMap.Remove(key)
 		}
 	})
 }

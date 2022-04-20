@@ -17,7 +17,7 @@ func FilterExisting(g *gin.Context) {
 
 func ChangeExisting(g *gin.Context) {
 	key := []byte(g.Param("name"))
-	if g.Request.Response.StatusCode == http.StatusOK {
+	if g.Writer.Status() == http.StatusOK {
 		_ = service.SendExistingSyncMsg(key, model.SyncInsert)
 	} else {
 		_ = service.SendExistingSyncMsg(key, model.SyncDelete)

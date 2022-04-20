@@ -42,7 +42,8 @@ func Post(g *gin.Context) {
 	if !global.Cache.SetGob(ti.Id, ti) {
 		g.AbortWithStatus(http.StatusServiceUnavailable)
 	}
-	g.JSON(http.StatusOK, ti.Id)
+	g.Status(http.StatusOK)
+	_, _ = g.Writer.Write([]byte(ti.Id))
 }
 
 func Put(g *gin.Context) {

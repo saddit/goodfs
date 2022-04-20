@@ -14,7 +14,7 @@ const (
 	CacheMaxSizeMB     = 256
 	CacheTTL           = 1 * time.Hour
 	CacheCleanInterval = CacheTTL / 10
-	CacheItemMaxSize   = 32 * datasize.MB
+	CacheItemMaxSize   = 16 * datasize.MB
 )
 
 var (

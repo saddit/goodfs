@@ -137,7 +137,7 @@ func streamToDataServer(req *model.PutReq, size int64) (string, error) {
 		if e = stream.Commit(false); e != nil {
 			log.Println(e)
 		}
-		return "", ErrBadRequest
+		return "", ErrInvalidFile
 	}
 
 	if e = stream.Commit(true); e != nil {

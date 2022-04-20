@@ -4,6 +4,7 @@ import (
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/service"
+	"goodfs/util"
 	"io"
 	"log"
 	"net/http"
@@ -12,8 +13,8 @@ import (
 )
 
 func Put(c *gin.Context) {
-	req := c.Keys["PutReq"].(*model.PutReq)
-
+	req := c.Value("PutReq").(*model.PutReq)
+	req.Body = c.Request.Body
 	verNum, err := service.StoreObject(req, &meta.MetaData{
 		Name: req.Name,
 		Versions: []*meta.MetaVersion{{
@@ -22,11 +23,8 @@ func Put(c *gin.Context) {
 		}},
 	})
 
-	if err == service.ErrBadRequest {
-		c.Status(http.StatusBadRequest)
-		return
-	} else if err == service.ErrServiceUnavailable {
-		c.Status(http.StatusServiceUnavailable)
+	if util.InstanceOf[service.KnownErr](err) {
+		c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 		return
 	} else if err != nil {
 		log.Println(err)
@@ -63,9 +61,7 @@ func Get(c *gin.Context) {
 		} else {
 			_, e = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
 			if e == nil {
-				if service.SendExistingSyncMsg([]byte(metaVer.Hash), model.SyncInsert) != nil {
-					log.Printf("Sync existing value %v error\n", metaVer.Hash)
-				}
+				go service.SendExistingSyncMsg([]byte(metaVer.Hash), model.SyncInsert)
 				c.Status(http.StatusOK)
 			} else {
 				log.Println(e)

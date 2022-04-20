@@ -29,15 +29,15 @@ func (m *SyncMap[K, V]) Get(key K) (*V, bool) {
 
 //Get2 Copy value to v
 //important: Every change to v will not affect original value
-func (m *SyncMap[K, V]) Get2(key K, v *V) bool {
-	if val, ok := m.mp.Load(key); ok {
-		if temp, ok := val.(*V); ok {
-			v = temp
-			return true
-		}
-	}
-	return false
-}
+//func (m *SyncMap[K, V]) Get2(key K, v *V) bool {
+//	if val, ok := m.mp.Load(key); ok {
+//		if temp, ok := val.(*V); ok {
+//			v = temp
+//			return true
+//		}
+//	}
+//	return false
+//}
 
 func (m *SyncMap[K, V]) ForEach(f func(key K, value *V)) {
 	m.mp.Range(func(key, value any) bool {

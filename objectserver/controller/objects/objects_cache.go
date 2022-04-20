@@ -1,8 +1,10 @@
 package objects
 
 import (
+	"bytes"
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/global"
+	"goodfs/util"
 	"io"
 	"log"
 	"net/http"
@@ -20,14 +22,19 @@ func GetFromCache(g *gin.Context) {
 			log.Printf("Match file cache %v\n", name)
 			g.AbortWithStatus(http.StatusOK)
 		}
+	} else {
+		g.Writer = &util.RespBodyWriter{Body: &bytes.Buffer{}, ResponseWriter: g.Writer}
 	}
 }
 
-func getBody(req *http.Request) (io.ReadCloser, error) {
+func getBody(g *gin.Context) (io.ReadCloser, error) {
+	req := g.Request
 	if req.Method == http.MethodPut {
 		return req.GetBody()
 	} else if req.Method == http.MethodGet {
-		return req.Response.Body, nil
+		if w, ok := g.Writer.(*util.RespBodyWriter); ok {
+			return w, nil
+		}
 	}
 	log.Panicf("Not support http method %v to save cache, check your route configuration", req.Method)
 	return nil, nil
@@ -35,12 +42,15 @@ func getBody(req *http.Request) (io.ReadCloser, error) {
 
 func SaveToCache(g *gin.Context) {
 	name := g.Param("name")
-	if body, e := getBody(g.Request); e == nil {
+	if global.Cache.Has(name) {
+		return
+	}
+	if body, e := getBody(g); e == nil {
 		if g.Request.ContentLength < config.CacheItemMaxSize.Int64Value() {
 			bt := make([]byte, 0, g.Request.ContentLength)
 			if _, e = body.Read(bt); e == nil {
 				global.Cache.Set(name, bt)
-				g.Keys["Evict"] = false
+				g.Set("Evict", false)
 				log.Printf("Save %v to cache success\n", name)
 			}
 		} else {
@@ -51,7 +61,7 @@ func SaveToCache(g *gin.Context) {
 
 func RemoveCache(g *gin.Context) {
 	name := g.Param("name")
-	if evict := g.Keys["Evict"].(bool); evict {
+	if evict, ok := g.Get("Evict"); ok && evict.(bool) {
 		global.Cache.Delete(name)
 		log.Printf("Success evict cache %v\n", name)
 	}
