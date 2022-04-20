@@ -48,6 +48,8 @@ func main() {
 	initialize()
 	defer close()
 
+	locate.SyncExistingFilter()
+
 	go temp.HandleTempRemove(global.Cache.NotifyEvicted())
 	go heartbeat.StartHeartbeat()
 	go locate.StartLocate()

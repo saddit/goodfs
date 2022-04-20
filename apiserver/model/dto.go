@@ -25,6 +25,7 @@ type PutResp struct {
 type PutReq struct {
 	Name     string `uri:"name" binding:"required"`
 	Hash     string `header:"digest" binding:"required"`
+	Ext      string
 	Locate   string
 	FileName string
 	Body     io.Reader

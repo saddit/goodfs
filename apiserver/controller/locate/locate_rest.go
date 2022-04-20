@@ -1,11 +1,11 @@
 package locate
 
 import (
+	"github.com/streadway/amqp"
 	"goodfs/apiserver/config"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/service"
-	"goodfs/util"
 	"log"
 	"net/http"
 	"time"
@@ -31,34 +31,29 @@ func SyncExistFilter() {
 	defer consumer.Close()
 	//消费失败的情况需要持久化消息，保证能够恢复到一致性状态
 	consumer.QueName = "ApiServerExistSyncQueue-code-" + config.MachineCode
+	consumer.AutoAck = false
 	consumer.DeleteUnused = false
 	consumer.Durable = true
 	consumer.Exchange = "existSync"
-	consumeChan, ok := consumer.Consume()
 
-	//断线重连策略
-	for range util.ImmediateTick(5 * time.Second) {
-		if ok {
-			log.Println("Start syncing existing hash-value!")
-			for msg := range consumeChan {
-				if msg.Type == string(model.SyncInsert) {
-					//不存在则更新
-					if !global.ExistFilter.Lookup(msg.Body) {
-						if !global.ExistFilter.Insert(msg.Body) {
-							log.Printf("Sync exist filter of inserting hash-value %v error\n", msg)
-						}
-					}
-				} else if msg.Type == string(model.SyncDelete) {
-					if !global.ExistFilter.Delete(msg.Body) {
-						log.Printf("Sync exist filter of removing hash-value %v error\n", msg)
-					}
+	consumer.ConsumeAuto(func(msg amqp.Delivery) {
+		if msg.Type == string(model.SyncInsert) {
+			//不存在则更新
+			if !global.ExistFilter.Lookup(msg.Body) {
+				if !global.ExistFilter.Insert(msg.Body) {
+					log.Printf("Sync exist filter of inserting hash-value %v error\n", msg)
+					consumer.NackSafe(msg.DeliveryTag)
 				}
 			}
-			ok = false
-		} else {
-			log.Println("Recovering syncing existing hash-value consumer...")
-			//重试直到成功
-			consumeChan, ok = consumer.Consume()
+		} else if msg.Type == string(model.SyncDelete) {
+			//存在则移除
+			if global.ExistFilter.Lookup(msg.Body) {
+				if !global.ExistFilter.Delete(msg.Body) {
+					log.Printf("Sync exist filter of removing hash-value %v error\n", msg)
+					consumer.NackSafe(msg.DeliveryTag)
+				}
+			}
 		}
-	}
+		consumer.AckOne(msg.DeliveryTag)
+	}, 5*time.Second)
 }

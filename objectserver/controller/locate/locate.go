@@ -2,11 +2,14 @@ package locate
 
 import (
 	"encoding/json"
+	"fmt"
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/global"
+	"goodfs/objectserver/model"
 	"goodfs/objectserver/service"
 	"goodfs/util"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -56,6 +59,35 @@ func StartLocate() {
 		} else {
 			log.Println("Oops! Recovering locate server")
 			consumeChan, ok = conm.Consume()
+		}
+	}
+}
+
+func SyncExistingFilter() {
+	log.Println("Start syncing existing file name...")
+	defer log.Println("Finish Syncing existing file name")
+
+	provider, err := global.AmqpConnection.NewProvider()
+	if err != nil {
+		panic(err)
+	}
+	defer provider.Close()
+	provider.Exchange = "existSync"
+
+	dir, err := os.ReadDir(config.StoragePath)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, entry := range dir {
+		if entry.IsDir() {
+			continue
+		}
+		if !provider.Publish(amqp.Publishing{
+			Body: []byte(entry.Name()),
+			Type: model.SyncInsert,
+		}) {
+			panic(fmt.Errorf("%v sync fail", entry.Name()))
 		}
 	}
 }

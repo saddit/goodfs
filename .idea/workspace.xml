@@ -4,9 +4,16 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="实现ApiServer布谷鸟过滤器，用于objects Put时避免频繁向DataServer询问来进行去重。">
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="文件拓展名不再保存到DataServer,删除元数据不再删除Hash，使用元数据的Hash来去重。">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/global/global.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/global/global.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/locate/locate_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/locate/locate_rest.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/model/dto.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/dto.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/controller/locate/locate.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/locate/locate.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/model/dto.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/model/dto.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/objects_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/objects_server.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -143,7 +150,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="master" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>

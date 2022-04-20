@@ -1,5 +1,9 @@
 package model
 
+const (
+	SyncInsert = "insert"
+)
+
 const TempKeyPrefix = "TempInfo#"
 
 type TempPostReq struct {
