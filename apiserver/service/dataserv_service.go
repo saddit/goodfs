@@ -28,9 +28,10 @@ func IsAvailable(ip string) bool {
 }
 
 func ReceiveDataServer(ip string) {
-	var ds dataserv.DataServ
-	if ok := dataServMap.Get2(ip, &ds); ok {
-		ds.State = dataserv.Healthy
+	var ds *dataserv.DataServ
+	var ok bool
+	if ds, ok = dataServMap.Get(ip); ok {
+		ds.SetState(dataserv.Healthy)
 		ds.LastBeat = time.Now()
 	} else {
 		dataServMap.Put(ip, dataserv.New(ip))
@@ -39,10 +40,9 @@ func ReceiveDataServer(ip string) {
 
 func GetDataServers() []*dataserv.DataServ {
 	ds := make([]*dataserv.DataServ, 0)
+	CheckServerState()
 	dataServMap.ForEach(func(key string, value *dataserv.DataServ) {
-		if value != nil {
-			ds = append(ds, value)
-		}
+		ds = append(ds, value)
 	})
 	return ds
 }
@@ -58,13 +58,15 @@ func RandomDataServer() (string, bool) {
 
 func CheckServerState() {
 	dataServMap.ForEach(func(key string, value *dataserv.DataServ) {
-		if value.IsAvailable() {
+		if value == nil {
+			dataServMap.Remove(key)
+		} else if value.IsAvailable() {
 			if IsSuspendServer(value) {
-				value.State = dataserv.Suspend
+				value.SetState(dataserv.Suspend)
 			}
 		} else if IsDeadServer(value) {
 			//第二次检查 未响应则移除
-			log.Printf("Remove ip %v from dataServer map\n", key)
+			log.Printf("Remove ip %v from dataServer map, last beat at %v\n", key, value.LastBeat)
 			dataServMap.Remove(key)
 		}
 	})

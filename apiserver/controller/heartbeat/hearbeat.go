@@ -25,19 +25,19 @@ func ListenHeartbeat() {
 	//断线重连策略
 	for range util.ImmediateTick(5 * time.Second) {
 		if ok {
-			log.Println("Hearbeat connect success")
+			log.Println("Heartbeat connect success")
 			for msg := range consumeChan {
 				dataServIp, e := strconv.Unquote(string(msg.Body))
 				if e != nil {
 					log.Printf("Consume heartbeat from data server fail, %v\n", e)
 				} else {
-					// log.Printf("Receive heartbeat from %v\n", dataServIp)
+					//log.Printf("Receive heartbeat from %v\n", dataServIp)
 					service.ReceiveDataServer(dataServIp)
 				}
 			}
 			ok = false
 		} else {
-			log.Println("Hearbeat connection closed! Recovering...")
+			log.Println("Heartbeat connection closed! Recovering...")
 			//重试直到成功
 			consumeChan, ok = consumer.Consume()
 		}

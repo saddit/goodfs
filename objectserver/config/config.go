@@ -10,8 +10,8 @@ const (
 	StoragePath        = "E:/file/objects/"
 	TempPath           = "E:/file/objects/temp/"
 	AmqpAddress        = "amqp://gdfs:gdfs@120.79.59.75:5672/goodfs"
-	BeatInterval       = 5
-	CacheMaxSizeMB       = 256
+	BeatInterval       = 3
+	CacheMaxSizeMB     = 256
 	CacheTTL           = 1 * time.Hour
 	CacheCleanInterval = CacheTTL / 10
 	CacheItemMaxSize   = 32 * datasize.MB

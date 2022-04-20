@@ -7,8 +7,8 @@ const (
 	LogDir         = "e:/file/logs"
 	DetectInterval = 5
 	// SuspendTimeout NumPerDetect   = 5
-	SuspendTimeout = 10
-	DeadTimeout    = 30
+	SuspendTimeout = 5
+	DeadTimeout    = 10
 	SelectStrategy = "random"
 	MachineCode    = "1"
 )

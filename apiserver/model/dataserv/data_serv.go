@@ -1,6 +1,7 @@
 package dataserv
 
 import (
+	"sync/atomic"
 	"time"
 )
 
@@ -14,17 +15,27 @@ const (
 type DataServ struct {
 	Ip       string
 	LastBeat time.Time
-	State    ServState
+	state    atomic.Value
 }
 
 func New(ip string) *DataServ {
+	s := atomic.Value{}
+	s.Store(Healthy)
 	return &DataServ{
 		Ip:       ip,
 		LastBeat: time.Now(),
-		State:    Healthy,
+		state:    s,
 	}
 }
 
 func (d *DataServ) IsAvailable() bool {
-	return d.State == Healthy
+	return d.GetState() == Healthy
+}
+
+func (d *DataServ) GetState() ServState {
+	return d.state.Load().(ServState)
+}
+
+func (d *DataServ) SetState(state ServState) {
+	d.state.Store(state)
 }

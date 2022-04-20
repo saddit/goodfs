@@ -4,16 +4,14 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="文件拓展名不再保存到DataServer,删除元数据不再删除Hash，使用元数据的Hash来去重。">
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="文件拓展名不再保存到DataServer; data server 启动时同步文件名到api server;">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/locate/locate_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/locate/locate_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/model/dto.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/dto.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/locate/locate.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/locate/locate.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/model/dto.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/model/dto.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/objects_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/objects_server.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/heartbeat/hearbeat.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/heartbeat/hearbeat.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/model/dataserv/data_serv.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/dataserv/data_serv.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/dataserv_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/dataserv_service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/sync_map.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/sync_map.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,7 +63,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../goodmq" />
     <property name="settings.editor.selected.configurable" value="go.sdk" />
   </component>
-  <component name="RunManager" selected="Go 构建.go build goodfs/apiserver">
+  <component name="RunManager" selected="复合.dev_server">
     <configuration name="dev_server" type="CompoundRunConfigurationType">
       <toRun name="go build goodfs/api" type="GoApplicationRunConfiguration" />
       <toRun name="go build goodfs/objects" type="GoApplicationRunConfiguration" />
@@ -83,7 +81,7 @@
       <module name="goodfs" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
-      <package value="goodfs/api" />
+      <package value="goodfs/apiserver" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$/api/api_server.go" />
       <method v="2" />
@@ -101,7 +99,7 @@
       <module name="goodfs" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
-      <package value="goodfs/objects" />
+      <package value="goodfs/objectserver" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$/objects/objects_server.go" />
       <method v="2" />
@@ -175,7 +173,8 @@
     <MESSAGE value="格式修缮" />
     <MESSAGE value="添加泛型的V2版Get方法，使用比较规范的指针传值法代替泛型实例化" />
     <MESSAGE value="实现ApiServer布谷鸟过滤器，用于objects Put时避免频繁向DataServer询问来进行去重。" />
-    <option name="LAST_COMMIT_MESSAGE" value="实现ApiServer布谷鸟过滤器，用于objects Put时避免频繁向DataServer询问来进行去重。" />
+    <MESSAGE value="文件拓展名不再保存到DataServer; data server 启动时同步文件名到api server;" />
+    <option name="LAST_COMMIT_MESSAGE" value="文件拓展名不再保存到DataServer; data server 启动时同步文件名到api server;" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
