@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"goodfs/apiserver/config"
+	"goodfs/apiserver/global"
 	"goodfs/lib/mongodb"
 )
 
@@ -11,7 +11,7 @@ var (
 
 func GetMongo() *mongodb.MongoDB {
 	if mongo == nil {
-		mongo = mongodb.New(config.MongoAddress)
+		mongo = mongodb.New(global.Config.MongoAddress)
 	}
 	return mongo
 }

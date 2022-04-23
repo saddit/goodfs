@@ -4,7 +4,7 @@ import (
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/service"
-	"goodfs/util"
+	"goodfs/lib/util"
 	"io"
 	"log"
 	"net/http"

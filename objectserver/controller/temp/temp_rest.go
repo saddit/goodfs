@@ -1,12 +1,11 @@
 package temp
 
 import (
-	"goodfs/objectserver/config"
+	"goodfs/lib/util"
+	"goodfs/lib/util/cache"
 	"goodfs/objectserver/global"
 	"goodfs/objectserver/model"
 	"goodfs/objectserver/service"
-	"goodfs/util"
-	"goodfs/util/cache"
 	"log"
 	"net/http"
 	"strings"
@@ -17,7 +16,7 @@ import (
 
 func Patch(g *gin.Context) {
 	id := g.Param("name")
-	if e := service.PutFile(config.TempPath, id, g.Request.Body); e != nil {
+	if e := service.PutFile(global.Config.TempPath, id, g.Request.Body); e != nil {
 		_ = g.AbortWithError(http.StatusInternalServerError, e)
 		return
 	}
@@ -49,7 +48,7 @@ func Post(g *gin.Context) {
 func Put(g *gin.Context) {
 	id := g.Param("name")
 	var ti model.TempInfo
-	if ok := cache.GetGob2[model.TempInfo](global.Cache, id, &ti); ok {
+	if ok := cache.GetGob2(global.Cache, id, &ti); ok {
 		if e := service.MvTmpToStorage(id, ti.Name); e != nil {
 			_ = g.AbortWithError(http.StatusServiceUnavailable, e)
 			return
@@ -66,8 +65,8 @@ func HandleTempRemove(ch <-chan cache.CacheEntry) {
 	for entry := range ch {
 		if strings.HasPrefix(entry.Key, model.TempKeyPrefix) {
 			var ti model.TempInfo
-			if ok := util.GobDecodeGen2[model.TempInfo](entry.Value, &ti); ok {
-				if e := service.DeleteFile(config.TempPath, ti.Id); e != nil {
+			if ok := util.GobDecodeGen2(entry.Value, &ti); ok {
+				if e := service.DeleteFile(global.Config.TempPath, ti.Id); e != nil {
 					log.Printf("Remove temp %v(name=%v) error, %v", ti.Id, ti.Name, e)
 				}
 			} else {

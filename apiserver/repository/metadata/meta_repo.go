@@ -5,7 +5,7 @@ import (
 	"errors"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/repository"
-	"goodfs/util"
+	"goodfs/lib/util"
 	"log"
 	"time"
 

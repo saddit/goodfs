@@ -2,14 +2,13 @@ package temp
 
 import (
 	"github.com/allegro/bigcache"
-	"goodfs/objectserver/config"
+	"goodfs/lib/util/cache"
 	"goodfs/objectserver/model"
-	"goodfs/util/cache"
 	"testing"
 )
 
 func TestCache(t *testing.T) {
-	ca := cache.NewCache(bigcache.DefaultConfig(config.CacheTTL))
+	ca := cache.NewCache(bigcache.DefaultConfig(10))
 	if ok := ca.SetGob("test", model.TempInfo{
 		Name: "TestName",
 		Id:   "TestId",

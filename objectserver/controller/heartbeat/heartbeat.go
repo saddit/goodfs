@@ -19,7 +19,7 @@ func StartHeartbeat() {
 	sender.Exchange = "apiServers"
 	locate, _ := json.Marshal(config.LocalAddr)
 	log.Println("Start heartbeat..")
-	for range time.Tick(config.BeatInterval * time.Second) {
+	for range time.Tick(global.Config.BeatInterval) {
 		// log.Println("Send Heartbeat")
 		sender.Publish(amqp.Publishing{
 			Body: locate,

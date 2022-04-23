@@ -1,14 +1,14 @@
 package locate
 
 import (
-	"github.com/streadway/amqp"
-	"goodfs/apiserver/config"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/service"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/streadway/amqp"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,7 +30,7 @@ func SyncExistFilter() {
 	}
 	defer consumer.Close()
 	//消费失败的情况需要持久化消息，保证能够恢复到一致性状态
-	consumer.QueName = "ApiServerExistSyncQueue-code-" + config.MachineCode
+	consumer.QueName = "ApiServerExistSyncQueue-code-" + global.Config.MachineCode
 	consumer.AutoAck = false
 	consumer.DeleteUnused = false
 	consumer.Durable = true
