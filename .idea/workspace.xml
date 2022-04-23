@@ -4,25 +4,17 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="fix error on dataServer state management">
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="fix lots of bug">
+      <change afterPath="$PROJECT_DIR$/apiserver/controller/repair_help.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apiserver/service/repair/exsit_filter.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/util/gob_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/locate/locate_mid.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/locate/locate_mid.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/model/dataserv/data_serv.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/dataserv/data_serv.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/api_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/api_server.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/global/global.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/global/global.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apiserver/service/api_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/api_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/dataserv_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/dataserv_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/errors.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/objects/objects_cache.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/objects/objects_cache.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/objects/objects_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/objects/objects_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/model/dto.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/model/dto.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/objects_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/objects_server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/service/objects_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/service/objects_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/cache/Cache.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/cache/Cache.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/sync_map.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/sync_map.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/util.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/util.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -71,21 +63,13 @@
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
     <property name="go.watchers.conflict.with.on.save.actions.check.performed" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../goodmq" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../cfilter" />
     <property name="settings.editor.selected.configurable" value="go.sdk" />
   </component>
-  <component name="RunManager" selected="复合.dev_server">
+  <component name="RunManager" selected="Go 测试.goodfs/util 中的 Test3d">
     <configuration name="dev_server" type="CompoundRunConfigurationType">
       <toRun name="go build goodfs/api" type="GoApplicationRunConfiguration" />
       <toRun name="go build goodfs/objects" type="GoApplicationRunConfiguration" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
-      <module name="goodfs" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="FILE" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
       <method v="2" />
     </configuration>
     <configuration name="go build goodfs/api" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
@@ -115,15 +99,6 @@
       <filePath value="$PROJECT_DIR$/objects/objects_server.go" />
       <method v="2" />
     </configuration>
-    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
-      <module name="goodfs" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="DIRECTORY" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <method v="2" />
-    </configuration>
     <configuration name="goodfs/objectserver/controller/temp 中的 TestCache" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="goodfs" />
       <working_directory value="$PROJECT_DIR$/objectserver/controller/temp" />
@@ -136,15 +111,29 @@
       <pattern value="^\QTestCache\E$" />
       <method v="2" />
     </configuration>
+    <configuration name="goodfs/util 中的 Test3d" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="goodfs" />
+      <working_directory value="$PROJECT_DIR$/util" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="goodfs/util" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTest3d\E$" />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Go 构建.go build goodfs/api" />
       <item itemvalue="Go 构建.go build goodfs/objects" />
       <item itemvalue="Go 构建.go build goodfs/apiserver" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestCache" />
       <item itemvalue="复合.dev_server" />
+      <item itemvalue="Go 测试.goodfs/util 中的 Test3d" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go 测试.goodfs/util 中的 Test3d" />
         <item itemvalue="Go 构建.go build goodfs/apiserver" />
         <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestCache" />
       </list>
@@ -186,7 +175,8 @@
     <MESSAGE value="实现ApiServer布谷鸟过滤器，用于objects Put时避免频繁向DataServer询问来进行去重。" />
     <MESSAGE value="文件拓展名不再保存到DataServer; data server 启动时同步文件名到api server;" />
     <MESSAGE value="fix error on dataServer state management" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix error on dataServer state management" />
+    <MESSAGE value="fix lots of bug" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix lots of bug" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>

@@ -2,18 +2,16 @@ package objectstream
 
 import (
 	"fmt"
+	"goodfs/apiserver/global"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-
 )
-
-var client = http.Client{}
 
 func DeleteTmpObject(locate, id string) {
 	req, _ := http.NewRequest(http.MethodDelete, "http://"+locate+"/temp/"+id, nil)
-	resp, e := client.Do(req)
+	resp, e := global.Http.Do(req)
 	if e != nil || resp.StatusCode != http.StatusOK {
 		log.Println(e, resp.StatusCode)
 	}
@@ -22,7 +20,7 @@ func DeleteTmpObject(locate, id string) {
 func PostTmpObject(ip, name string, size int64) (string, error) {
 	req, _ := http.NewRequest(http.MethodPost, "http://"+ip+"/temp/"+name, nil)
 	req.Header.Add("Size", fmt.Sprint(size))
-	resp, e := client.Do(req)
+	resp, e := global.Http.Do(req)
 	if e != nil {
 		return "", e
 	}
@@ -38,7 +36,7 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 
 func PatchTmpObject(ip, id string, body io.Reader) error {
 	req, _ := http.NewRequest(http.MethodPatch, "http://"+ip+"/temp/"+id, body)
-	resp, e := client.Do(req)
+	resp, e := global.Http.Do(req)
 	if e != nil {
 		return e
 	}
@@ -51,7 +49,7 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 func PutTmpObject(ip, id, name string) error {
 	req, _ := http.NewRequest(http.MethodPatch, "http://"+ip+"/temp/"+id, nil)
 	req.Form.Add("name", name)
-	resp, e := client.Do(req)
+	resp, e := global.Http.Do(req)
 	if e != nil {
 		return e
 	}
@@ -63,7 +61,7 @@ func PutTmpObject(ip, id, name string) error {
 
 func PutObject(ip, name string, body io.Reader) error {
 	req, _ := http.NewRequest(http.MethodPut, "http://"+ip+"/objects/"+name, body)
-	resp, e := client.Do(req)
+	resp, e := global.Http.Do(req)
 	if resp.StatusCode != http.StatusOK {
 		e = fmt.Errorf("dataServer return http code %v", resp.StatusCode)
 	}
@@ -71,5 +69,5 @@ func PutObject(ip, name string, body io.Reader) error {
 }
 
 func GetObject(ip, name string) (*http.Response, error) {
-	return client.Get("http://" + ip + "/objects/" + name)
+	return global.Http.Get("http://" + ip + "/objects/" + name)
 }

@@ -48,7 +48,7 @@ func LocateFile(name string) (string, bool) {
 		}
 		prov.Publish(amqp.Publishing{
 			ReplyTo: conm.QueName,
-			Body:    []byte(jn),
+			Body:    jn,
 		})
 
 		select {
