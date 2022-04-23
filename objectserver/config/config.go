@@ -1,22 +1,44 @@
 package config
 
 import (
-	"goodfs/util/datasize"
+	"goodfs/lib/util/datasize"
+	"gopkg.in/yaml.v3"
+	"os"
 	"time"
-)
-
-const (
-	Port               = 8080
-	StoragePath        = "E:/file/objects/"
-	TempPath           = "E:/file/objects/temp/"
-	AmqpAddress        = "amqp://gdfs:gdfs@120.79.59.75:5672/goodfs"
-	BeatInterval       = 3
-	CacheMaxSizeMB     = 256
-	CacheTTL           = 1 * time.Hour
-	CacheCleanInterval = CacheTTL / 10
-	CacheItemMaxSize   = 16 * datasize.MB
 )
 
 var (
 	LocalAddr string
 )
+
+const (
+	ConfFilePath = "conf/object-server.yaml"
+)
+
+type CacheConfig struct {
+	MaxSizeMB     datasize.DataSize `yaml:"max-size-mb"`
+	TTL           time.Duration     `yaml:"ttl"`
+	CleanInterval time.Duration     `yaml:"clean-interval"`
+	MaxItemSizeMB datasize.DataSize `yaml:"max-item-size-mb"`
+}
+
+type Config struct {
+	Port         string        `yaml:"port"`
+	StoragePath  string        `yaml:"storage-path"`
+	TempPath     string        `yaml:"temp-path"`
+	AmqpAddress  string        `yaml:"amqp-address"`
+	BeatInterval time.Duration `yaml:"beat-interval"`
+	Cache        CacheConfig   `yaml:"cache"`
+}
+
+func ReadConfig() Config {
+	f, err := os.Open(ConfFilePath)
+	if err != nil {
+		panic(err)
+	}
+	var conf Config
+	if err = yaml.NewDecoder(f).Decode(&conf); err != nil {
+		panic(err)
+	}
+	return conf
+}

@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/838239178/goodmq"
+	"github.com/allegro/bigcache"
+	"github.com/gin-gonic/gin"
+	"goodfs/lib/util/cache"
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/controller"
 	"goodfs/objectserver/controller/heartbeat"
@@ -9,56 +13,53 @@ import (
 	"goodfs/objectserver/controller/temp"
 	"goodfs/objectserver/global"
 	"goodfs/objectserver/service"
-	"goodfs/util/cache"
-	"goodfs/util/datasize"
 	"os"
-	"strconv"
-
-	"github.com/838239178/goodmq"
-	"github.com/allegro/bigcache"
-	"github.com/gin-gonic/gin"
 )
 
 func initialize() {
+	global.Config = config.ReadConfig()
 	//init amqp
 	{
 		hn, e := os.Hostname()
 		if e != nil {
 			panic(e)
 		}
-		config.LocalAddr = fmt.Sprintf("%v:%v", hn, config.Port)
-		global.AmqpConnection = goodmq.NewAmqpConnection(config.AmqpAddress)
+		config.LocalAddr = fmt.Sprintf("%v:%v", hn, global.Config.Port)
+		global.AmqpConnection = goodmq.NewAmqpConnection(global.Config.AmqpAddress)
 	}
 	{
-		if !service.Exist(config.TempPath) {
-			if e := os.Mkdir(config.TempPath, os.ModeDir); e != nil {
+		if !service.Exist(global.Config.TempPath) {
+			if e := os.Mkdir(global.Config.TempPath, os.ModeDir); e != nil {
 				panic(e)
 			}
 		}
-		if !service.Exist(config.StoragePath) {
-			if e := os.Mkdir(config.StoragePath, os.ModeDir); e != nil {
+		if !service.Exist(global.Config.StoragePath) {
+			if e := os.Mkdir(global.Config.StoragePath, os.ModeDir); e != nil {
 				panic(e)
 			}
 		}
 	}
 	//init cache
 	{
-		cacheConf := bigcache.DefaultConfig(config.CacheTTL)
-		cacheConf.CleanWindow = config.CacheCleanInterval
-		cacheConf.HardMaxCacheSize = config.CacheMaxSizeMB
-		cacheConf.Shards = ((config.CacheMaxSizeMB * datasize.MB) / config.CacheItemMaxSize).IntValue()
+		cacheConf := bigcache.DefaultConfig(global.Config.Cache.TTL)
+		cacheConf.CleanWindow = global.Config.Cache.CleanInterval
+		cacheConf.HardMaxCacheSize = int(global.Config.Cache.MaxSizeMB)
+		cacheConf.Shards = (global.Config.Cache.MaxSizeMB / global.Config.Cache.MaxItemSizeMB).IntValue()
 		global.Cache = cache.NewCache(cacheConf)
 	}
 }
 
-func close() {
-	global.AmqpConnection.Close()
+func shutdown() {
 	global.Cache.Close()
+	err := global.AmqpConnection.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
 	initialize()
-	defer close()
+	defer shutdown()
 
 	locate.SyncExistingFilter()
 
@@ -71,5 +72,8 @@ func main() {
 	//init router
 	controller.Router(router)
 
-	router.Run(":" + strconv.Itoa(config.Port))
+	err := router.Run(":" + global.Config.Port)
+	if err != nil {
+		panic(err)
+	}
 }

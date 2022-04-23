@@ -3,11 +3,11 @@ package locate
 import (
 	"encoding/json"
 	"fmt"
+	"goodfs/lib/util"
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/global"
 	"goodfs/objectserver/model"
 	"goodfs/objectserver/service"
-	"goodfs/util"
 	"log"
 	"os"
 	"strconv"
@@ -74,7 +74,7 @@ func SyncExistingFilter() {
 	defer provider.Close()
 	provider.Exchange = "existSync"
 
-	dir, err := os.ReadDir(config.StoragePath)
+	dir, err := os.ReadDir(global.Config.StoragePath)
 	if err != nil {
 		panic(err)
 	}

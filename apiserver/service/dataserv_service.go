@@ -1,9 +1,9 @@
 package service
 
 import (
-	"goodfs/apiserver/config"
+	"goodfs/apiserver/global"
 	"goodfs/apiserver/model/dataserv"
-	"goodfs/util"
+	"goodfs/lib/util"
 	"log"
 	"math/rand"
 	"time"
@@ -13,12 +13,12 @@ var dataServMap = util.NewSyncMap[string, dataserv.DataServ]()
 
 func IsSuspendServer(srv *dataserv.DataServ) bool {
 	return srv.GetState() == dataserv.Suspend ||
-		srv.LastBeat.Add(config.SuspendTimeout*time.Second).Before(time.Now())
+		srv.LastBeat.Add(global.Config.SuspendTimeout).Before(time.Now())
 }
 
 func IsDeadServer(srv *dataserv.DataServ) bool {
 	return srv.GetState() == dataserv.Death ||
-		srv.LastBeat.Add(config.DeadTimeout*time.Second).Before(time.Now())
+		srv.LastBeat.Add(global.Config.DeadTimeout).Before(time.Now())
 }
 
 func IsAvailable(ip string) bool {

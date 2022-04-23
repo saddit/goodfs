@@ -1,10 +1,9 @@
 package heartbeat
 
 import (
-	"goodfs/apiserver/config"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/service"
-	"goodfs/util"
+	"goodfs/lib/util"
 	"log"
 	"strconv"
 	"time"
@@ -46,7 +45,7 @@ func ListenHeartbeat() {
 
 //每隔一段时间移除长时间未响应的 data server
 func removeExpiredDataServer() {
-	for range time.Tick(config.DetectInterval * time.Second) {
+	for range time.Tick(global.Config.DetectInterval) {
 		service.CheckServerState()
 	}
 }

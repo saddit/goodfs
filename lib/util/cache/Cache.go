@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"goodfs/util"
+	"goodfs/lib/util"
 	"log"
 
 	"github.com/allegro/bigcache"

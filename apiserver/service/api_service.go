@@ -3,25 +3,19 @@ package service
 import (
 	"bufio"
 	"encoding/json"
-	"goodfs/apiserver/config"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/repository/metadata"
 	"goodfs/apiserver/repository/metadata/version"
 	"goodfs/apiserver/service/objectstream"
-	"goodfs/apiserver/service/selector"
-	"goodfs/util"
+	"goodfs/lib/util"
 	"io"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/streadway/amqp"
-)
-
-var (
-	balancer = selector.NewSelector(config.SelectStrategy)
 )
 
 func LocateFile(name string) (string, bool) {
@@ -163,6 +157,6 @@ func dataServerStream(name string, size int64) (*objectstream.PutStream, error) 
 	if len(ds) == 0 {
 		return nil, ErrServiceUnavailable
 	}
-	serv := balancer.Select(ds)
+	serv := global.Balancer.Select(ds)
 	return objectstream.NewPutStream(serv, name, size)
 }

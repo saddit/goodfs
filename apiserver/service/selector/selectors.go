@@ -1,7 +1,6 @@
 package selector
 
 import (
-	"goodfs/apiserver/config"
 	"goodfs/apiserver/model/dataserv"
 	"log"
 	"strings"
@@ -14,16 +13,16 @@ type Selector interface {
 	Strategy() SelectStrategy
 }
 
-func NewSelector(str SelectStrategy) Selector {
+func NewSelector(str string) Selector {
 	var sec Selector
 
-	switch strings.ToLower(config.SelectStrategy) {
+	switch strings.ToLower(str) {
 	case string(Random):
 		sec = &RandomSelector{}
 	case string(MaxFreeDisk):
 		sec = &MaxFreeDiskSelector{}
 	default:
-		log.Panicf("Not allowed selector strategy %v", str)
+		log.Panicf("Not allowed selector strategy: %v", str)
 	}
 	return sec
 }

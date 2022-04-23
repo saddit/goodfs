@@ -1,12 +1,14 @@
 package global
 
 import (
-	"goodfs/util/cache"
+	"goodfs/lib/util/cache"
+	"goodfs/objectserver/config"
 
 	"github.com/838239178/goodmq"
 )
 
 var (
+	Config         config.Config
 	AmqpConnection *goodmq.AmqpConnection
 	Cache          *cache.Cache
 )

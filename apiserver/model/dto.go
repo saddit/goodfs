@@ -2,7 +2,7 @@ package model
 
 import (
 	"goodfs/apiserver/repository/metadata"
-	"goodfs/util"
+	"goodfs/lib/util"
 	"io"
 
 	"github.com/gin-gonic/gin/binding"

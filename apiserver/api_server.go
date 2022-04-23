@@ -7,9 +7,9 @@ import (
 	"goodfs/apiserver/controller/heartbeat"
 	"goodfs/apiserver/controller/locate"
 	"goodfs/apiserver/global"
+	"goodfs/apiserver/service/selector"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/838239178/cfilter"
@@ -19,11 +19,13 @@ import (
 )
 
 func initialize() {
+	global.Config = config.ReadConfig()
 	global.Http = &http.Client{Timeout: 5 * time.Second}
 	goodmq.RecoverDelay = 3 * time.Second
-	global.AmqpConnection = goodmq.NewAmqpConnection(config.AmqpAddress)
+	global.AmqpConnection = goodmq.NewAmqpConnection(global.Config.AmqpAddress)
 	global.ExistFilter = cfilter.New()
-	
+	global.Balancer = selector.NewSelector(global.Config.SelectStrategy)
+
 	command.ReadCommand()
 }
 
@@ -50,7 +52,7 @@ func main() {
 	help := router.Group("/help")
 	controller.HelperRouter(help)
 
-	err := router.Run(":" + strconv.Itoa(config.Port))
+	err := router.Run(":" + global.Config.Port)
 	if err == nil {
 		log.Fatal(err)
 	}

@@ -4,7 +4,7 @@ import (
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/service"
-	"goodfs/util"
+	"goodfs/lib/util"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

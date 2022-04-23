@@ -1,14 +1,36 @@
 package config
 
-const (
-	Port           = 8082
-	AmqpAddress    = "amqp://gdfs:gdfs@120.79.59.75:5672/goodfs"
-	MongoAddress   = "mongodb://150.158.82.154:27017#study#SCRAM-SHA-256#root#xianka"
-	LogDir         = "e:/file/logs"
-	DetectInterval = 5
-	// SuspendTimeout NumPerDetect   = 5
-	SuspendTimeout = 5
-	DeadTimeout    = 10
-	SelectStrategy = "random"
-	MachineCode    = "1"
+import (
+	"os"
+	"time"
+
+	yaml "gopkg.in/yaml.v3"
 )
+
+const (
+	ConfFilePath = "conf/api-server.yaml"
+)
+
+type Config struct {
+	Port           string        `yaml:"port"`
+	AmqpAddress    string        `yaml:"amqp_address"`
+	MongoAddress   string        `yaml:"mongo_address"`
+	LogDir         string        `yaml:"log_dir"`
+	DetectInterval time.Duration `yaml:"detect_interval"`
+	SuspendTimeout time.Duration `yaml:"suspend_timeout"`
+	DeadTimeout    time.Duration `yaml:"dead_timeout"`
+	SelectStrategy string        `yaml:"select_strategy"`
+	MachineCode    string        `yaml:"machine_code"`
+}
+
+func ReadConfig() Config {
+	f, err := os.Open(ConfFilePath)
+	if err != nil {
+		panic(err)
+	}
+	var conf Config
+	if err = yaml.NewDecoder(f).Decode(&conf); err != nil {
+		panic(err)
+	}
+	return conf
+}

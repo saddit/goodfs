@@ -2,9 +2,8 @@ package objects
 
 import (
 	"bytes"
-	"goodfs/objectserver/config"
+	"goodfs/lib/util"
 	"goodfs/objectserver/global"
-	"goodfs/util"
 	"io"
 	"log"
 	"net/http"
@@ -46,7 +45,7 @@ func SaveToCache(g *gin.Context) {
 		return
 	}
 	if body, e := getBody(g); e == nil {
-		if g.Request.ContentLength < config.CacheItemMaxSize.Int64Value() {
+		if g.Request.ContentLength < global.Config.Cache.MaxSizeMB.Int64Value() {
 			bt := make([]byte, 0, g.Request.ContentLength)
 			if _, e = body.Read(bt); e == nil {
 				global.Cache.Set(name, bt)
