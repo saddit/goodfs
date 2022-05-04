@@ -15,9 +15,9 @@ import (
 func Put(c *gin.Context) {
 	req := c.Value("PutReq").(*model.PutReq)
 	req.Body = c.Request.Body
-	verNum, err := service.StoreObject(req, &meta.MetaData{
+	verNum, err := service.StoreObject(req, &meta.MetaDataV2{
 		Name: req.Name,
-		Versions: []*meta.MetaVersion{{
+		Versions: []*meta.MetaVersionV2{{
 			Size: c.Request.ContentLength,
 			Hash: req.Hash,
 		}},
@@ -52,7 +52,8 @@ func Get(c *gin.Context) {
 			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
-		stream, e := service.GetObject(req.Name, metaVer)
+		stream, e := service.GetObject(metaVer)
+		defer stream.Close()
 		if e == service.ErrBadRequest {
 			c.AbortWithStatus(http.StatusBadRequest)
 		} else if e != nil {

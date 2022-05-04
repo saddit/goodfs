@@ -36,19 +36,20 @@ func Post(g *gin.Context) {
 		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
 		return
 	}
-	ti := &model.TempInfo{Name: req.Name, Size: req.Size}
-	ti.Id = model.TempKeyPrefix + uuid.NewString()
-	if !global.Cache.SetGob(ti.Id, ti) {
+	tmpInfo := &model.TempInfo{Name: req.Name, Size: req.Size}
+	tmpInfo.Id = model.TempKeyPrefix + uuid.NewString()
+	if !global.Cache.SetGob(tmpInfo.Id, tmpInfo) {
 		g.AbortWithStatus(http.StatusServiceUnavailable)
 	}
 	g.Status(http.StatusOK)
-	_, _ = g.Writer.Write([]byte(ti.Id))
+	_, _ = g.Writer.Write([]byte(tmpInfo.Id))
 }
 
 func Put(g *gin.Context) {
 	id := g.Param("name")
-	var ti model.TempInfo
-	if ok := cache.GetGob2(global.Cache, id, &ti); ok {
+	var ti *model.TempInfo
+	var ok bool
+	if ti, ok = cache.GetGob[model.TempInfo](global.Cache, id); ok {
 		if e := service.MvTmpToStorage(id, ti.Name); e != nil {
 			_ = g.AbortWithError(http.StatusServiceUnavailable, e)
 			return

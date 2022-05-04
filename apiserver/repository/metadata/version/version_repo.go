@@ -3,6 +3,7 @@ package version
 import (
 	"context"
 	"errors"
+	"goodfs/apiserver/config"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/repository"
 	"log"
@@ -18,11 +19,11 @@ const (
 )
 
 //Find 根据hash查找版本，返回版本以及版本号
-func Find(hash string) (*meta.MetaVersion, int32) {
-	collection := repository.GetMongo().Collection("metadata")
+func Find(hash string) (*meta.MetaVersionV2, int32) {
+	collection := repository.GetMongo().Collection(config.MetadataMongo)
 	res := struct {
 		Index    int32 `bson:"index"`
-		versions []*meta.MetaVersion
+		versions []*meta.MetaVersionV2
 	}{}
 	if e := collection.FindOne(
 		nil,
@@ -43,12 +44,26 @@ func Find(hash string) (*meta.MetaVersion, int32) {
 	}
 }
 
+//Update updating locate and setting ts to now
+func Update(ctx context.Context, ver *meta.MetaVersionV2) bool {
+	collection := repository.GetMongo().Collection(config.MetadataMongo)
+	res, e := collection.UpdateOne(ctx, bson.M{
+		"versions.hash": ver.Hash,
+	}, bson.M{
+		"$set": bson.M{
+			"versions.$.locate": ver.Locate,
+			"versions.$.ts":     time.Now(),
+		},
+	})
+	if e != nil {
+		log.Printf("Error when update version %v: %v", ver.Hash, e)
+	}
+	return res.ModifiedCount == 1
+}
+
 //Add 为metadata添加一个版本，添加到版本数组的末尾，版本号为数组序号
 //返回对应版本号,如果失败返回ErrVersion -1
-func Add(ctx context.Context, id string, ver *meta.MetaVersion) int32 {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+func Add(ctx context.Context, id string, ver *meta.MetaVersionV2) int32 {
 
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -57,7 +72,7 @@ func Add(ctx context.Context, id string, ver *meta.MetaVersion) int32 {
 	}
 
 	ver.Ts = time.Now()
-	collection := repository.GetMongo().Collection("metadata")
+	collection := repository.GetMongo().Collection(config.MetadataMongo)
 	data := struct {
 		LenOfVersion int32 `bson:"lenOfVersion"`
 	}{}
@@ -85,7 +100,7 @@ func Add(ctx context.Context, id string, ver *meta.MetaVersion) int32 {
 	return data.LenOfVersion
 }
 
-func Delete(ctx context.Context, id string, ver *meta.MetaVersion) error {
+func Delete(ctx context.Context, id string, ver *meta.MetaVersionV2) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -96,7 +111,7 @@ func Delete(ctx context.Context, id string, ver *meta.MetaVersion) error {
 		return nil
 	}
 
-	collection := repository.GetMongo().Collection("metadata")
+	collection := repository.GetMongo().Collection(config.MetadataMongo)
 
 	res, err := collection.UpdateOne(ctx, bson.M{
 		"_id": oid,

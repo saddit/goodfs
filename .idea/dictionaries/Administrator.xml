@@ -2,6 +2,7 @@
   <dictionary name="Administrator">
     <words>
       <w>mongo</w>
+      <w>prec</w>
     </words>
   </dictionary>
 </component>
