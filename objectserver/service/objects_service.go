@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+//Exist TODO 根据文件HASH确认是否存在分片
 func Exist(name string) bool {
 	_, err := os.Stat(global.Config.StoragePath + name)
 	return !os.IsNotExist(err)

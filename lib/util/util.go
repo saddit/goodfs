@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -129,4 +130,39 @@ func InstanceOf[T interface{}](obj interface{}) bool {
 		return ok
 	}
 	return false
+}
+
+//NumToString format number to string by strconv.
+//uint and int with base 10.
+//float with fmt='f' and prec=10.
+//others return empty string
+func NumToString(n interface{}) string {
+	switch n.(type) {
+	case int:
+		return strconv.Itoa(n.(int))
+	case int8:
+		return strconv.FormatInt(int64(n.(int8)), 10)
+	case int16:
+		return strconv.FormatInt(int64(n.(int16)), 10)
+	case int32:
+		return strconv.FormatInt(int64(n.(int32)), 10)
+	case int64:
+		return strconv.FormatInt(n.(int64), 10)
+	case uint:
+		return strconv.FormatUint(uint64(n.(uint)), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(n.(uint8)), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(n.(uint16)), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(n.(uint32)), 10)
+	case uint64:
+		return strconv.FormatUint(n.(uint64), 10)
+	case float32:
+		return strconv.FormatFloat(float64(n.(float32)), 'f', 10, 32)
+	case float64:
+		return strconv.FormatFloat(n.(float64), 'f', 10, 64)
+	default:
+		return ""
+	}
 }

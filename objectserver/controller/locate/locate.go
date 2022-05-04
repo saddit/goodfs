@@ -1,7 +1,6 @@
 package locate
 
 import (
-	"encoding/json"
 	"fmt"
 	"goodfs/lib/util"
 	"goodfs/objectserver/config"
@@ -10,7 +9,6 @@ import (
 	"goodfs/objectserver/service"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -34,24 +32,18 @@ func StartLocate() {
 	}
 	defer prov.Close()
 
-	locate, e := json.Marshal(config.LocalAddr)
-	if e != nil {
-		panic(e)
-	}
-
 	consumeChan, ok := conm.Consume()
 
 	for range util.ImmediateTick(5 * time.Second) {
 		if ok {
 			log.Println("Start locate server")
 			for msg := range consumeChan {
-				object, e := strconv.Unquote(string(msg.Body))
-				if e != nil {
-					log.Printf("Locate consume fail, %v\n", e)
-				} else if service.Exist(object) {
+				object := string(msg.Body)
+				if service.Exist(object) {
 					prov.RouteKey = msg.ReplyTo
 					prov.Publish(amqp.Publishing{
-						Body: locate,
+						Type: object,
+						Body: []byte(config.LocalAddr),
 					})
 				}
 			}

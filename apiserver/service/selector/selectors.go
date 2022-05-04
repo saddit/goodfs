@@ -10,6 +10,7 @@ type SelectStrategy string
 
 type Selector interface {
 	Select([]*dataserv.DataServ) string
+	Pop([]*dataserv.DataServ) ([]*dataserv.DataServ, string)
 	Strategy() SelectStrategy
 }
 

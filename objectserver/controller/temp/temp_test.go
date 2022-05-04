@@ -22,3 +22,12 @@ func TestCache(t *testing.T) {
 	}
 	t.Error("Put cache error")
 }
+
+func TestNilSlice(t *testing.T) {
+	var s []int
+	if s == nil {
+		t.Logf("OK")
+	} else {
+		t.Error("No")
+	}
+}

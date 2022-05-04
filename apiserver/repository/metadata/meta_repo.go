@@ -27,9 +27,9 @@ const (
 )
 
 //Find 根据自定义条件查找元数据并根据verMode返回版本
-func Find(filter bson.M, verMode VerMode) (*meta.MetaData, error) {
-	collection := repository.GetMongo().Collection("metadata")
-	var data meta.MetaData
+func Find(filter bson.M, verMode VerMode) (*meta.MetaDataV2, error) {
+	collection := repository.GetMongo().Collection("metadata_v2")
+	var data meta.MetaDataV2
 	opt := options.FindOne()
 	if verMode == VerModeNot {
 		//不查询版本
@@ -52,7 +52,7 @@ func Find(filter bson.M, verMode VerMode) (*meta.MetaData, error) {
 }
 
 //FindById 根据Id查找元数据并返回所有版本
-func FindById(id string) *meta.MetaData {
+func FindById(id string) *meta.MetaDataV2 {
 	oid, err := primitive.ObjectIDFromHex(id)
 
 	if err != nil {
@@ -73,12 +73,12 @@ func FindById(id string) *meta.MetaData {
 }
 
 //FindByName 根据文件名查找元数据并返回所有版本
-func FindByName(name string) *meta.MetaData {
+func FindByName(name string) *meta.MetaDataV2 {
 	return FindByNameAndVerMode(name, VerModeALL)
 }
 
 //FindByNameAndVerMode 根据文件名查找元数据 verMode筛选版本数据
-func FindByNameAndVerMode(name string, verMode VerMode) *meta.MetaData {
+func FindByNameAndVerMode(name string, verMode VerMode) *meta.MetaDataV2 {
 	data, err := Find(bson.M{"name": name}, verMode)
 	if err == mongo.ErrNoDocuments {
 		log.Printf("Not found document with name %v", name)
@@ -91,9 +91,9 @@ func FindByNameAndVerMode(name string, verMode VerMode) *meta.MetaData {
 }
 
 //FindByHash 按照版本的Hash值查找元数据 只返回一个版本
-func FindByHash(hash string) *meta.MetaData {
-	collection := repository.GetMongo().Collection("metadata")
-	var data meta.MetaData
+func FindByHash(hash string) *meta.MetaDataV2 {
+	collection := repository.GetMongo().Collection("metadata_v2")
+	var data meta.MetaDataV2
 	err := collection.FindOne(
 		nil,
 		bson.M{"versions.hash": hash},
@@ -117,9 +117,9 @@ func FindByHash(hash string) *meta.MetaData {
 	return &data
 }
 
-func Insert(data *meta.MetaData) (*meta.MetaData, error) {
+func Insert(data *meta.MetaDataV2) (*meta.MetaDataV2, error) {
 	if data.Versions == nil {
-		data.Versions = make([]*meta.MetaVersion, 0)
+		data.Versions = make([]*meta.MetaVersionV2, 0)
 	} else {
 		tn := time.Now()
 		for _, v := range data.Versions {
@@ -152,12 +152,12 @@ func Exist(filter bson.M) bool {
 
 // Update 暂时没什么用
 // 不允许在这个方法上直接更新versions数组
-func Update(data *meta.MetaData) error {
+func Update(data *meta.MetaDataV2) error {
 	if data == nil || util.GetObjectID(data.Id).IsZero() {
 		return errors.New("metadata is nil or id is empty")
 	}
 	data.UpdateTime = time.Now()
-	collection := repository.GetMongo().Collection("metadata")
+	collection := repository.GetMongo().Collection("metadata_v2")
 	_, err := collection.UpdateByID(context.TODO(), data.Id, bson.M{
 		"$set": bson.M{
 			"tags": data.Tags,

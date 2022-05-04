@@ -2,7 +2,7 @@ package service
 
 import (
 	"bufio"
-	"encoding/json"
+	"fmt"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
@@ -13,51 +13,58 @@ import (
 	"io"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/streadway/amqp"
 )
 
-func LocateFile(name string) (string, bool) {
+// LocateFile TODO 根据Hash定位所有分片位置
+func LocateFile(hash string) ([]string, bool) {
 	//初始化一个消息发送方
 	prov, e := global.AmqpConnection.NewProvider()
 	if e != nil {
-		return "", false
+		return nil, false
 	}
 	defer prov.Close()
 	prov.Exchange = "dataServers"
 	//初始化一个消息接收方（无交换机直接入队）
 	conm, e := global.AmqpConnection.NewConsumer()
 	if e != nil {
-		return "", false
+		return nil, false
 	}
 	defer conm.Close()
 	conm.DeleteUnused = true
 
 	if ch, ok := conm.Consume(); ok {
 		//发送定位请求
-		jn, e := json.Marshal(name)
-		if e != nil {
-			return "", false
+		for i := 0; i < global.Config.Rs.AllShards(); i++ {
+			prov.Publish(amqp.Publishing{
+				ReplyTo: conm.QueName,
+				Body:    []byte(fmt.Sprintf("%s.%d", hash, i)),
+			})
 		}
-		prov.Publish(amqp.Publishing{
-			ReplyTo: conm.QueName,
-			Body:    jn,
-		})
-
-		select {
-		case <-time.After(1 * time.Second):
-			log.Println("Locate message timeout")
-			return "", false
-		case resp := <-ch:
-			s, ok := strconv.Unquote(string(resp.Body))
-			return s, ok == nil
+		locates := make([]string, global.Config.Rs.AllShards())
+		cnt := 0
+		for cnt < global.Config.Rs.AllShards() {
+			select {
+			case <-time.After(1 * time.Second):
+				log.Println("Locate message timeout")
+				return locates, cnt == global.Config.Rs.AllShards()
+			case resp := <-ch:
+				cnt++
+				shardName := resp.Type
+				idx, _ := strconv.Atoi(strings.Split(shardName, ".")[1])
+				ip := string(resp.Body)
+				locates[idx] = ip
+			}
 		}
+		return locates, cnt == global.Config.Rs.AllShards()
 	}
-	return "", false
+	return nil, false
 }
 
-func GetMetaVersion(hash string) (*meta.MetaVersion, int32, bool) {
+func GetMetaVersion(hash string) (*meta.MetaVersionV2, int32, bool) {
 	res, num := version.Find(hash)
 	if res == nil {
 		return nil, -1, false
@@ -79,7 +86,7 @@ func SendExistingSyncMsg(hv []byte, typing model.SyncTyping) error {
 	return ErrServiceUnavailable
 }
 
-func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
+func GetMetaData(name string, ver int32) (*meta.MetaDataV2, bool) {
 	res := metadata.FindByNameAndVerMode(name, metadata.VerMode(ver))
 	if res == nil {
 		return nil, false
@@ -87,11 +94,11 @@ func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
 	return res, true
 }
 
-func StoreObject(req *model.PutReq, md *meta.MetaData) (int32, error) {
+func StoreObject(req *model.PutReq, md *meta.MetaDataV2) (int32, error) {
 	ver := md.Versions[0]
 
 	//文件数据保存
-	if req.Locate == "" {
+	if req.Locate == nil {
 		var e error
 		if ver.Locate, e = streamToDataServer(req, ver.Size); e != nil {
 			return -1, e
@@ -117,11 +124,11 @@ func StoreObject(req *model.PutReq, md *meta.MetaData) (int32, error) {
 	}
 }
 
-func streamToDataServer(req *model.PutReq, size int64) (string, error) {
+func streamToDataServer(req *model.PutReq, size int64) ([]string, error) {
 	//stream to store
 	stream, e := dataServerStream(req.FileName, size)
 	if e != nil {
-		return "", e
+		return nil, e
 	}
 
 	//digest validation
@@ -131,32 +138,38 @@ func streamToDataServer(req *model.PutReq, size int64) (string, error) {
 		if e = stream.Commit(false); e != nil {
 			log.Println(e)
 		}
-		return "", ErrInvalidFile
+		return nil, ErrInvalidFile
 	}
 
 	if e = stream.Commit(true); e != nil {
 		log.Println(e)
-		return "", ErrServiceUnavailable
-	}
-	return stream.Locate, e
-}
-
-func GetObject(name string, ver *meta.MetaVersion) (io.Reader, error) {
-	if !IsAvailable(ver.Locate) {
-		log.Printf("%v server is unavailable", ver.Locate)
 		return nil, ErrServiceUnavailable
 	}
-	if ext, ok := util.GetFileExt(name, true); ok {
-		return objectstream.NewGetStream(ver.Locate, ver.Hash+ext)
-	}
-	return nil, ErrBadRequest
+	return stream.Locates, e
 }
 
-func dataServerStream(name string, size int64) (*objectstream.PutStream, error) {
+func GetObject(ver *meta.MetaVersionV2) (io.ReadCloser, error) {
+	r, e := objectstream.NewRSGetStream(ver)
+	if e == objectstream.ErrNeedUpdateMeta {
+		version.Update(nil, ver)
+		e = nil
+	}
+	return r, e
+}
+
+func dataServerStream(name string, size int64) (*objectstream.RSPutStream, error) {
 	ds := GetDataServers()
 	if len(ds) == 0 {
 		return nil, ErrServiceUnavailable
 	}
-	serv := global.Balancer.Select(ds)
-	return objectstream.NewPutStream(serv, name, size)
+	serv := make([]string, global.Config.Rs.AllShards())
+	for i := 0; i < global.Config.Rs.AllShards(); i++ {
+		if len(ds) >= global.Config.Rs.AllShards()-i {
+			ds, serv[i] = global.Balancer.Pop(ds)
+		} else {
+			serv[i] = global.Balancer.Select(ds)
+		}
+
+	}
+	return objectstream.NewRSPutStream(serv, name, size)
 }

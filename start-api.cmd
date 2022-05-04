@@ -1,1 +1,0 @@
-go run ./apiserver/api_server.go
