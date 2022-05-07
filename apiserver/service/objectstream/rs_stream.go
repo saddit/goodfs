@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model/meta"
-	"goodfs/apiserver/service"
+	"goodfs/apiserver/service/dataserv"
 	"io"
 )
 
@@ -55,15 +55,15 @@ type RSGetStream struct {
 	*rsDecoder
 }
 
-func NewRSGetStream(ver *meta.MetaVersionV2) (*RSGetStream, error) {
-	ds := service.GetDataServers()
+func NewRSGetStream(ver *meta.MetaVersion) (*RSGetStream, error) {
+	ds := dataserv.GetDataServers()
 	readers := make([]io.Reader, global.Config.Rs.AllShards())
 	writers := make([]io.Writer, global.Config.Rs.AllShards())
 	dsNum := int64(global.Config.Rs.DataShards)
 	perSize := (ver.Size + dsNum - 1) / dsNum
 	var e error
 	for i, ip := range ver.Locate {
-		if service.IsAvailable(ip) {
+		if dataserv.IsAvailable(ip) {
 			readers[i], e = NewGetStream(ip, fmt.Sprintf("%s.%d", ver.Hash, i))
 			if e != nil {
 				return nil, e

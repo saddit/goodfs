@@ -15,9 +15,9 @@ import (
 func Put(c *gin.Context) {
 	req := c.Value("PutReq").(*model.PutReq)
 	req.Body = c.Request.Body
-	verNum, err := service.StoreObject(req, &meta.MetaDataV2{
+	verNum, err := service.StoreObject(req, &meta.MetaData{
 		Name: req.Name,
-		Versions: []*meta.MetaVersionV2{{
+		Versions: []*meta.MetaVersion{{
 			Size: c.Request.ContentLength,
 			Hash: req.Hash,
 		}},
@@ -62,7 +62,6 @@ func Get(c *gin.Context) {
 		} else {
 			_, e = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
 			if e == nil {
-				go service.SendExistingSyncMsg([]byte(metaVer.Hash), model.SyncInsert)
 				c.Status(http.StatusOK)
 			} else {
 				log.Println(e)

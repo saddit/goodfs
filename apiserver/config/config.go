@@ -22,6 +22,8 @@ type Config struct {
 	DeadTimeout    time.Duration `yaml:"dead-timeout"`
 	SelectStrategy string        `yaml:"select-strategy"`
 	MachineCode    string        `yaml:"machine-code"`
+	LocalCacheSize string        `yaml:"local-cache-size"`
+	LocalStorePath string        `yaml:"local-store-path"`
 	Rs             RSConfig      `yaml:"rs"`
 }
 

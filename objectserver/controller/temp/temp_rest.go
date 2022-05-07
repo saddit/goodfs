@@ -54,6 +54,7 @@ func Put(g *gin.Context) {
 			_ = g.AbortWithError(http.StatusServiceUnavailable, e)
 			return
 		}
+		service.MarkExist(ti.Name)
 	} else {
 		g.JSON(http.StatusNotFound, gin.H{"msg": "Temp file has been removed"})
 		return

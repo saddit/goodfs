@@ -6,6 +6,8 @@ detect-interval: 5s
 suspend-timeout: 5s
 dead-timeout: 10s
 select-strategy: random
+local-cache-size: 128MB
+local-store-path: e:/file/db
 machine-code: 1
 rs:
   data-shards: 4
