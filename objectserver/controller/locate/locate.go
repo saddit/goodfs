@@ -1,11 +1,9 @@
 package locate
 
 import (
-	"fmt"
 	"goodfs/lib/util"
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/global"
-	"goodfs/objectserver/model"
 	"goodfs/objectserver/service"
 	"log"
 	"os"
@@ -38,11 +36,11 @@ func StartLocate() {
 		if ok {
 			log.Println("Start locate server")
 			for msg := range consumeChan {
-				object := string(msg.Body)
-				if service.Exist(object) {
+				hash := string(msg.Body)
+				if service.Exist(hash) {
 					prov.RouteKey = msg.ReplyTo
 					prov.Publish(amqp.Publishing{
-						Type: object,
+						Type: hash,
 						Body: []byte(config.LocalAddr),
 					})
 				}
@@ -55,31 +53,14 @@ func StartLocate() {
 	}
 }
 
-func SyncExistingFilter() {
-	log.Println("Start syncing existing file name...")
-	defer log.Println("Finish Syncing existing file name")
-
-	provider, err := global.AmqpConnection.NewProvider()
-	if err != nil {
-		panic(err)
+func WarmUpLocateCache() {
+	files, e := os.ReadDir(global.Config.StoragePath)
+	if e != nil {
+		panic(e)
 	}
-	defer provider.Close()
-	provider.Exchange = "existSync"
-
-	dir, err := os.ReadDir(global.Config.StoragePath)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, entry := range dir {
-		if entry.IsDir() {
-			continue
-		}
-		if !provider.Publish(amqp.Publishing{
-			Body: []byte(entry.Name()),
-			Type: model.SyncInsert,
-		}) {
-			panic(fmt.Errorf("%v sync fail", entry.Name()))
+	for _, f := range files {
+		if !f.IsDir() {
+			service.MarkExist(f.Name())
 		}
 	}
 }

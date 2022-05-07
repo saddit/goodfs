@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/service"
 	"goodfs/lib/util"
@@ -25,23 +24,10 @@ func ValidatePut(g *gin.Context) {
 	if ext, ok := util.GetFileExt(req.Name, true); ok {
 		req.FileName = req.Hash
 		req.Ext = ext
-		//用过滤器进行第一级筛查，表示可能存在才进行Locate的获取
-		if global.ExistFilter.Lookup([]byte(req.FileName)) {
-			if req.Locate, ok = service.LocateFile(req.FileName); !ok {
-				go service.SendExistingSyncMsg([]byte(req.FileName), model.SyncDelete)
-			}
+		if req.Locate, ok = service.LocateFile(req.Hash); !ok {
+			req.Locate = nil
 		}
 	} else {
-		g.AbortWithStatus(http.StatusBadRequest)
-	}
-}
-
-func ChangeExisting(g *gin.Context) {
-	if g.Writer.Status() == http.StatusOK {
-		if req, ok := g.Get("PutReq"); ok {
-			//Put成功，更新过滤器
-			key := []byte(req.(*model.PutReq).FileName)
-			go service.SendExistingSyncMsg(key, model.SyncInsert)
-		}
+		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": "No extension name"})
 	}
 }

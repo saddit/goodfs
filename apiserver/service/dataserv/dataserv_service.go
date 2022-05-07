@@ -1,4 +1,4 @@
-package service
+package dataserv
 
 import (
 	"goodfs/apiserver/global"

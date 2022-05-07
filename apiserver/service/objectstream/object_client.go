@@ -7,10 +7,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 func DeleteTmpObject(locate, id string) {
-	req, _ := http.NewRequest(http.MethodDelete, "http://"+locate+"/temp/"+id, nil)
+	req, _ := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
 	resp, e := global.Http.Do(req)
 	if e != nil || resp.StatusCode != http.StatusOK {
 		log.Println(e, resp.StatusCode)
@@ -18,7 +20,7 @@ func DeleteTmpObject(locate, id string) {
 }
 
 func PostTmpObject(ip, name string, size int64) (string, error) {
-	req, _ := http.NewRequest(http.MethodPost, "http://"+ip+"/temp/"+name, nil)
+	req, _ := http.NewRequest(http.MethodPost, tempRest(ip, name), nil)
 	req.Header.Add("Size", fmt.Sprint(size))
 	resp, e := global.Http.Do(req)
 	if e != nil {
@@ -35,7 +37,7 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 }
 
 func PatchTmpObject(ip, id string, body io.Reader) error {
-	req, _ := http.NewRequest(http.MethodPatch, "http://"+ip+"/temp/"+id, body)
+	req, _ := http.NewRequest(http.MethodPatch, tempRest(ip, id), body)
 	resp, e := global.Http.Do(req)
 	if e != nil {
 		return e
@@ -47,8 +49,9 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 }
 
 func PutTmpObject(ip, id, name string) error {
-	req, _ := http.NewRequest(http.MethodPatch, "http://"+ip+"/temp/"+id, nil)
-	req.Form.Add("name", name)
+	form := make(url.Values)
+	form.Set("name", name)
+	req, _ := http.NewRequest(http.MethodPut, tempRest(ip, id), strings.NewReader(form.Encode()))
 	resp, e := global.Http.Do(req)
 	if e != nil {
 		return e
@@ -59,15 +62,14 @@ func PutTmpObject(ip, id, name string) error {
 	return nil
 }
 
-func PutObject(ip, name string, body io.Reader) error {
-	req, _ := http.NewRequest(http.MethodPut, "http://"+ip+"/objects/"+name, body)
-	resp, e := global.Http.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		e = fmt.Errorf("dataServer return http code %v", resp.StatusCode)
-	}
-	return e
+func GetObject(ip, name string) (*http.Response, error) {
+	return global.Http.Get(objectRest(ip, name))
 }
 
-func GetObject(ip, name string) (*http.Response, error) {
-	return global.Http.Get("http://" + ip + "/objects/" + name)
+func objectRest(ip, id string) string {
+	return fmt.Sprintf("http://%s/objects/%s", ip, id)
+}
+
+func tempRest(ip, id string) string {
+	return fmt.Sprintf("http://%s/objects/%s", ip, id)
 }

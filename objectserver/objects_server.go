@@ -27,18 +27,6 @@ func initialize() {
 		config.LocalAddr = fmt.Sprintf("%v:%v", hn, global.Config.Port)
 		global.AmqpConnection = goodmq.NewAmqpConnection(global.Config.AmqpAddress)
 	}
-	{
-		if !service.Exist(global.Config.TempPath) {
-			if e := os.Mkdir(global.Config.TempPath, os.ModeDir); e != nil {
-				panic(e)
-			}
-		}
-		if !service.Exist(global.Config.StoragePath) {
-			if e := os.Mkdir(global.Config.StoragePath, os.ModeDir); e != nil {
-				panic(e)
-			}
-		}
-	}
 	//init cache
 	{
 		cacheConf := bigcache.DefaultConfig(global.Config.Cache.TTL)
@@ -46,6 +34,18 @@ func initialize() {
 		cacheConf.HardMaxCacheSize = int(global.Config.Cache.MaxSizeMB)
 		cacheConf.Shards = (global.Config.Cache.MaxSizeMB / global.Config.Cache.MaxItemSizeMB).IntValue()
 		global.Cache = cache.NewCache(cacheConf)
+	}
+	{
+		if !service.ExistPath(global.Config.TempPath) {
+			if e := os.Mkdir(global.Config.TempPath, os.ModeDir); e != nil {
+				panic(e)
+			}
+		}
+		if !service.ExistPath(global.Config.StoragePath) {
+			if e := os.Mkdir(global.Config.StoragePath, os.ModeDir); e != nil {
+				panic(e)
+			}
+		}
 	}
 }
 
@@ -61,7 +61,7 @@ func main() {
 	initialize()
 	defer shutdown()
 
-	locate.SyncExistingFilter()
+	locate.WarmUpLocateCache()
 
 	go temp.HandleTempRemove(global.Cache.NotifyEvicted())
 	go heartbeat.StartHeartbeat()

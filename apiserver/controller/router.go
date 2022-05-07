@@ -9,10 +9,10 @@ import (
 )
 
 func Router(r gin.IRouter) {
-	r.PUT("/objects/:name", objects.ValidatePut, objects.Put, objects.ChangeExisting)
+	r.PUT("/objects/:name", objects.ValidatePut, objects.Put)
 	r.GET("/objects/:name", objects.Get)
 
 	r.GET("/versions/:name", versions.Get)
 
-	r.GET("/locate/:name", locate.FilterExisting, locate.Get, locate.ChangeExisting)
+	r.GET("/locate/:name", locate.Get)
 }

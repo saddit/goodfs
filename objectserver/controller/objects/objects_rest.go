@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//Put Deprecated
 func Put(c *gin.Context) {
 	fileName := c.Param("name")
 	if err := service.Put(fileName, c.Request.Body); err != nil {

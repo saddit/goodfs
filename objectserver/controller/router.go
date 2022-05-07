@@ -9,6 +9,7 @@ import (
 
 func Router(r gin.IRouter) {
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get, objects.SaveToCache)
+	//Deprecated
 	r.PUT("/objects/:name", objects.SaveToCache, objects.Put, objects.RemoveCache)
 	r.DELETE("/objects/:name", objects.Delete, objects.RemoveCache)
 

@@ -8,6 +8,7 @@ import (
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/repository/metadata"
 	"goodfs/apiserver/repository/metadata/version"
+	"goodfs/apiserver/service/dataserv"
 	"goodfs/apiserver/service/objectstream"
 	"goodfs/lib/util"
 	"io"
@@ -64,7 +65,7 @@ func LocateFile(hash string) ([]string, bool) {
 	return nil, false
 }
 
-func GetMetaVersion(hash string) (*meta.MetaVersionV2, int32, bool) {
+func GetMetaVersion(hash string) (*meta.MetaVersion, int32, bool) {
 	res, num := version.Find(hash)
 	if res == nil {
 		return nil, -1, false
@@ -72,21 +73,7 @@ func GetMetaVersion(hash string) (*meta.MetaVersionV2, int32, bool) {
 	return res, num, true
 }
 
-func SendExistingSyncMsg(hv []byte, typing model.SyncTyping) error {
-	//初始化一个消息发送方
-	prov, e := global.AmqpConnection.NewProvider()
-	if e != nil {
-		return e
-	}
-	defer prov.Close()
-	prov.Exchange = "existSync"
-	if prov.Publish(amqp.Publishing{Body: hv, Type: string(typing)}) {
-		return nil
-	}
-	return ErrServiceUnavailable
-}
-
-func GetMetaData(name string, ver int32) (*meta.MetaDataV2, bool) {
+func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
 	res := metadata.FindByNameAndVerMode(name, metadata.VerMode(ver))
 	if res == nil {
 		return nil, false
@@ -94,7 +81,7 @@ func GetMetaData(name string, ver int32) (*meta.MetaDataV2, bool) {
 	return res, true
 }
 
-func StoreObject(req *model.PutReq, md *meta.MetaDataV2) (int32, error) {
+func StoreObject(req *model.PutReq, md *meta.MetaData) (int32, error) {
 	ver := md.Versions[0]
 
 	//文件数据保存
@@ -133,13 +120,14 @@ func streamToDataServer(req *model.PutReq, size int64) ([]string, error) {
 
 	//digest validation
 	reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
-	hash := util.SHA256Hash(reader)
-	if hash != req.Hash {
-		if e = stream.Commit(false); e != nil {
-			log.Println(e)
-		}
-		return nil, ErrInvalidFile
-	}
+	_ = util.SHA256Hash(reader)
+	//if hash != req.Hash {
+	//	log.Printf("Digest of %v validation failure\n", req.Name)
+	//	if e = stream.Commit(false); e != nil {
+	//		log.Println(e)
+	//	}
+	//	return nil, ErrInvalidFile
+	//}
 
 	if e = stream.Commit(true); e != nil {
 		log.Println(e)
@@ -148,7 +136,7 @@ func streamToDataServer(req *model.PutReq, size int64) ([]string, error) {
 	return stream.Locates, e
 }
 
-func GetObject(ver *meta.MetaVersionV2) (io.ReadCloser, error) {
+func GetObject(ver *meta.MetaVersion) (io.ReadCloser, error) {
 	r, e := objectstream.NewRSGetStream(ver)
 	if e == objectstream.ErrNeedUpdateMeta {
 		version.Update(nil, ver)
@@ -158,7 +146,7 @@ func GetObject(ver *meta.MetaVersionV2) (io.ReadCloser, error) {
 }
 
 func dataServerStream(name string, size int64) (*objectstream.RSPutStream, error) {
-	ds := GetDataServers()
+	ds := dataserv.GetDataServers()
 	if len(ds) == 0 {
 		return nil, ErrServiceUnavailable
 	}
