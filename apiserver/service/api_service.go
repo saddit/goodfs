@@ -119,15 +119,24 @@ func streamToDataServer(req *model.PutReq, size int64) ([]string, error) {
 	}
 
 	//digest validation
-	reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
-	_ = util.SHA256Hash(reader)
-	//if hash != req.Hash {
-	//	log.Printf("Digest of %v validation failure\n", req.Name)
-	//	if e = stream.Commit(false); e != nil {
-	//		log.Println(e)
-	//	}
-	//	return nil, ErrInvalidFile
-	//}
+	if global.Config.EnableHashCheck {
+		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
+		hash := util.SHA256Hash(reader)
+		if hash != req.Hash {
+			log.Printf("Digest of %v validation failure\n", req.Name)
+			if e = stream.Commit(false); e != nil {
+				log.Println(e)
+			}
+			return nil, ErrInvalidFile
+		}
+	} else {
+		if _, e = io.CopyBuffer(stream, req.Body, make([]byte, 2048)); e != nil {
+			if e = stream.Commit(false); e != nil {
+				log.Println(e)
+			}
+			return nil, ErrInternalServer
+		}
+	}
 
 	if e = stream.Commit(true); e != nil {
 		log.Println(e)

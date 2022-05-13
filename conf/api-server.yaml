@@ -5,6 +5,7 @@ log-dir: e:/file/logs
 detect-interval: 5s
 suspend-timeout: 5s
 dead-timeout: 10s
+enable-hash-check: true
 select-strategy: random
 local-cache-size: 128MB
 local-store-path: e:/file/db
