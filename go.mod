@@ -8,11 +8,11 @@ require (
 )
 
 require (
-	github.com/838239178/cfilter v0.2.4
 	github.com/838239178/goodmq v0.0.6
 	github.com/allegro/bigcache v1.2.1
 	github.com/google/uuid v1.3.0
 	github.com/klauspost/reedsolomon v1.9.16
+	github.com/syndtr/goleveldb v1.0.0
 )
 
 require (
@@ -31,7 +31,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect

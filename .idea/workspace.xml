@@ -4,40 +4,12 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="完成RS冗余修复技术，未测试">
-      <change afterPath="$PROJECT_DIR$/apiserver/repository/localdb/leveldb.go" afterDir="false" />
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="移除接口层过滤器，新增数据层Exist缓存">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/api_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/api_server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/command/reqair_cmd.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/command/reqair_cmd.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/config/config.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apiserver/controller/heartbeat/hearbeat.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/heartbeat/hearbeat.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/helper.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/locate/locate_mid.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/locate/locate_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/locate/locate_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/global/global.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/global/global.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/model/meta/meta_data.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/meta/meta_data.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/repository/metadata/version/version_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/repository/metadata/version/version_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/api_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/api_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/dataserv_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/dataserv/dataserv_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/errors.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/rs_stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_stream.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/tool/exsit_filter.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/conf/api-server.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/conf/api-server.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/util/datasize/datasize.go" beforeDir="false" afterPath="$PROJECT_DIR$/lib/util/datasize/datasize.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/locate/locate.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/locate/locate.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/objects/objects_cache.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/objects/objects_cache.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/objects/objects_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/objects/objects_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/objects_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/objects_server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/service/objects_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/service/objects_service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/controller/heartbeat/heartbeat.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/heartbeat/heartbeat.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -95,7 +67,7 @@
     <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
     <property name="go.watchers.conflict.with.on.save.actions.check.performed" value="true" />
     <property name="last.edited.regexp" value="" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../cfilter" />
+    <property name="last_opened_file_path" value="D:/code/scripts/golang" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
@@ -174,11 +146,11 @@
     <list>
       <item itemvalue="Go 构建.go build goodfs/api" />
       <item itemvalue="Go 构建.go build goodfs/objects" />
+      <item itemvalue="Go 构建.go build datasize.go" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestNilSlice" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestCache" />
       <item itemvalue="Go 测试.goodfs/test 中的 TestSumNum" />
       <item itemvalue="复合.dev_server" />
-      <item itemvalue="Go 构建.go build datasize.go" />
     </list>
     <recent_temporary>
       <list>
@@ -227,7 +199,8 @@
     <MESSAGE value="fix lots of bug" />
     <MESSAGE value="配置文件化" />
     <MESSAGE value="完成RS冗余修复技术，未测试" />
-    <option name="LAST_COMMIT_MESSAGE" value="完成RS冗余修复技术，未测试" />
+    <MESSAGE value="移除接口层过滤器，新增数据层Exist缓存" />
+    <option name="LAST_COMMIT_MESSAGE" value="移除接口层过滤器，新增数据层Exist缓存" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>

@@ -1,13 +1,11 @@
 package heartbeat
 
 import (
-	"encoding/json"
+	"github.com/streadway/amqp"
+	"goodfs/lib/util"
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/global"
 	"log"
-	"time"
-
-	"github.com/streadway/amqp"
 )
 
 func StartHeartbeat() {
@@ -17,12 +15,12 @@ func StartHeartbeat() {
 	}
 	defer sender.Close()
 	sender.Exchange = "apiServers"
-	locate, _ := json.Marshal(config.LocalAddr)
 	log.Println("Start heartbeat..")
-	for range time.Tick(global.Config.BeatInterval) {
+
+	for range util.ImmediateTick(global.Config.BeatInterval) {
 		// log.Println("Send Heartbeat")
 		sender.Publish(amqp.Publishing{
-			Body: locate,
+			Body: []byte(config.LocalAddr),
 		})
 	}
 }
