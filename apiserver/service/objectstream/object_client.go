@@ -71,5 +71,5 @@ func objectRest(ip, id string) string {
 }
 
 func tempRest(ip, id string) string {
-	return fmt.Sprintf("http://%s/objects/%s", ip, id)
+	return fmt.Sprintf("http://%s/temp/%s", ip, id)
 }
