@@ -4,12 +4,8 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="移除接口层过滤器，新增数据层Exist缓存">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/heartbeat/hearbeat.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/heartbeat/hearbeat.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/heartbeat/heartbeat.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/heartbeat/heartbeat.go" afterDir="false" />
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="heartbeat 消息格式简化">
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -200,7 +196,8 @@
     <MESSAGE value="配置文件化" />
     <MESSAGE value="完成RS冗余修复技术，未测试" />
     <MESSAGE value="移除接口层过滤器，新增数据层Exist缓存" />
-    <option name="LAST_COMMIT_MESSAGE" value="移除接口层过滤器，新增数据层Exist缓存" />
+    <MESSAGE value="heartbeat 消息格式简化" />
+    <option name="LAST_COMMIT_MESSAGE" value="heartbeat 消息格式简化" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
