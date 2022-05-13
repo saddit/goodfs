@@ -13,18 +13,19 @@ const (
 )
 
 type Config struct {
-	Port           string        `yaml:"port"`
-	AmqpAddress    string        `yaml:"amqp-address"`
-	MongoAddress   string        `yaml:"mongo-address"`
-	LogDir         string        `yaml:"log-dir"`
-	DetectInterval time.Duration `yaml:"detect-interval"`
-	SuspendTimeout time.Duration `yaml:"suspend-timeout"`
-	DeadTimeout    time.Duration `yaml:"dead-timeout"`
-	SelectStrategy string        `yaml:"select-strategy"`
-	MachineCode    string        `yaml:"machine-code"`
-	LocalCacheSize string        `yaml:"local-cache-size"`
-	LocalStorePath string        `yaml:"local-store-path"`
-	Rs             RSConfig      `yaml:"rs"`
+	Port            string        `yaml:"port"`
+	AmqpAddress     string        `yaml:"amqp-address"`
+	MongoAddress    string        `yaml:"mongo-address"`
+	LogDir          string        `yaml:"log-dir"`
+	DetectInterval  time.Duration `yaml:"detect-interval"`
+	SuspendTimeout  time.Duration `yaml:"suspend-timeout"`
+	DeadTimeout     time.Duration `yaml:"dead-timeout"`
+	SelectStrategy  string        `yaml:"select-strategy"`
+	MachineCode     string        `yaml:"machine-code"`
+	LocalCacheSize  string        `yaml:"local-cache-size"`
+	LocalStorePath  string        `yaml:"local-store-path"`
+	EnableHashCheck bool          `yaml:"enable-hash-check"`
+	Rs              RSConfig      `yaml:"rs"`
 }
 
 type RSConfig struct {

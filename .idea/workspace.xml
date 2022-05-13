@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="heartbeat 消息格式简化">
-      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" afterDir="false" />
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="修复错误，通过上传下载测试">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/api_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/api_service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conf/api-server.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/conf/api-server.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -197,7 +200,8 @@
     <MESSAGE value="完成RS冗余修复技术，未测试" />
     <MESSAGE value="移除接口层过滤器，新增数据层Exist缓存" />
     <MESSAGE value="heartbeat 消息格式简化" />
-    <option name="LAST_COMMIT_MESSAGE" value="heartbeat 消息格式简化" />
+    <MESSAGE value="修复错误，通过上传下载测试" />
+    <option name="LAST_COMMIT_MESSAGE" value="修复错误，通过上传下载测试" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
