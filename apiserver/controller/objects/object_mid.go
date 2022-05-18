@@ -21,13 +21,13 @@ func ValidatePut(g *gin.Context) {
 		defer g.Set("PutReq", &req)
 	}
 
-	if ext, ok := util.GetFileExt(req.Name, true); ok {
-		req.FileName = req.Hash
+	req.FileName = req.Hash
+	if ext, ok := util.GetFileExt(req.Name, false); ok {
 		req.Ext = ext
-		if req.Locate, ok = service.LocateFile(req.Hash); !ok {
-			req.Locate = nil
-		}
 	} else {
-		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": "No extension name"})
+		req.Ext = "bytes"
+	}
+	if loc, ok := service.LocateFile(req.Hash); ok {
+		req.Locate = loc
 	}
 }

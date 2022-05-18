@@ -52,10 +52,10 @@ func TestFindByName(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	res, err := Insert(&meta.MetaData{
+	res, err := Insert(&meta.Data{
 		Name: randStringRunes(10) + ".txt",
 		Tags: []string{"text"},
-		Versions: []*meta.MetaVersion{{
+		Versions: []*meta.Version{{
 			Hash:   randStringRunes(32),
 			Locate: "0.0.0.0",
 			Size:   rand.Int63n(9999999),
@@ -69,7 +69,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestAddVersion(t *testing.T) {
-	verCode := version.Add(nil, "624c0c0cf0a7aab7f5628498", &meta.MetaVersion{
+	verCode := version.Add(nil, "624c0c0cf0a7aab7f5628498", &meta.Version{
 		Hash:   randStringRunes(32),
 		Size:   rand.Int63n(999999),
 		Locate: "0.0.0.0",

@@ -15,10 +15,11 @@ type PutStream struct {
 }
 
 type GetStream struct {
+	io.ReadCloser
 	Locate string
-	reader io.ReadCloser
 }
 
+//NewPutStream IO: 发送Post请求到数据服务器
 func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 	c := make(chan error, 1)
 	id, e := PostTmpObject(ip, name, size)
@@ -30,6 +31,7 @@ func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 	return res, nil
 }
 
+//NewGetStream IO: Get object
 func NewGetStream(ip, name string) (*GetStream, error) {
 	resp, err := GetObject(ip, name)
 	if err != nil {
@@ -38,15 +40,7 @@ func NewGetStream(ip, name string) (*GetStream, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("dataServer return http code %v", resp.StatusCode)
 	}
-	return &GetStream{ip, resp.Body}, nil
-}
-
-func (r *GetStream) Read(b []byte) (int, error) {
-	return r.reader.Read(b)
-}
-
-func (r *GetStream) Close() error {
-	return r.reader.Close()
+	return &GetStream{resp.Body, ip}, nil
 }
 
 func (p *PutStream) Close() error {
@@ -73,7 +67,7 @@ func (p *PutStream) StartWrite() {
 	}()
 }
 
-//Commit send commit message and close stream
+//Commit IO: send commit message and close stream
 func (p *PutStream) Commit(ok bool) error {
 	if e := p.Close(); e != nil {
 		return e

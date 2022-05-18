@@ -28,9 +28,9 @@ const (
 )
 
 //Find 根据自定义条件查找元数据并根据verMode返回版本
-func Find(filter bson.M, verMode VerMode) (*meta.MetaData, error) {
+func Find(filter bson.M, verMode VerMode) (*meta.Data, error) {
 	collection := repository.GetMongo().Collection(config.MetadataMongo)
-	var data meta.MetaData
+	var data meta.Data
 	opt := options.FindOne()
 	if verMode == VerModeNot {
 		//不查询版本
@@ -53,7 +53,7 @@ func Find(filter bson.M, verMode VerMode) (*meta.MetaData, error) {
 }
 
 //FindById 根据Id查找元数据并返回所有版本
-func FindById(id string) *meta.MetaData {
+func FindById(id string) *meta.Data {
 	oid, err := primitive.ObjectIDFromHex(id)
 
 	if err != nil {
@@ -74,12 +74,12 @@ func FindById(id string) *meta.MetaData {
 }
 
 //FindByName 根据文件名查找元数据并返回所有版本
-func FindByName(name string) *meta.MetaData {
+func FindByName(name string) *meta.Data {
 	return FindByNameAndVerMode(name, VerModeALL)
 }
 
 //FindByNameAndVerMode 根据文件名查找元数据 verMode筛选版本数据
-func FindByNameAndVerMode(name string, verMode VerMode) *meta.MetaData {
+func FindByNameAndVerMode(name string, verMode VerMode) *meta.Data {
 	data, err := Find(bson.M{"name": name}, verMode)
 	if err == mongo.ErrNoDocuments {
 		log.Printf("Not found document with name %v", name)
@@ -92,9 +92,9 @@ func FindByNameAndVerMode(name string, verMode VerMode) *meta.MetaData {
 }
 
 //FindByHash 按照版本的Hash值查找元数据 只返回一个版本
-func FindByHash(hash string) *meta.MetaData {
+func FindByHash(hash string) *meta.Data {
 	collection := repository.GetMongo().Collection(config.MetadataMongo)
-	var data meta.MetaData
+	var data meta.Data
 	err := collection.FindOne(
 		nil,
 		bson.M{"versions.hash": hash},
@@ -118,9 +118,9 @@ func FindByHash(hash string) *meta.MetaData {
 	return &data
 }
 
-func Insert(data *meta.MetaData) (*meta.MetaData, error) {
+func Insert(data *meta.Data) (*meta.Data, error) {
 	if data.Versions == nil {
-		data.Versions = make([]*meta.MetaVersion, 0)
+		data.Versions = make([]*meta.Version, 0)
 	} else {
 		tn := time.Now()
 		for _, v := range data.Versions {
@@ -153,7 +153,7 @@ func Exist(filter bson.M) bool {
 
 // Update 暂时没什么用
 // 不允许在这个方法上直接更新versions数组
-func Update(data *meta.MetaData) error {
+func Update(data *meta.Data) error {
 	if data == nil || util.GetObjectID(data.Id).IsZero() {
 		return errors.New("metadata is nil or id is empty")
 	}

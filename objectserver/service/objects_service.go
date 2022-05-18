@@ -36,7 +36,15 @@ func Put(fileName string, fileStream io.Reader) error {
 }
 
 func Get(name string, writer io.Writer) error {
-	f, e := os.Open(global.Config.StoragePath + name)
+	return GetFile(global.Config.StoragePath+name, writer)
+}
+
+func GetTemp(name string, writer io.Writer) error {
+	return GetFile(global.Config.TempPath+name, writer)
+}
+
+func GetFile(fullPath string, writer io.Writer) error {
+	f, e := os.Open(fullPath)
 	if e != nil {
 		return e
 	}

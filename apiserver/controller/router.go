@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"goodfs/apiserver/controller/big"
 	"goodfs/apiserver/controller/locate"
 	"goodfs/apiserver/controller/objects"
 	"goodfs/apiserver/controller/versions"
@@ -15,4 +16,8 @@ func Router(r gin.IRouter) {
 	r.GET("/versions/:name", versions.Get)
 
 	r.GET("/locate/:name", locate.Get)
+
+	r.POST("/big/:name", big.FilterDuplicates, big.Post)
+	r.HEAD("/big/:token", big.Head)
+	r.PUT("/big/:token", big.Put)
 }

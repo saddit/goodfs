@@ -8,6 +8,7 @@ import (
 	"goodfs/objectserver/service"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -60,6 +61,24 @@ func Put(g *gin.Context) {
 		return
 	}
 	g.Status(http.StatusOK)
+}
+
+//Head 获取分片临时对象的大小
+func Head(g *gin.Context) {
+	s, e := os.Stat(global.Config.TempPath + g.Param("name"))
+	if e != nil {
+		g.Status(http.StatusNotFound)
+	} else {
+		g.Header("Size", util.NumToString(s.Size()))
+	}
+}
+
+//Get 获取临时对象分片
+func Get(g *gin.Context) {
+	if e := service.GetTemp(g.Param("name"), g.Writer); e != nil {
+		log.Println(e)
+		g.Status(http.StatusNotFound)
+	}
 }
 
 func HandleTempRemove(ch <-chan cache.CacheEntry) {

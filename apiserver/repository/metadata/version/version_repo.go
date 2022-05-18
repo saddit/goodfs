@@ -19,11 +19,11 @@ const (
 )
 
 //Find 根据hash查找版本，返回版本以及版本号
-func Find(hash string) (*meta.MetaVersion, int32) {
+func Find(hash string) (*meta.Version, int32) {
 	collection := repository.GetMongo().Collection(config.MetadataMongo)
 	res := struct {
 		Index    int32 `bson:"index"`
-		versions []*meta.MetaVersion
+		versions []*meta.Version
 	}{}
 	if e := collection.FindOne(
 		nil,
@@ -45,7 +45,7 @@ func Find(hash string) (*meta.MetaVersion, int32) {
 }
 
 //Update updating locate and setting ts to now
-func Update(ctx context.Context, ver *meta.MetaVersion) bool {
+func Update(ctx context.Context, ver *meta.Version) bool {
 	collection := repository.GetMongo().Collection(config.MetadataMongo)
 	res, e := collection.UpdateOne(ctx, bson.M{
 		"versions.hash": ver.Hash,
@@ -63,7 +63,7 @@ func Update(ctx context.Context, ver *meta.MetaVersion) bool {
 
 //Add 为metadata添加一个版本，添加到版本数组的末尾，版本号为数组序号
 //返回对应版本号,如果失败返回ErrVersion -1
-func Add(ctx context.Context, id string, ver *meta.MetaVersion) int32 {
+func Add(ctx context.Context, id string, ver *meta.Version) int32 {
 
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -100,7 +100,7 @@ func Add(ctx context.Context, id string, ver *meta.MetaVersion) int32 {
 	return data.LenOfVersion
 }
 
-func Delete(ctx context.Context, id string, ver *meta.MetaVersion) error {
+func Delete(ctx context.Context, id string, ver *meta.Version) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}

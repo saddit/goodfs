@@ -4,11 +4,36 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="修复错误，通过上传下载测试">
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="hash校验开关配置">
+      <change afterPath="$PROJECT_DIR$/apiserver/controller/big/big_mid.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apiserver/controller/big/big_rest.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apiserver/model/range.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apiserver/service/bigserv/big_service.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_resumable_stream.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/Administrator.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/Administrator.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/command/cmd.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/command/cmd.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/router.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/model/dto.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/dto.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/model/meta/meta_data.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/meta/meta_data.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/repository/metadata/version/version_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/repository/metadata/version/version_repo.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apiserver/service/api_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/api_service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_stream.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/rs_coder.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_coder.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/rs_stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_stream.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/conf/api-server.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/conf/api-server.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/util/util.go" beforeDir="false" afterPath="$PROJECT_DIR$/lib/util/util.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/controller/objects/objects_cache.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/objects/objects_cache.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/router.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/service/objects_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/service/objects_service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/main_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/test/main_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,6 +82,7 @@
     <property name="DefaultGoTemplateProperty" value="Go File" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="TODO_SCOPE" value="所有位置" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="configurable..is.expanded" value="true" />
     <property name="configurable.GoLibrariesConfigurable.is.expanded" value="true" />
@@ -78,6 +104,14 @@
     <configuration name="dev_server" type="CompoundRunConfigurationType">
       <toRun name="go build goodfs/api" type="GoApplicationRunConfiguration" />
       <toRun name="go build goodfs/objects" type="GoApplicationRunConfiguration" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="goodfs" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
       <method v="2" />
     </configuration>
     <configuration name="go build datasize.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
@@ -106,16 +140,13 @@
       <filePath value="$PROJECT_DIR$/objects/objects_server.go" />
       <method v="2" />
     </configuration>
-    <configuration name="goodfs/objectserver/controller/temp 中的 TestCache" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
       <module name="goodfs" />
-      <working_directory value="$PROJECT_DIR$/objectserver/controller/temp" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="goodfs/objectserver/controller/temp" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="DIRECTORY" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestCache\E$" />
       <method v="2" />
     </configuration>
     <configuration name="goodfs/objectserver/controller/temp 中的 TestNilSlice" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -128,6 +159,30 @@
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
       <pattern value="^\QTestNilSlice\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="goodfs/objectserver/controller/temp 中的 TestSplit" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="goodfs" />
+      <working_directory value="$PROJECT_DIR$/objectserver/controller/temp" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="goodfs/objectserver/controller/temp" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestSplit\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="goodfs/test 中的 TestFuzz" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="goodfs" />
+      <working_directory value="$PROJECT_DIR$/test" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="goodfs/test" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestFuzz\E$" />
       <method v="2" />
     </configuration>
     <configuration name="goodfs/test 中的 TestSumNum" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -147,12 +202,15 @@
       <item itemvalue="Go 构建.go build goodfs/objects" />
       <item itemvalue="Go 构建.go build datasize.go" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestNilSlice" />
-      <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestCache" />
       <item itemvalue="Go 测试.goodfs/test 中的 TestSumNum" />
+      <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestSplit" />
       <item itemvalue="复合.dev_server" />
+      <item itemvalue="Go 测试.goodfs/test 中的 TestFuzz" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go 测试.goodfs/test 中的 TestFuzz" />
+        <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestSplit" />
         <item itemvalue="Go 构建.go build datasize.go" />
         <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestNilSlice" />
         <item itemvalue="Go 测试.goodfs/test 中的 TestSumNum" />
@@ -201,13 +259,17 @@
     <MESSAGE value="移除接口层过滤器，新增数据层Exist缓存" />
     <MESSAGE value="heartbeat 消息格式简化" />
     <MESSAGE value="修复错误，通过上传下载测试" />
-    <option name="LAST_COMMIT_MESSAGE" value="修复错误，通过上传下载测试" />
+    <MESSAGE value="hash校验开关配置" />
+    <option name="LAST_COMMIT_MESSAGE" value="hash校验开关配置" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
   </component>
   <component name="XDebuggerManager">
     <watches-manager>
+      <configuration name="GoApplicationRunConfiguration">
+        <watch expression="shards[i]" language="go" />
+      </configuration>
       <configuration name="GoTestRunConfiguration">
         <watch expression="numbs" />
       </configuration>

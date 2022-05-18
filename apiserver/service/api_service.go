@@ -20,7 +20,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// LocateFile TODO 根据Hash定位所有分片位置
+// LocateFile 根据Hash定位所有分片位置
 func LocateFile(hash string) ([]string, bool) {
 	//初始化一个消息发送方
 	prov, e := global.AmqpConnection.NewProvider()
@@ -65,7 +65,7 @@ func LocateFile(hash string) ([]string, bool) {
 	return nil, false
 }
 
-func GetMetaVersion(hash string) (*meta.MetaVersion, int32, bool) {
+func GetMetaVersion(hash string) (*meta.Version, int32, bool) {
 	res, num := version.Find(hash)
 	if res == nil {
 		return nil, -1, false
@@ -73,7 +73,7 @@ func GetMetaVersion(hash string) (*meta.MetaVersion, int32, bool) {
 	return res, num, true
 }
 
-func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
+func GetMetaData(name string, ver int32) (*meta.Data, bool) {
 	res := metadata.FindByNameAndVerMode(name, metadata.VerMode(ver))
 	if res == nil {
 		return nil, false
@@ -81,7 +81,28 @@ func GetMetaData(name string, ver int32) (*meta.MetaData, bool) {
 	return res, true
 }
 
-func StoreObject(req *model.PutReq, md *meta.MetaData) (int32, error) {
+func SaveMetadata(md *meta.Data) (int32, error) {
+	ver := md.Versions[0]
+	metaD := metadata.FindByNameAndVerMode(md.Name, metadata.VerModeNot)
+	var verNum int32
+	if metaD != nil {
+		verNum = version.Add(nil, metaD.Id, ver)
+	} else {
+		verNum = 0
+		var e error
+		if metaD, e = metadata.Insert(md); e != nil {
+			verNum = version.ErrVersion
+		}
+	}
+
+	if verNum == version.ErrVersion {
+		return -1, ErrInternalServer
+	} else {
+		return verNum, nil
+	}
+}
+
+func StoreObject(req *model.PutReq, md *meta.Data) (int32, error) {
 	ver := md.Versions[0]
 
 	//文件数据保存
@@ -95,20 +116,7 @@ func StoreObject(req *model.PutReq, md *meta.MetaData) (int32, error) {
 	}
 
 	//元数据保存
-	metaD := metadata.FindByNameAndVerMode(md.Name, metadata.VerModeNot)
-	var verNum int32
-	if metaD != nil {
-		verNum = version.Add(nil, metaD.Id, ver)
-	} else {
-		verNum = 0
-		metaD, _ = metadata.Insert(md)
-	}
-
-	if verNum == version.ErrVersion {
-		return -1, ErrInternalServer
-	} else {
-		return verNum, nil
-	}
+	return SaveMetadata(md)
 }
 
 func streamToDataServer(req *model.PutReq, size int64) ([]string, error) {
@@ -145,8 +153,8 @@ func streamToDataServer(req *model.PutReq, size int64) ([]string, error) {
 	return stream.Locates, e
 }
 
-func GetObject(ver *meta.MetaVersion) (io.ReadCloser, error) {
-	r, e := objectstream.NewRSGetStream(ver)
+func GetObject(ver *meta.Version) (io.ReadSeekCloser, error) {
+	r, e := objectstream.NewRSGetStream(ver.Size, ver.Hash, ver.Locate)
 	if e == objectstream.ErrNeedUpdateMeta {
 		version.Update(nil, ver)
 		e = nil
@@ -154,19 +162,26 @@ func GetObject(ver *meta.MetaVersion) (io.ReadCloser, error) {
 	return r, e
 }
 
-func dataServerStream(name string, size int64) (*objectstream.RSPutStream, error) {
+func SelectDataServer(size int) []string {
 	ds := dataserv.GetDataServers()
 	if len(ds) == 0 {
-		return nil, ErrServiceUnavailable
+		return []string{}
 	}
-	serv := make([]string, global.Config.Rs.AllShards())
+	serv := make([]string, size)
 	for i := 0; i < global.Config.Rs.AllShards(); i++ {
 		if len(ds) >= global.Config.Rs.AllShards()-i {
 			ds, serv[i] = global.Balancer.Pop(ds)
 		} else {
 			serv[i] = global.Balancer.Select(ds)
 		}
-
 	}
-	return objectstream.NewRSPutStream(serv, name, size)
+	return serv
+}
+
+func dataServerStream(name string, size int64) (*objectstream.RSPutStream, error) {
+	ds := SelectDataServer(global.Config.Rs.AllShards())
+	if len(ds) == 0 {
+		return nil, ErrServiceUnavailable
+	}
+	return objectstream.NewRSPutStream(ds, name, size)
 }
