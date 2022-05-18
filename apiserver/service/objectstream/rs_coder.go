@@ -7,18 +7,28 @@ import (
 )
 
 type rsEncoder struct {
-	writers []io.Writer
+	writers []io.WriteCloser
 	enc     reedsolomon.Encoder
 	cache   []byte
 }
 
-func NewEncoder(wrs []io.Writer) *rsEncoder {
+func NewEncoder(wrs []io.WriteCloser) *rsEncoder {
 	enc, _ := reedsolomon.New(global.Config.Rs.DataShards, global.Config.Rs.ParityShards)
 	return &rsEncoder{
 		writers: wrs,
 		enc:     enc,
 		cache:   nil,
 	}
+}
+
+func (e *rsEncoder) Close() error {
+	var err error
+	for _, w := range e.writers {
+		if e := w.Close(); e != nil {
+			err = e
+		}
+	}
+	return err
 }
 
 func (e *rsEncoder) Write(bt []byte) (int, error) {
@@ -120,6 +130,7 @@ func (d *rsDecoder) getData() error {
 			}
 		}
 	}
+	//缺失修复
 	if e := d.enc.ReconstructData(shards); e != nil {
 		return e
 	}
@@ -130,6 +141,7 @@ func (d *rsDecoder) getData() error {
 			}
 		}
 	}
+	//合并shard
 	for i := 0; i < global.Config.Rs.DataShards; i++ {
 		shardSize := int64(len(shards[i]))
 		if d.total+shardSize > d.size {

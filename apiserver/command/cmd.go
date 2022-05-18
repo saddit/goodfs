@@ -11,7 +11,7 @@ type Command struct {
 
 func ReadCommand() {
 	var cmd Command
-	flag.StringVar(&cmd.R, "r", "none", "-r [exist_filter|none]")
+	flag.StringVar(&cmd.R, "r", "none", "-r [none]")
 	flag.StringVar(&cmd.A, "a", "", "-a ip:port")
 	flag.Parse()
 

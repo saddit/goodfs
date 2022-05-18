@@ -15,9 +15,9 @@ import (
 func Put(c *gin.Context) {
 	req := c.Value("PutReq").(*model.PutReq)
 	req.Body = c.Request.Body
-	verNum, err := service.StoreObject(req, &meta.MetaData{
+	verNum, err := service.StoreObject(req, &meta.Data{
 		Name: req.Name,
-		Versions: []*meta.MetaVersion{{
+		Versions: []*meta.Version{{
 			Size: c.Request.ContentLength,
 			Hash: req.Hash,
 		}},
@@ -60,6 +60,13 @@ func Get(c *gin.Context) {
 			log.Println(e)
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 		} else {
+			if tp, ok := req.Range.Get(); ok {
+				if _, e = stream.Seek(tp.First, io.SeekCurrent); e != nil {
+					log.Println(e)
+					c.AbortWithStatus(http.StatusInternalServerError)
+					return
+				}
+			}
 			_, e = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
 			if e == nil {
 				c.Status(http.StatusOK)
@@ -71,8 +78,4 @@ func Get(c *gin.Context) {
 	} else {
 		c.AbortWithStatus(http.StatusNotFound)
 	}
-}
-
-func Delete(c *gin.Context) {
-
 }

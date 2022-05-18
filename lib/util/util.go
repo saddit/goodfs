@@ -5,7 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
+	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -165,4 +168,12 @@ func NumToString(n interface{}) string {
 	default:
 		return ""
 	}
+}
+
+func ToString(v any) string {
+	return fmt.Sprint(v)
+}
+
+func AbortInternalError(c *gin.Context, err error) {
+	log.Println(c.AbortWithError(http.StatusInternalServerError, err))
 }
