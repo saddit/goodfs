@@ -5,6 +5,7 @@ import (
 	"github.com/838239178/goodmq"
 	"github.com/allegro/bigcache"
 	"github.com/gin-gonic/gin"
+	"goodfs/lib/graceful"
 	"goodfs/lib/util/cache"
 	"goodfs/objectserver/config"
 	"goodfs/objectserver/controller"
@@ -72,8 +73,5 @@ func main() {
 	//init router
 	controller.Router(router)
 
-	err := router.Run(":" + global.Config.Port)
-	if err != nil {
-		panic(err)
-	}
+	graceful.ListenAndServe(fmt.Sprint(":", global.Config.Port), router)
 }

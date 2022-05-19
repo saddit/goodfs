@@ -12,11 +12,12 @@ require (
 	github.com/allegro/bigcache v1.2.1
 	github.com/google/uuid v1.3.0
 	github.com/klauspost/reedsolomon v1.9.16
+	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/syndtr/goleveldb v1.0.0
 )
 
 require (
+	github.com/antonfisher/nested-logrus-formatter v1.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect

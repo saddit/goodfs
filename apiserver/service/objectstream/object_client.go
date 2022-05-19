@@ -2,10 +2,10 @@ package objectstream
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"goodfs/apiserver/global"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -15,6 +15,11 @@ import (
 func DeleteTmpObject(locate, id string) {
 	req, _ := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
 	resp, e := global.Http.Do(req)
+	if resp.StatusCode == http.StatusBadRequest {
+		if content, e := io.ReadAll(resp.Body); e == nil {
+			log.Errorf("patch temp object id=%v, return code=%v\n", id, string(content))
+		}
+	}
 	if e != nil || resp.StatusCode != http.StatusOK {
 		log.Println(e, resp.StatusCode)
 	}
@@ -27,12 +32,12 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 	if e != nil {
 		return "", e
 	}
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("post temp object name=%v, return code=%v", name, resp.Status)
-	}
 	res, e := ioutil.ReadAll(resp.Body)
 	if e != nil {
-		return "", fmt.Errorf("post temp object name=%v, return error response body", name)
+		return "", fmt.Errorf("post temp object name=%v, return error response body, status=%v", name, resp.StatusCode)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("post temp object name=%v, return code=%v, content=%s", name, resp.Status, string(res))
 	}
 	return string(res), nil
 }
@@ -42,6 +47,11 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 	resp, e := global.Http.Do(req)
 	if e != nil {
 		return e
+	}
+	if resp.StatusCode == http.StatusBadRequest {
+		if content, e := io.ReadAll(resp.Body); e == nil {
+			return fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
+		}
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("patch temp object id=%v, return code=%v", id, resp.Status)
@@ -57,6 +67,11 @@ func PutTmpObject(ip, id, name string) error {
 	if e != nil {
 		return e
 	}
+	if resp.StatusCode == http.StatusBadRequest {
+		if content, e := io.ReadAll(resp.Body); e == nil {
+			return fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
+		}
+	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("put temp object id=%v, return code=%v", id, resp.Status)
 	}
@@ -67,6 +82,14 @@ func HeadTmpObject(ip, id string) (int64, error) {
 	resp, e := http.Head(tempRest(ip, id))
 	if e != nil {
 		return 0, e
+	}
+	if resp.StatusCode == http.StatusBadRequest {
+		if content, e := io.ReadAll(resp.Body); e == nil {
+			return 0, fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
+		}
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return 0, nil
 	}
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("head temp object id=%v, return code=%v", id, resp.Status)

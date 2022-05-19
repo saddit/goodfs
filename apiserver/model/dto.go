@@ -7,6 +7,7 @@ import (
 	"goodfs/apiserver/repository/metadata"
 	"goodfs/lib/util"
 	"io"
+	"net/url"
 )
 
 type SyncTyping string
@@ -50,7 +51,11 @@ func (b *BigPostReq) Bind(c *gin.Context) error {
 }
 
 func (bigPut *BigPutReq) Bind(c *gin.Context) error {
-	if err := util.BindAll(c, bigPut, binding.Header, binding.Uri); err != nil {
+	var err error
+	if err = util.BindAll(c, bigPut, binding.Header, binding.Uri); err != nil {
+		return err
+	}
+	if bigPut.Token, err = url.PathUnescape(bigPut.Token); err != nil {
 		return err
 	}
 	if rangeStr := c.GetHeader("Range"); len(rangeStr) > 0 {

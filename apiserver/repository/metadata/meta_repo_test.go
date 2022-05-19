@@ -2,9 +2,11 @@ package metadata
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"goodfs/apiserver/model/meta"
+	"goodfs/apiserver/repository"
 	"goodfs/apiserver/repository/metadata/version"
-	"goodfs/util"
+	"goodfs/lib/util"
 	"math/rand"
 	"testing"
 	"time"
@@ -24,6 +26,7 @@ func randStringRunes(n int) string {
 }
 
 func TestFindById(t *testing.T) {
+	repository.InitMongo("mongodb://150.158.82.154:27017#study#SCRAM-SHA-256#root#xianka")
 	res, e := Find(bson.M{"_id": util.GetObjectID("624bdb6b2266000007007824")}, VerModeLast)
 	if e != nil {
 		t.Error("Not found", e)
@@ -38,6 +41,7 @@ func TestFindById(t *testing.T) {
 }
 
 func TestFindByName(t *testing.T) {
+	repository.InitMongo("mongodb://150.158.82.154:27017#study#SCRAM-SHA-256#root#xianka")
 	res := FindByNameAndVerMode("Vivi3.mp4", VerModeLast)
 	if res == nil {
 		t.Error("Not found")
@@ -52,12 +56,13 @@ func TestFindByName(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
+	repository.InitMongo("mongodb://150.158.82.154:27017#study#SCRAM-SHA-256#root#xianka")
 	res, err := Insert(&meta.Data{
 		Name: randStringRunes(10) + ".txt",
 		Tags: []string{"text"},
 		Versions: []*meta.Version{{
 			Hash:   randStringRunes(32),
-			Locate: "0.0.0.0",
+			Locate: []string{"0.0.0.0"},
 			Size:   rand.Int63n(9999999),
 		}},
 	})
@@ -69,10 +74,11 @@ func TestInsert(t *testing.T) {
 }
 
 func TestAddVersion(t *testing.T) {
+	repository.InitMongo("mongodb://150.158.82.154:27017#study#SCRAM-SHA-256#root#xianka")
 	verCode := version.Add(nil, "624c0c0cf0a7aab7f5628498", &meta.Version{
 		Hash:   randStringRunes(32),
 		Size:   rand.Int63n(999999),
-		Locate: "0.0.0.0",
+		Locate: []string{"0.0.0.0"},
 	})
 	if verCode == version.ErrVersion {
 		t.Error("Add version fail")
@@ -82,6 +88,7 @@ func TestAddVersion(t *testing.T) {
 }
 
 func TestDelVer(t *testing.T) {
+	repository.InitMongo("mongodb://150.158.82.154:27017#study#SCRAM-SHA-256#root#xianka")
 	res := FindByName("Vivi3.mp4")
 	if res == nil {
 		t.Error("Not found")
@@ -97,4 +104,11 @@ func TestDelVer(t *testing.T) {
 	if e != nil {
 		t.Error(e)
 	}
+}
+
+func TestGetVersionByHash(t *testing.T) {
+	repository.InitMongo("mongodb://150.158.82.154:27017#study#SCRAM-SHA-256#root#xianka")
+	res, idx := version.Find("ILJDFLKdfaskdllsdkjflLGKDJFPSOIj")
+	assert.New(t).NotNil(res)
+	t.Logf("%d: %v", idx, res)
 }

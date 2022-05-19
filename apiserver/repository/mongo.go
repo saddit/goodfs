@@ -9,9 +9,13 @@ var (
 	mongo *mongodb.MongoDB
 )
 
+func InitMongo(addr string) {
+	mongo = mongodb.New(addr)
+}
+
 func GetMongo() *mongodb.MongoDB {
 	if mongo == nil {
-		mongo = mongodb.New(global.Config.MongoAddress)
+		InitMongo(global.Config.MongoAddress)
 	}
 	return mongo
 }

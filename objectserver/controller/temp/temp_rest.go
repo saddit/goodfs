@@ -18,9 +18,11 @@ import (
 func Patch(g *gin.Context) {
 	id := g.Param("name")
 	if e := service.PutFile(global.Config.TempPath, id, g.Request.Body); e != nil {
-		_ = g.AbortWithError(http.StatusInternalServerError, e)
+		util.AbortInternalError(g, e)
 		return
 	}
+	//刷新缓存 防止失效
+	global.Cache.Refresh(id)
 	g.Status(http.StatusOK)
 }
 
@@ -32,8 +34,7 @@ func Delete(g *gin.Context) {
 
 func Post(g *gin.Context) {
 	var req model.TempPostReq
-	_ = g.ShouldBindHeader(&req)
-	if e := g.ShouldBindUri(&req); e != nil {
+	if e := req.Bind(g); e != nil {
 		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
 		return
 	}
@@ -65,7 +66,8 @@ func Put(g *gin.Context) {
 
 //Head 获取分片临时对象的大小
 func Head(g *gin.Context) {
-	s, e := os.Stat(global.Config.TempPath + g.Param("name"))
+	id := g.Param("name")
+	s, e := os.Stat(global.Config.TempPath + id)
 	if e != nil {
 		g.Status(http.StatusNotFound)
 	} else {

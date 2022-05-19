@@ -3,11 +3,11 @@ package metadata
 import (
 	"context"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"goodfs/apiserver/config"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/repository"
 	"goodfs/lib/util"
-	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -64,10 +64,10 @@ func FindById(id string) *meta.Data {
 	data, err := Find(bson.M{"_id": oid}, VerModeALL)
 
 	if err == mongo.ErrNoDocuments {
-		log.Printf("Not found document with id %v", id)
+		log.Infof("Not found document with id %v\n", id)
 		return nil
 	} else if err != nil {
-		log.Print(err)
+		log.Errorln(err)
 		return nil
 	}
 	return data
@@ -82,7 +82,7 @@ func FindByName(name string) *meta.Data {
 func FindByNameAndVerMode(name string, verMode VerMode) *meta.Data {
 	data, err := Find(bson.M{"name": name}, verMode)
 	if err == mongo.ErrNoDocuments {
-		log.Printf("Not found document with name %v", name)
+		log.Infof("Not found document with name %v", name)
 		return nil
 	} else if err != nil {
 		log.Print(err)
@@ -108,7 +108,7 @@ func FindByHash(hash string) *meta.Data {
 	).Decode(&data)
 
 	if err == mongo.ErrNoDocuments {
-		log.Printf("Not found document with hash %v", hash)
+		log.Infof("Not found document with hash %v", hash)
 		return nil
 	} else if err != nil {
 		log.Print(err)
@@ -134,7 +134,7 @@ func Insert(data *meta.Data) (*meta.Data, error) {
 	collection := repository.GetMongo().Collection(config.MetadataMongo)
 	res, err := collection.InsertOne(context.TODO(), data)
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 		return nil, err
 	}
 	data.Id = res.InsertedID.(primitive.ObjectID).Hex()
@@ -145,7 +145,7 @@ func Exist(filter bson.M) bool {
 	collection := repository.GetMongo().Collection(config.MetadataMongo)
 	cnt, e := collection.CountDocuments(nil, filter)
 	if e != nil || cnt == 0 {
-		log.Println(e)
+		log.Errorln(e)
 		return false
 	}
 	return true

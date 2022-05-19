@@ -14,11 +14,6 @@ type PutStream struct {
 	errorChan chan error
 }
 
-type GetStream struct {
-	io.ReadCloser
-	Locate string
-}
-
 //NewPutStream IO: 发送Post请求到数据服务器
 func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 	c := make(chan error, 1)
@@ -27,34 +22,32 @@ func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 		return nil, e
 	}
 	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id}
-	res.StartWrite()
 	return res, nil
 }
 
-//NewGetStream IO: Get object
-func NewGetStream(ip, name string) (*GetStream, error) {
-	resp, err := GetObject(ip, name)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("dataServer return http code %v", resp.StatusCode)
-	}
-	return &GetStream{resp.Body, ip}, nil
+func newPutStreamWithoutPost(ip, name, id string) (*PutStream, error) {
+	c := make(chan error, 1)
+	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id}
+	return res, nil
 }
 
 func (p *PutStream) Close() error {
-	defer close(p.errorChan)
-	err := p.writer.Close()
-	if err != nil {
-		return err
+	if p.writer != nil {
+		defer close(p.errorChan)
+		err := p.writer.Close()
+		if err != nil {
+			return err
+		}
+		return <-p.errorChan
+	} else {
+		close(p.errorChan)
+		return nil
 	}
-	return <-p.errorChan
 }
 
 func (p *PutStream) Write(b []byte) (n int, err error) {
 	if p.writer == nil {
-		return 0, fmt.Errorf("call StartWrite before your writing!")
+		p.StartWrite()
 	}
 	return p.writer.Write(b)
 }
@@ -79,4 +72,21 @@ func (p *PutStream) Commit(ok bool) error {
 	}
 
 	return PutTmpObject(p.Locate, p.tmpId, p.name)
+}
+
+type GetStream struct {
+	io.ReadCloser
+	Locate string
+}
+
+//NewGetStream IO: Get object
+func NewGetStream(ip, name string) (*GetStream, error) {
+	resp, err := GetObject(ip, name)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("dataServer return http code %v", resp.StatusCode)
+	}
+	return &GetStream{resp.Body, ip}, nil
 }

@@ -1,12 +1,12 @@
 package objects
 
 import (
+	log "github.com/sirupsen/logrus"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/service"
 	"goodfs/lib/util"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +27,7 @@ func Put(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 		return
 	} else if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -57,12 +57,12 @@ func Get(c *gin.Context) {
 		if e == service.ErrBadRequest {
 			c.AbortWithStatus(http.StatusBadRequest)
 		} else if e != nil {
-			log.Println(e)
+			log.Errorln(e)
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 		} else {
 			if tp, ok := req.Range.Get(); ok {
 				if _, e = stream.Seek(tp.First, io.SeekCurrent); e != nil {
-					log.Println(e)
+					log.Errorln(e)
 					c.AbortWithStatus(http.StatusInternalServerError)
 					return
 				}
@@ -71,7 +71,7 @@ func Get(c *gin.Context) {
 			if e == nil {
 				c.Status(http.StatusOK)
 			} else {
-				log.Println(e)
+				log.Errorln(e)
 				c.AbortWithStatus(http.StatusInternalServerError)
 			}
 		}

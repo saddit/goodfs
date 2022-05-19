@@ -3,10 +3,10 @@ package version
 import (
 	"context"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"goodfs/apiserver/config"
 	"goodfs/apiserver/model/meta"
 	"goodfs/apiserver/repository"
-	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -22,8 +22,8 @@ const (
 func Find(hash string) (*meta.Version, int32) {
 	collection := repository.GetMongo().Collection(config.MetadataMongo)
 	res := struct {
-		Index    int32 `bson:"index"`
-		versions []*meta.Version
+		Index    int32           `bson:"index"`
+		Versions []*meta.Version `bson:"versions"`
 	}{}
 	if e := collection.FindOne(
 		nil,
@@ -33,12 +33,12 @@ func Find(hash string) (*meta.Version, int32) {
 			"versions.$": 1,
 		}),
 	).Decode(&res); e != nil {
-		log.Println(e)
+		log.Errorln(e)
 		return nil, ErrVersion
 	}
 
-	if res.Index > ErrVersion {
-		return res.versions[0], res.Index
+	if len(res.Versions) > 0 {
+		return res.Versions[0], res.Index
 	} else {
 		return nil, res.Index
 	}
@@ -56,7 +56,7 @@ func Update(ctx context.Context, ver *meta.Version) bool {
 		},
 	})
 	if e != nil {
-		log.Printf("Error when update version %v: %v", ver.Hash, e)
+		log.Errorf("Error when update version %v: %v", ver.Hash, e)
 	}
 	return res.ModifiedCount == 1
 }
@@ -67,7 +67,7 @@ func Add(ctx context.Context, id string, ver *meta.Version) int32 {
 
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		log.Printf("id error %v", id)
+		log.Warnf("id error %v", id)
 		return ErrVersion
 	}
 
@@ -93,7 +93,7 @@ func Add(ctx context.Context, id string, ver *meta.Version) int32 {
 	})).Decode(&data)
 
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 		return ErrVersion
 	}
 
@@ -107,7 +107,7 @@ func Delete(ctx context.Context, id string, ver *meta.Version) error {
 
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		log.Printf("id error %v", id)
+		log.Warnf("id error %v", id)
 		return nil
 	}
 

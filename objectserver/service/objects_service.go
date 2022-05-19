@@ -68,7 +68,7 @@ func DeleteFile(path, name string) error {
 }
 
 func PutFile(path, fileName string, fileStream io.Reader) error {
-	file, err := os.Create(path + fileName)
+	file, err := os.OpenFile(path+fileName, os.O_CREATE|os.O_APPEND, os.ModeAppend|os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,6 @@ func PutFile(path, fileName string, fileStream io.Reader) error {
 	if _, err = io.Copy(file, fileStream); err != nil {
 		return err
 	}
-	MarkExist(fileName)
 	return nil
 }
 
