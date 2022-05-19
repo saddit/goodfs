@@ -39,6 +39,19 @@ func NewRSPutStream(ips []string, hash string, size int64) (*RSPutStream, error)
 	return &RSPutStream{enc, ips}, nil
 }
 
+func newRSPutStreamWithoutPost(ips, ids []string, hash string) (*RSPutStream, error) {
+	writers := make([]io.WriteCloser, len(ips))
+	var e error
+	for i := range writers {
+		writers[i], e = newPutStreamWithoutPost(ips[i], fmt.Sprintf("%s.%d", hash, i), ids[i])
+		if e != nil {
+			return nil, e
+		}
+	}
+	enc := NewEncoder(writers)
+	return &RSPutStream{enc, ips}, nil
+}
+
 func (p *RSPutStream) Commit(ok bool) error {
 	var e error
 	if _, e = p.Flush(); e != nil {
@@ -47,11 +60,9 @@ func (p *RSPutStream) Commit(ok bool) error {
 
 	//TODO 用协程优化
 	for _, w := range p.writers {
-		if e = w.(*PutStream).Commit(ok); e != nil {
-			return e
-		}
+		e = w.(*PutStream).Commit(ok)
 	}
-	return nil
+	return e
 }
 
 type RSGetStream struct {
@@ -140,12 +151,11 @@ func (g *RSGetStream) Seek(offset int64, whence int) (int64, error) {
 
 func (g *RSGetStream) Close() error {
 	//TODO 用协程优化
+	var e error
 	for _, w := range g.writers {
 		if w != nil {
-			if e := w.(*PutStream).Commit(true); e != nil {
-				return e
-			}
+			e = w.(*PutStream).Commit(true)
 		}
 	}
-	return nil
+	return e
 }

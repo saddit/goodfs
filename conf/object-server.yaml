@@ -5,6 +5,6 @@ amqp-address: amqp://gdfs:gdfs@120.79.59.75:5672/goodfs
 beat-interval: 3s
 cache:
   max-size-mb: 256
-  ttl: 1h
+  ttl: 3h
   clean-interval: 12m
   max-item-size-mb: 16

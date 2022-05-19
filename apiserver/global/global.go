@@ -1,7 +1,6 @@
 package global
 
 import (
-	"github.com/syndtr/goleveldb/leveldb"
 	"goodfs/apiserver/config"
 	"goodfs/apiserver/service/selector"
 	"net/http"
@@ -13,6 +12,6 @@ var (
 	Config         config.Config
 	AmqpConnection *goodmq.AmqpConnection
 	Http           *http.Client
-	LocalDB        *leveldb.DB
 	Balancer       selector.Selector
+	//LocalDB        *leveldb.DB
 )

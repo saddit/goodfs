@@ -19,5 +19,5 @@ func Router(r gin.IRouter) {
 
 	r.POST("/big/:name", big.FilterDuplicates, big.Post)
 	r.HEAD("/big/:token", big.Head)
-	r.PUT("/big/:token", big.Put)
+	r.PATCH("/big/:token", big.Patch)
 }

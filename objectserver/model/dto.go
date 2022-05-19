@@ -1,6 +1,9 @@
 package model
 
 import (
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"goodfs/lib/util"
 	"strconv"
 	"strings"
 )
@@ -13,7 +16,14 @@ const TempKeyPrefix = "TempInfo_"
 
 type TempPostReq struct {
 	Name string `uri:"name" binding:"required"`
-	Size int64  `header:"Size" binding:"required"`
+	Size int64  `header:"size" binding:"required"`
+}
+
+func (tp *TempPostReq) Bind(c *gin.Context) error {
+	if e := util.BindAll(c, tp, binding.Uri, binding.Header); e != nil {
+		return e
+	}
+	return nil
 }
 
 type TempInfo struct {

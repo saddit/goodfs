@@ -9,7 +9,7 @@ enable-hash-check: false
 select-strategy: random
 local-cache-size: 128MB
 local-store-path: e:/file/db
-machine-code: 1
+#machine-code: 1
 rs:
   data-shards: 4
   parity-shards: 2

@@ -175,5 +175,5 @@ func ToString(v any) string {
 }
 
 func AbortInternalError(c *gin.Context, err error) {
-	log.Println(c.AbortWithError(http.StatusInternalServerError, err))
+	log.Println("[ERROR] " + c.AbortWithError(http.StatusInternalServerError, err).Error())
 }

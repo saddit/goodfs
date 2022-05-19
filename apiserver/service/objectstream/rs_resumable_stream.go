@@ -30,9 +30,17 @@ func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, erro
 	}
 	var tk resumeToken
 	if ok := util.GobDecodeGen2(bt, &tk); ok {
-		return NewRSResumablePutStream(tk.Servers, tk.Name, tk.Hash, tk.Size)
+		return continueRSResumablePut(tk)
 	}
 	return nil, fmt.Errorf("invalid token")
+}
+
+func continueRSResumablePut(token resumeToken) (*RSResumablePutStream, error) {
+	putStream, e := newRSPutStreamWithoutPost(token.Servers, token.Ids, token.Hash)
+	if e != nil {
+		return nil, e
+	}
+	return &RSResumablePutStream{putStream, &token}, nil
 }
 
 func NewRSResumablePutStream(ips []string, name, hash string, size int64) (*RSResumablePutStream, error) {

@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
@@ -12,7 +13,6 @@ import (
 	"goodfs/apiserver/service/objectstream"
 	"goodfs/lib/util"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -50,7 +50,7 @@ func LocateFile(hash string) ([]string, bool) {
 		for cnt < global.Config.Rs.AllShards() {
 			select {
 			case <-time.After(1 * time.Second):
-				log.Println("Locate message timeout")
+				log.Warnln("Locate message timeout")
 				return locates, cnt == global.Config.Rs.AllShards()
 			case resp := <-ch:
 				cnt++
@@ -131,23 +131,23 @@ func streamToDataServer(req *model.PutReq, size int64) ([]string, error) {
 		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
 		hash := util.SHA256Hash(reader)
 		if hash != req.Hash {
-			log.Printf("Digest of %v validation failure\n", req.Name)
+			log.Infof("Digest of %v validation failure\n", req.Name)
 			if e = stream.Commit(false); e != nil {
-				log.Println(e)
+				log.Errorln(e)
 			}
 			return nil, ErrInvalidFile
 		}
 	} else {
 		if _, e = io.CopyBuffer(stream, req.Body, make([]byte, 2048)); e != nil {
 			if e = stream.Commit(false); e != nil {
-				log.Println(e)
+				log.Errorln(e)
 			}
 			return nil, ErrInternalServer
 		}
 	}
 
 	if e = stream.Commit(true); e != nil {
-		log.Println(e)
+		log.Errorln(e)
 		return nil, ErrServiceUnavailable
 	}
 	return stream.Locates, e

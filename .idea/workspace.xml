@@ -4,36 +4,10 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="hash校验开关配置">
-      <change afterPath="$PROJECT_DIR$/apiserver/controller/big/big_mid.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/apiserver/controller/big/big_rest.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/apiserver/model/range.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/apiserver/service/bigserv/big_service.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_resumable_stream.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/Administrator.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/Administrator.xml" afterDir="false" />
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="修复断点续传错误">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/command/cmd.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/command/cmd.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/object_mid.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/objects/objects_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/model/dto.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/dto.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/model/meta/meta_data.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/model/meta/meta_data.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/repository/metadata/meta_repo_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/repository/metadata/version/version_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/repository/metadata/version/version_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/api_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/api_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_stream.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/rs_coder.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_coder.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/rs_stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_stream.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conf/api-server.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/conf/api-server.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/util/util.go" beforeDir="false" afterPath="$PROJECT_DIR$/lib/util/util.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/objects/objects_cache.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/objects/objects_cache.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/objectserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/objectserver/service/objects_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/service/objects_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/main_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/test/main_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,6 +23,11 @@
   </component>
   <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../../software/dev_core/go1.18.1" />
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="fix_big" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitSEFilterConfiguration">
@@ -97,6 +76,7 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\text\code-project\GolangProject\projects\goodfs\apiserver" />
       <recent name="E:\text\code-project\GolangProject\projects\goodfs\apiserver\service\dataserv" />
     </key>
   </component>
@@ -109,17 +89,10 @@
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="goodfs" />
       <working_directory value="$PROJECT_DIR$" />
-      <kind value="FILE" />
+      <kind value="PACKAGE" />
+      <package value="goodfs" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="go build datasize.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
-      <module name="goodfs" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="FILE" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$/lib/util/datasize/datasize.go" />
       <method v="2" />
     </configuration>
     <configuration name="go build goodfs/api" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
@@ -144,9 +117,22 @@
       <module name="goodfs" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="DIRECTORY" />
+      <package value="goodfs" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration name="goodfs/apiserver/repository/metadata 中的 TestGetVersionByHash" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="goodfs" />
+      <working_directory value="$PROJECT_DIR$/apiserver/repository/metadata" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="goodfs/apiserver/repository/metadata" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestGetVersionByHash\E$" />
       <method v="2" />
     </configuration>
     <configuration name="goodfs/objectserver/controller/temp 中的 TestNilSlice" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -200,20 +186,20 @@
     <list>
       <item itemvalue="Go 构建.go build goodfs/api" />
       <item itemvalue="Go 构建.go build goodfs/objects" />
-      <item itemvalue="Go 构建.go build datasize.go" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestNilSlice" />
       <item itemvalue="Go 测试.goodfs/test 中的 TestSumNum" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestSplit" />
-      <item itemvalue="复合.dev_server" />
       <item itemvalue="Go 测试.goodfs/test 中的 TestFuzz" />
+      <item itemvalue="Go 测试.goodfs/apiserver/repository/metadata 中的 TestGetVersionByHash" />
+      <item itemvalue="复合.dev_server" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go 测试.goodfs/apiserver/repository/metadata 中的 TestGetVersionByHash" />
         <item itemvalue="Go 测试.goodfs/test 中的 TestFuzz" />
         <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestSplit" />
-        <item itemvalue="Go 构建.go build datasize.go" />
-        <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestNilSlice" />
         <item itemvalue="Go 测试.goodfs/test 中的 TestSumNum" />
+        <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestNilSlice" />
       </list>
     </recent_temporary>
   </component>
@@ -260,12 +246,23 @@
     <MESSAGE value="heartbeat 消息格式简化" />
     <MESSAGE value="修复错误，通过上传下载测试" />
     <MESSAGE value="hash校验开关配置" />
-    <option name="LAST_COMMIT_MESSAGE" value="hash校验开关配置" />
+    <MESSAGE value="完成大文件断点续传，通过文件故障修复功能性测试" />
+    <MESSAGE value="修复断点续传错误" />
+    <option name="LAST_COMMIT_MESSAGE" value="修复断点续传错误" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
   </component>
   <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/../../../../../software/dev_core/go1.18.1/src/net/http/request.go</url>
+          <line>889</line>
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
     <watches-manager>
       <configuration name="GoApplicationRunConfiguration">
         <watch expression="shards[i]" language="go" />

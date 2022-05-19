@@ -104,3 +104,10 @@ func (c *Cache) SetGob(k string, v interface{}) bool {
 	}
 	return true
 }
+
+func (c *Cache) Refresh(k string) {
+	if bt, ok := c.HasGet(k); ok {
+		c.Delete(k)
+		c.Set(k, bt)
+	}
+}

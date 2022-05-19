@@ -21,11 +21,10 @@ type Config struct {
 	SuspendTimeout  time.Duration `yaml:"suspend-timeout"`
 	DeadTimeout     time.Duration `yaml:"dead-timeout"`
 	SelectStrategy  string        `yaml:"select-strategy"`
-	MachineCode     string        `yaml:"machine-code"`
 	LocalCacheSize  string        `yaml:"local-cache-size"`
-	LocalStorePath  string        `yaml:"local-store-path"`
 	EnableHashCheck bool          `yaml:"enable-hash-check"`
 	Rs              RSConfig      `yaml:"rs"`
+	//LocalStorePath  string        `yaml:"local-store-path"`
 }
 
 type RSConfig struct {
@@ -43,7 +42,11 @@ func (r *RSConfig) BlockSize() int {
 }
 
 func ReadConfig() Config {
-	f, err := os.Open(ConfFilePath)
+	return ReadConfigFrom(ConfFilePath)
+}
+
+func ReadConfigFrom(path string) Config {
+	f, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}

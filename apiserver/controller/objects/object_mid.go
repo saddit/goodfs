@@ -14,7 +14,7 @@ func ValidatePut(g *gin.Context) {
 	if err := req.Bind(g); err != nil {
 		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 		return
-	} else if g.Request.Body == nil {
+	} else if g.Request.ContentLength == 0 {
 		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": "Empty request"})
 		return
 	} else {
@@ -26,6 +26,13 @@ func ValidatePut(g *gin.Context) {
 		req.Ext = ext
 	} else {
 		req.Ext = "bytes"
+	}
+	if _, verNum, ok := service.GetMetaVersion(req.Hash); ok {
+		g.AbortWithStatusJSON(http.StatusOK, model.PutResp{
+			Name:    req.Name,
+			Version: verNum,
+		})
+		return
 	}
 	if loc, ok := service.LocateFile(req.Hash); ok {
 		req.Locate = loc
