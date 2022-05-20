@@ -6,7 +6,6 @@ import (
 	"goodfs/apiserver/global"
 	"goodfs/lib/util"
 	"log"
-	"net/url"
 )
 
 type resumeToken struct {
@@ -25,8 +24,6 @@ type RSResumablePutStream struct {
 
 //NewRSResumablePutStreamFromToken 恢复一个断点续传
 func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, error) {
-	var e error
-	token, _ = url.PathUnescape(token)
 	bt, e := base64.StdEncoding.DecodeString(token)
 	if e != nil {
 		return nil, e
