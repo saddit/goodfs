@@ -4,10 +4,18 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="修复断点续传错误">
+    <list default="true" id="0f20f2d5-c4da-44b5-ba56-4cb62900584c" name="默认变更列表" comment="hash校验开关配置">
+      <change afterPath="$PROJECT_DIR$/objectserver/controller/temp/temp_mid.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/big/big_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/big/big_rest.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/controller/router.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/object_stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/object_stream.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/rs_resumable_stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_resumable_stream.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apiserver/service/objectstream/rs_stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/apiserver/service/objectstream/rs_stream.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/objectserver/controller/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/router.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/controller/temp/temp_rest.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/objectserver/service/objects_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/objectserver/service/objects_service.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,7 +33,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="fix_big" />
+        <entry key="$PROJECT_DIR$" value="66948a219a6a09dc8145a6e0aeed3681e39ad420" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -186,11 +194,11 @@
     <list>
       <item itemvalue="Go 构建.go build goodfs/api" />
       <item itemvalue="Go 构建.go build goodfs/objects" />
+      <item itemvalue="Go 测试.goodfs/apiserver/repository/metadata 中的 TestGetVersionByHash" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestNilSlice" />
       <item itemvalue="Go 测试.goodfs/test 中的 TestSumNum" />
       <item itemvalue="Go 测试.goodfs/objectserver/controller/temp 中的 TestSplit" />
       <item itemvalue="Go 测试.goodfs/test 中的 TestFuzz" />
-      <item itemvalue="Go 测试.goodfs/apiserver/repository/metadata 中的 TestGetVersionByHash" />
       <item itemvalue="复合.dev_server" />
     </list>
     <recent_temporary>
@@ -247,8 +255,7 @@
     <MESSAGE value="修复错误，通过上传下载测试" />
     <MESSAGE value="hash校验开关配置" />
     <MESSAGE value="完成大文件断点续传，通过文件故障修复功能性测试" />
-    <MESSAGE value="修复断点续传错误" />
-    <option name="LAST_COMMIT_MESSAGE" value="修复断点续传错误" />
+    <option name="LAST_COMMIT_MESSAGE" value="完成大文件断点续传，通过文件故障修复功能性测试" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>

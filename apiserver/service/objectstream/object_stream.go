@@ -14,6 +14,11 @@ type PutStream struct {
 	errorChan chan error
 }
 
+type GetStream struct {
+	io.ReadCloser
+	Locate string
+}
+
 //NewPutStream IO: 发送Post请求到数据服务器
 func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 	c := make(chan error, 1)
@@ -25,34 +30,46 @@ func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 	return res, nil
 }
 
-func newPutStreamWithoutPost(ip, name, id string) (*PutStream, error) {
+//newExistedPutStream 不发送Post请求
+func newExistedPutStream(ip, name, id string) *PutStream {
 	c := make(chan error, 1)
 	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id}
-	return res, nil
+	return res
+}
+
+//NewGetStream IO: Get object
+func NewGetStream(ip, name string) (*GetStream, error) {
+	resp, err := GetObject(ip, name)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("dataServer return http code %v", resp.StatusCode)
+	}
+	return &GetStream{resp.Body, ip}, nil
 }
 
 func (p *PutStream) Close() error {
+	defer close(p.errorChan)
+	//如果没有发生写入
 	if p.writer != nil {
-		defer close(p.errorChan)
-		err := p.writer.Close()
-		if err != nil {
+		if err := p.writer.Close(); err != nil {
 			return err
 		}
-		return <-p.errorChan
 	} else {
-		close(p.errorChan)
-		return nil
+		p.errorChan <- nil
 	}
+	return <-p.errorChan
 }
 
 func (p *PutStream) Write(b []byte) (n int, err error) {
 	if p.writer == nil {
-		p.StartWrite()
+		p.startWrite()
 	}
 	return p.writer.Write(b)
 }
 
-func (p *PutStream) StartWrite() {
+func (p *PutStream) startWrite() {
 	reader, writer := io.Pipe()
 	p.writer = writer
 	go func() {
@@ -72,21 +89,4 @@ func (p *PutStream) Commit(ok bool) error {
 	}
 
 	return PutTmpObject(p.Locate, p.tmpId, p.name)
-}
-
-type GetStream struct {
-	io.ReadCloser
-	Locate string
-}
-
-//NewGetStream IO: Get object
-func NewGetStream(ip, name string) (*GetStream, error) {
-	resp, err := GetObject(ip, name)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("dataServer return http code %v", resp.StatusCode)
-	}
-	return &GetStream{resp.Body, ip}, nil
 }

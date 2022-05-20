@@ -6,6 +6,7 @@ import (
 	"goodfs/apiserver/global"
 	"goodfs/lib/util"
 	"log"
+	"net/url"
 )
 
 type resumeToken struct {
@@ -22,27 +23,22 @@ type RSResumablePutStream struct {
 	*resumeToken
 }
 
-//NewRSResumablePutStreamFromToken TODO 解密
+//NewRSResumablePutStreamFromToken 恢复一个断点续传
 func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, error) {
+	var e error
+	token, _ = url.PathUnescape(token)
 	bt, e := base64.StdEncoding.DecodeString(token)
 	if e != nil {
 		return nil, e
 	}
 	var tk resumeToken
 	if ok := util.GobDecodeGen2(bt, &tk); ok {
-		return continueRSResumablePut(tk)
+		return &RSResumablePutStream{newExistedRSPutStream(tk.Servers, tk.Ids, tk.Hash), &tk}, nil
 	}
 	return nil, fmt.Errorf("invalid token")
 }
 
-func continueRSResumablePut(token resumeToken) (*RSResumablePutStream, error) {
-	putStream, e := newRSPutStreamWithoutPost(token.Servers, token.Ids, token.Hash)
-	if e != nil {
-		return nil, e
-	}
-	return &RSResumablePutStream{putStream, &token}, nil
-}
-
+//NewRSResumablePutStream 开启新的断点续传
 func NewRSResumablePutStream(ips []string, name, hash string, size int64) (*RSResumablePutStream, error) {
 	putStream, e := NewRSPutStream(ips, hash, size)
 	if e != nil {
@@ -76,7 +72,7 @@ func (p *RSResumablePutStream) CurrentSize() int64 {
 	return size
 }
 
-//Token TODO 加密
+//Token 上传记录
 func (p *RSResumablePutStream) Token() string {
 	tk := resumeToken{
 		Name:    p.Name,
