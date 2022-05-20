@@ -4,14 +4,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync/atomic"
 )
 
+//PutStream 需要确保调用了Close或者Commit
+//Close() Commit() 可重复调用
 type PutStream struct {
 	Locate    string
 	name      string
 	tmpId     string
 	writer    *io.PipeWriter
 	errorChan chan error
+	closed    atomic.Value
 }
 
 type GetStream struct {
@@ -26,14 +30,18 @@ func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 	if e != nil {
 		return nil, e
 	}
-	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id}
+	flag := atomic.Value{}
+	flag.Store(false)
+	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id, closed: flag}
 	return res, nil
 }
 
 //newExistedPutStream 不发送Post请求
 func newExistedPutStream(ip, name, id string) *PutStream {
 	c := make(chan error, 1)
-	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id}
+	flag := atomic.Value{}
+	flag.Store(false)
+	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id, closed: flag}
 	return res
 }
 
@@ -50,16 +58,19 @@ func NewGetStream(ip, name string) (*GetStream, error) {
 }
 
 func (p *PutStream) Close() error {
-	defer close(p.errorChan)
-	//如果没有发生写入
-	if p.writer != nil {
-		if err := p.writer.Close(); err != nil {
-			return err
+	if p.closed.CompareAndSwap(false, true) {
+		defer close(p.errorChan)
+		//如果没有发生写入
+		if p.writer != nil {
+			if err := p.writer.Close(); err != nil {
+				return err
+			}
+		} else {
+			p.errorChan <- nil
 		}
-	} else {
-		p.errorChan <- nil
+		return <-p.errorChan
 	}
-	return <-p.errorChan
+	return fmt.Errorf("already closed")
 }
 
 func (p *PutStream) Write(b []byte) (n int, err error) {

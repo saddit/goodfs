@@ -19,10 +19,14 @@ func FilterDuplicates(g *gin.Context) {
 		g.Set("BigPostReq", &req)
 	}
 	if ips, ok := service.LocateFile(req.Hash); ok {
+		ext, ok := util.GetFileExt(req.Name, true)
+		if !ok {
+			ext = "bytes"
+		}
 		ver, e := service.StoreObject(&model.PutReq{
 			Name:     req.Name,
 			Hash:     req.Hash,
-			Ext:      "bytes",
+			Ext:      ext,
 			Locate:   ips,
 			FileName: req.Hash,
 		}, &meta.Data{

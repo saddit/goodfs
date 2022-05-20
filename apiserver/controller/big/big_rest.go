@@ -2,6 +2,7 @@ package big
 
 import (
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
@@ -9,7 +10,6 @@ import (
 	"goodfs/apiserver/service/objectstream"
 	"goodfs/lib/util"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -33,7 +33,7 @@ func Post(g *gin.Context) {
 
 //Head 大文件已上传大小
 func Head(g *gin.Context) {
-	token := g.Param("token")
+	token, _ := url.PathUnescape(g.Param("token"))
 	stream, e := objectstream.NewRSResumablePutStreamFromToken(token)
 	if e != nil {
 		g.JSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
@@ -77,7 +77,7 @@ func Patch(g *gin.Context) {
 		//大于预先确定的大小 则属于异常访问
 		if curSize > stream.Size {
 			_ = stream.Commit(false)
-			log.Println("resumable put exceed size")
+			log.Infoln("resumable put exceed size")
 			g.AbortWithStatus(http.StatusForbidden)
 			return
 		}

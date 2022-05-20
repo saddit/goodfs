@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -175,5 +175,5 @@ func ToString(v any) string {
 }
 
 func AbortInternalError(c *gin.Context, err error) {
-	log.Println("[ERROR] " + c.AbortWithError(http.StatusInternalServerError, err).Error())
+	log.Errorln(c.AbortWithError(http.StatusInternalServerError, err))
 }

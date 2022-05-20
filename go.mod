@@ -10,6 +10,7 @@ require (
 require (
 	github.com/838239178/goodmq v0.0.6
 	github.com/allegro/bigcache v1.2.1
+	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/google/uuid v1.3.0
 	github.com/klauspost/reedsolomon v1.9.16
 	github.com/sirupsen/logrus v1.8.1
