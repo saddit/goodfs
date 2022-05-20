@@ -12,6 +12,7 @@ func FilterExpired(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 	}
 }
+
 func FilterEmptyRequest(c *gin.Context) {
 	if c.Request.ContentLength <= 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": "empty request"})

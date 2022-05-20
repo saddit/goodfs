@@ -32,7 +32,7 @@ func MarkExist(name string) {
 }
 
 func Put(fileName string, fileStream io.Reader) error {
-	return PutFile(global.Config.StoragePath, fileName, fileStream)
+	return AppendFile(global.Config.StoragePath, fileName, fileStream)
 }
 
 func Get(name string, writer io.Writer) error {
@@ -67,8 +67,8 @@ func DeleteFile(path, name string) error {
 	return nil
 }
 
-func PutFile(path, fileName string, fileStream io.Reader) error {
-	file, err := os.OpenFile(path+fileName, os.O_CREATE|os.O_APPEND, os.ModeAppend|os.ModePerm)
+func AppendFile(path, fileName string, fileStream io.Reader) error {
+	file, err := os.OpenFile(path+fileName, os.O_CREATE|os.O_APPEND, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -76,6 +76,7 @@ func PutFile(path, fileName string, fileStream io.Reader) error {
 	if _, err = io.Copy(file, fileStream); err != nil {
 		return err
 	}
+	MarkExist(fileName)
 	return nil
 }
 

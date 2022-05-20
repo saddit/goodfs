@@ -31,25 +31,20 @@ func NewRSPutStream(ips []string, hash string, size int64) (*RSPutStream, error)
 	//TODO 用协程优化
 	for i := range writers {
 		writers[i], e = NewPutStream(ips[i], fmt.Sprintf("%s.%d", hash, i), perShard)
-		if e != nil {
-			return nil, e
-		}
+	}
+	if e != nil {
+		return nil, e
 	}
 	enc := NewEncoder(writers)
 	return &RSPutStream{enc, ips}, nil
 }
 
-func newRSPutStreamWithoutPost(ips, ids []string, hash string) (*RSPutStream, error) {
-	writers := make([]io.WriteCloser, len(ips))
-	var e error
+func newExistedRSPutStream(ips, ids []string, hash string) *RSPutStream {
+	writers := make([]io.WriteCloser, len(ids))
 	for i := range writers {
-		writers[i], e = newPutStreamWithoutPost(ips[i], fmt.Sprintf("%s.%d", hash, i), ids[i])
-		if e != nil {
-			return nil, e
-		}
+		writers[i] = newExistedPutStream(ips[i], fmt.Sprintf("%s.%d", hash, i), ids[i])
 	}
-	enc := NewEncoder(writers)
-	return &RSPutStream{enc, ips}, nil
+	return &RSPutStream{NewEncoder(writers), ips}
 }
 
 func (p *RSPutStream) Commit(ok bool) error {
@@ -60,9 +55,11 @@ func (p *RSPutStream) Commit(ok bool) error {
 
 	//TODO 用协程优化
 	for _, w := range p.writers {
-		e = w.(*PutStream).Commit(ok)
+		if e = w.(*PutStream).Commit(ok); e != nil {
+			return e
+		}
 	}
-	return e
+	return nil
 }
 
 type RSGetStream struct {
@@ -151,11 +148,12 @@ func (g *RSGetStream) Seek(offset int64, whence int) (int64, error) {
 
 func (g *RSGetStream) Close() error {
 	//TODO 用协程优化
-	var e error
 	for _, w := range g.writers {
 		if w != nil {
-			e = w.(*PutStream).Commit(true)
+			if e := w.(*PutStream).Commit(true); e != nil {
+				return e
+			}
 		}
 	}
-	return e
+	return nil
 }

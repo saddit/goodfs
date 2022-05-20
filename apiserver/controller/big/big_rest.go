@@ -1,9 +1,7 @@
 package big
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"goodfs/apiserver/global"
 	"goodfs/apiserver/model"
 	"goodfs/apiserver/model/meta"
@@ -11,6 +9,7 @@ import (
 	"goodfs/apiserver/service/objectstream"
 	"goodfs/lib/util"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 )
@@ -28,20 +27,16 @@ func Post(g *gin.Context) {
 		return
 	}
 	defer stream.Close()
-	g.Header("Location", fmt.Sprintf("/big/%s", url.PathEscape(stream.Token())))
+	g.Header("Location", "/big/"+url.PathEscape(stream.Token()))
 	g.Status(http.StatusCreated)
 }
 
 //Head 大文件已上传大小
 func Head(g *gin.Context) {
-	token, e := url.PathUnescape(g.Param("token"))
-	if e != nil {
-		g.Status(http.StatusBadRequest)
-		return
-	}
+	token := g.Param("token")
 	stream, e := objectstream.NewRSResumablePutStreamFromToken(token)
 	if e != nil {
-		g.Status(http.StatusBadRequest)
+		g.JSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
 		return
 	}
 	defer stream.Close()
@@ -62,9 +57,10 @@ func Patch(g *gin.Context) {
 	}
 	stream, e := objectstream.NewRSResumablePutStreamFromToken(req.Token)
 	if e != nil {
-		util.AbortInternalError(g, e)
+		g.JSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
 		return
 	}
+	defer stream.Close()
 	curSize := stream.CurrentSize()
 	if curSize != req.Range.Value().First {
 		g.AbortWithStatus(http.StatusRequestedRangeNotSatisfiable)
@@ -74,7 +70,6 @@ func Patch(g *gin.Context) {
 	for {
 		n, e := io.CopyN(stream, g.Request.Body, bufSize)
 		if e != nil && e != io.EOF && e != io.ErrUnexpectedEOF {
-			_ = stream.Close()
 			util.AbortInternalError(g, e)
 			return
 		}
@@ -82,23 +77,34 @@ func Patch(g *gin.Context) {
 		//大于预先确定的大小 则属于异常访问
 		if curSize > stream.Size {
 			_ = stream.Commit(false)
-			log.Infoln("resumable put exceed size")
+			log.Println("resumable put exceed size")
 			g.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+		//上传未完成 中断
+		if n != bufSize && curSize != stream.Size {
+			g.Status(http.StatusPartialContent)
 			return
 		}
 		//上传完成
 		if curSize == stream.Size {
-			if global.Config.EnableHashCheck && !checkSum(stream.Size, stream.Hash, stream.Locates) {
-				if e = stream.Commit(false); e != nil {
+			if global.Config.EnableHashCheck {
+				getStream, e := objectstream.NewRSGetStream(stream.Size, stream.Hash, stream.Locates)
+				if e != nil {
 					util.AbortInternalError(g, e)
-				} else {
-					g.AbortWithStatus(http.StatusForbidden)
+					return
 				}
-				return
+				hash := util.SHA256Hash(getStream)
+				if hash != stream.Hash {
+					if e = stream.Commit(false); e != nil {
+						log.Println(e)
+					}
+					g.AbortWithStatus(http.StatusForbidden)
+					return
+				}
 			}
 			if e = stream.Commit(true); e != nil {
 				util.AbortInternalError(g, e)
-				return
 			} else {
 				var verNum int32
 				verNum, e = service.SaveMetadata(&meta.Data{
@@ -111,33 +117,14 @@ func Patch(g *gin.Context) {
 				})
 				if e != nil {
 					util.AbortInternalError(g, e)
-					return
 				} else {
 					g.JSON(http.StatusOK, model.PutResp{
 						Name:    stream.Name,
 						Version: verNum,
 					})
-					return
 				}
 			}
-		} else if n != bufSize {
-			//上传未完成 中断
-			stream.Close()
-			g.Status(http.StatusPartialContent)
 			return
 		}
 	}
-}
-
-func checkSum(size int64, hash string, locates []string) bool {
-	getStream, e := objectstream.NewRSGetStream(size, hash, locates)
-	if e != nil {
-		log.Errorln(e)
-		return false
-	}
-	result := util.SHA256Hash(getStream)
-	if hash != result {
-		return false
-	}
-	return true
 }
