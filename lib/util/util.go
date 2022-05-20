@@ -46,14 +46,19 @@ func GetObjectID(id string) primitive.ObjectID {
 }
 
 func GetFileExt(fileName string, withDot bool) (string, bool) {
+	r := GetFileExtOrDefault(fileName, withDot, "")
+	return r, r != ""
+}
+
+func GetFileExtOrDefault(fileName string, withDot bool, def string) string {
 	idx := strings.LastIndex(fileName, ".")
 	if idx == -1 {
-		return "", false
+		return def
 	}
 	if !withDot {
 		idx++
 	}
-	return fileName[idx:], true
+	return fileName[idx:]
 }
 
 func BindAll(c *gin.Context, obj interface{}, bindings ...interface{}) error {
