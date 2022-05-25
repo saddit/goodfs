@@ -1,2 +1,2 @@
-target
-.idea/shelf
+*.sum
+go.work

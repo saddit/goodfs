@@ -1,43 +1,45 @@
 package config
 
 import (
-	"goodfs/lib/util/datasize"
-	"gopkg.in/yaml.v3"
+	"common/datasize"
+	"fmt"
 	"os"
 	"time"
-)
 
-var (
-	LocalAddr string
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 const (
-	ConfFilePath = "conf/object-server.yaml"
+	ConfFilePath = "../conf/object-server.yaml"
 )
 
 type CacheConfig struct {
-	MaxSizeMB     datasize.DataSize `yaml:"max-size-mb"`
-	TTL           time.Duration     `yaml:"ttl"`
-	CleanInterval time.Duration     `yaml:"clean-interval"`
-	MaxItemSizeMB datasize.DataSize `yaml:"max-item-size-mb"`
+	MaxSizeMB     datasize.DataSize `yaml:"max-size-mb" env:"MAX_SIZE_MB" env-default:"128"`
+	TTL           time.Duration     `yaml:"ttl" env:"TTL" env-default:"1h"`
+	CleanInterval time.Duration     `yaml:"clean-interval" env:"CLEAN_INTERVAL" env-default:"1h"`
+	MaxItemSizeMB datasize.DataSize `yaml:"max-item-size-mb" env:"MAX_ITEM_SIZE_MB" env-default:"12"`
 }
 
 type Config struct {
 	Port         string        `yaml:"port"`
-	StoragePath  string        `yaml:"storage-path"`
-	TempPath     string        `yaml:"temp-path"`
-	AmqpAddress  string        `yaml:"amqp-address"`
-	BeatInterval time.Duration `yaml:"beat-interval"`
-	Cache        CacheConfig   `yaml:"cache"`
+	StoragePath  string        `yaml:"storage-path" env:"STROAGE_PATH" env-default:"objects"`
+	TempPath     string        `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
+	AmqpAddress  string        `yaml:"amqp-address" env:"AMQP_ADDRESS" env-required:"true"`
+	BeatInterval time.Duration `yaml:"beat-interval" env:"BEAT_INTERVAL" env-default:"5s"`
+	Cache        CacheConfig   `yaml:"cache" env-prefix:"CACHE"`
+}
+
+func (c *Config) LocalAddr() string {
+	hn, e := os.Hostname()
+	if e != nil {
+		panic(e)
+	}
+	return fmt.Sprintf("%v:%v", hn, c.Port)
 }
 
 func ReadConfig() Config {
-	f, err := os.Open(ConfFilePath)
-	if err != nil {
-		panic(err)
-	}
 	var conf Config
-	if err = yaml.NewDecoder(f).Decode(&conf); err != nil {
+	if err := cleanenv.ReadConfig(ConfFilePath, &conf); err != nil {
 		panic(err)
 	}
 	return conf
