@@ -2,14 +2,14 @@ port: 8081
 amqp-address: amqp://gdfs:gdfs@120.79.59.75:5672/goodfs
 mongo-address: mongodb://150.158.82.154:27017#study#SCRAM-SHA-256#root#xianka
 log-dir: e:/file/logs
-detect-interval: 5s
-suspend-timeout: 5s
-dead-timeout: 10s
 enable-hash-check: false
 select-strategy: random
-local-cache-size: 128MB
-local-store-path: e:/file/db
-#machine-code: 1
+
+discovery:
+  detect-interval: 5s
+  suspend-timeout: 5s
+  dead-timeout: 10s
+  
 rs:
   data-shards: 4
   parity-shards: 2
