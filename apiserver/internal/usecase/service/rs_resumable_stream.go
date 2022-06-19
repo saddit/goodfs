@@ -58,11 +58,13 @@ func NewRSResumablePutStream(ips []string, name, hash string, size int64) (*RSRe
 
 //CurrentSize IO: 请求数据服务器获取分片大小
 func (p *RSResumablePutStream) CurrentSize() int64 {
+	//只请求一个服务器，以为断点续传保证每次上传每个服务器的大小一致
 	size, e := webapi.HeadTmpObject(p.Servers[0], p.Ids[0])
 	if e != nil {
 		log.Println(e)
 		return -1
 	}
+	//求乘积得到当前大小
 	size *= int64(global.Config.Rs.DataShards)
 	if size > p.Size {
 		return p.Size

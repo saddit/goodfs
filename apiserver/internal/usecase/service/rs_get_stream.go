@@ -1,12 +1,13 @@
 package service
 
 import (
+	global "apiserver/internal/usecase/pool"
 	"bytes"
+	"common/util"
 	"errors"
 	"fmt"
 	"io"
 	"sync"
-	global "apiserver/internal/usecase/pool"
 )
 
 type RSGetStream struct {
@@ -94,13 +95,18 @@ func (g *RSGetStream) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (g *RSGetStream) Close() error {
-	//TODO 用协程优化
+	wg := util.NewDoneGroup()
+	defer wg.Close()
 	for _, w := range g.writers {
-		if w != nil {
-			if e := w.(*PutStream).Commit(true); e != nil {
-				return e
-			}
+		if util.InstanceOf[Commiter](w) {
+			wg.Todo()
+			go func(cm Commiter) {
+				defer wg.Done()
+				if e := cm.Commit(true); e != nil {
+					wg.Error(e)
+				}
+			}(w.(Commiter))
 		}
 	}
-	return nil
+	return wg.WaitUntilError()
 }
