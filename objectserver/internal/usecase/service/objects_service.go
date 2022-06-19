@@ -81,5 +81,8 @@ func AppendFile(path, fileName string, fileStream io.Reader) error {
 }
 
 func MvTmpToStorage(tmpName, fileName string) error {
+	if ExistPath(global.Config.StoragePath + fileName) {
+		return nil
+	}
 	return os.Rename(global.Config.TempPath+tmpName, global.Config.StoragePath+fileName)
 }

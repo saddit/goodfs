@@ -2,6 +2,7 @@ package service
 
 import (
 	"apiserver/internal/usecase/pool"
+	"common/util"
 	"fmt"
 	"io"
 )
@@ -19,12 +20,20 @@ func NewRSPutStream(ips []string, hash string, size int64) (*RSPutStream, error)
 	ds := int64(rs.DataShards)
 	perShard := (size + ds - 1) / ds
 	writers := make([]io.WriteCloser, rs.AllShards())
-	var e error
-	//TODO 用协程优化
+	wg := util.NewDoneGroup()
 	for i := range writers {
-		writers[i], e = NewPutStream(ips[i], fmt.Sprintf("%s.%d", hash, i), perShard)
+		wg.Todo()
+		go func(idx int) {
+			defer wg.Done()
+			stream, e := NewPutStream(ips[idx], fmt.Sprintf("%s.%d", hash, idx), perShard)
+			if e != nil {
+				wg.Error(e)
+			} else {
+				writers[idx] = stream
+			}
+		}(i)
 	}
-	if e != nil {
+	if e := wg.WaitUntilError(); e != nil {
 		return nil, e
 	}
 	enc := NewEncoder(writers)
@@ -40,16 +49,22 @@ func newExistedRSPutStream(ips, ids []string, hash string) *RSPutStream {
 }
 
 func (p *RSPutStream) Commit(ok bool) error {
-	var e error
-	if _, e = p.Flush(); e != nil {
+	if _, e := p.Flush(); e != nil {
 		return nil
 	}
 
-	//TODO 用协程优化
+	wg := util.NewDoneGroup()
+	defer wg.Close()
 	for _, w := range p.writers {
-		if e = w.(*PutStream).Commit(ok); e != nil {
-			return e
+		if util.InstanceOf[Commiter](w) {
+			wg.Todo()
+			go func(cm Commiter) {
+				defer wg.Done()
+				if e := cm.Commit(ok); e != nil {
+					wg.Error(e)
+				}
+			}(w.(Commiter))
 		}
 	}
-	return nil
+	return wg.WaitUntilError()
 }
