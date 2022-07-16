@@ -1,7 +1,12 @@
 package amqp
 
-import "apiserver/internal/controller/amqp/heartbeat"
+import (
+	"apiserver/config"
+	"apiserver/internal/controller/amqp/heartbeat"
 
-func Start() {
-	go heartbeat.ListenHeartbeat()
+	"github.com/838239178/goodmq"
+)
+
+func Start(cfg config.DiscoveryConfig, conn *goodmq.AmqpConnection) {
+	go heartbeat.ListenHeartbeat(cfg, conn)
 }

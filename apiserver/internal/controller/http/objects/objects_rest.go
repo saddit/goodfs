@@ -13,7 +13,7 @@ import (
 func Put(c *gin.Context) {
 	req := c.Value("PutReq").(*entity.PutReq)
 	req.Body = c.Request.Body
-	verNum, err := ObjectService.StoreObject(req, &entity.MetaData{
+	verNum, err := ObjectService.StoreObject(req, &entity.Metadata{
 		Name: req.Name,
 		Versions: []*entity.Version{{
 			Size: c.Request.ContentLength,

@@ -27,6 +27,13 @@ type Config struct {
 	AmqpAddress  string        `yaml:"amqp-address" env:"AMQP_ADDRESS" env-required:"true"`
 	BeatInterval time.Duration `yaml:"beat-interval" env:"BEAT_INTERVAL" env-default:"5s"`
 	Cache        CacheConfig   `yaml:"cache" env-prefix:"CACHE"`
+	Etcd         EtcdConfig    `yaml:"etcd" env-prefix:"ETCD"`
+}
+
+type EtcdConfig struct {
+	Endpoint []string `yaml:"endpoint" env:"ENDPOINT" env-required:"true" env-separator:","`
+	Username string   `yaml:"username" env:"USERNAME" env-required:"true"`
+	Password string   `yaml:"password" env:"PASSWORD" env-required:"true"`
 }
 
 func (c *Config) LocalAddr() string {

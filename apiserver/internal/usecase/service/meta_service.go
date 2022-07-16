@@ -14,12 +14,12 @@ func NewMetaService(repo repo.IMetadataRepo, versionRepo repo.IVersionRepo) *Met
 	return &MetaService{repo: repo, versionRepo: versionRepo}
 }
 
-func (m *MetaService) SaveMetadata(md *entity.MetaData) (int32, error) {
+func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
 	metaD := m.repo.FindByNameAndVerMode(md.Name, entity.VerModeNot)
 	var verNum int32
 	if metaD != nil {
-		verNum = m.versionRepo.Add(nil, metaD.Id, ver)
+		verNum = m.versionRepo.Add(nil, metaD.Name, ver)
 	} else {
 		verNum = 0
 		var e error
@@ -39,15 +39,15 @@ func (m *MetaService) UpdateVersion(version *entity.Version) {
 	m.versionRepo.Update(nil, version)
 }
 
-func (m *MetaService) GetVersion(hash string) (*entity.Version, int32, bool) {
-	res, num := m.versionRepo.Find(hash)
+func (m *MetaService) GetVersion(name string, version int32) (*entity.Version, bool) {
+	res := m.versionRepo.Find(name, version)
 	if res == nil {
-		return nil, -1, false
+		return nil, false
 	}
-	return res, num, true
+	return res, true
 }
 
-func (m *MetaService) GetMetadata(name string, ver int32) (*entity.MetaData, bool) {
+func (m *MetaService) GetMetadata(name string, ver int32) (*entity.Metadata, bool) {
 	res := m.repo.FindByNameAndVerMode(name, entity.VerMode(ver))
 	if res == nil {
 		return nil, false
