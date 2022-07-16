@@ -2,27 +2,18 @@ package repo
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"metaserver/internal/entity"
-	"time"
-
 	"github.com/boltdb/bolt"
 	"github.com/sirupsen/logrus"
 	"github.com/tinylib/msgp/msgp"
+	"metaserver/internal/entity"
+	. "metaserver/internal/usecase"
+	"time"
 )
 
 const (
 	BucketName = "metadata"
 	Sep        = "."
-)
-
-var (
-	ErrNotFound = errors.New("not found")
-	ErrExists   = errors.New("already exists key")
-	ErrNilData  = errors.New("nil data")
-	ErrDecode   = errors.New("decode fail")
-	ErrEncode   = errors.New("encode fail")
 )
 
 type MetadataRepo struct {
@@ -44,7 +35,7 @@ func (m *MetadataRepo) ExistMetadata(name string) (exist bool) {
 		}
 		return nil
 	})
-	return 
+	return
 }
 
 func (m *MetadataRepo) AddMetadata(name string, data *entity.Metadata) error {
@@ -155,7 +146,7 @@ func (m *MetadataRepo) RemoveVersion(name string, ver int) error {
 	})
 }
 
-func (m *MetadataRepo) GetVersion(name string, ver int) (*entity.Version, error) {
+func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, error) {
 	data := &entity.Version{}
 	return data, m.View(func(tx *bolt.Tx) error {
 		if bucket := tx.Bucket([]byte(name)); bucket != nil {
@@ -192,7 +183,6 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 	})
 	return
 }
-
 
 // decodeMsg decode data by msgp if error return false
 func decodeMsg[T msgp.Unmarshaler](data T, bt []byte) bool {

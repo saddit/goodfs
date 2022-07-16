@@ -3,9 +3,9 @@ package entity
 //go:generate msgp
 
 type Metadata struct {
-	Name       string `json:"name" msg:"name"`
-	CreateTime int64  `json:"createTime" msg:"create_time"`
-	UpdateTime int64  `json:"updateTime" msg:"update_time"`
+	Name       string     `json:"name" msg:"name"`
+	CreateTime int64      `json:"createTime" msg:"create_time"`
+	UpdateTime int64      `json:"updateTime" msg:"update_time"`
 }
 
 type Version struct {
