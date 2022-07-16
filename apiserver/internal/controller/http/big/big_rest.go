@@ -107,7 +107,7 @@ func Patch(g *gin.Context) {
 				AbortInternalError(g, e)
 			} else {
 				var verNum int32
-				verNum, e = MetaService.SaveMetadata(&entity.MetaData{
+				verNum, e = MetaService.SaveMetadata(&entity.Metadata{
 					Name: stream.Name,
 					Versions: []*entity.Version{{
 						Hash:   stream.Hash,

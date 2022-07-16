@@ -1,15 +1,16 @@
 package heartbeat
 
 import (
-	"apiserver/internal/usecase/pool"
+	"apiserver/config"
 	"apiserver/internal/usecase/service"
 	"time"
 
+	"github.com/838239178/goodmq"
 	"github.com/streadway/amqp"
 )
 
-func ListenHeartbeat() {
-	consumer, err := pool.Amqp.NewConsumer()
+func ListenHeartbeat(cfg config.DiscoveryConfig, conn *goodmq.AmqpConnection) {
+	consumer, err := conn.NewConsumer()
 	if err != nil {
 		panic(err)
 	}
@@ -17,7 +18,7 @@ func ListenHeartbeat() {
 	consumer.DeleteUnused = true
 	consumer.Exchange = "apiServers"
 
-	go removeExpiredDataServer()
+	go removeExpiredDataServer(cfg.DetectInterval)
 
 	consumer.ConsumeAuto(func(msg amqp.Delivery) {
 		service.ReceiveDataServer(string(msg.Body))
@@ -25,8 +26,8 @@ func ListenHeartbeat() {
 }
 
 //每隔一段时间移除长时间未响应的 data server
-func removeExpiredDataServer() {
-	for range time.Tick(pool.Config.Discovery.DetectInterval) {
+func removeExpiredDataServer(detect time.Duration) {
+	for range time.Tick(detect) {
 		service.CheckServerState()
 	}
 }

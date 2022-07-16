@@ -26,13 +26,14 @@ func ValidatePut(g *gin.Context) {
 	} else {
 		req.Ext = "bytes"
 	}
-	if _, verNum, ok := MetaService.GetVersion(req.Hash); ok {
-		g.AbortWithStatusJSON(http.StatusOK, entity.PutResp{
-			Name:    req.Name,
-			Version: verNum,
-		})
-		return
-	}
+	// if _, verNum, ok := MetaService.GetVersion(req.Hash); ok {
+	// 	g.AbortWithStatusJSON(http.StatusOK, entity.PutResp{
+	// 		Name:    req.Name,
+	// 		Version: verNum,
+	// 	})
+	// 	return
+	// }
+	//TODO 此处直接使用没有验证过的Hash去重文件
 	if loc, ok := ObjectService.LocateObject(req.Hash); ok {
 		req.Locate = loc
 	}

@@ -25,7 +25,7 @@ func FilterDuplicates(g *gin.Context) {
 			Ext:      util.GetFileExtOrDefault(req.Name, true, "bytes"),
 			Locate:   ips,
 			FileName: req.Hash,
-		}, &entity.MetaData{
+		}, &entity.Metadata{
 			Name: req.Name,
 			Versions: []*entity.Version{{
 				Size: req.Size,

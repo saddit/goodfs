@@ -12,22 +12,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/838239178/goodmq"
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
 type ObjectService struct {
 	metaService IMetaService
+	conn        *goodmq.AmqpConnection
+	template    *goodmq.AmqpProvider
 }
 
-func NewObjectService(s IMetaService) *ObjectService {
-	return &ObjectService{s}
+func NewObjectService(s IMetaService, conn *goodmq.AmqpConnection, template *goodmq.AmqpProvider) *ObjectService {
+	return &ObjectService{s, conn, template}
 }
 
 // LocateObject 根据Hash定位所有分片位置
 func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	//初始化一个消息接收方（无交换机直接入队）
-	conm, e := pool.Amqp.NewConsumer()
+	conm, e := o.conn.NewConsumer()
 	if e != nil {
 		return nil, false
 	}
@@ -37,7 +40,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	if ch, ok := conm.Consume(); ok {
 		//发送定位请求
 		for i := 0; i < pool.Config.Rs.AllShards(); i++ {
-			pool.AmqpTemplate.PublishDirect("dataServers", "", amqp.Publishing{
+			o.template.PublishDirect("dataServers", "", amqp.Publishing{
 				ReplyTo: conm.QueName,
 				Body:    []byte(fmt.Sprintf("%s.%d", hash, i)),
 			})
@@ -62,7 +65,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	return nil, false
 }
 
-func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.MetaData) (int32, error) {
+func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
 
 	//文件数据保存

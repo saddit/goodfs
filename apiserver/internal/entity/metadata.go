@@ -15,18 +15,27 @@ const (
 	VerModeNot VerMode = -1
 )
 
-type MetaData struct {
-	Id         string     `bson:"_id,omitempty" json:"id"`
-	Name       string     `bson:"name,omitempty" json:"name"`
-	Tags       []string   `bson:"tags" json:"tags"`
-	CreateTime time.Time  `bson:"create_time,omitempty" json:"createTime"`
-	UpdateTime time.Time  `bson:"update_time,omitempty" json:"updateTime"`
-	Versions   []*Version `bson:"versions,omitempty" json:"versions"`
+type Metadata struct {
+	Name       string     `json:"name"`
+	CreateTime time.Time  `json:"createTime"`
+	UpdateTime time.Time  `json:"updateTime"`
+	Versions   []*Version `json:"versions"`
+}
+
+func (m *Metadata) LastVersion() *Version {
+	if len(m.Versions) > 0 {
+		return m.Versions[len(m.Versions)-1]
+	}
+	return nil
 }
 
 type Version struct {
-	Hash   string    `bson:"hash,omitempty" json:"hash"`
-	Size   int64     `bson:"size" json:"size"`
-	Ts     time.Time `bson:"ts,omitempty" json:"ts"`
-	Locate []string  `bson:"locate" json:"locate"`
+	Hash         string    `json:"hash"`
+	Size         int64     `json:"size"`
+	Ts           time.Time `json:"ts"`
+	EcAlgo       int       `json:"ecAlgo"`
+	DataShards   int       `json:"dataShards"`
+	ParityShards int       `json:"parityShards"`
+	ShardSize    int       `json:"shardSize"`
+	Locate       []string  `json:"locate"`
 }

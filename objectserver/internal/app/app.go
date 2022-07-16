@@ -42,4 +42,7 @@ func Run(cfg *config.Config) {
 	go service.HandleTempRemove()
 
 	graceful.ListenAndServe(fmt.Sprint(":", cfg.Port), router)
+
+	//TODO 向etcd注册自己
+	// 停用rabbitmq health check
 }

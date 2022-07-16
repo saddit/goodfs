@@ -1,5 +1,8 @@
 package service
 
+//TODO 更改从etcd获取数据节点
+// 加入获取元数据节点的功能（主/从）
+
 import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase/pool"
