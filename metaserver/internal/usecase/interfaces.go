@@ -11,8 +11,8 @@ type (
 		UpdateVersion(string, int, *entity.Version) error
 		RemoveMetadata(string) error
 		RemoveVersion(string, int) error
-		GetMetadata(string) (*entity.Metadata, error)
-		GetVersion(string, int) (*entity.Metadata, error)
+		GetMetadata(string, int) (*entity.Metadata, *entity.Version, error)
+		GetVersion(string, int) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
 	}
 
@@ -26,7 +26,7 @@ type (
 		RemoveMetadata(string) error
 		RemoveVersion(string, int) error
 		GetMetadata(string) (*entity.Metadata, error)
-		GetVersion(string, int) (*entity.Version, error)
+		GetVersion(string, uint64) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
 	}
 )

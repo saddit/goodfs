@@ -14,46 +14,57 @@ func NewMetadataService(repo IMetadataRepo) *MetadataService {
 }
 
 func (m *MetadataService) AddMetadata(name string, data *entity.Metadata) error {
-	//TODO 添加元数据
-	return nil
+	r := m.repo
+	return r.AddMetadata(name, data)
 }
 
 func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, error) {
-	//TODO 添加版本，需要原子操作确定版本号
-	return -1, nil
+	err := m.repo.AddVersion(name, data)
+	if err != nil {
+		return -1, err
+	}
+	return int(data.Sequence), nil
 }
 
 func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) error {
-	//TODO 更新元数据
-	return nil
+	return m.repo.UpdateMetadata(name, data)
 }
 
 func (m *MetadataService) UpdateVersion(name string, ver int, data *entity.Version) error {
-	//TODO 更新版本数据
-	return nil
+	data.Sequence = uint64(ver)
+	return m.repo.UpdateVersion(name, data)
 }
 
 func (m *MetadataService) RemoveMetadata(name string) error {
-	//TODO 删除全部元数据
-	return nil
+	return m.repo.RemoveMetadata(name)
 }
 
 func (m *MetadataService) RemoveVersion(name string, ver int) error {
-	//TODO 删除版本数据
-	return nil
+	return m.repo.RemoveVersion(name, ver)
 }
 
-func (m *MetadataService) GetMetadata(name string) (*entity.Metadata, error) {
-	//TODO 获取元数据，无版本信息
-	return nil, nil
+// GetMetadata 获取metadata及其版本，如果version为-1则不获取任何版本，返回的版本为nil
+func (m *MetadataService) GetMetadata(name string, version int) (*entity.Metadata, *entity.Version, error) {
+	meta, err := m.repo.GetMetadata(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	switch version {
+	case -1:
+		return meta, nil, nil
+	default:
+		ver, err := m.GetVersion(name, version)
+		if err != nil {
+			return nil, nil, err
+		}
+		return meta, ver, nil
+	}
 }
 
-func (m *MetadataService) GetVersion(name string, ver int) (*entity.Metadata, error) {
-	//TODO 获取单个版本元数据
-	return nil, nil
+func (m *MetadataService) GetVersion(name string, ver int) (*entity.Version, error) {
+	return m.repo.GetVersion(name, uint64(ver))
 }
 
 func (m *MetadataService) ListVersions(name string, start int, end int) ([]*entity.Version, error) {
-	//TODO 获取版本数据集合
-	return nil, nil
+	return m.repo.ListVersions(name, start, end)
 }
