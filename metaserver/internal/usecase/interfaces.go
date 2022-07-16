@@ -6,7 +6,7 @@ type (
 	//IMetadataService 负责格式转换，缓存处理等
 	IMetadataService interface {
 		AddMetadata(string, *entity.Metadata) error
-		AddVersion(string, *entity.Version) error
+		AddVersion(string, *entity.Version) (int, error)
 		UpdateMetadata(string, *entity.Metadata) error
 		UpdateVersion(string, int, *entity.Version) error
 		RemoveMetadata(string) error
@@ -20,7 +20,7 @@ type (
 	IMetadataRepo interface {
 		ExistMetadata(string) bool
 		AddMetadata(string, *entity.Metadata) error
-		AddVersion(string, *entity.Version) (int, error)
+		AddVersion(string, *entity.Version) error
 		UpdateMetadata(string, *entity.Metadata) error
 		UpdateVersion(string, *entity.Version) error
 		RemoveMetadata(string) error
