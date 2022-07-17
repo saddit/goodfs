@@ -6,18 +6,29 @@ import (
 	"apiserver/internal/controller/http/objects"
 	"apiserver/internal/controller/http/versions"
 	. "apiserver/internal/usecase"
+	"common/graceful"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRouter(r gin.IRouter, o IObjectService, m IMetaService) {
+type HttpServer struct {
+	g      *gin.Engine
+	object IObjectService
+	meta   IMetaService
+}
 
-	versions.MetaService = m
-	locate.ObjectService = o
-	objects.MetaService = m
-	objects.ObjectService = o
-	big.MetaService = m
-	big.ObjectService = o
+func NewHttpServer(o IObjectService, m IMetaService) *HttpServer {
+	return &HttpServer{gin.Default(), o, m}
+}
+
+func (h *HttpServer) ListenAndServe(addr string) {
+	r := h.g.Group("/api/v1")
+	versions.MetaService = h.meta
+	locate.ObjectService = h.object
+	objects.MetaService = h.meta
+	objects.ObjectService = h.object
+	big.MetaService = h.meta
+	big.ObjectService = h.object
 
 	r.PUT("/objects/:name", objects.ValidatePut, objects.Put)
 	r.GET("/objects/:name", objects.Get)
@@ -29,4 +40,6 @@ func RegisterRouter(r gin.IRouter, o IObjectService, m IMetaService) {
 	r.POST("/big/:name", big.FilterDuplicates, big.Post)
 	r.HEAD("/big/:token", big.Head)
 	r.PATCH("/big/:token", big.Patch)
+
+	graceful.ListenAndServe(addr, h.g)
 }

@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"common/graceful"
 	"context"
 	"fmt"
 
@@ -21,26 +22,29 @@ func NewEtcdDiscovery(cli *clientv3.Client, group string, services []string) *Et
 		m[s] = newServiceList()
 		prefix := fmt.Sprintf("%s/%s", group, s)
 		ch := d.Watch(context.Background(), prefix, clientv3.WithPrefix())
-		go d.watch(s, ch)
+		d.asyncWatch(s, ch)
 	}
 	return d
 }
 
-func (e *EtcdDiscovery) watch(serv string, ch clientv3.WatchChan) {
-	for res := range ch {
-		for _, event := range res.Events {
-			//Key will be like ${serv}_${timestamp}
-			addr := string(event.Kv.Value)
-			switch event.Type {
-			case mvccpb.PUT:
-				e.addService(serv, addr)
-				break
-			case mvccpb.DELETE:
-				e.removeService(serv, addr)
-				break
+func (e *EtcdDiscovery) asyncWatch(serv string, ch clientv3.WatchChan) {
+	go func() {
+		defer graceful.Recover()
+		for res := range ch {
+			for _, event := range res.Events {
+				//Key will be like ${serv}_${timestamp}
+				addr := string(event.Kv.Value)
+				switch event.Type {
+				case mvccpb.PUT:
+					e.addService(serv, addr)
+					break
+				case mvccpb.DELETE:
+					e.removeService(serv, addr)
+					break
+				}
 			}
 		}
-	}
+	}()
 }
 
 func (e *EtcdDiscovery) GetServices(name string) []string {

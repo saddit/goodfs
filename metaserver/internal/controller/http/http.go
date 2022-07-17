@@ -20,20 +20,20 @@ type HttpServer struct {
 
 func NewHttpServer(cfg *config.Config, grpcServer *grpc.Server, service IMetadataService, rf *raft.Raft) *HttpServer {
 	engine := gin.Default()
-
-	//grpc router
-	engine.Use(func(ctx *gin.Context) {
-		if ctx.Request.ProtoMajor == 2 &&
-			strings.HasPrefix(ctx.GetHeader("Content-Type"), "application/grpc") {
-			// 按grpc方式来请求
-			grpcServer.ServeHTTP(ctx.Writer, ctx.Request)
-			// 不要再往下请求了,防止继续链式调用拦截器
-			ctx.Abort()
-			return
-		}
-		ctx.Next()
-	})
-
+	if grpcServer != nil {
+		//grpc router
+		engine.Use(func(ctx *gin.Context) {
+			if ctx.Request.ProtoMajor == 2 &&
+				strings.HasPrefix(ctx.GetHeader("Content-Type"), "application/grpc") {
+				// 按grpc方式来请求
+				grpcServer.ServeHTTP(ctx.Writer, ctx.Request)
+				// 不要再往下请求了,防止继续链式调用拦截器
+				ctx.Abort()
+				return
+			}
+			ctx.Next()
+		})
+	}
 	//Http router
 	mc := NewMetadataController(rf, service)
 	engine.PUT("/metadata/{name}", mc.Put)

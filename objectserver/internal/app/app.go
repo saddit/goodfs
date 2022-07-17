@@ -1,17 +1,18 @@
 package app
 
 import (
-	"common/graceful"
+	"common/registry"
 	"fmt"
 	"objectserver/config"
 
-	"objectserver/internal/controller/http"
 	"objectserver/internal/controller/amqp"
+	"objectserver/internal/controller/http"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
 	"os"
 
-	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 func initDir(cfg *config.Config) {
@@ -30,19 +31,29 @@ func initDir(cfg *config.Config) {
 func Run(cfg *config.Config) {
 	pool.InitPool(cfg)
 	defer pool.Close()
-
+	//pre reslove
 	initDir(cfg)
-
-	router := gin.Default()
-
-	//init router
-	http.RegisterRouter(router)
-	amqp.Start()
 	service.WarmUpLocateCache()
-	go service.HandleTempRemove()
-
-	graceful.ListenAndServe(fmt.Sprint(":", cfg.Port), router)
-
-	//TODO 向etcd注册自己
-	// 停用rabbitmq health check
+	//init components
+	httpServer := http.NewHttpServer()
+	etcdCli, err := clientv3.New(clientv3.Config{
+		Endpoints: cfg.Etcd.Endpoint,
+		Username:  cfg.Etcd.Username,
+		Password:  cfg.Etcd.Password,
+	})
+	if err != nil {
+		logrus.Errorf("create etcd client err: %v", err)
+		return
+	}
+	reg := registry.NewEtcdRegistry(etcdCli, cfg.Registry, cfg.LocalAddr())
+	// register self
+	if err := reg.Register(); err != nil {
+		logrus.Errorf("register err: %v", err)
+		return
+	}
+	defer reg.Unregister()
+	//start services
+	amqp.Start()
+	service.StartTempRemovalBackground()
+	httpServer.ListenAndServe(fmt.Sprint(":", cfg.Port))
 }

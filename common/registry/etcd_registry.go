@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"apiserver/config"
+	"common/graceful"
 	"context"
 	"fmt"
 	"time"
@@ -12,16 +12,16 @@ import (
 
 type EtcdRegistry struct {
 	*clientv3.Client
-	cfg       config.RegistryConfig
+	cfg       Config
 	leaseId   clientv3.LeaseID
 	key       string
 	localAddr string
 }
 
-func NewEtcdRegistry(kv *clientv3.Client, cfg config.RegistryConfig, localAddr string) *EtcdRegistry {
+func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdRegistry {
 	return &EtcdRegistry{
 		kv, cfg, -1,
-		fmt.Sprintf("%s/%s_%d", cfg.Group, cfg.Name, time.Now().UnixMilli()),
+		fmt.Sprintf("%s/%s_%d", cfg.Group, cfg.Name, time.Now().Unix()),
 		localAddr,
 	}
 }
@@ -31,7 +31,7 @@ func (e *EtcdRegistry) Register() error {
 	var err error
 
 	//init registered key
-	if e.leaseId, err = e.makeKvWithLease(ctx, e.localAddr); err != nil {
+	if e.leaseId, err = e.makeKvWithLease(ctx, e.key, e.localAddr); err != nil {
 		return err
 	}
 
@@ -43,10 +43,11 @@ func (e *EtcdRegistry) Register() error {
 
 	//listen the hearbeat response
 	go func() {
+		defer graceful.Recover()
 		for resp := range kach {
-			logrus.Infof("keepalive %s success (%d)", e.localAddr, resp.TTL)
+			logrus.Infof("keepalive %s success (%d)", e.key, resp.TTL)
 		}
-		logrus.Infof("stop keepalive %s", e.localAddr)
+		logrus.Infof("stop keepalive %s", e.key)
 	}()
 
 	return nil
@@ -71,7 +72,7 @@ func (e *EtcdRegistry) Unregister() error {
 	}
 }
 
-func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, addr string) (clientv3.LeaseID, error) {
+func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (clientv3.LeaseID, error) {
 	//grant a lease
 	ctx2, cancel2 := context.WithTimeout(ctx, e.cfg.Timeout)
 	defer cancel2()
@@ -83,7 +84,7 @@ func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, addr string) (client
 	//create a key with lease
 	ctx3, cancel3 := context.WithTimeout(ctx, e.cfg.Timeout)
 	defer cancel3()
-	if _, err := e.Put(ctx3, e.key, addr, clientv3.WithLease(lease.ID)); err != nil {
+	if _, err := e.Put(ctx3, key, value, clientv3.WithLease(lease.ID)); err != nil {
 		return -1, fmt.Errorf("Register interval heartbeat: send heartbeat error, %v", err)
 	}
 	return lease.ID, nil

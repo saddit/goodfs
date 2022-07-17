@@ -45,6 +45,7 @@ func ReceiveDataServer(ip string) {
 }
 
 func GetDataServers() []*entity.DataServ {
+	//TODO 从注册中心获取
 	ds := make([]*entity.DataServ, 0)
 	CheckServerState()
 	dataServMap.ForEach(func(key string, value *entity.DataServ) {

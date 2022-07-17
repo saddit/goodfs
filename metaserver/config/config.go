@@ -1,6 +1,8 @@
 package config
 
 import (
+	"common/etcd"
+	"common/registry"
 	"os"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -11,9 +13,11 @@ const (
 )
 
 type Config struct {
-	Port    string        `yaml:"port" env:"PORT" env-default:"4091"`
-	DataDir string  `ymal:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
-	Cluster ClusterConfig `yaml:"cluster" env-prefix:"CLUSTER"`
+	Port     string          `yaml:"port" env:"PORT" env-default:"4091"`
+	DataDir  string          `ymal:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
+	Cluster  ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
+	Registry registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Etcd     etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 }
 
 type ClusterConfig struct {
