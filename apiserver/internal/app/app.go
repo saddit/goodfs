@@ -3,22 +3,29 @@ package app
 import (
 	"apiserver/config"
 	. "apiserver/config"
-	"apiserver/internal/controller/amqp"
 	"apiserver/internal/controller/http"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
 	"apiserver/internal/usecase/service"
-	"common/graceful"
+	"common/registry"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/838239178/goodmq"
 	nested "github.com/antonfisher/nested-logrus-formatter"
-	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/dig"
 )
+
+func getLocalAddress() string {
+	hn, e := os.Hostname()
+	if e != nil {
+		panic(e)
+	}
+	return hn
+}
 
 func buildContainer(cfg *Config) *dig.Container {
 
@@ -28,6 +35,7 @@ func buildContainer(cfg *Config) *dig.Container {
 	container.Provide(service.NewObjectService)
 	container.Provide(repo.NewMetadataRepo)
 	container.Provide(repo.NewVersionRepo)
+	container.Provide(http.NewHttpServer)
 	container.Provide(func(cfg *config.Config) *goodmq.AmqpConnection {
 		goodmq.RecoverDelay = 3 * time.Second
 		return goodmq.NewAmqpConnection(cfg.AmqpAddress)
@@ -50,7 +58,12 @@ func buildContainer(cfg *Config) *dig.Container {
 		}
 		return c
 	})
-	//TODO provide Registry and Discovery
+	container.Provide(func(cli *clientv3.Client) registry.Registry {
+		return registry.NewEtcdRegistry(cli, cfg.Registry, getLocalAddress())
+	})
+	container.Provide(func(cli *clientv3.Client) registry.Discovery {
+		return registry.NewEtcdDiscovery(cli, cfg.Registry.Group, []string{"metaserver", "objectserver"})
+	})
 
 	return container
 }
@@ -65,28 +78,30 @@ func Run(cfg *Config) {
 		FieldsOrder: []string{"component", "category"},
 	})
 
-	router := gin.Default()
-
 	container := buildContainer(cfg)
-
-	container.Invoke(func(
-		o *service.ObjectService,
-		m *service.MetaService,
-		conn *goodmq.AmqpConnection,
-	) {
-		http.RegisterRouter(router.Group("/api"), o, m)
-		amqp.Start(cfg.Discovery, conn)
-		//TODO 向etcd注册自己
+	//initialize
+	err := container.Invoke(func(
+		reg registry.Registry,
+	) error {
+		if err := reg.Register(); err != nil {
+			return err
+		}
+		return nil
 	})
-
-	graceful.ListenAndServe(fmt.Sprint(":", cfg.Port), router)
-
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 	//do release before quit
-	container.Invoke(func(
+	defer container.Invoke(func(
 		conn *goodmq.AmqpConnection,
 		prov *goodmq.AmqpProvider,
 		etcd *clientv3.Client,
+		reg registry.Registry,
 	) {
+		if e := reg.Unregister(); e != nil {
+			logrus.Error(e)
+		}
 		if e := conn.Close(); e != nil {
 			logrus.Error(e)
 		}
@@ -96,5 +111,9 @@ func Run(cfg *Config) {
 		if e := etcd.Close(); e != nil {
 			logrus.Error(e)
 		}
+	})
+	//start api server
+	container.Invoke(func(server *http.HttpServer) {
+		server.ListenAndServe(fmt.Sprint(":", cfg.Port))
 	})
 }

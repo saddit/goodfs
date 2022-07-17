@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 )
+//TODO 改造成纯IP字符串数组筛选服务器
 
 type SelectStrategy string
 

@@ -9,7 +9,7 @@ import (
 
 //TODO 版本元数据API 操作成功后Apply到Raft自动机中
 type VersionController struct {
-	raft    *raft.Raft
+	raft    *raft.Raft			//raft maybe nil which means disabled raft
 	service IMetadataService
 }
 

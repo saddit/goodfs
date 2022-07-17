@@ -7,7 +7,6 @@ require go.mongodb.org/mongo-driver v1.9.0
 require (
 	github.com/838239178/goodmq v0.0.6
 	github.com/streadway/amqp v1.0.0
-	go.etcd.io/etcd/api/v3 v3.5.4
 	go.uber.org/dig v1.14.1
 )
 
@@ -32,6 +31,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.4 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.4 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect

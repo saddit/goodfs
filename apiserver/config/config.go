@@ -1,6 +1,8 @@
 package config
 
 import (
+	"common/etcd"
+	"common/registry"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -17,23 +19,10 @@ type Config struct {
 	LogDir          string          `yaml:"log-dir" env:"LOG_DIR" env-default:"logs"`
 	SelectStrategy  string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
 	EnableHashCheck bool            `yaml:"enable-hash-check" env:"ENABLE_HASH_CHECK" env-default:"true"`
-	Etcd            EtcdConfig      `yaml:"etcd" env-prefix:"ETCD"`
+	Etcd            etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	Rs              RsConfig        `yaml:"rs" env-prefix:"RS"`
 	Discovery       DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
-	Registry        RegistryConfig  `yaml:"registry" env-prefix:"REGISTRY"`
-}
-
-type EtcdConfig struct {
-	Endpoint []string `yaml:"endpoint" env:"ENDPOINT" env-required:"true" env-separator:","`
-	Username string   `yaml:"username" env:"USERNAME" env-required:"true"`
-	Password string   `yaml:"password" env:"PASSWORD" env-required:"true"`
-}
-
-type RegistryConfig struct {
-	Group    string        `yaml:"group" env:"GROUP" env-default:"goodfs"`
-	Name     string        `yaml:"name" env:"NAME" env-default:"apiserver"`
-	Interval time.Duration `yaml:"interval" env:"INTERVAL" env-default:"5s"`
-	Timeout  time.Duration `yaml:"timeout" env:"TIMEOUT" env-default:"3s"`
+	Registry        registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 }
 
 type DiscoveryConfig struct {

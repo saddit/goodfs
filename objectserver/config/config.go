@@ -2,6 +2,8 @@ package config
 
 import (
 	"common/datasize"
+	"common/etcd"
+	"common/registry"
 	"fmt"
 	"os"
 	"time"
@@ -21,19 +23,14 @@ type CacheConfig struct {
 }
 
 type Config struct {
-	Port         string        `yaml:"port"`
-	StoragePath  string        `yaml:"storage-path" env:"STROAGE_PATH" env-default:"objects"`
-	TempPath     string        `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
-	AmqpAddress  string        `yaml:"amqp-address" env:"AMQP_ADDRESS" env-required:"true"`
-	BeatInterval time.Duration `yaml:"beat-interval" env:"BEAT_INTERVAL" env-default:"5s"`
-	Cache        CacheConfig   `yaml:"cache" env-prefix:"CACHE"`
-	Etcd         EtcdConfig    `yaml:"etcd" env-prefix:"ETCD"`
-}
-
-type EtcdConfig struct {
-	Endpoint []string `yaml:"endpoint" env:"ENDPOINT" env-required:"true" env-separator:","`
-	Username string   `yaml:"username" env:"USERNAME" env-required:"true"`
-	Password string   `yaml:"password" env:"PASSWORD" env-required:"true"`
+	Port         string          `yaml:"port"`
+	StoragePath  string          `yaml:"storage-path" env:"STROAGE_PATH" env-default:"objects"`
+	TempPath     string          `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
+	AmqpAddress  string          `yaml:"amqp-address" env:"AMQP_ADDRESS" env-required:"true"`
+	BeatInterval time.Duration   `yaml:"beat-interval" env:"BEAT_INTERVAL" env-default:"5s"`
+	Cache        CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+	Etcd         etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
+	Registry     registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 }
 
 func (c *Config) LocalAddr() string {
