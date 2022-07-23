@@ -2,8 +2,6 @@ package http
 
 import (
 	"common/graceful"
-	"fmt"
-	"metaserver/config"
 	. "metaserver/internal/usecase"
 	hhttp "net/http"
 	"strings"
@@ -15,10 +13,10 @@ import (
 
 type HttpServer struct {
 	hhttp.Handler
-	cfg *config.Config
+	addr string
 }
 
-func NewHttpServer(cfg *config.Config, grpcServer *grpc.Server, service IMetadataService, rf *raft.Raft) *HttpServer {
+func NewHttpServer(addr string, grpcServer *grpc.Server, service IMetadataService, rf *raft.Raft) *HttpServer {
 	engine := gin.Default()
 	if grpcServer != nil {
 		//grpc router
@@ -47,9 +45,9 @@ func NewHttpServer(cfg *config.Config, grpcServer *grpc.Server, service IMetadat
 	engine.GET("/metadata_version/{name}", vc.Get)
 	engine.DELETE("/metadata_version/{name}", vc.Delete)
 
-	return &HttpServer{engine, cfg}
+	return &HttpServer{engine, addr}
 }
 
 func (h *HttpServer) ListenAndServe() {
-	graceful.ListenAndServe(fmt.Sprint(":", h.cfg.Port), h)
+	graceful.ListenAndServe(h.addr, h)
 }

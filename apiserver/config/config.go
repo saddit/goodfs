@@ -15,7 +15,6 @@ const (
 
 type Config struct {
 	Port            string          `yaml:"port" env:"PORT" env-default:"8080"`
-	AmqpAddress     string          `yaml:"amqp-address" env:"AMQP_ADDRESS" env-required:"true"`
 	LogDir          string          `yaml:"log-dir" env:"LOG_DIR" env-default:"logs"`
 	SelectStrategy  string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
 	EnableHashCheck bool            `yaml:"enable-hash-check" env:"ENABLE_HASH_CHECK" env-default:"true"`

@@ -5,12 +5,6 @@ go 1.18
 require go.mongodb.org/mongo-driver v1.9.0
 
 require (
-	github.com/838239178/goodmq v0.0.6
-	github.com/streadway/amqp v1.0.0
-	go.uber.org/dig v1.14.1
-)
-
-require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
@@ -20,7 +14,6 @@ require (
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.14 // indirect

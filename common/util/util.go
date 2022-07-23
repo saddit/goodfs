@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 func GetFileExt(fileName string, withDot bool) (string, bool) {
@@ -130,4 +132,11 @@ func NumToString(n interface{}) string {
 
 func ToString(v any) string {
 	return fmt.Sprint(v)
+}
+
+// LogErr logrus if err != nil
+func LogErr(err error) {
+	if err != nil {
+		logrus.Error(err)
+	}
 }

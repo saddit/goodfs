@@ -3,13 +3,11 @@ module objectserver
 go 1.18
 
 require (
-	github.com/838239178/goodmq v0.0.6
 	github.com/allegro/bigcache v1.2.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/google/uuid v1.3.0
 	github.com/ilyakaznacheev/cleanenv v1.2.6
 	github.com/sirupsen/logrus v1.8.1
-	github.com/streadway/amqp v1.0.0
 	go.etcd.io/etcd/client/v3 v3.5.4
 )
 
