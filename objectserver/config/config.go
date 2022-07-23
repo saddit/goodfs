@@ -26,7 +26,6 @@ type Config struct {
 	Port         string          `yaml:"port"`
 	StoragePath  string          `yaml:"storage-path" env:"STROAGE_PATH" env-default:"objects"`
 	TempPath     string          `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
-	AmqpAddress  string          `yaml:"amqp-address" env:"AMQP_ADDRESS" env-required:"true"`
 	BeatInterval time.Duration   `yaml:"beat-interval" env:"BEAT_INTERVAL" env-default:"5s"`
 	Cache        CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
 	Etcd         etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`

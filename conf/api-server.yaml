@@ -1,20 +1,19 @@
 port: 8081
-amqp-address: amqp://gdfs:gdfs@120.79.59.75:5672/goodfs
 log-dir: e:/file/logs
 enable-hash-check: false
 select-strategy: random
-
+registry:
+  group: "goodfs"
+  name: "apiserver"
 etcd:
   endpoint:
     - pressed.top:2379
   username: root
-  passoword: xianka
-
+  password: xianka
 discovery:
   detect-interval: 5s
   suspend-timeout: 5s
   dead-timeout: 10s
-
 rs:
   data-shards: 4
   parity-shards: 2

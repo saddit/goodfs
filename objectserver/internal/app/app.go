@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"objectserver/config"
 
-	"objectserver/internal/controller/amqp"
 	"objectserver/internal/controller/http"
+	"objectserver/internal/controller/locate"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
 	"os"
@@ -45,7 +45,8 @@ func Run(cfg *config.Config) {
 		logrus.Errorf("create etcd client err: %v", err)
 		return
 	}
-	reg := registry.NewEtcdRegistry(etcdCli, cfg.Registry, cfg.LocalAddr())
+	netAddr := fmt.Sprint(cfg.LocalAddr(), ":", cfg.Port)
+	reg := registry.NewEtcdRegistry(etcdCli, cfg.Registry, netAddr)
 	// register self
 	if err := reg.Register(); err != nil {
 		logrus.Errorf("register err: %v", err)
@@ -53,7 +54,7 @@ func Run(cfg *config.Config) {
 	}
 	defer reg.Unregister()
 	//start services
-	amqp.Start()
+	locate.New(pool.Etcd).StartLocate(netAddr)
 	service.StartTempRemovalBackground()
-	httpServer.ListenAndServe(fmt.Sprint(":", cfg.Port))
+	httpServer.ListenAndServe(netAddr)
 }

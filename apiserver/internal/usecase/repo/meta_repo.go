@@ -8,7 +8,7 @@ import (
 )
 
 type MetadataRepo struct {
-	clientv3.KV
+	kv clientv3.KV
 	versionRepo IVersionRepo
 }
 
@@ -29,13 +29,9 @@ func (m *MetadataRepo) FindByNameAndVerMode(name string, verMode entity.VerMode)
 	//TODO 根据VerMode同时查询版本
 	switch verMode {
 	case entity.VerModeALL:
-		break
 	case entity.VerModeLast:
-		break
 	case entity.VerModeNot:
-		break
 	default:
-		break
 	}
 	return metadata
 }

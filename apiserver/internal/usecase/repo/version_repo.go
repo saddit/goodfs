@@ -12,7 +12,7 @@ const (
 )
 
 type VersionRepo struct {
-	clientv3.KV
+	kv clientv3.KV
 }
 
 func NewVersionRepo(kv clientv3.KV) *VersionRepo {

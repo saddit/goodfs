@@ -1,0 +1,13 @@
+port: 8010
+data-dir: E:/temp/meta_server
+cluster:
+  bootstrap: false
+  store-dir: E:/temp/meta_server
+registry:
+  group: "goodfs"
+  name: "metaserver"
+etcd:
+  endpoint:
+    - pressed.top:2379
+  username: root
+  password: xianka

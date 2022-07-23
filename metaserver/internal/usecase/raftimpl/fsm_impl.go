@@ -21,9 +21,20 @@ func (f *fsm) Apply(lg *raft.Log) any {
 }
 
 func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
-	return nil, nil
+	return &snapshot{}, nil
 }
 
 func (f *fsm) Restore(snapshot io.ReadCloser) error {
 	return nil
+}
+
+type snapshot struct {
+}
+
+func (s *snapshot) Persist(sink raft.SnapshotSink) error {
+	return nil
+}
+
+func (s *snapshot) Release() {
+
 }

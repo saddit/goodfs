@@ -2,6 +2,7 @@ package app
 
 import (
 	"common/registry"
+	"fmt"
 	. "metaserver/config"
 	"metaserver/internal/controller/http"
 	"metaserver/internal/usecase/repo"
@@ -43,11 +44,12 @@ func Run(cfg *Config) {
 		logrus.Errorf("create etcd client err: %v", err)
 		return
 	}
+	netAddr := fmt.Sprint(cfg.Cluster.LocalAddr(), ":", cfg.Port)
 	metaRepo := repo.NewMetadataRepo(boltdb)
 	metaService := service.NewMetadataService(metaRepo)
 	grpcServer := grpc.NewRpcRaftServer(cfg.Cluster, metaService)
-	httpServer := http.NewHttpServer(cfg, grpcServer.Server, metaService, grpcServer.Raft)
-	reg := registry.NewEtcdRegistry(etcdCli, cfg.Registry, cfg.Cluster.LocalAddr())
+	httpServer := http.NewHttpServer(netAddr, grpcServer.Server, metaService, grpcServer.Raft)
+	reg := registry.NewEtcdRegistry(etcdCli, cfg.Registry, netAddr)
 	// register self
 	if err := reg.Register(); err != nil {
 		logrus.Errorf("register err: %v", err)

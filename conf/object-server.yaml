@@ -1,10 +1,17 @@
 port: 8080
 storage-path: E:/file/objects/
 temp-path: E:/file/objects/temp/
-amqp-address: amqp://gdfs:gdfs@120.79.59.75:5672/goodfs
 beat-interval: 3s
 cache:
   max-size-mb: 256
   ttl: 3h
   clean-interval: 12m
   max-item-size-mb: 16
+registry:
+  group: "goodfs"
+  name: "objectserver"
+etcd:
+  endpoint:
+    - pressed.top:2379
+  username: root
+  password: xianka

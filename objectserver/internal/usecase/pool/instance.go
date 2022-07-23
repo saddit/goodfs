@@ -2,10 +2,9 @@ package pool
 
 import (
 	"common/cache"
+	"common/util"
 	"objectserver/config"
-	"time"
 
-	"github.com/838239178/goodmq"
 	"github.com/allegro/bigcache"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -14,14 +13,10 @@ var (
 	Config *config.Config
 	Cache  cache.ICache
 	Etcd   *clientv3.Client
-	Amqp   *goodmq.AmqpConnection
 )
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
-
-	goodmq.RecoverDelay = 3 * time.Second
-	Amqp = goodmq.NewAmqpConnection(cfg.AmqpAddress)
 	//init cache
 	{
 		cacheConf := bigcache.DefaultConfig(cfg.Cache.TTL)
@@ -42,5 +37,5 @@ func InitPool(cfg *config.Config) {
 }
 
 func Close() {
-	Amqp.Close()
+	util.LogErr(Etcd.Close())
 }
