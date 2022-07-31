@@ -7,7 +7,10 @@ import (
 	"bufio"
 	"common/util"
 	"context"
+	"fmt"
 	"io"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +18,25 @@ import (
 	log "github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
+
+const (
+	LocationSubKey = "goodfs.location"
+)
+
+// getLocateResp must like "ip#idx"
+func getLocateResp(raw string) (ip string, idx int) {
+	var err error
+	strs := strings.Split(raw, "#")
+	if len(strs) != 2 {
+		panic("err format locating resp: " + raw)
+	}
+	idx, err = strconv.Atoi(strs[1])
+	if err != nil {
+		panic(err)
+	}
+	ip = strs[0]
+	return 
+}
 
 type ObjectService struct {
 	metaService IMetaService
@@ -25,7 +47,7 @@ func NewObjectService(s IMetaService, etcd *clientv3.Client) *ObjectService {
 	return &ObjectService{s, etcd}
 }
 
-// LocateObject 根据Hash定位所有分片位置
+// LocateObject 根据Hash定位所有分片位置 send "hash.idx#key" expect "ip#idx"
 func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	//利用etcd监听机制实现
 	// 1. 临时建立并watch一个唯一key
@@ -33,16 +55,20 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	// 3. set每个object_server的key为（hash+临时key）
 	// 4. objectserver watch到这个变化就定位，成功则向set临时key
 	// 5. api服务器watch得到文件位置
-	tempId := uuid.NewString()
 	ctx := context.Background()
+	//生成一个唯一key 并在结束后删除
+	tempId := uuid.NewString()
 	if _, err := o.etcd.Put(ctx, tempId, ""); err != nil {
 		logrus.Error(err)
 		return nil, false
 	}
 	defer o.etcd.Delete(ctx, tempId)
 	wt := o.etcd.Watch(ctx, tempId)
-	locates := make([]string, 0, pool.Config.Rs.AllShards())
-	//TODO 从discovery中获取所有objectserver的地址，并SET他们监听的key为 hash+tempId
+	locates := make([]string, pool.Config.Rs.AllShards())
+	for i := 0; i < pool.Config.Rs.AllShards(); i++ {
+		o.etcd.Put(ctx, LocationSubKey, fmt.Sprintf("%s.%d#%s", hash, i, tempId))
+	}
+	//开始监听变化
 	for {
 		select {
 		case resp, ok := <-wt:
@@ -51,7 +77,8 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 				return nil, false
 			}
 			for _, event := range resp.Events {
-				locates = append(locates, string(event.Kv.Value))
+				ip, idx := getLocateResp(string(event.Kv.Value))
+				locates[idx] = ip
 			}
 			if len(locates) == cap(locates) {
 				return locates, true

@@ -6,9 +6,14 @@ import (
 	"fmt"
 	"objectserver/internal/usecase/service"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
+)
+
+const (
+	LocationSubKey = "goodfs.location"
 )
 
 type Locator struct {
@@ -16,17 +21,18 @@ type Locator struct {
 }
 
 func New(etcd *clientv3.Client) *Locator {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if res, _ := etcd.Get(ctx, LocationSubKey, clientv3.WithCountOnly()); res.Count == 0 {
+		etcd.Put(ctx, LocationSubKey, "")
+	}
 	return &Locator{etcd}
 }
 
 //StartLocate 监听 etcd key 实现定位消息接收
 func (l *Locator) StartLocate(ip string) {
-	key := fmt.Sprint("locate.", ip)
 	ctx := context.Background()
-	if _, err := l.etcd.Put(ctx, key, ""); err != nil {
-		panic(err)
-	}
-	ch := l.etcd.Watch(ctx, key)
+	ch := l.etcd.Watch(ctx, LocationSubKey)
 	go func() {
 		defer graceful.Recover()
 		for {
@@ -34,7 +40,7 @@ func (l *Locator) StartLocate(ip string) {
 			case resp, ok := <-ch:
 				if !ok {
 					logrus.Warn("Locate watching stop! Try watching again...")
-					ch = l.etcd.Watch(ctx, key)
+					ch = l.etcd.Watch(ctx, LocationSubKey)
 					break
 				}
 				if resp.Err() != nil {
@@ -49,6 +55,7 @@ func (l *Locator) StartLocate(ip string) {
 	}()
 }
 
+// handlerLocate recieve "hash.idx#key" response "ip#idx"
 func (l *Locator) handlerLocate(message []byte, ip string) {
 	defer graceful.Recover()
 	tp := strings.Split(string(message), "#")
@@ -58,7 +65,12 @@ func (l *Locator) handlerLocate(message []byte, ip string) {
 	}
 	hash, respKey := tp[0], tp[1]
 	if service.Exist(hash) {
-		_, err := l.etcd.Put(context.Background(), respKey, ip)
+		tp = strings.Split(hash, ".")
+		if len(tp) != 2 {
+			logrus.Errorf("Receive incorrect message %s", string(message))
+			return
+		}
+		_, err := l.etcd.Put(context.Background(), respKey, fmt.Sprint(ip, "#", tp[1]))
 		if err != nil {
 			logrus.Errorf("Put locate repsone on key %s error: %s", respKey, err)
 			return

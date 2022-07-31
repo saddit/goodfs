@@ -4,7 +4,6 @@ import (
 	global "apiserver/internal/usecase/pool"
 	"bytes"
 	"common/util"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -29,12 +28,11 @@ func provideGetStream(hash string, locates []string) <-chan *provideStream {
 			wg.Add(1)
 			go func(idx int, ip string) {
 				defer wg.Done()
-				if IsAvailable(ip) {
+				if len(ip) > 0 {
 					reader, e := NewGetStream(ip, fmt.Sprintf("%s.%d", hash, idx))
 					respChan <- &provideStream{reader, idx, e}
 				} else {
-					e := errors.New("data server " + ip + " unavailable")
-					respChan <- &provideStream{nil, idx, e}
+					respChan <- &provideStream{nil, idx, fmt.Errorf("shard %s.%d lost", hash, idx)}
 				}
 			}(i, ip)
 		}
@@ -53,6 +51,7 @@ func NewRSGetStream(size int64, hash string, locates []string) (*RSGetStream, er
 	for r := range provideGetStream(hash, locates) {
 		if r.err != nil {
 			var ip string
+			//TODO use ip directly
 			ds, ip = global.Balancer.Pop(ds)
 			writers[r.index], r.err = NewPutStream(ip, fmt.Sprintf("%s.%d", hash, r.index), perSize)
 			if r.err != nil {

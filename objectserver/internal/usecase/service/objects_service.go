@@ -8,6 +8,7 @@ import (
 
 const (
 	LocateKeyPrefix = "LocateCache#"
+	LocationSubKey = "goodfs.location"
 )
 
 func Exist(name string) bool {
