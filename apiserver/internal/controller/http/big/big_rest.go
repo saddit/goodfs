@@ -17,7 +17,7 @@ import (
 //Post 生成大文件上传的Token
 func Post(g *gin.Context) {
 	req := g.Value("BigPostReq").(*entity.BigPostReq)
-	ips := service.SelectDataServer(nil, pool.Config.Rs.AllShards())
+	ips := service.SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
 	if len(ips) == 0 {
 		g.AbortWithStatus(http.StatusServiceUnavailable)
 	}
