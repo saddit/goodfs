@@ -1,7 +1,9 @@
 package service
 
 import (
+	"apiserver/internal/usecase/pool"
 	global "apiserver/internal/usecase/pool"
+	"apiserver/internal/usecase/selector"
 	"bytes"
 	"common/util"
 	"fmt"
@@ -46,16 +48,14 @@ func NewRSGetStream(size int64, hash string, locates []string) (*RSGetStream, er
 	writers := make([]io.Writer, global.Config.Rs.AllShards())
 	dsNum := int64(global.Config.Rs.DataShards)
 	perSize := (size + dsNum - 1) / dsNum
-	ds := GetDataServers()
+	lb := selector.IPSelector{Selector: pool.Balancer, IPs: GetDataServers()}
 	var e error
 	for r := range provideGetStream(hash, locates) {
 		if r.err != nil {
-			var ip string
-			//TODO use ip directly
-			ds, ip = global.Balancer.Pop(ds)
+			ip := lb.Select()
 			writers[r.index], r.err = NewPutStream(ip, fmt.Sprintf("%s.%d", hash, r.index), perSize)
 			if r.err != nil {
-				return nil, e
+				return nil, r.err
 			}
 			//需更新元数据
 			locates[r.index] = ip

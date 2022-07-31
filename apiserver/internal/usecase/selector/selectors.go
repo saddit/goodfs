@@ -1,17 +1,19 @@
 package selector
 
 import (
-	"apiserver/internal/entity"
 	"log"
 	"strings"
 )
-//TODO 改造成纯IP字符串数组筛选服务器
 
 type SelectStrategy string
 
+type Select interface {
+	Select([]string) string
+}
+
 type Selector interface {
-	Select([]*entity.DataServ) string
-	Pop([]*entity.DataServ) ([]*entity.DataServ, string)
+	Select
+	Pop([]string) ([]string, string)
 	Strategy() SelectStrategy
 }
 
@@ -27,4 +29,26 @@ func NewSelector(str string) Selector {
 		log.Panicf("Not allowed selector strategy: %v", str)
 	}
 	return sec
+}
+
+type IPSelector struct {
+	Selector
+	IPs  []string
+	used []string
+}
+
+// Select 负载均衡选增IP，能够自动处理IP不足的情况
+func (i *IPSelector) Select() string {
+	if i.used == nil {
+		i.used = make([]string, len(i.IPs))
+	}
+	var ip string
+	if len(i.IPs) > 0 {
+		i.IPs, ip = i.Selector.Pop(i.IPs)
+		i.used = append(i.used, ip)
+	} else {
+		i.used, ip = i.Selector.Pop(i.used)
+		i.IPs = append(i.IPs, ip)
+	}
+	return ip
 }
