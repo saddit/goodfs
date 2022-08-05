@@ -10,7 +10,7 @@ cache:
 registry:
   group: "goodfs"
   name: "objectserver"
-  timeout: 4s
+  timeout: 10s
   interval: 5s
 etcd:
   endpoint:
