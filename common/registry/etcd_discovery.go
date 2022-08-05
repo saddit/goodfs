@@ -37,10 +37,8 @@ func (e *EtcdDiscovery) asyncWatch(serv string, ch clientv3.WatchChan) {
 				switch event.Type {
 				case mvccpb.PUT:
 					e.addService(serv, addr)
-					break
 				case mvccpb.DELETE:
 					e.removeService(serv, addr)
-					break
 				}
 			}
 		}

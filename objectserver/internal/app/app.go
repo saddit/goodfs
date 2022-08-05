@@ -17,12 +17,12 @@ import (
 
 func initDir(cfg *config.Config) {
 	if !service.ExistPath(cfg.TempPath) {
-		if e := os.Mkdir(cfg.TempPath, os.ModeDir); e != nil {
+		if e := os.MkdirAll(cfg.TempPath, os.ModePerm); e != nil {
 			panic(e)
 		}
 	}
 	if !service.ExistPath(cfg.StoragePath) {
-		if e := os.Mkdir(cfg.StoragePath, os.ModeDir); e != nil {
+		if e := os.MkdirAll(cfg.StoragePath, os.ModePerm); e != nil {
 			panic(e)
 		}
 	}
@@ -52,6 +52,7 @@ func Run(cfg *config.Config) {
 		logrus.Errorf("register err: %v", err)
 		return
 	}
+	defer etcdCli.Close()
 	defer reg.Unregister()
 	//start services
 	locate.New(pool.Etcd).StartLocate(netAddr)
