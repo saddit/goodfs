@@ -15,8 +15,8 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *raft.Ra
 	baseDir := cfg.StoreDir
 
 	c := raft.DefaultConfig()
-	c.LocalID, c.LogOutput, c.LogLevel =
-		raft.ServerID(addr), os.Stderr, cfg.LogLevel
+	c.LocalID, c.LogOutput, c.LogLevel, c.ElectionTimeout =
+		raft.ServerID(addr), os.Stderr, cfg.LogLevel, cfg.ElectionTimeout
 
 	ldb, sdb, fss := newRaftStore(baseDir)
 

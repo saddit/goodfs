@@ -4,6 +4,7 @@ import (
 	"common/etcd"
 	"common/registry"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -21,10 +22,11 @@ type Config struct {
 }
 
 type ClusterConfig struct {
-	Bootstrap bool     `yaml:"bootstrap" env:"BOOTSTRAP" env-default:"false"`
-	LogLevel  string   `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
-	StoreDir  string   `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
-	Nodes     []string `yaml:"nodes" env:"NODES" env-required:"true" env-separator:","`
+	Bootstrap       bool          `yaml:"bootstrap" env:"BOOTSTRAP" env-default:"false"`
+	ElectionTimeout time.Duration `yaml:"election-timeout" env:"ELECTION_TIMEOUT" env-default:"300ms"`
+	LogLevel        string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
+	StoreDir        string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
+	Nodes           []string      `yaml:"nodes" env:"NODES" env-required:"true" env-separator:","`
 }
 
 func (c *ClusterConfig) LocalAddr() string {

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hashicorp/raft"
 	"google.golang.org/grpc"
 )
 
@@ -16,7 +15,7 @@ type HttpServer struct {
 	addr string
 }
 
-func NewHttpServer(addr string, grpcServer *grpc.Server, service IMetadataService, rf *raft.Raft) *HttpServer {
+func NewHttpServer(addr string, grpcServer *grpc.Server, service IMetadataService) *HttpServer {
 	engine := gin.Default()
 	if grpcServer != nil {
 		//grpc router
@@ -33,13 +32,13 @@ func NewHttpServer(addr string, grpcServer *grpc.Server, service IMetadataServic
 		})
 	}
 	//Http router
-	mc := NewMetadataController(rf, service)
+	mc := NewMetadataController(service)
 	engine.PUT("/metadata/{name}", mc.Put)
 	engine.POST("/metadata/{name}", mc.Post)
 	engine.GET("/metadata/{name}", mc.Get)
 	engine.DELETE("/metadata/{name}", mc.Delete)
 
-	vc := NewVersionController(rf, service)
+	vc := NewVersionController(service)
 	engine.PUT("/metadata_version/{name}", vc.Put)
 	engine.POST("/metadata_version/{name}", vc.Post)
 	engine.GET("/metadata_version/{name}", vc.Get)
