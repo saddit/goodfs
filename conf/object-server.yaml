@@ -1,6 +1,6 @@
 port: 8080
-storage-path: E:/file/objects/
-temp-path: E:/file/objects/temp/
+storage-path: /workspaces/objects
+temp-path: /workspaces/temp
 beat-interval: 3s
 cache:
   max-size-mb: 256
@@ -10,8 +10,10 @@ cache:
 registry:
   group: "goodfs"
   name: "objectserver"
+  timeout: 4s
+  interval: 5s
 etcd:
   endpoint:
-    - pressed.top:2379
+    - http://pressed.top:2379
   username: root
   password: xianka

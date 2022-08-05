@@ -2,13 +2,14 @@ package registry
 
 import (
 	"common/graceful"
+	"common/logs"
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
+
+var log = logs.New("etcd-registry")
 
 type EtcdRegistry struct {
 	*clientv3.Client
@@ -29,25 +30,21 @@ func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdReg
 func (e *EtcdRegistry) Register() error {
 	ctx := context.Background()
 	var err error
-
 	//init registered key
 	if e.leaseId, err = e.makeKvWithLease(ctx, e.key, e.localAddr); err != nil {
 		return err
 	}
-
-	//keepalive the lease
-	kach, err := e.keepaliveLease(ctx, e.leaseId)
-	if err != nil {
-		return err
-	}
-
 	//listen the hearbeat response
 	go func() {
 		defer graceful.Recover()
-		for resp := range kach {
-			logrus.Infof("keepalive %s success (%d)", e.key, resp.TTL)
-		}
-		logrus.Infof("stop keepalive %s", e.key)
+		for range time.Tick(e.cfg.Interval) {
+			resp, err := e.KeepAliveOnce(ctx, e.leaseId)
+			if err != nil { 
+				log.Errorf("keepalive %s err: %s", e.key, err.Error())
+			} else {
+				log.Tracef("keepalive %s success (%d)", e.key, resp.TTL)
+			}
+		}	
 	}()
 
 	return nil
@@ -90,8 +87,8 @@ func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (
 	return lease.ID, nil
 }
 
-func (e *EtcdRegistry) keepaliveLease(ctx context.Context, id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, error) {
-	ctx2, cancel := context.WithTimeout(ctx, e.cfg.Timeout)
-	defer cancel()
-	return e.KeepAlive(ctx2, id)
-}
+// func (e *EtcdRegistry) keepaliveLease(ctx context.Context, id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, error) {
+// 	ctx2, cancel := context.WithTimeout(ctx, e.cfg.Timeout)
+// 	defer cancel()
+// 	return e.KeepAlive(ctx2, id)
+// }

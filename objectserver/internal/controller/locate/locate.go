@@ -2,19 +2,21 @@ package locate
 
 import (
 	"common/graceful"
+	"common/logs"
 	"context"
 	"fmt"
 	"objectserver/internal/usecase/service"
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 const (
 	LocationSubKey = "goodfs.location"
 )
+
+var logrus = logs.New("object-locator")
 
 type Locator struct {
 	etcd *clientv3.Client
@@ -35,21 +37,20 @@ func (l *Locator) StartLocate(ip string) {
 	ch := l.etcd.Watch(ctx, LocationSubKey)
 	go func() {
 		defer graceful.Recover()
+		logrus.Info("Start listenning locating message...")
 		for {
-			select {
-			case resp, ok := <-ch:
-				if !ok {
-					logrus.Warn("Locate watching stop! Try watching again...")
-					ch = l.etcd.Watch(ctx, LocationSubKey)
-					break
-				}
-				if resp.Err() != nil {
-					logrus.Error(resp.Err())
-					break
-				}
-				for _, event := range resp.Events {
-					go l.handlerLocate(event.Kv.Value, ip)
-				}
+			resp, ok := <-ch
+			if !ok {
+				logrus.Warn("Locate watching stop! Try watching again...")
+				ch = l.etcd.Watch(ctx, LocationSubKey)
+				continue
+			}
+			if resp.Err() != nil {
+				logrus.Error(resp.Err())
+				continue
+			}
+			for _, event := range resp.Events {
+				go l.handlerLocate(event.Kv.Value, ip)
 			}
 		}
 	}()
