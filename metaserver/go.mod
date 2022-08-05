@@ -13,7 +13,9 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20220701152857-1f4dfe6f2a75 // indirect
 	github.com/cockroachdb/redact v1.0.8 // indirect
 	github.com/cockroachdb/sentry-go v0.6.1-cockroachdb.2 // indirect
-	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/coreos/go-semver v0.3.0 // indirect
+	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
@@ -21,6 +23,12 @@ require (
 	github.com/philhofer/fwd v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
+	go.etcd.io/bbolt v1.3.6 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.4 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.4 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/tools v0.1.11 // indirect
@@ -30,7 +38,6 @@ require (
 require (
 	github.com/Jille/raft-grpc-leader-rpc v1.1.0
 	github.com/armon/go-metrics v0.3.9 // indirect
-	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/go-hclog v0.16.2 // indirect
@@ -41,6 +48,7 @@ require (
 	github.com/hashicorp/raft-boltdb v0.0.0-20220329195025-15018e9b97e0 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	go.etcd.io/etcd/client/v3 v3.5.4
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/text v0.3.7 // indirect

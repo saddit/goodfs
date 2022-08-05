@@ -18,12 +18,12 @@ type RpcRaftServer struct {
 }
 
 // NewRpcRaftServer init a grpc raft server. if no available nodes return empty object
-func NewRpcRaftServer(cfg config.ClusterConfig, service IMetadataService) *RpcRaftServer {
+func NewRpcRaftServer(cfg config.ClusterConfig, tx ITransaction) *RpcRaftServer {
 	if len(cfg.Nodes) == 0 {
 		logrus.Warn("no available nodes, raft disabled")
 		return &RpcRaftServer{nil, nil}
 	}
-	fsm := raftimpl.NewFSM(service)
+	fsm := raftimpl.NewFSM(tx)
 	tm := transport.New(raft.ServerAddress(cfg.LocalAddr()), []ggrpc.DialOption{ggrpc.WithInsecure()})
 	rf := raftimpl.NewRaft(cfg, fsm, tm.Transport())
 	server := ggrpc.NewServer()

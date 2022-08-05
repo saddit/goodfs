@@ -1,11 +1,16 @@
 package usecase
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
-	ErrNotFound = errors.New("not found")
-	ErrExists   = errors.New("already exists key")
-	ErrNilData  = errors.New("nil data")
-	ErrDecode   = errors.New("decode fail")
-	ErrEncode   = errors.New("encode fail")
+	ErrKnown    = errors.New("")
+	ErrNotFound = fmt.Errorf("%wnot found", ErrKnown)
+	ErrOldData  = fmt.Errorf("%wexpired data", ErrKnown)
+	ErrExists   = fmt.Errorf("%walready exists key", ErrKnown)
+	ErrNilData  = fmt.Errorf("%wnil data", ErrKnown)
+	ErrDecode   = fmt.Errorf("%wdecode fail", ErrKnown)
+	ErrEncode   = fmt.Errorf("%wencode fail", ErrKnown)
 )

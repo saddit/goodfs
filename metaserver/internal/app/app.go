@@ -13,7 +13,7 @@ import (
 	"metaserver/internal/controller/grpc"
 
 	nested "github.com/antonfisher/nested-logrus-formatter"
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -47,8 +47,9 @@ func Run(cfg *Config) {
 	netAddr := fmt.Sprint(cfg.Cluster.LocalAddr(), ":", cfg.Port)
 	metaRepo := repo.NewMetadataRepo(boltdb)
 	metaService := service.NewMetadataService(metaRepo)
-	grpcServer := grpc.NewRpcRaftServer(cfg.Cluster, metaService)
-	httpServer := http.NewHttpServer(netAddr, grpcServer.Server, metaService, grpcServer.Raft)
+	grpcServer := grpc.NewRpcRaftServer(cfg.Cluster, metaRepo.DB)
+	metaRepo.Raft = grpcServer.Raft
+	httpServer := http.NewHttpServer(netAddr, grpcServer.Server, metaService)
 	reg := registry.NewEtcdRegistry(etcdCli, cfg.Registry, netAddr)
 	// register self
 	if err := reg.Register(); err != nil {

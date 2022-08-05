@@ -4,17 +4,15 @@ import (
 	. "metaserver/internal/usecase"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hashicorp/raft"
 )
 
-//TODO 元数据API 操作成功后Apply到Raft自动机中
+//TODO 元数据API
 type MetadataController struct {
-	raft    *raft.Raft			//raft maybe nil which means disabled raft
 	service IMetadataService
 }
 
-func NewMetadataController(rf *raft.Raft, service IMetadataService) *MetadataController {
-	return &MetadataController{rf, service}
+func NewMetadataController(service IMetadataService) *MetadataController {
+	return &MetadataController{service}
 }
 
 func (m *MetadataController) Post(g *gin.Context) {
