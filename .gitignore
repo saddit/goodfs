@@ -1,2 +1,3 @@
 *.sum
-go.work
+.idea
+.vscode

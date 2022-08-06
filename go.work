@@ -1,0 +1,9 @@
+go 1.18
+
+use apiserver
+
+use common
+
+use objectserver
+
+use metaserver
