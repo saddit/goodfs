@@ -1,14 +1,14 @@
 package raftimpl
 
 import (
+	"common/logs"
 	"encoding/json"
+	"github.com/hashicorp/raft"
+	bolt "go.etcd.io/bbolt"
 	"io"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
-	bolt "go.etcd.io/bbolt"
-	"github.com/hashicorp/raft"
-	"github.com/sirupsen/logrus"
 )
 
 type fsm struct {
@@ -22,7 +22,7 @@ func NewFSM(tx ITransaction) raft.FSM {
 func (f *fsm) applyMetadata(data *entity.RaftData) error {
 	switch data.Type {
 	case entity.LogInsert:
-		return f.Update(logic.AddMeta(data.Name, data.Metadata)) 
+		return f.Update(logic.AddMeta(data.Name, data.Metadata))
 	case entity.LogRemove:
 		return f.Update(logic.RemoveMeta(data.Name))
 	case entity.LogUpdate:
@@ -48,7 +48,7 @@ func (f *fsm) applyVersion(data *entity.RaftData) error {
 
 func (f *fsm) Apply(lg *raft.Log) any {
 	if lg.Type != raft.LogCommand {
-		logrus.Warn("recieve log type %v", lg.Type)
+		logs.Std().Warn("recieve log type %v", lg.Type)
 		return nil
 	}
 	var data entity.RaftData
@@ -66,7 +66,6 @@ func (f *fsm) Apply(lg *raft.Log) any {
 func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
 	return &snapshot{}, nil
 }
-
 
 func (f *fsm) Restore(snapshot io.ReadCloser) error {
 	dc := json.NewDecoder(snapshot)

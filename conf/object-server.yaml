@@ -1,4 +1,5 @@
 port: 8080
+log-level: info
 storage-path: /workspaces/objects
 temp-path: /workspaces/temp
 beat-interval: 3s

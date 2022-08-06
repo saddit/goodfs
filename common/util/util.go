@@ -2,16 +2,16 @@ package util
 
 import (
 	"bytes"
+	"common/logs"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 func GetFileExt(fileName string, withDot bool) (string, bool) {
@@ -87,7 +87,7 @@ func ImmediateTick(t time.Duration) <-chan time.Time {
 	return ch
 }
 
-func InstanceOf[T interface{}](obj interface{}) bool {
+func InstanceOf[T any](obj any) bool {
 	if obj != nil {
 		_, ok := obj.(T)
 		return ok
@@ -137,6 +137,22 @@ func ToString(v any) string {
 // LogErr logrus if err != nil
 func LogErr(err error) {
 	if err != nil {
-		logrus.Error(err)
+		logs.Std().Error(err)
 	}
+}
+
+func IfElse[T any](cond bool, t T, f T) T {
+	if cond {
+		return t
+	}
+	return f
+}
+
+func GetHost() string {
+	host, err := os.Hostname()
+	if err != nil {
+		logs.Std().Error(err)
+		return "localhost"
+	}
+	return host
 }

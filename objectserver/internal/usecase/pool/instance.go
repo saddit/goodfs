@@ -38,4 +38,5 @@ func InitPool(cfg *config.Config) {
 
 func Close() {
 	util.LogErr(Etcd.Close())
+	util.LogErr(Cache.Close())
 }

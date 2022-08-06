@@ -28,6 +28,13 @@ func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdReg
 	}
 }
 
+func (e *EtcdRegistry) MustRegister() *EtcdRegistry {
+	if err := e.Register(); err != nil {
+		panic(err)
+	}
+	return e
+}
+
 func (e *EtcdRegistry) Register() error {
 	ctx := context.Background()
 	var err error
@@ -40,11 +47,11 @@ func (e *EtcdRegistry) Register() error {
 	if err != nil {
 		return err
 	}
-	//listen the hearbeat response
+	//listen the heartbeat response
 	go func() {
 		defer graceful.Recover()
 		for resp := range kach {
-			log.Infof("keepalive %s success (%d)", e.key, resp.TTL)
+			log.Tracef("keepalive %s success (%d)", e.key, resp.TTL)
 		}
 		log.Infof("stop keepalive %s", e.key)
 	}()
@@ -67,9 +74,8 @@ func (e *EtcdRegistry) Unregister() error {
 			return err
 		}
 		return nil
-	} else {
-		return fmt.Errorf("Unregister failed")
 	}
+	return nil
 }
 
 func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (clientv3.LeaseID, error) {
@@ -80,7 +86,6 @@ func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (
 	if err != nil {
 		return -1, fmt.Errorf("Register interval heartbeat: grant lease error, %v", err)
 	}
-	log.Infof("register server with time %fs", e.cfg.Interval.Seconds())
 	//create a key with lease
 	ctx3, cancel3 := context.WithTimeout(ctx, e.cfg.Timeout)
 	defer cancel3()

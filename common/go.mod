@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/allegro/bigcache v1.2.1
+	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/sirupsen/logrus v1.8.1
 	go.etcd.io/etcd/api/v3 v3.5.4
 	go.etcd.io/etcd/client/v3 v3.5.4

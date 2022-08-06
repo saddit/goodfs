@@ -1,6 +1,7 @@
 package raftimpl
 
 import (
+	"common/util"
 	"fmt"
 	"metaserver/config"
 	"os"
@@ -11,7 +12,7 @@ import (
 )
 
 func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *raft.Raft {
-	addr := cfg.LocalAddr()
+	addr := util.GetHost()
 	baseDir := cfg.StoreDir
 
 	c := raft.DefaultConfig()

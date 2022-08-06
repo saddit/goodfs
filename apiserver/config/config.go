@@ -2,6 +2,7 @@ package config
 
 import (
 	"common/etcd"
+	"common/logs"
 	"common/registry"
 	"time"
 
@@ -9,12 +10,12 @@ import (
 )
 
 const (
-	ConfFilePath  = "../conf/api-server.yaml"
-	MetadataMongo = "metadata_v2"
+	ConfFilePath = "../conf/api-server.yaml"
 )
 
 type Config struct {
 	Port            string          `yaml:"port" env:"PORT" env-default:"8080"`
+	LogLevel        logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	LogDir          string          `yaml:"log-dir" env:"LOG_DIR" env-default:"logs"`
 	SelectStrategy  string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
 	EnableHashCheck bool            `yaml:"enable-hash-check" env:"ENABLE_HASH_CHECK" env-default:"true"`

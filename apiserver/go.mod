@@ -2,7 +2,10 @@ module apiserver
 
 go 1.18
 
-require go.mongodb.org/mongo-driver v1.9.0
+require (
+	github.com/google/uuid v1.1.2
+	go.mongodb.org/mongo-driver v1.9.0
+)
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
@@ -42,7 +45,6 @@ require (
 )
 
 require (
-	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/ilyakaznacheev/cleanenv v1.2.6
 	github.com/klauspost/reedsolomon v1.10.0
