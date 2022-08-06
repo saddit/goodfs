@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"common/util"
 	"metaserver/config"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
@@ -24,7 +25,7 @@ func NewRpcRaftServer(cfg config.ClusterConfig, tx ITransaction) *RpcRaftServer 
 		return &RpcRaftServer{nil, nil}
 	}
 	fsm := raftimpl.NewFSM(tx)
-	tm := transport.New(raft.ServerAddress(cfg.LocalAddr()), []ggrpc.DialOption{ggrpc.WithInsecure()})
+	tm := transport.New(raft.ServerAddress(util.GetHost()), []ggrpc.DialOption{ggrpc.WithInsecure()})
 	rf := raftimpl.NewRaft(cfg, fsm, tm.Transport())
 	server := ggrpc.NewServer()
 	tm.Register(server)

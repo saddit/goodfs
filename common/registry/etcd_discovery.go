@@ -15,12 +15,12 @@ type EtcdDiscovery struct {
 	services map[string]*serviceList
 }
 
-func NewEtcdDiscovery(cli *clientv3.Client, group string, services []string) *EtcdDiscovery {
+func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 	m := make(map[string]*serviceList)
-	d := &EtcdDiscovery{cli, group, m}
-	for _, s := range services {
+	d := &EtcdDiscovery{cli, cfg.Group, m}
+	for _, s := range cfg.Services {
 		m[s] = newServiceList()
-		prefix := fmt.Sprintf("%s/%s", group, s)
+		prefix := fmt.Sprintf("%s/%s", cfg.Group, s)
 		ch := d.Watch(context.Background(), prefix, clientv3.WithPrefix())
 		d.asyncWatch(s, ch)
 	}

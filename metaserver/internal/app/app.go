@@ -1,7 +1,9 @@
 package app
 
 import (
+	"common/logs"
 	"common/registry"
+	"common/util"
 	"fmt"
 	. "metaserver/config"
 	"metaserver/internal/controller/http"
@@ -10,28 +12,23 @@ import (
 	"os"
 	"time"
 
-	"metaserver/internal/controller/grpc"
-
-	nested "github.com/antonfisher/nested-logrus-formatter"
 	bolt "go.etcd.io/bbolt"
-	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"metaserver/internal/controller/grpc"
 )
+
+var logger = logs.Std()
 
 func Run(cfg *Config) {
 	// init logger
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetFormatter(&nested.Formatter{
-		HideKeys:    true,
-		FieldsOrder: []string{"component", "category"},
-	})
+	logs.SetLevel(cfg.LogLevel)
 	// open db file
 	boltdb, err := bolt.Open(cfg.DataDir, os.ModePerm, &bolt.Options{
 		Timeout:    12 * time.Second,
 		NoGrowSync: false,
 	})
 	if err != nil {
-		logrus.Errorf("open db err: %v", err)
+		logger.Errorf("open db err: %v", err)
 		return
 	}
 	// init components
@@ -41,22 +38,16 @@ func Run(cfg *Config) {
 		Password:  cfg.Etcd.Password,
 	})
 	if err != nil {
-		logrus.Errorf("create etcd client err: %v", err)
+		logger.Errorf("create etcd client err: %v", err)
 		return
 	}
-	netAddr := fmt.Sprint(cfg.Cluster.LocalAddr(), ":", cfg.Port)
+	netAddr := fmt.Sprint(util.GetHost(), ":", cfg.Port)
 	metaRepo := repo.NewMetadataRepo(boltdb)
 	metaService := service.NewMetadataService(metaRepo)
 	grpcServer := grpc.NewRpcRaftServer(cfg.Cluster, metaRepo.DB)
 	metaRepo.Raft = grpcServer.Raft
 	httpServer := http.NewHttpServer(netAddr, grpcServer.Server, metaService)
-	reg := registry.NewEtcdRegistry(etcdCli, cfg.Registry, netAddr)
-	// register self
-	if err := reg.Register(); err != nil {
-		logrus.Errorf("register err: %v", err)
-		return
-	}
-	defer reg.Unregister()
+	defer registry.NewEtcdRegistry(etcdCli, cfg.Registry, netAddr).MustRegister().Unregister()
 
 	httpServer.ListenAndServe()
 }

@@ -1,7 +1,9 @@
 package app
 
 import (
+	"common/logs"
 	"common/registry"
+	"common/util"
 	"fmt"
 	"objectserver/config"
 
@@ -10,9 +12,6 @@ import (
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
 	"os"
-
-	"github.com/sirupsen/logrus"
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 func initDir(cfg *config.Config) {
@@ -29,33 +28,19 @@ func initDir(cfg *config.Config) {
 }
 
 func Run(cfg *config.Config) {
+	initDir(cfg)
+	netAddr := fmt.Sprint(util.GetHost(), ":", cfg.Port)
+	logs.SetLevel(cfg.LogLevel)
+	//init components
 	pool.InitPool(cfg)
 	defer pool.Close()
-	//pre reslove
-	initDir(cfg)
+	// register
+	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr).MustRegister().Unregister()
+	// locating serv
+	defer locate.New(pool.Etcd).StartLocate(netAddr)()
+	// cleaning serv
+	defer service.StartTempRemovalBackground(pool.Cache)()
+	// warmup serv
 	service.WarmUpLocateCache()
-	//init components
-	httpServer := http.NewHttpServer()
-	etcdCli, err := clientv3.New(clientv3.Config{
-		Endpoints: cfg.Etcd.Endpoint,
-		Username:  cfg.Etcd.Username,
-		Password:  cfg.Etcd.Password,
-	})
-	if err != nil {
-		logrus.Errorf("create etcd client err: %v", err)
-		return
-	}
-	netAddr := fmt.Sprint(cfg.LocalAddr(), ":", cfg.Port)
-	reg := registry.NewEtcdRegistry(etcdCli, cfg.Registry, netAddr)
-	// register self
-	if err := reg.Register(); err != nil {
-		logrus.Errorf("register err: %v", err)
-		return
-	}
-	defer etcdCli.Close()
-	defer reg.Unregister()
-	//start services
-	locate.New(pool.Etcd).StartLocate(netAddr)
-	service.StartTempRemovalBackground()
-	httpServer.ListenAndServe(netAddr)
+	http.NewHttpServer().ListenAndServe(netAddr)
 }

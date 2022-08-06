@@ -3,6 +3,7 @@ package pool
 import (
 	"apiserver/config"
 	"apiserver/internal/usecase/selector"
+	"common/registry"
 	"common/util"
 	"net/http"
 	"time"
@@ -11,16 +12,18 @@ import (
 )
 
 var (
-	Config   *config.Config
-	Etcd     *clientv3.Client
-	Http     *http.Client
-	Balancer selector.Selector
+	Config    *config.Config
+	Etcd      *clientv3.Client
+	Http      *http.Client
+	Balancer  selector.Selector
+	Discovery *registry.EtcdDiscovery
 )
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
 	initHttpClient()
 	initEtcd(cfg)
+	//initDiscovery(Etcd, &cfg.Registry)
 	initBalancer(cfg)
 }
 
@@ -40,6 +43,10 @@ func initEtcd(cfg *config.Config) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func initDiscovery(etcd *clientv3.Client, cfg *registry.Config) {
+	Discovery = registry.NewEtcdDiscovery(etcd, cfg)
 }
 
 func initHttpClient() {

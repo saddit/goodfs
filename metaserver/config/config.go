@@ -2,8 +2,8 @@ package config
 
 import (
 	"common/etcd"
+	"common/logs"
 	"common/registry"
-	"os"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -15,6 +15,7 @@ const (
 
 type Config struct {
 	Port     string          `yaml:"port" env:"PORT" env-default:"4091"`
+	LogLevel logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	DataDir  string          `ymal:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
 	Cluster  ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
 	Registry registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
@@ -29,10 +30,6 @@ type ClusterConfig struct {
 	Nodes           []string      `yaml:"nodes" env:"NODES" env-required:"true" env-separator:","`
 }
 
-func (c *ClusterConfig) LocalAddr() string {
-	return getLocalAddress()
-}
-
 func ReadConfig() Config {
 	return ReadConfigFrom(ConfFilePath)
 }
@@ -43,12 +40,4 @@ func ReadConfigFrom(path string) Config {
 		panic(err)
 	}
 	return conf
-}
-
-func getLocalAddress() string {
-	hn, e := os.Hostname()
-	if e != nil {
-		panic(e)
-	}
-	return hn
 }

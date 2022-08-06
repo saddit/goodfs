@@ -24,7 +24,7 @@ func ListenAndServe(addr string, router http.Handler) {
 			log.Printf("listen: %s\n", err)
 		}
 	}()
-
+	log.Printf("Start server on %s\n", addr)
 	// Wait for interrupt signal to gracefully shut down the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)

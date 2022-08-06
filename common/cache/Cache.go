@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"common/graceful"
 	"common/util"
 	"log"
 
@@ -9,17 +10,17 @@ import (
 
 type Cache struct {
 	cache         *bigcache.BigCache
-	notifyEvicted []chan CacheEntry
+	notifyEvicted []chan Entry
 }
 
-type CacheEntry struct {
+type Entry struct {
 	Key    string
 	Value  []byte
 	Reason bigcache.RemoveReason
 }
 
 func NewCache(config bigcache.Config) *Cache {
-	res := &Cache{notifyEvicted: make([]chan CacheEntry, 0, 16)}
+	res := &Cache{notifyEvicted: make([]chan Entry, 0, 16)}
 	config.OnRemoveWithReason = res.onRemove
 	b, e := bigcache.NewBigCache(config)
 	if e != nil {
@@ -49,14 +50,15 @@ func GetGob2[T interface{}](c ICache, k string, v *T) bool {
 
 func (c *Cache) onRemove(k string, v []byte, r bigcache.RemoveReason) {
 	go func() {
+		graceful.Recover()
 		for _, ch := range c.notifyEvicted {
-			ch <- CacheEntry{k, v, r}
+			ch <- Entry{k, v, r}
 		}
 	}()
 }
 
-func (c *Cache) NotifyEvicted() <-chan CacheEntry {
-	ch := make(chan CacheEntry, 5)
+func (c *Cache) NotifyEvicted() <-chan Entry {
+	ch := make(chan Entry, 5)
 	c.notifyEvicted = append(c.notifyEvicted, ch)
 	return ch
 }
@@ -86,11 +88,11 @@ func (c *Cache) Delete(k string) {
 	c.cache.Delete(k)
 }
 
-func (c *Cache) Close() {
-	defer c.cache.Close()
+func (c *Cache) Close() error {
 	for _, ch := range c.notifyEvicted {
 		close(ch)
 	}
+	return c.cache.Close()
 }
 
 func (c *Cache) SetGob(k string, v interface{}) bool {

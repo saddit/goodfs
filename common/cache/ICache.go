@@ -1,7 +1,7 @@
 package cache
 
 type ICache interface {
-	NotifyEvicted() <-chan CacheEntry
+	NotifyEvicted() <-chan Entry
 	Get(k string) []byte
 	HasGet(k string) ([]byte, bool)
 	Has(k string) bool
@@ -9,5 +9,5 @@ type ICache interface {
 	SetGob(k string, v interface{}) bool
 	Refresh(k string)
 	Delete(k string)
-	Close()
+	Close() error
 }
