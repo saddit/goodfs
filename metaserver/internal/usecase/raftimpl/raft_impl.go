@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	raft "github.com/hashicorp/raft"
-	boltdb "github.com/hashicorp/raft-boltdb"
+	boltdb "github.com/hashicorp/raft-boltdb/v2"
 )
 
 func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *raft.Raft {
