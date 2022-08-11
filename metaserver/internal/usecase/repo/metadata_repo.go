@@ -2,11 +2,13 @@ package repo
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/utils"
+	"time"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -21,11 +23,16 @@ func NewMetadataRepo(db *bolt.DB) *MetadataRepo {
 }
 
 func (m *MetadataRepo) applyLog(data *entity.RaftData) error {
-	if m.Raft != nil {
-		//TODO
-
+	if m.Raft == nil {
+		return nil
 	}
-	return nil
+	///TODO
+	bt, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	feat := m.Raft.Apply(bt, 5 * time.Second)
+	return feat.Error()
 }
 
 func (m *MetadataRepo) AddMetadata(name string, data *entity.Metadata) error {

@@ -1,14 +1,18 @@
 package raftimpl
 
 import (
+	"common/graceful"
 	"common/logs"
+	"common/util"
 	"encoding/json"
-	"github.com/hashicorp/raft"
-	bolt "go.etcd.io/bbolt"
 	"io"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
+	"metaserver/internal/usecase/utils"
+
+	"github.com/hashicorp/raft"
+	bolt "go.etcd.io/bbolt"
 )
 
 type fsm struct {
@@ -64,7 +68,50 @@ func (f *fsm) Apply(lg *raft.Log) any {
 }
 
 func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
-	return &snapshot{}, nil
+	reader, writer := io.Pipe()
+	enc := json.NewEncoder(writer)
+	go func() {
+		defer graceful.Recover()
+		defer writer.Close()
+		err := f.View(func(tx *bolt.Tx) error {
+			// get root bucket
+			b := tx.Bucket([]byte(logic.BucketName))
+			// each metadata kv
+			b.ForEach(func(k, v []byte) error {
+				var data entity.Metadata
+				if !utils.DecodeMsgp(&data, v) {
+					return ErrDecode
+				}
+				return enc.Encode(&entity.RaftData{
+					Type: entity.LogInsert,
+					Dest: entity.DestMetadata,
+					Name: data.Name,
+					Metadata: &data,
+				})
+			})
+			btx := b.Tx()
+			defer btx.Rollback()
+			// each metadata-version bunckets
+			return btx.ForEach(func(name []byte, b *bolt.Bucket) error {
+				// each metadata's versions
+				return b.ForEach(func(k, v []byte) error {
+					var data entity.Version
+					if !utils.DecodeMsgp(&data, v) {
+						return ErrDecode
+					}
+					return enc.Encode(&entity.RaftData{
+						Name: string(name),
+						Sequence: data.Sequence,
+						Type: entity.LogInsert,
+						Dest: entity.DestVersion,
+						Version: &data,
+					})
+				})
+			})
+		})
+		util.LogErr(err)
+	}()
+	return &snapshot{reader}, nil
 }
 
 func (f *fsm) Restore(snapshot io.ReadCloser) error {
@@ -78,28 +125,15 @@ func (f *fsm) Restore(snapshot io.ReadCloser) error {
 				return err
 			}
 			// judge data type and dest then do logic
-			switch data.Type {
-			case entity.LogInsert:
+			if data.Type == entity.LogInsert {
 				if data.Dest == entity.DestMetadata {
 					err = logic.AddMeta(data.Name, data.Metadata)(tx)
 				} else {
 					err = logic.AddVer(data.Name, data.Version)(tx)
 				}
-			case entity.LogUpdate:
-				if data.Dest == entity.DestMetadata {
-					err = logic.UpdateMeta(data.Name, data.Metadata)(tx)
-				} else {
-					err = logic.UpdateVer(data.Name, data.Version)(tx)
+				if err != nil {
+					return err
 				}
-			case entity.LogRemove:
-				if data.Dest == entity.DestMetadata {
-					err = logic.RemoveMeta(data.Name)(tx)
-				} else {
-					err = logic.RemoveVer(data.Name, int(data.Sequence))(tx)
-				}
-			}
-			if err != nil {
-				return err
 			}
 		}
 		return nil
@@ -107,10 +141,15 @@ func (f *fsm) Restore(snapshot io.ReadCloser) error {
 }
 
 type snapshot struct {
+	io.Reader
 }
 
 func (s *snapshot) Persist(sink raft.SnapshotSink) error {
-	return nil
+	if _, err := io.Copy(sink, s); err != nil {
+		logs.Std().Error(err)
+		return sink.Cancel()
+	}
+	return sink.Close()
 }
 
 func (s *snapshot) Release() {
