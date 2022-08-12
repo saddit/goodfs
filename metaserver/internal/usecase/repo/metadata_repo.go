@@ -2,7 +2,6 @@ package repo
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
@@ -22,17 +21,22 @@ func NewMetadataRepo(db *bolt.DB) *MetadataRepo {
 	return &MetadataRepo{DB: db}
 }
 
-func (m *MetadataRepo) applyLog(data *entity.RaftData) error {
+func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) error {
 	if m.Raft == nil {
 		return nil
 	}
-	///TODO
-	bt, err := json.Marshal(data)
-	if err != nil {
-		return err
+	bt := utils.EncodeMsgp(data)
+	if bt == nil {
+		return ErrEncode
 	}
 	feat := m.Raft.Apply(bt, 5 * time.Second)
-	return feat.Error()
+	if err := feat.Error(); err != nil {
+		return err
+	}
+	if resp := feat.Response(); resp != nil {
+		return resp.(error)
+	}
+	return nil
 }
 
 func (m *MetadataRepo) AddMetadata(name string, data *entity.Metadata) error {

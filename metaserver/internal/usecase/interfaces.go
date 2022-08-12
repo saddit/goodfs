@@ -32,6 +32,7 @@ type (
 		GetMetadata(string) (*entity.Metadata, error)
 		GetVersion(string, uint64) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
+		ApplyRaft(*entity.RaftData) error
 	}
 
 	TxFunc func(*bolt.Tx) error

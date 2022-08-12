@@ -1,36 +1,39 @@
 package raftimpl
 
 import (
-	"common/graceful"
 	"common/logs"
 	"common/util"
-	"encoding/json"
 	"io"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/utils"
+	"os"
 
 	"github.com/hashicorp/raft"
 	bolt "go.etcd.io/bbolt"
 )
 
+var (
+	log = logs.New("raft-fsm")
+)
+
 type fsm struct {
-	ITransaction
+	db *bolt.DB
 }
 
-func NewFSM(tx ITransaction) raft.FSM {
+func NewFSM(tx *bolt.DB) raft.FSM {
 	return &fsm{tx}
 }
 
 func (f *fsm) applyMetadata(data *entity.RaftData) error {
 	switch data.Type {
 	case entity.LogInsert:
-		return f.Update(logic.AddMeta(data.Name, data.Metadata))
+		return f.db.Update(logic.AddMeta(data.Name, data.Metadata))
 	case entity.LogRemove:
-		return f.Update(logic.RemoveMeta(data.Name))
+		return f.db.Update(logic.RemoveMeta(data.Name))
 	case entity.LogUpdate:
-		return f.Update(logic.UpdateMeta(data.Name, data.Metadata))
+		return f.db.Update(logic.UpdateMeta(data.Name, data.Metadata))
 	default:
 		return ErrNotFound
 	}
@@ -39,12 +42,12 @@ func (f *fsm) applyMetadata(data *entity.RaftData) error {
 func (f *fsm) applyVersion(data *entity.RaftData) error {
 	switch data.Type {
 	case entity.LogInsert:
-		return f.Update(logic.AddVer(data.Name, data.Version))
+		return f.db.Update(logic.AddVer(data.Name, data.Version))
 	case entity.LogRemove:
-		return f.Update(logic.RemoveVer(data.Name, int(data.Sequence)))
+		return f.db.Update(logic.RemoveVer(data.Name, int(data.Sequence)))
 	case entity.LogUpdate:
 		data.Version.Sequence = data.Sequence
-		return f.Update(logic.UpdateVer(data.Name, data.Version))
+		return f.db.Update(logic.UpdateVer(data.Name, data.Version))
 	default:
 		return ErrNotFound
 	}
@@ -52,12 +55,12 @@ func (f *fsm) applyVersion(data *entity.RaftData) error {
 
 func (f *fsm) Apply(lg *raft.Log) any {
 	if lg.Type != raft.LogCommand {
-		logs.Std().Warn("recieve log type %v", lg.Type)
+		log.Warn("recieve log type %v", lg.Type)
 		return nil
 	}
 	var data entity.RaftData
-	if err := json.Unmarshal(lg.Data, &data); err != nil {
-		return err
+	if ok := utils.DecodeMsgp(&data, lg.Data); !ok {
+		return ErrDecode
 	}
 	if data.Dest == entity.DestMetadata {
 		return f.applyMetadata(&data)
@@ -69,89 +72,66 @@ func (f *fsm) Apply(lg *raft.Log) any {
 
 func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
 	reader, writer := io.Pipe()
-	enc := json.NewEncoder(writer)
 	go func() {
-		defer graceful.Recover()
 		defer writer.Close()
-		err := f.View(func(tx *bolt.Tx) error {
-			// get root bucket
-			b := tx.Bucket([]byte(logic.BucketName))
-			// each metadata kv
-			b.ForEach(func(k, v []byte) error {
-				var data entity.Metadata
-				if !utils.DecodeMsgp(&data, v) {
-					return ErrDecode
-				}
-				return enc.Encode(&entity.RaftData{
-					Type: entity.LogInsert,
-					Dest: entity.DestMetadata,
-					Name: data.Name,
-					Metadata: &data,
-				})
-			})
-			btx := b.Tx()
-			defer btx.Rollback()
-			// each metadata-version bunckets
-			return btx.ForEach(func(name []byte, b *bolt.Bucket) error {
-				// each metadata's versions
-				return b.ForEach(func(k, v []byte) error {
-					var data entity.Version
-					if !utils.DecodeMsgp(&data, v) {
-						return ErrDecode
-					}
-					return enc.Encode(&entity.RaftData{
-						Name: string(name),
-						Sequence: data.Sequence,
-						Type: entity.LogInsert,
-						Dest: entity.DestVersion,
-						Version: &data,
-					})
-				})
-			})
-		})
-		util.LogErr(err)
+		tx, err := f.db.Begin(false)
+		if err != nil {
+			log.Error("get snapshot from fsm err: %v", err)
+			return
+		}
+		defer tx.Rollback()
+		n, err := tx.WriteTo(writer)
+		if err != nil {
+			log.Error("write to snapshot error: %v, written %d", err, n)
+			return
+		}
 	}()
 	return &snapshot{reader}, nil
 }
 
-func (f *fsm) Restore(snapshot io.ReadCloser) error {
-	dc := json.NewDecoder(snapshot)
-	return f.Update(func(tx *bolt.Tx) error {
-		var err error
-		for dc.More() {
-			// decode data
-			var data entity.RaftData
-			if err = dc.Decode(&data); err != nil {
-				return err
-			}
-			// judge data type and dest then do logic
-			if data.Type == entity.LogInsert {
-				if data.Dest == entity.DestMetadata {
-					err = logic.AddMeta(data.Name, data.Metadata)(tx)
-				} else {
-					err = logic.AddVer(data.Name, data.Version)(tx)
-				}
-				if err != nil {
-					return err
-				}
-			}
+func (f *fsm) Restore(snapshot io.ReadCloser) (err error) {
+	defer func() {
+		if err != nil {
+			//TODO re-open db
 		}
-		return nil
-	})
+	}()
+	// FIXME close directly may cause panic
+	if err = f.db.Close(); err != nil {
+		log.Error("restore fail on close db: %v", err)
+		return err
+	}
+	dbPath := f.db.Path()
+	if err = os.Rename(dbPath, dbPath+".bak"); err != nil {
+		log.Error("restore fail on rename old db file: %v", err)
+		return err	
+	}
+	newFile, err := os.OpenFile(dbPath, os.O_WRONLY | os.O_CREATE, os.ModePerm)
+	if err != nil {
+		log.Error("restore fail on open new file: %v", err)
+		return err
+	}
+	defer newFile.Close()
+	n, err := io.Copy(newFile, snapshot)
+	if err != nil {
+		log.Error("restore fail on copy data to new file: %v, written %d", err, n)
+		return err
+	}
+	// TODO open new db
+	return
 }
 
 type snapshot struct {
-	io.Reader
+	io.ReadCloser
 }
 
 func (s *snapshot) Persist(sink raft.SnapshotSink) error {
 	if _, err := io.Copy(sink, s); err != nil {
-		logs.Std().Error(err)
+		log.Error(err)
 		return sink.Cancel()
 	}
 	return sink.Close()
 }
 
 func (s *snapshot) Release() {
-
+	util.LogErr(s.Close())
 }
