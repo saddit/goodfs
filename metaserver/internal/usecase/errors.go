@@ -8,6 +8,7 @@ import (
 var (
 	ErrKnown    = errors.New("")
 	ErrNotFound = fmt.Errorf("%wnot found", ErrKnown)
+	ErrDBClosed = fmt.Errorf("%wdb closed", ErrKnown)
 	ErrOldData  = fmt.Errorf("%wexpired data", ErrKnown)
 	ErrExists   = fmt.Errorf("%walready exists key", ErrKnown)
 	ErrNilData  = fmt.Errorf("%wnil data", ErrKnown)
