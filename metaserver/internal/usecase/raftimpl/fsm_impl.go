@@ -6,12 +6,12 @@ import (
 	"io"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
+	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/utils"
 	"os"
 
 	"github.com/hashicorp/raft"
-	bolt "go.etcd.io/bbolt"
 )
 
 var (
@@ -19,10 +19,10 @@ var (
 )
 
 type fsm struct {
-	db *bolt.DB
+	db *db.Storage
 }
 
-func NewFSM(tx *bolt.DB) raft.FSM {
+func NewFSM(tx *db.Storage) raft.FSM {
 	return &fsm{tx}
 }
 
@@ -90,34 +90,47 @@ func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
 }
 
 func (f *fsm) Restore(snapshot io.ReadCloser) (err error) {
+	dbPath := f.db.Path()
 	defer func() {
 		if err != nil {
-			//TODO re-open db
+			log.Errorf("restore new db error: %s, try open old db..", err)
+			if opErr := f.db.Open(dbPath + ".bak"); opErr != nil {
+				// exit system if db reopen err
+				log.Error(opErr)
+				os.Exit(1)
+			}
+		} else {
+			// delete old db if non-error
+			if delErr := os.Remove(dbPath + ".bak"); delErr != nil {
+				log.Errorf("delete old db err: %s", delErr)
+			}
 		}
 	}()
-	// FIXME close directly may cause panic
-	if err = f.db.Close(); err != nil {
+	// stop db
+	if err = f.db.Stop(); err != nil {
 		log.Error("restore fail on close db: %v", err)
 		return err
 	}
-	dbPath := f.db.Path()
+	// copy db
 	if err = os.Rename(dbPath, dbPath+".bak"); err != nil {
 		log.Error("restore fail on rename old db file: %v", err)
-		return err	
+		return err
 	}
-	newFile, err := os.OpenFile(dbPath, os.O_WRONLY | os.O_CREATE, os.ModePerm)
+	// open new db file
+	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		log.Error("restore fail on open new file: %v", err)
 		return err
 	}
 	defer newFile.Close()
+	// save new db data
 	n, err := io.Copy(newFile, snapshot)
 	if err != nil {
 		log.Error("restore fail on copy data to new file: %v, written %d", err, n)
 		return err
 	}
-	// TODO open new db
-	return
+	// reopen db
+	return f.db.Open(dbPath)
 }
 
 type snapshot struct {

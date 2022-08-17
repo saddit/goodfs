@@ -9,10 +9,7 @@ import (
 	"metaserver/internal/controller/http"
 	"metaserver/internal/usecase/repo"
 	"metaserver/internal/usecase/service"
-	"os"
-	"time"
-
-	bolt "go.etcd.io/bbolt"
+	"metaserver/internal/usecase/db"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"metaserver/internal/controller/grpc"
 )
@@ -23,11 +20,8 @@ func Run(cfg *Config) {
 	// init logger
 	logs.SetLevel(cfg.LogLevel)
 	// open db file
-	boltdb, err := bolt.Open(cfg.DataDir, os.ModePerm, &bolt.Options{
-		Timeout:    12 * time.Second,
-		NoGrowSync: false,
-	})
-	if err != nil {
+	boltdb := db.NewStorage()
+	if err := boltdb.Open(cfg.DataDir); err != nil {
 		logger.Errorf("open db err: %v", err)
 		return
 	}
@@ -44,7 +38,7 @@ func Run(cfg *Config) {
 	netAddr := fmt.Sprint(util.GetHost(), ":", cfg.Port)
 	metaRepo := repo.NewMetadataRepo(boltdb)
 	metaService := service.NewMetadataService(metaRepo)
-	grpcServer := grpc.NewRpcRaftServer(cfg.Cluster, metaRepo.DB)
+	grpcServer := grpc.NewRpcRaftServer(cfg.Cluster, boltdb)
 	metaRepo.Raft = grpcServer.Raft
 	httpServer := http.NewHttpServer(netAddr, grpcServer.Server, metaService)
 	defer registry.NewEtcdRegistry(etcdCli, cfg.Registry, netAddr).MustRegister().Unregister()
