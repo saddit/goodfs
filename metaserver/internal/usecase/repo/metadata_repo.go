@@ -7,18 +7,19 @@ import (
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/utils"
+	"metaserver/internal/usecase/db"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
 )
 
 type MetadataRepo struct {
-	*bolt.DB
+	*db.Storage
 	Raft IRaft
 }
 
-func NewMetadataRepo(db *bolt.DB) *MetadataRepo {
-	return &MetadataRepo{DB: db}
+func NewMetadataRepo(db *db.Storage) *MetadataRepo {
+	return &MetadataRepo{Storage: db}
 }
 
 func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) error {
