@@ -5,6 +5,7 @@ import (
 	. "apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
 	"bufio"
+	"common/logs"
 	"common/util"
 	"context"
 	"fmt"
@@ -14,8 +15,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -59,7 +58,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	//生成一个唯一key 并在结束后删除
 	tempId := uuid.NewString()
 	if _, err := o.etcd.Put(ctx, tempId, ""); err != nil {
-		logrus.Error(err)
+		logs.Std().Error(err)
 		return nil, false
 	}
 	defer o.etcd.Delete(ctx, tempId)
@@ -73,7 +72,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 		select {
 		case resp, ok := <-wt:
 			if !ok {
-				logrus.Error("Etcd watching key err, channel closed")
+				logs.Std().Error("Etcd watching key err, channel closed")
 				return nil, false
 			}
 			for _, event := range resp.Events {
@@ -84,7 +83,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 				return locates, true
 			}
 		case <-time.Tick(time.Minute):
-			logrus.Errorf("locate object %s timeout!", hash)
+			logs.Std().Errorf("locate object %s timeout!", hash)
 			return nil, false
 		}
 	}
@@ -118,23 +117,23 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
 		hash := util.SHA256Hash(reader)
 		if hash != req.Hash {
-			log.Infof("Digest of %v validation failure\n", req.Name)
+			logs.Std().Infof("Digest of %v validation failure\n", req.Name)
 			if e = stream.Commit(false); e != nil {
-				log.Errorln(e)
+				logs.Std().Errorln(e)
 			}
 			return nil, ErrInvalidFile
 		}
 	} else {
 		if _, e = io.CopyBuffer(stream, req.Body, make([]byte, 2048)); e != nil {
 			if e = stream.Commit(false); e != nil {
-				log.Errorln(e)
+				logs.Std().Errorln(e)
 			}
 			return nil, ErrInternalServer
 		}
 	}
 
 	if e = stream.Commit(true); e != nil {
-		log.Errorln(e)
+		logs.Std().Errorln(e)
 		return nil, ErrServiceUnavailable
 	}
 	return stream.Locates, e
