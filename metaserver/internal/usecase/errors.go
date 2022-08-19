@@ -1,17 +1,17 @@
 package usecase
 
 import (
-	"errors"
 	"fmt"
+	"common/response"
 )
 
 var (
-	ErrKnown    = errors.New("")
-	ErrNotFound = fmt.Errorf("%wnot found", ErrKnown)
-	ErrDBClosed = fmt.Errorf("%wdb closed", ErrKnown)
-	ErrOldData  = fmt.Errorf("%wexpired data", ErrKnown)
-	ErrExists   = fmt.Errorf("%walready exists key", ErrKnown)
-	ErrNilData  = fmt.Errorf("%wnil data", ErrKnown)
-	ErrDecode   = fmt.Errorf("%wdecode fail", ErrKnown)
-	ErrEncode   = fmt.Errorf("%wencode fail", ErrKnown)
+	KnownError    = response.NewError(400, "request fail ")
+	ErrNotFound = fmt.Errorf("%wnot found", KnownError)
+	ErrDBClosed = fmt.Errorf("%wdb closed", KnownError)
+	ErrOldData  = fmt.Errorf("%wexpired data", KnownError)
+	ErrExists   = fmt.Errorf("%walready exists key", KnownError)
+	ErrNilData  = fmt.Errorf("%wnil data", KnownError)
+	ErrDecode   = fmt.Errorf("%wdecode fail", KnownError)
+	ErrEncode   = fmt.Errorf("%wencode fail", KnownError)
 )
