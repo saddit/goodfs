@@ -102,7 +102,6 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (in
 	} else {
 		ver.Locate = req.Locate
 	}
-
 	//元数据保存
 	return o.metaService.SaveMetadata(md)
 }

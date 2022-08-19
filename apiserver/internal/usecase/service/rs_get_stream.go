@@ -1,7 +1,6 @@
 package service
 
 import (
-	"apiserver/internal/usecase/pool"
 	global "apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/selector"
 	"bytes"
@@ -48,7 +47,7 @@ func NewRSGetStream(size int64, hash string, locates []string) (*RSGetStream, er
 	writers := make([]io.Writer, global.Config.Rs.AllShards())
 	dsNum := int64(global.Config.Rs.DataShards)
 	perSize := (size + dsNum - 1) / dsNum
-	lb := selector.IPSelector{Selector: pool.Balancer, IPs: GetDataServers()}
+	lb := selector.IPSelector{Selector: global.Balancer, IPs: GetDataServers()}
 	var e error
 	for r := range provideGetStream(hash, locates) {
 		if r.err != nil {
