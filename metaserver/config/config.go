@@ -27,7 +27,7 @@ type ClusterConfig struct {
 	ElectionTimeout time.Duration `yaml:"election-timeout" env:"ELECTION_TIMEOUT" env-default:"300ms"`
 	LogLevel        string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
 	StoreDir        string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
-	Nodes           []string      `yaml:"nodes" env:"NODES" env-required:"true" env-separator:","`
+	Nodes           []string      `yaml:"nodes" env:"NODES" env-separator:","`
 }
 
 func ReadConfig() Config {

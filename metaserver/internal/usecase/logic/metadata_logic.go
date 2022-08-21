@@ -26,14 +26,14 @@ func AddMeta(name string, data *entity.Metadata) TxFunc {
 		// encode data
 		bt := utils.EncodeMsgp(data)
 		if bt == nil {
-			return ErrDecode
+			return ErrEncode
 		}
 		data.CreateTime = time.Now().Unix()
 		data.UpdateTime = time.Now().Unix()
 		// create version bucket
-		if _, err := root.CreateBucket(key); err != nil {
-			return err
-		}
+		// if _, err := root.CreateBucket(key); err != nil {
+		// 	return err
+		// }
 		// put metadata
 		return root.Put(key, bt)
 	}
@@ -140,8 +140,15 @@ func GetVer(name string, ver uint64, dest *entity.Version) TxFunc {
 }
 
 func getRoot(tx *bolt.Tx) *bolt.Bucket {
-	root, _ := tx.CreateBucketIfNotExists([]byte(BucketName))
-	return root
+	if tx.Writable() {
+		root, err := tx.CreateBucketIfNotExists([]byte(BucketName))
+		if err != nil {
+			panic(err)
+		}
+		return root
+	} else {
+		return tx.Bucket([]byte(BucketName))
+	}
 }
 
 func getRootNest(tx *bolt.Tx, name string) *bolt.Bucket {

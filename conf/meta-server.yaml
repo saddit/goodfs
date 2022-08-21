@@ -1,8 +1,8 @@
 port: 8010
-data-dir: E:/temp/meta_server
+data-dir: /workspaces/temp/meta_server
 cluster:
   bootstrap: false
-  store-dir: E:/temp/meta_server
+  store-dir: /workspaces/temp/meta_server_raft
 registry:
   group: "goodfs"
   name: "metaserver"

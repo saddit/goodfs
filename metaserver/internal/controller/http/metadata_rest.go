@@ -55,6 +55,11 @@ func (m *MetadataController) Get(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
+	if vers == nil {
+		response.OkJson(meta, g)
+		return
+	}
+	// metadata and version format
 	body := struct {
 		*entity.Metadata
 		Versions []*entity.Version `json:"versions"`
