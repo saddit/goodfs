@@ -2,10 +2,7 @@ module apiserver
 
 go 1.18
 
-require (
-	github.com/google/uuid v1.3.0
-	go.mongodb.org/mongo-driver v1.9.0
-)
+require github.com/google/uuid v1.3.0
 
 require (
 	github.com/BurntSushi/toml v1.1.0 // indirect

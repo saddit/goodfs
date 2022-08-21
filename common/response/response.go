@@ -2,14 +2,14 @@ package response
 
 import (
 	"common/logs"
-	"errors"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
 type FailureResp struct {
-	Success    bool
+	Success    bool   `json:"success"`
 	Message    string `json:"message"`
 	SubMessage string `json:"sub_message"`
 }
@@ -62,17 +62,21 @@ func BadRequestMsg(msg string, c *gin.Context) {
 }
 
 func FailErr(err error, c *gin.Context) {
-	var respErr ResponseErr
-	var validErr validator.ValidationErrors
-	if errors.As(err, &respErr) {
-		c.JSON(respErr.Status, &FailureResp{
-			Message: respErr.Message,
+	switch err := err.(type) {
+	case validator.ValidationErrors, *validator.ValidationErrors:
+		BadRequestErr(err, c)
+	case *ResponseErr:
+		c.JSON(err.Status, &FailureResp{
+			Message:    err.Message,
 			SubMessage: err.Error(),
 		})
-	} else if errors.As(err, &validErr) {
-		BadRequestErr(validErr, c)
-	} else {
-		logs.Std().Error(c.Error(err))
+	case ResponseErr:
+		c.JSON(err.Status, &FailureResp{
+			Message:    err.Message,
+			SubMessage: err.Error(),
+		})
+	default:
+		logs.Std().Error(fmt.Sprintf("request(%s %s): %+v", c.Request.Method, c.FullPath(), err))
 		c.JSON(500, &FailureResp{
 			Message: "系统错误",
 		})

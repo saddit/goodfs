@@ -25,6 +25,7 @@ func Run(cfg *Config) {
 		logger.Errorf("open db err: %v", err)
 		return
 	}
+	defer boltdb.Close()
 	// init components
 	etcdCli, err := clientv3.New(clientv3.Config{
 		Endpoints: cfg.Etcd.Endpoint,

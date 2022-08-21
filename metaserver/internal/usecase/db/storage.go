@@ -26,5 +26,5 @@ func (s *Storage) Open(path string) (err error) {
 		Timeout:    12 * time.Second,
 		NoGrowSync: false,
 	})
-	return err
+	return
 }
