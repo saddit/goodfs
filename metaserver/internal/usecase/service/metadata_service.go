@@ -62,6 +62,9 @@ func (m *MetadataService) GetMetadata(name string, version int) (*entity.Metadat
 }
 
 func (m *MetadataService) GetVersion(name string, ver int) (*entity.Version, error) {
+	if ver <= 0 {
+		return m.repo.GetVersion(name,  m.repo.GetLastVersionNumber(name))
+	}
 	return m.repo.GetVersion(name, uint64(ver))
 }
 

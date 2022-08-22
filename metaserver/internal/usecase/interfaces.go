@@ -33,6 +33,7 @@ type (
 		GetVersion(string, uint64) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
 		ApplyRaft(*entity.RaftData) error
+		GetLastVersionNumber(name string) uint64
 	}
 
 	TxFunc func(*bolt.Tx) error
