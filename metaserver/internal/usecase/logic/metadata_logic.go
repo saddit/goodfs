@@ -30,13 +30,11 @@ func AddMeta(name string, data *entity.Metadata) TxFunc {
 		}
 		data.CreateTime = time.Now().Unix()
 		data.UpdateTime = time.Now().Unix()
+		data.Name = name
 		// create version bucket
-		verBuc, err := root.CreateBucket(key)
-		if err != nil {
-			return err
+		if _, err := root.CreateBucket([]byte("nest_" + name)); err != nil {
+			return fmt.Errorf("create bucket: %w", err)
 		}
-		// version number start at 1
-		_,_ = verBuc.NextSequence()
 		// put metadata
 		return root.Put(key, bt)
 	}
@@ -137,6 +135,7 @@ func GetVer(name string, ver uint64, dest *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
 			getVer(bucket, name, ver, dest)
+			return nil
 		}
 		return ErrNotFound
 	}
@@ -155,7 +154,7 @@ func GetRoot(tx *bolt.Tx) *bolt.Bucket {
 }
 
 func GetRootNest(tx *bolt.Tx, name string) *bolt.Bucket {
-	return GetRoot(tx).Bucket([]byte(name))
+	return GetRoot(tx).Bucket([]byte("nest_" + name))
 }
 
 func getVer(bucket *bolt.Bucket, name string, ver uint64, dest *entity.Version) error {
