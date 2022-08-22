@@ -100,31 +100,31 @@ func InstanceOf[T any](obj any) bool {
 //float with fmt='f' and prec=10.
 //others return empty string
 func NumToString(n interface{}) string {
-	switch n.(type) {
+	switch n := n.(type) {
 	case int:
-		return strconv.Itoa(n.(int))
+		return strconv.Itoa(n)
 	case int8:
-		return strconv.FormatInt(int64(n.(int8)), 10)
+		return strconv.FormatInt(int64(n), 10)
 	case int16:
-		return strconv.FormatInt(int64(n.(int16)), 10)
+		return strconv.FormatInt(int64(n), 10)
 	case int32:
-		return strconv.FormatInt(int64(n.(int32)), 10)
+		return strconv.FormatInt(int64(n), 10)
 	case int64:
-		return strconv.FormatInt(n.(int64), 10)
+		return strconv.FormatInt(n, 10)
 	case uint:
-		return strconv.FormatUint(uint64(n.(uint)), 10)
+		return strconv.FormatUint(uint64(n), 10)
 	case uint8:
-		return strconv.FormatUint(uint64(n.(uint8)), 10)
+		return strconv.FormatUint(uint64(n), 10)
 	case uint16:
-		return strconv.FormatUint(uint64(n.(uint16)), 10)
+		return strconv.FormatUint(uint64(n), 10)
 	case uint32:
-		return strconv.FormatUint(uint64(n.(uint32)), 10)
+		return strconv.FormatUint(uint64(n), 10)
 	case uint64:
-		return strconv.FormatUint(n.(uint64), 10)
+		return strconv.FormatUint(n, 10)
 	case float32:
-		return strconv.FormatFloat(float64(n.(float32)), 'f', 10, 32)
+		return strconv.FormatFloat(float64(n), 'f', 10, 32)
 	case float64:
-		return strconv.FormatFloat(n.(float64), 'f', 10, 64)
+		return strconv.FormatFloat(n, 'f', 10, 64)
 	default:
 		return ""
 	}
@@ -155,4 +155,12 @@ func GetHost() string {
 		return "localhost"
 	}
 	return host
+}
+
+func ToInt(str string) int {
+	i, err := strconv.Atoi(str)
+	if err != nil {
+		logs.Std().Error(err)
+	}
+	return i
 }

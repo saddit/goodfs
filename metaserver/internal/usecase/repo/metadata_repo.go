@@ -2,12 +2,13 @@ package repo
 
 import (
 	"bytes"
+	"common/logs"
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
+	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/utils"
-	"metaserver/internal/usecase/db"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -30,7 +31,7 @@ func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) error {
 	if bt == nil {
 		return ErrEncode
 	}
-	feat := m.Raft.Apply(bt, 5 * time.Second)
+	feat := m.Raft.Apply(bt, 5*time.Second)
 	if err := feat.Error(); err != nil {
 		return err
 	}
@@ -76,6 +77,17 @@ func (m *MetadataRepo) UpdateVersion(name string, data *entity.Version) error {
 
 func (m *MetadataRepo) RemoveVersion(name string, ver int) error {
 	return m.Update(logic.RemoveVer(name, ver))
+}
+
+func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
+	var max uint64 = 1
+	if err := m.View(func(tx *bolt.Tx) error {
+		max = logic.GetRootNest(tx, name).Sequence()
+		return nil
+	}); err != nil {
+		logs.Std().Errorf("GetLastVersionNumber: %+v", err)
+	}
+	return max
 }
 
 func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, error) {

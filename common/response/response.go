@@ -2,6 +2,7 @@ package response
 
 import (
 	"common/logs"
+	"common/util"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,13 @@ func Ok(c *gin.Context) {
 		Success: true,
 		Message: "success",
 	})
+}
+
+func OkHeader(h gin.H, c *gin.Context) {
+	for k, v := range h {
+		c.Header(k, util.ToString(v))
+	}
+	Ok(c)
 }
 
 func OkJson(data interface{}, c *gin.Context) {

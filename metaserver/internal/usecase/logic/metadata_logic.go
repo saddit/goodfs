@@ -17,7 +17,7 @@ const (
 
 func AddMeta(name string, data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
-		root := getRoot(tx)
+		root := GetRoot(tx)
 		key := []byte(name)
 		// check duplicate
 		if root.Get(key) != nil {
@@ -31,9 +31,12 @@ func AddMeta(name string, data *entity.Metadata) TxFunc {
 		data.CreateTime = time.Now().Unix()
 		data.UpdateTime = time.Now().Unix()
 		// create version bucket
-		// if _, err := root.CreateBucket(key); err != nil {
-		// 	return err
-		// }
+		verBuc, err := root.CreateBucket(key)
+		if err != nil {
+			return err
+		}
+		// version number start at 1
+		_,_ = verBuc.NextSequence()
 		// put metadata
 		return root.Put(key, bt)
 	}
@@ -42,7 +45,7 @@ func AddMeta(name string, data *entity.Metadata) TxFunc {
 func RemoveMeta(name string) TxFunc {
 	return func(tx *bolt.Tx) error {
 		key := []byte(name)
-		root := getRoot(tx)
+		root := GetRoot(tx)
 		if root.Get(key) == nil {
 			return ErrNotFound
 		}
@@ -55,7 +58,7 @@ func RemoveMeta(name string) TxFunc {
 
 func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
-		root := getRoot(tx)
+		root := GetRoot(tx)
 		var origin entity.Metadata
 		if err := getMeta(root, name, &origin); err != nil {
 			return err
@@ -74,13 +77,13 @@ func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 
 func GetMeta(name string, data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
-		return getMeta(getRoot(tx), name, data)
+		return getMeta(GetRoot(tx), name, data)
 	}
 }
 
 func AddVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if bucket := getRootNest(tx, name); bucket != nil {
+		if bucket := GetRootNest(tx, name); bucket != nil {
 			data.Sequence, _ = bucket.NextSequence()
 			data.Ts = time.Now().Unix()
 			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
@@ -96,7 +99,7 @@ func AddVer(name string, data *entity.Version) TxFunc {
 func RemoveVer(name string, ver int) TxFunc {
 	return func(tx *bolt.Tx) error {
 		key := []byte(fmt.Sprint(name, Sep, ver))
-		b := getRootNest(tx, name)
+		b := GetRootNest(tx, name)
 		if b != nil {
 			return ErrNotFound
 		}
@@ -109,7 +112,7 @@ func RemoveVer(name string, ver int) TxFunc {
 
 func UpdateVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if b := getRootNest(tx, name); b != nil {
+		if b := GetRootNest(tx, name); b != nil {
 			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
 			// validate ts
 			var origin entity.Version
@@ -132,14 +135,14 @@ func UpdateVer(name string, data *entity.Version) TxFunc {
 
 func GetVer(name string, ver uint64, dest *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if bucket := getRootNest(tx, name); bucket != nil {
+		if bucket := GetRootNest(tx, name); bucket != nil {
 			getVer(bucket, name, ver, dest)
 		}
 		return ErrNotFound
 	}
 }
 
-func getRoot(tx *bolt.Tx) *bolt.Bucket {
+func GetRoot(tx *bolt.Tx) *bolt.Bucket {
 	if tx.Writable() {
 		root, err := tx.CreateBucketIfNotExists([]byte(BucketName))
 		if err != nil {
@@ -151,11 +154,14 @@ func getRoot(tx *bolt.Tx) *bolt.Bucket {
 	}
 }
 
-func getRootNest(tx *bolt.Tx, name string) *bolt.Bucket {
-	return getRoot(tx).Bucket([]byte(name))
+func GetRootNest(tx *bolt.Tx, name string) *bolt.Bucket {
+	return GetRoot(tx).Bucket([]byte(name))
 }
 
 func getVer(bucket *bolt.Bucket, name string, ver uint64, dest *entity.Version) error {
+	if bucket == nil {
+		return ErrNotFound
+	}
 	bt := bucket.Get([]byte(fmt.Sprint(name, Sep, ver)))
 	if bt == nil {
 		return ErrNotFound
@@ -167,6 +173,9 @@ func getVer(bucket *bolt.Bucket, name string, ver uint64, dest *entity.Version) 
 }
 
 func getMeta(b *bolt.Bucket, name string, dest *entity.Metadata) error {
+	if b == nil {
+		return ErrNotFound
+	}
 	bt := b.Get([]byte(name))
 	if bt == nil {
 		return ErrNotFound
