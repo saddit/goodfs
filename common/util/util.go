@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+const (
+	OS_ModeUser = 0700
+)
+
 func GetFileExt(fileName string, withDot bool) (string, bool) {
 	r := GetFileExtOrDefault(fileName, withDot, "")
 	return r, r != ""
@@ -155,6 +159,14 @@ func GetHost() string {
 		return "localhost"
 	}
 	return host
+}
+
+func GetHostPort(port string) string {
+	return fmt.Sprint(GetHost(), ":", port)
+}
+
+func GetPort(addr string) string {
+	return strings.Split(addr, ":")[1]
 }
 
 func ToInt(str string) int {

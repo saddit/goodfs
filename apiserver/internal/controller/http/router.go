@@ -7,6 +7,7 @@ import (
 	"apiserver/internal/controller/http/versions"
 	. "apiserver/internal/usecase"
 	"common/graceful"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,5 +42,5 @@ func (h *HttpServer) ListenAndServe(addr string) {
 	r.HEAD("/big/:token", big.Head)
 	r.PATCH("/big/:token", big.Patch)
 
-	graceful.ListenAndServe(addr, h.g)
+	graceful.ListenAndServe(&http.Server{Addr: addr, Handler: h.g})
 }

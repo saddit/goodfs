@@ -6,18 +6,18 @@ import (
 	"metaserver/config"
 	"os"
 	"path/filepath"
+	"strings"
 
 	raft "github.com/hashicorp/raft"
 	boltdb "github.com/hashicorp/raft-boltdb/v2"
 )
 
 func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *raft.Raft {
-	addr := util.GetHost()
 	baseDir := cfg.StoreDir
 
 	c := raft.DefaultConfig()
-	c.LocalID, c.LogOutput, c.LogLevel, c.ElectionTimeout =
-		raft.ServerID(addr), os.Stderr, cfg.LogLevel, cfg.ElectionTimeout
+	c.LocalID, c.LogOutput, c.LogLevel, c.ElectionTimeout, c.HeartbeatTimeout =
+		raft.ServerID(cfg.ID), os.Stderr, cfg.LogLevel, cfg.ElectionTimeout, cfg.HeartbeatTimeout
 
 	ldb, sdb, fss := newRaftStore(baseDir)
 
@@ -33,10 +33,14 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *raft.Ra
 			Servers: make([]raft.Server, len(cfg.Nodes)),
 		}
 		for i, v := range cfg.Nodes {
+			idAndAddr := strings.Split(v, ",")
+			if len(idAndAddr) != 2 {
+				panic("raft-bootstrap: nodes item format 'id,host:port'")
+			}
 			raftCfg.Servers[i] = raft.Server{
 				Suffrage: raft.Voter,
-				ID:       raft.ServerID(v),
-				Address:  raft.ServerAddress(v),
+				ID:       raft.ServerID(idAndAddr[0]),
+				Address:  raft.ServerAddress(idAndAddr[1]),
 			}
 		}
 
@@ -51,6 +55,9 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *raft.Ra
 
 //newRaftStore init storage
 func newRaftStore(baseDir string) (raft.LogStore, raft.StableStore, raft.SnapshotStore) {
+	if err := os.MkdirAll(baseDir, util.OS_ModeUser); err != nil {
+		panic(err)
+	}
 
 	ldb, err := boltdb.NewBoltStore(filepath.Join(baseDir, "logs.dat"))
 	if err != nil {

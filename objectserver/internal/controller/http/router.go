@@ -2,6 +2,7 @@ package http
 
 import (
 	"common/graceful"
+	"net/http"
 	"objectserver/internal/controller/http/objects"
 	"objectserver/internal/controller/http/temp"
 
@@ -30,5 +31,5 @@ func (h *HttpServer) ListenAndServe(addr string) {
 	r.GET("/temp/:name", temp.FilterExpired, temp.Get)
 	r.PUT("/temp/:name", temp.FilterExpired, temp.Put)
 
-	graceful.ListenAndServe(addr, r)
+	graceful.ListenAndServe(&http.Server{Addr: addr, Handler: h.engine})
 }
