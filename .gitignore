@@ -1,3 +1,5 @@
 *.sum
 .idea
 .vscode
+test_conf
+bin

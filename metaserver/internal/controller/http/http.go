@@ -1,36 +1,18 @@
 package http
 
 import (
-	"common/graceful"
 	. "metaserver/internal/usecase"
-	hhttp "net/http"
-	"strings"
+	netHttp "net/http"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc"
 )
 
 type HttpServer struct {
-	hhttp.Handler
-	addr string
+	netHttp.Server
 }
 
-func NewHttpServer(addr string, grpcServer *grpc.Server, service IMetadataService) *HttpServer {
+func NewHttpServer(addr string, service IMetadataService) *HttpServer {
 	engine := gin.Default()
-	if grpcServer != nil {
-		//grpc router
-		engine.Use(func(ctx *gin.Context) {
-			if ctx.Request.ProtoMajor == 2 &&
-				strings.HasPrefix(ctx.GetHeader("Content-Type"), "application/grpc") {
-				// 按grpc方式来请求
-				grpcServer.ServeHTTP(ctx.Writer, ctx.Request)
-				// 不要再往下请求了,防止继续链式调用拦截器
-				ctx.Abort()
-				return
-			}
-			ctx.Next()
-		})
-	}
 	//Http router
 	mc := NewMetadataController(service)
 	engine.PUT("/metadata/:name", mc.Put)
@@ -44,9 +26,8 @@ func NewHttpServer(addr string, grpcServer *grpc.Server, service IMetadataServic
 	engine.GET("/metadata_version/:name", vc.Get)
 	engine.DELETE("/metadata_version/:name", vc.Delete)
 
-	return &HttpServer{engine, addr}
-}
-
-func (h *HttpServer) ListenAndServe() {
-	graceful.ListenAndServe(h.addr, h)
+	return &HttpServer{netHttp.Server{
+		Addr:    addr,
+		Handler: engine,
+	}}
 }

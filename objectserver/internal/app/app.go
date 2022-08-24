@@ -15,15 +15,11 @@ import (
 )
 
 func initDir(cfg *config.Config) {
-	if !service.ExistPath(cfg.TempPath) {
-		if e := os.MkdirAll(cfg.TempPath, os.ModePerm); e != nil {
-			panic(e)
-		}
+	if e := os.MkdirAll(cfg.TempPath, util.OS_ModeUser); e != nil {
+		panic(e)
 	}
-	if !service.ExistPath(cfg.StoragePath) {
-		if e := os.MkdirAll(cfg.StoragePath, os.ModePerm); e != nil {
-			panic(e)
-		}
+	if e := os.MkdirAll(cfg.StoragePath, util.OS_ModeUser); e != nil {
+		panic(e)
 	}
 }
 

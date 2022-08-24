@@ -1,17 +1,18 @@
 package app
 
 import (
+	"common/graceful"
 	"common/logs"
 	"common/registry"
 	"common/util"
-	"fmt"
 	. "metaserver/config"
+	"metaserver/internal/controller/grpc"
 	"metaserver/internal/controller/http"
+	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/repo"
 	"metaserver/internal/usecase/service"
-	"metaserver/internal/usecase/db"
+
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"metaserver/internal/controller/grpc"
 )
 
 var logger = logs.Std()
@@ -36,13 +37,12 @@ func Run(cfg *Config) {
 		logger.Errorf("create etcd client err: %v", err)
 		return
 	}
-	netAddr := fmt.Sprint(util.GetHost(), ":", cfg.Port)
+	netAddr := util.GetHostPort(cfg.Port)
 	metaRepo := repo.NewMetadataRepo(boltdb)
 	metaService := service.NewMetadataService(metaRepo)
 	grpcServer := grpc.NewRpcRaftServer(cfg.Cluster, boltdb)
 	metaRepo.Raft = grpcServer.Raft
-	httpServer := http.NewHttpServer(netAddr, grpcServer.Server, metaService)
+	httpServer := http.NewHttpServer(netAddr, metaService)
 	defer registry.NewEtcdRegistry(etcdCli, cfg.Registry, netAddr).MustRegister().Unregister()
-
-	httpServer.ListenAndServe()
+	graceful.ListenAndServe(httpServer, grpcServer)
 }

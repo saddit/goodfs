@@ -10,6 +10,7 @@ import (
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/utils"
 	"os"
+	"runtime"
 
 	"github.com/hashicorp/raft"
 )
@@ -94,14 +95,14 @@ func (f *fsm) Restore(snapshot io.ReadCloser) (err error) {
 	defer func() {
 		if err != nil {
 			log.Errorf("restore new db error: %s, try open old db..", err)
-			if opErr := f.db.Open(dbPath + ".bak"); opErr != nil {
+			if opErr := f.db.Open(dbPath + "_bak"); opErr != nil {
 				// exit system if db reopen err
 				log.Error(opErr)
-				os.Exit(1)
+				runtime.Goexit()
 			}
 		} else {
 			// delete old db if non-error
-			if delErr := os.Remove(dbPath + ".bak"); delErr != nil {
+			if delErr := os.Remove(dbPath + "_bak"); delErr != nil {
 				log.Errorf("delete old db err: %s", delErr)
 			}
 		}
@@ -112,12 +113,12 @@ func (f *fsm) Restore(snapshot io.ReadCloser) (err error) {
 		return err
 	}
 	// copy db
-	if err = os.Rename(dbPath, dbPath+".bak"); err != nil {
+	if err = os.Rename(dbPath, dbPath+"_bak"); err != nil {
 		log.Error("restore fail on rename old db file: %v", err)
 		return err
 	}
 	// open new db file
-	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, os.ModePerm)
+	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, util.OS_ModeUser)
 	if err != nil {
 		log.Error("restore fail on open new file: %v", err)
 		return err
