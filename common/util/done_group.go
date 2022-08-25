@@ -6,7 +6,7 @@ type NonErrDoneGroup interface {
 	Add(int)
 	Done()
 	Wait()
-	WaitDone() <-chan bool
+	WaitDone() <-chan struct{}
 	Todo()
 }
 
@@ -15,6 +15,7 @@ type DoneGroup struct {
 	ec chan error
 }
 
+// NewNonErrDoneGroup equals to WaitGroup. Only Todo and WaitDone func can be used!
 func NewNonErrDoneGroup() NonErrDoneGroup {
 	return &DoneGroup{sync.WaitGroup{}, nil}
 }
@@ -37,11 +38,11 @@ func (d *DoneGroup) WaitError() <-chan error {
 	return d.ec
 }
 
-func (d *DoneGroup) WaitDone() <-chan bool {
-	ch := make(chan bool)
+func (d *DoneGroup) WaitDone() <-chan struct{} {
+	ch := make(chan struct{})
 	go func() {
 		d.Wait()
-		ch <- true
+		ch <- struct{}{}
 	}()
 	return ch
 }
