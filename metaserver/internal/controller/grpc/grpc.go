@@ -1,7 +1,6 @@
 package grpc
 
 import (
-	"common/logs"
 	"common/util"
 	"context"
 	"metaserver/config"
@@ -16,21 +15,16 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-var (
-	log = logs.New("rpc-raft")
-)
-
 type RpcRaftServer struct {
 	*ggrpc.Server
-	Raft *raft.Raft
-	cfg config.ClusterConfig
+	Port string
 }
 
 // NewRpcRaftServer init a grpc raft server. if no available nodes return empty object
-func NewRpcRaftServer(cfg config.ClusterConfig, tx *db.Storage) *RpcRaftServer {
+func NewRpcRaftServer(cfg config.ClusterConfig, tx *db.Storage) (*RpcRaftServer, *raftimpl.RaftWrapper) {
 	if len(cfg.Nodes) == 0 {
 		logrus.Warn("no available nodes, raft disabled")
-		return &RpcRaftServer{nil, nil, cfg}
+		return &RpcRaftServer{nil, cfg.Port}, raftimpl.NewDisabledRaft()
 	}
 	fsm := raftimpl.NewFSM(tx)
 	tm := transport.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []ggrpc.DialOption{ggrpc.WithInsecure()})
@@ -38,19 +32,16 @@ func NewRpcRaftServer(cfg config.ClusterConfig, tx *db.Storage) *RpcRaftServer {
 	server := ggrpc.NewServer()
 	tm.Register(server)
 	reflection.Register(server)
-	return &RpcRaftServer{server, rf, cfg}
+	return &RpcRaftServer{server, cfg.Port}, rf
 }
 
 func (r *RpcRaftServer) Shutdown(ctx context.Context) error {
-	defer r.Server.GracefulStop()
-	if err := r.Raft.Shutdown().Error(); err != nil {
-		return err
-	}
+	r.Server.GracefulStop()
 	return nil
 }
 
 func (r *RpcRaftServer) ListenAndServe() error {
-	sock, err := net.Listen("tcp", util.GetHostPort(r.cfg.Port))
+	sock, err := net.Listen("tcp", util.GetHostPort(r.Port))
 	if err != nil {
 		panic(err)
 	}

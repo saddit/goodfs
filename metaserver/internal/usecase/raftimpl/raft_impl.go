@@ -1,9 +1,12 @@
 package raftimpl
 
 import (
+	"common/graceful"
+	"common/logs"
 	"common/util"
 	"fmt"
 	"metaserver/config"
+	. "metaserver/internal/usecase"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,7 +15,21 @@ import (
 	boltdb "github.com/hashicorp/raft-boltdb/v2"
 )
 
-func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *raft.Raft {
+var raftLog = logs.New("raft-impl")
+
+type RaftWrapper struct {
+	Raft     *raft.Raft
+	ID       string
+	Address  string
+	Enabled  bool
+	isLeader bool
+}
+
+func NewDisabledRaft() *RaftWrapper {
+	return &RaftWrapper{Enabled: false}
+}
+
+func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *RaftWrapper {
 	baseDir := cfg.StoreDir
 
 	c := raft.DefaultConfig()
@@ -44,13 +61,18 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *raft.Ra
 			}
 		}
 
-		f := r.BootstrapCluster(raftCfg)
-		if err := f.Error(); err != nil {
-			panic(fmt.Errorf("raft.Raft.BootstrapCluster: %v", err))
-		}
+		go func() {
+			f := r.BootstrapCluster(raftCfg)
+			if err := f.Error(); err != nil {
+				logs.Std().Errorf("raft.Raft.BootstrapCluster: %v", err)
+			}
+		}()
 	}
 
-	return r
+	rw := &RaftWrapper{Raft: r, ID: cfg.ID, Address: util.GetHostPort(cfg.Port), Enabled: true}
+	rw.subscribeLeaderCh()
+
+	return rw
 }
 
 //newRaftStore init storage
@@ -75,4 +97,45 @@ func newRaftStore(baseDir string) (raft.LogStore, raft.StableStore, raft.Snapsho
 	}
 
 	return ldb, sdb, fss
+}
+
+func (rw *RaftWrapper) subscribeLeaderCh() {
+	go func() {
+		defer graceful.Recover()
+		for is := range rw.Raft.LeaderCh() {
+			rw.isLeader = is
+			raftLog.Infof("server %s leader", util.IfElse(is, "become", "lose"))
+		}
+	}()
+}
+
+func (rw *RaftWrapper) GetRaftIfLeader() (IRaft, bool) {
+	if rw.IsLeader() {
+		return rw.Raft, true
+	}
+	return nil, false
+}
+
+func (rw *RaftWrapper) IsLeader() bool {
+	return rw.isLeader && rw.Enabled
+}
+
+func (rw *RaftWrapper) LeaderID() string {
+	if !rw.Enabled {
+		return ""
+	}
+	_, id := rw.Raft.LeaderWithID()
+	return string(id)
+}
+
+func (rw *RaftWrapper) LeaderAddress() string {
+	if !rw.Enabled {
+		return ""
+	}
+	addr, _ := rw.Raft.LeaderWithID()
+	return string(addr)
+}
+
+func (rw *RaftWrapper) Close() error {
+	return rw.Raft.Shutdown().Error()
 }

@@ -8,6 +8,7 @@ import (
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
+	"metaserver/internal/usecase/pool"
 	"metaserver/internal/usecase/utils"
 	"time"
 
@@ -16,7 +17,6 @@ import (
 
 type MetadataRepo struct {
 	*db.Storage
-	Raft IRaft
 }
 
 func NewMetadataRepo(db *db.Storage) *MetadataRepo {
@@ -24,19 +24,18 @@ func NewMetadataRepo(db *db.Storage) *MetadataRepo {
 }
 
 func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) error {
-	if m.Raft == nil {
-		return nil
-	}
-	bt := utils.EncodeMsgp(data)
-	if bt == nil {
-		return ErrEncode
-	}
-	feat := m.Raft.Apply(bt, 5*time.Second)
-	if err := feat.Error(); err != nil {
-		return err
-	}
-	if resp := feat.Response(); resp != nil {
-		return resp.(error)
+	if rf, ok := pool.RaftWrapper.GetRaftIfLeader(); ok {
+		bt := utils.EncodeMsgp(data)
+		if bt == nil {
+			return ErrEncode
+		}
+		feat := rf.Apply(bt, 5*time.Second)
+		if err := feat.Error(); err != nil {
+			return err
+		}
+		if resp := feat.Response(); resp != nil {
+			return resp.(error)
+		}
 	}
 	return nil
 }
