@@ -7,11 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type HttpServer struct {
+type Server struct {
 	netHttp.Server
 }
 
-func NewHttpServer(addr string, service IMetadataService) *HttpServer {
+func NewHttpServer(addr string, service IMetadataService) *Server {
 	engine := gin.Default()
 	//Http router
 	mc := NewMetadataController(service)
@@ -24,9 +24,10 @@ func NewHttpServer(addr string, service IMetadataService) *HttpServer {
 	engine.PUT("/metadata_version/:name", vc.Put)
 	engine.POST("/metadata_version/:name", vc.Post)
 	engine.GET("/metadata_version/:name", vc.Get)
+	engine.GET("/metadata_version/:name/list", vc.List)
 	engine.DELETE("/metadata_version/:name", vc.Delete)
 
-	return &HttpServer{netHttp.Server{
+	return &Server{netHttp.Server{
 		Addr:    addr,
 		Handler: engine,
 	}}

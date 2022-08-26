@@ -63,11 +63,15 @@ func (m *MetadataService) GetMetadata(name string, version int) (*entity.Metadat
 
 func (m *MetadataService) GetVersion(name string, ver int) (*entity.Version, error) {
 	if ver <= 0 {
-		return m.repo.GetVersion(name,  m.repo.GetLastVersionNumber(name))
+		return m.repo.GetVersion(name, m.repo.GetLastVersionNumber(name))
 	}
 	return m.repo.GetVersion(name, uint64(ver))
 }
 
-func (m *MetadataService) ListVersions(name string, start int, end int) ([]*entity.Version, error) {
-	return m.repo.ListVersions(name, start, end)
+func (m *MetadataService) ListVersions(name string, page int, size int) ([]*entity.Version, error) {
+	if page == 0 {
+		page = 1
+	}
+	start := (page - 1) * size
+	return m.repo.ListVersions(name, start, start+size)
 }
