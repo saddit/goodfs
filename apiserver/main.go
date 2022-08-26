@@ -1,11 +1,11 @@
 package main
 
 import (
+	_ "apiserver/cmd/app"
 	"common/cmd"
-	_ "metaserver/cmd/app"
 	"os"
 )
 
 func main() {
-	cmd.Run(os.Args, "name")
+	cmd.Run(os.Args, "app")
 }

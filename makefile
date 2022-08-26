@@ -1,5 +1,9 @@
+source:=api meta object
+
+build-all:
+	$(foreach n, $(source), go build -o bin/$(n) $(n)server/main.go;)
+build-run: build run
 build:
-	go build $(n)server/main.go 
-	mv main bin/$(n)
+	go build -o bin/$(n) $(n)server/main.go 
 run:
-	./bin/$(n) test_conf/$(n)-server-$(i).yaml
+	./bin/$(n) app test_conf/$(n)-server-$(i).yaml

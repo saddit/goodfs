@@ -16,7 +16,6 @@ const (
 type Config struct {
 	Port            string          `yaml:"port" env:"PORT" env-default:"8080"`
 	LogLevel        logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
-	LogDir          string          `yaml:"log-dir" env:"LOG_DIR" env-default:"logs"`
 	SelectStrategy  string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
 	EnableHashCheck bool            `yaml:"enable-hash-check" env:"ENABLE_HASH_CHECK" env-default:"true"`
 	Etcd            etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
