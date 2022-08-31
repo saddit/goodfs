@@ -145,6 +145,13 @@ func LogErr(err error) {
 	}
 }
 
+// LogErrWithPre logrus if err != nil
+func LogErrWithPre(prefix string, err error) {
+	if err != nil {
+		logs.Std().Errorf("%s: %v", prefix, err)
+	}
+}
+
 func IfElse[T any](cond bool, t T, f T) T {
 	if cond {
 		return t

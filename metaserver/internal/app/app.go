@@ -24,7 +24,7 @@ func Run(cfg *Config) {
 	netAddr := util.GetHostPort(cfg.Port)
 	metaRepo := repo.NewMetadataRepo(pool.Storage)
 	metaService := service.NewMetadataService(metaRepo)
-	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, pool.Storage)
+	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo)
 	httpServer := http.NewHttpServer(netAddr, metaService)
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr).MustRegister().Unregister()
 	graceful.ListenAndServe(httpServer, grpcServer)

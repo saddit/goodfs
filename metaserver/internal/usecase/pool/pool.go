@@ -44,7 +44,7 @@ func initStorage(cfg *config.Config) {
 }
 
 func Close() {
-	util.LogErr(Storage.Close())
+	util.LogErr(Storage.Stop())
 	util.LogErr(Etcd.Close())
 	if RaftWrapper != nil {
 		util.LogErr(RaftWrapper.Close())

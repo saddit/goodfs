@@ -1,8 +1,10 @@
 package usecase
 
 import (
+	"io"
 	"metaserver/internal/entity"
 	"time"
+
 	"github.com/hashicorp/raft"
 	bolt "go.etcd.io/bbolt"
 )
@@ -10,7 +12,7 @@ import (
 type (
 	//IMetadataService 负责格式转换，缓存处理等
 	IMetadataService interface {
-		AddMetadata(string, *entity.Metadata) error
+		AddMetadata(*entity.Metadata) error
 		AddVersion(string, *entity.Version) (int, error)
 		UpdateMetadata(string, *entity.Metadata) error
 		UpdateVersion(string, int, *entity.Version) error
@@ -23,17 +25,19 @@ type (
 
 	//IMetadataRepo 负责对文件系统存储
 	IMetadataRepo interface {
-		AddMetadata(string, *entity.Metadata) error
+		AddMetadata(*entity.Metadata) error
 		AddVersion(string, *entity.Version) error
 		UpdateMetadata(string, *entity.Metadata) error
 		UpdateVersion(string, *entity.Version) error
 		RemoveMetadata(string) error
-		RemoveVersion(string, int) error
+		RemoveVersion(string, uint64) error
 		GetMetadata(string) (*entity.Metadata, error)
 		GetVersion(string, uint64) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
 		ApplyRaft(*entity.RaftData) error
 		GetLastVersionNumber(name string) uint64
+		ReadDB() (io.ReadCloser, error)
+		ReplaceDB(io.Reader) error
 	}
 
 	TxFunc func(*bolt.Tx) error

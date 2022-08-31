@@ -15,10 +15,10 @@ const (
 	Sep        = "."
 )
 
-func AddMeta(name string, data *entity.Metadata) TxFunc {
+func AddMeta(data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
 		root := GetRoot(tx)
-		key := []byte(name)
+		key := []byte(data.Name)
 		// check duplicate
 		if root.Get(key) != nil {
 			return ErrExists
@@ -30,9 +30,8 @@ func AddMeta(name string, data *entity.Metadata) TxFunc {
 		}
 		data.CreateTime = time.Now().Unix()
 		data.UpdateTime = time.Now().Unix()
-		data.Name = name
 		// create version bucket
-		if _, err := root.CreateBucket([]byte("nest_" + name)); err != nil {
+		if _, err := root.CreateBucket([]byte("nest_" + data.Name)); err != nil {
 			return fmt.Errorf("create bucket: %w", err)
 		}
 		// put metadata
@@ -94,7 +93,7 @@ func AddVer(name string, data *entity.Version) TxFunc {
 	}
 }
 
-func RemoveVer(name string, ver int) TxFunc {
+func RemoveVer(name string, ver uint64) TxFunc {
 	return func(tx *bolt.Tx) error {
 		key := []byte(fmt.Sprint(name, Sep, ver))
 		b := GetRootNest(tx, name)
@@ -134,8 +133,7 @@ func UpdateVer(name string, data *entity.Version) TxFunc {
 func GetVer(name string, ver uint64, dest *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
-			getVer(bucket, name, ver, dest)
-			return nil
+			return getVer(bucket, name, ver, dest)
 		}
 		return ErrNotFound
 	}

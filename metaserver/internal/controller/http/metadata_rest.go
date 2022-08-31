@@ -22,7 +22,7 @@ func (m *MetadataController) Post(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	if err := m.service.AddMetadata(g.Param("name"), &data); err != nil {
+	if err := m.service.AddMetadata(&data); err != nil {
 		response.FailErr(err, g)
 		return
 	}
@@ -31,10 +31,7 @@ func (m *MetadataController) Post(g *gin.Context) {
 
 func (m *MetadataController) Put(g *gin.Context) {
 	var data entity.Metadata
-	if err := g.ShouldBindJSON(&data); err != nil {
-		response.FailErr(err, g)
-		return
-	}
+	_ = g.ShouldBindJSON(&data)
 	if err := m.service.UpdateMetadata(g.Param("name"), &data); err != nil {
 		response.FailErr(err, g)
 		return
@@ -55,16 +52,15 @@ func (m *MetadataController) Get(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	if vers == nil {
-		response.OkJson(meta, g)
-		return
+	var versionList []*entity.Version
+	if vers != nil {
+		versionList = append(versionList, vers)
 	}
 	// metadata and version format
-	body := struct {
+	response.OkJson(struct {
 		*entity.Metadata
-		Versions []*entity.Version `json:"versions"`
-	}{meta, []*entity.Version{vers}}
-	response.OkJson(body, g)
+		Versions []*entity.Version `json:"versions,omitempty"`
+	}{meta, versionList}, g)
 }
 
 func (m *MetadataController) Delete(g *gin.Context) {
