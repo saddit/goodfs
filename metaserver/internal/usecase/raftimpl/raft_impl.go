@@ -137,5 +137,8 @@ func (rw *RaftWrapper) LeaderAddress() string {
 }
 
 func (rw *RaftWrapper) Close() error {
+	if !rw.Enabled {
+		return nil
+	}
 	return rw.Raft.Shutdown().Error()
 }

@@ -7,3 +7,6 @@ build:
 	go build -o bin/$(n) $(n)server/main.go 
 run:
 	./bin/$(n) app test_conf/$(n)-server-$(i).yaml
+clear:
+	clear
+	rm -r /workspaces/temp/*

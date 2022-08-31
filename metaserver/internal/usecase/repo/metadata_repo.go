@@ -2,14 +2,18 @@ package repo
 
 import (
 	"bytes"
+	"common/graceful"
 	"common/logs"
+	"common/util"
 	"fmt"
+	"io"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
 	"metaserver/internal/usecase/utils"
+	"os"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -40,11 +44,11 @@ func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) error {
 	return nil
 }
 
-func (m *MetadataRepo) AddMetadata(name string, data *entity.Metadata) error {
+func (m *MetadataRepo) AddMetadata(data *entity.Metadata) error {
 	if data == nil {
 		return ErrNilData
 	}
-	return m.Update(logic.AddMeta(name, data))
+	return m.Update(logic.AddMeta(data))
 }
 
 func (m *MetadataRepo) UpdateMetadata(name string, data *entity.Metadata) error {
@@ -74,7 +78,7 @@ func (m *MetadataRepo) UpdateVersion(name string, data *entity.Version) error {
 	return m.Update(logic.UpdateVer(name, data))
 }
 
-func (m *MetadataRepo) RemoveVersion(name string, ver int) error {
+func (m *MetadataRepo) RemoveVersion(name string, ver uint64) error {
 	return m.Update(logic.RemoveVer(name, ver))
 }
 
@@ -91,12 +95,12 @@ func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 
 func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, error) {
 	data := &entity.Version{}
-	return data, m.View(logic.GetVer(name, ver, data))
+	return data, m.DB().View(logic.GetVer(name, ver, data))
 }
 
 func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, err error) {
 	lst = make([]*entity.Version, 0, end-start+1)
-	err = m.View(func(tx *bolt.Tx) error {
+	err = m.DB().View(func(tx *bolt.Tx) error {
 		root, _ := tx.CreateBucketIfNotExists([]byte(logic.BucketName))
 		buk := root.Bucket([]byte(name))
 		if buk == nil {
@@ -118,4 +122,52 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 		return nil
 	})
 	return
+}
+
+func (m *MetadataRepo) ReadDB() (io.ReadCloser, error) {
+	reader, writer := io.Pipe()
+	errCh := make(chan error)
+	go func() {
+		defer graceful.Recover()
+		defer writer.Close()
+		tx, err := m.DB().Begin(false)
+		if err != nil {
+			errCh <- err
+			close(errCh)
+			return
+		}
+		defer tx.Rollback()
+		close(errCh)
+		n, err := tx.WriteTo(writer)
+		if err != nil {
+			logs.Std().Error("writer (ReadDB) error: %v, written %d", err, n)
+			return
+		}
+	}()
+	if err := <-errCh; err != nil {
+		return nil, err
+	}
+	return reader, nil
+}
+
+func (m *MetadataRepo) ReplaceDB(r io.Reader) (err error) {
+	dbPath := m.DB().Path() + "_replace"
+	// open new db file
+	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, util.OS_ModeUser)
+	if err != nil {
+		logs.Std().Error("restore fail on open new file: %v", err)
+		return err
+	}
+	// save new db data
+	n, err := io.Copy(newFile, r)
+	if err != nil {
+		logs.Std().Error("restore fail on copy data to new file: %v, written %d", err, n)
+		return err
+	}
+	if err := newFile.Close(); err != nil {
+		logs.Std().Error("close new db file err: %s", err)
+		return err
+	}
+	// reopen db
+	return m.Replace(dbPath)
 }

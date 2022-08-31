@@ -16,7 +16,7 @@ func NewHttpServer(addr string, service IMetadataService) *Server {
 	//Http router
 	mc := NewMetadataController(service)
 	engine.PUT("/metadata/:name", mc.Put)
-	engine.POST("/metadata/:name", mc.Post)
+	engine.POST("/metadata", mc.Post)
 	engine.GET("/metadata/:name", mc.Get)
 	engine.DELETE("/metadata/:name", mc.Delete)
 
