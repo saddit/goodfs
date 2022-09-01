@@ -29,20 +29,25 @@ func Register(name string, fn func(args []string)) {
 	cmdMap[name] = fn
 }
 
-func Run(args []string, def string) {
+func Run(args []string, def ...string) {
 	parse()
-	if len(args) > 1 {
-		def = args[1]
+	if len(args) <= 1 {
+		args = append(args, def...)
 	}
+	// get app cmd
+	cmd := args[1]
+	// clip args leaving app-cmd args
 	if len(args) > 2 {
 		args = args[2:]
 	} else {
 		args = args[:0]
 	}
-	if fn, ok := cmdMap[def]; ok {
+	// run cmd if exist
+	if fn, ok := cmdMap[cmd]; ok {
 		fn(args)
 		return
 	}
+	// print hint if not found cmd
 	fmt.Printf("Not found your command '%s'\n", def)
 	fmt.Println(cmdStr)
 }
