@@ -23,7 +23,7 @@ func InitPool(cfg *config.Config) {
 	Config = cfg
 	initHttpClient()
 	initEtcd(cfg)
-	//initDiscovery(Etcd, &cfg.Registry)
+	initDiscovery(Etcd, cfg)
 	initBalancer(cfg)
 }
 
@@ -45,8 +45,9 @@ func initEtcd(cfg *config.Config) {
 	}
 }
 
-func initDiscovery(etcd *clientv3.Client, cfg *registry.Config) {
-	Discovery = registry.NewEtcdDiscovery(etcd, cfg)
+func initDiscovery(etcd *clientv3.Client, cfg *config.Config) {
+	cfg.Registry.Services = []string{cfg.Discovery.DataServName, cfg.Discovery.MetaServName}
+	Discovery = registry.NewEtcdDiscovery(etcd, &cfg.Registry)
 }
 
 func initHttpClient() {
