@@ -3,12 +3,12 @@ module metaserver
 go 1.18
 
 require (
-	github.com/Jille/raft-grpc-transport v1.2.0
+	github.com/Jille/raft-grpc-transport v1.1.1
 	github.com/gin-gonic/gin v1.8.1
 	github.com/ilyakaznacheev/cleanenv v1.3.0
-	github.com/sirupsen/logrus v1.8.1
 	github.com/tinylib/msgp v1.1.6
 	go.etcd.io/bbolt v1.3.6
+	go.etcd.io/etcd/client/v3 v3.5.4
 )
 
 require (
@@ -44,7 +44,7 @@ require (
 )
 
 require (
-	github.com/armon/go-metrics v0.3.9 // indirect
+	github.com/armon/go-metrics v0.3.0 // indirect
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/go-hclog v0.16.2 // indirect
@@ -54,7 +54,6 @@ require (
 	github.com/hashicorp/raft v1.3.9
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	go.etcd.io/etcd/client/v3 v3.5.4
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/text v0.3.7 // indirect
