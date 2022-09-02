@@ -15,7 +15,10 @@ type EtcdRegistry struct {
 	*clientv3.Client
 	cfg       Config
 	leaseId   clientv3.LeaseID
-	key       string
+	group     string
+	stdName   string
+	name      string
+	ts 		  int64
 	localAddr string
 	stopFn    func()
 }
@@ -23,9 +26,24 @@ type EtcdRegistry struct {
 func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdRegistry {
 	return &EtcdRegistry{
 		kv, cfg, -1,
-		fmt.Sprintf("%s/%s_%d", cfg.Group, cfg.Name, time.Now().Unix()),
+		cfg.Group, cfg.Name, cfg.Name, time.Now().Unix(),
 		localAddr, nil,
 	}
+}
+
+func (e *EtcdRegistry) Key() string {
+	return fmt.Sprintf("%s/%s_%d", e.group, e.name, e.ts)
+}
+
+func (e *EtcdRegistry) AsMaster() *EtcdRegistry {
+	// goodfs/metaserver_master_123123
+	e.name = e.stdName + "_" + "master"
+	return e
+}
+
+func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
+	e.name = e.stdName + "_" + "slave"
+	return e
 }
 
 func (e *EtcdRegistry) MustRegister() *EtcdRegistry {
@@ -39,11 +57,11 @@ func (e *EtcdRegistry) Register() error {
 	ctx := context.Background()
 	var err error
 	//init registered key
-	if e.leaseId, err = e.makeKvWithLease(ctx, e.key, e.localAddr); err != nil {
+	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), e.localAddr); err != nil {
 		return err
 	}
 	var kach <-chan *clientv3.LeaseKeepAliveResponse
-	kach, err, e.stopFn = e.keepaliveLease(ctx, e.leaseId)
+	kach, e.stopFn, err = e.keepaliveLease(ctx, e.leaseId)
 	if err != nil {
 		return err
 	}
@@ -51,9 +69,9 @@ func (e *EtcdRegistry) Register() error {
 	go func() {
 		defer graceful.Recover()
 		for resp := range kach {
-			log.Tracef("keepalive %s success (%d)", e.key, resp.TTL)
+			log.Tracef("keepalive %s success (%d)", e.Key(), resp.TTL)
 		}
-		log.Infof("stop keepalive %s", e.key)
+		log.Infof("stop keepalive %s", e.Key())
 	}()
 
 	return nil
@@ -65,7 +83,7 @@ func (e *EtcdRegistry) Unregister() error {
 		ctx, cancel := context.WithTimeout(context.Background(), e.cfg.Timeout)
 		defer cancel()
 
-		_, err := e.Delete(ctx, e.key)
+		_, err := e.Delete(ctx, e.Key())
 		if err != nil {
 			return err
 		}
@@ -73,7 +91,6 @@ func (e *EtcdRegistry) Unregister() error {
 		if err != nil {
 			return err
 		}
-		return nil
 	}
 	return nil
 }
@@ -95,8 +112,8 @@ func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (
 	return lease.ID, nil
 }
 
-func (e *EtcdRegistry) keepaliveLease(ctx context.Context, id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, error, func()) {
+func (e *EtcdRegistry) keepaliveLease(ctx context.Context, id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, func(), error) {
 	ctx2, cancel := context.WithCancel(ctx)
 	ch, err := e.KeepAlive(ctx2, id)
-	return ch, err, cancel
+	return ch, cancel, err
 }

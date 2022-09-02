@@ -3,24 +3,24 @@ package registry
 import "sync"
 
 type serviceList struct {
-	data map[string]bool
+	data map[string]string	// key=address value=registered key
 	lock *sync.RWMutex
 }
 
 func newServiceList() *serviceList {
-	return &serviceList{make(map[string]bool), &sync.RWMutex{}}
+	return &serviceList{make(map[string]string), &sync.RWMutex{}}
 }
 
-func (s serviceList) add(k string) {
+func (s serviceList) add(ip string, key string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	s.data[k] = true
+	s.data[ip] = key
 }
 
-func (s serviceList) remove(k string) {
+func (s serviceList) remove(ip string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	delete(s.data, k)
+	delete(s.data, ip)
 }
 
 func (s serviceList) list() []string {
