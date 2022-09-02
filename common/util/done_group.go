@@ -15,7 +15,7 @@ type DoneGroup struct {
 	ec chan error
 }
 
-// NewNonErrDoneGroup equals to WaitGroup. Only Todo and WaitDone func can be used!
+// NewNonErrDoneGroup equals to WaitGroup. Only Todo() and WaitDone() func can be used!
 func NewNonErrDoneGroup() NonErrDoneGroup {
 	return &DoneGroup{sync.WaitGroup{}, nil}
 }
@@ -24,7 +24,7 @@ func NewDoneGroup() DoneGroup {
 	return DoneGroup{sync.WaitGroup{}, make(chan error, 1)}
 }
 
-//AddOne equals to wg.Add(1)
+//Todo equals to wg.Add(1)
 func (d *DoneGroup) Todo() {
 	d.Add(1)
 }
