@@ -34,7 +34,7 @@ func (e *EtcdDiscovery) asyncWatch(serv string, ch clientv3.WatchChan) {
 		defer graceful.Recover()
 		for res := range ch {
 			for _, event := range res.Events {
-				//Key will be like ${serv}_${optional}_${timestamp}
+				//Key will be like ${serv}_${timestamp}_${optional}
 				key := string(event.Kv.Key)
 				addr := string(event.Kv.Value)
 				switch event.Type {
@@ -61,7 +61,7 @@ func (e *EtcdDiscovery) GetServicesWith(name string, master bool) []string {
 	if sl, ok := e.services[name]; ok {
 		arr := make([]string, 0, len(sl.data))
 		for k, v := range sl.data {
-			if strings.Contains(v, s) {
+			if strings.HasSuffix(v, s) {
 				arr = append(arr, k)
 			}
 		}
