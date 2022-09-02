@@ -13,6 +13,7 @@ const (
 
 const (
 	DestVersion Dest = 1 << iota
+	DestVersionAll
 	DestMetadata
 )
 

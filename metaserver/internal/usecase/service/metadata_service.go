@@ -1,12 +1,11 @@
 package service
 
 import (
+	"common/util"
 	"errors"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 )
-
-//FIXME: 如果是Leader（Raft模式）则只能使用ApplyLog进行操作
 
 type MetadataService struct {
 	repo IMetadataRepo
@@ -17,80 +16,90 @@ func NewMetadataService(repo IMetadataRepo) *MetadataService {
 }
 
 func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
-	r := m.repo
-	if err := r.AddMetadata(data); err != nil {
-		return err
-	}
-	return r.ApplyRaft(&entity.RaftData{
+	if ok, resp :=  m.repo.ApplyRaft(&entity.RaftData{
 		Type: entity.LogInsert,
 		Dest: entity.DestMetadata,
 		Name: data.Name,
 		Metadata: data,
-	})
+	}); ok {
+		return resp
+	}
+
+	return m.repo.AddMetadata(data)
 }
 
 func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, error) {
-	if err := m.repo.AddVersion(name, data); err != nil {
-		return -1, err
-	}
-	if err := m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
 		Type: entity.LogInsert,
 		Dest: entity.DestVersion,
 		Name: name,
 		Version: data,
-	}); err != nil {
-		return int(data.Sequence), nil
+	}); ok {
+		if resp.Ok() { return int(resp.Data.(uint64)), nil }
+		return -1, nil
+	}
+
+	if err := m.repo.AddVersion(name, data); err != nil {
+		return -1, err
 	}
 	return int(data.Sequence), nil
 }
 
 func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) error {
-	if err := m.repo.UpdateMetadata(name, data); err != nil {
-		return err
-	}
-	return m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
 		Type: entity.LogUpdate,
 		Dest: entity.DestMetadata,
 		Name: name,
 		Metadata: data,
-	})
+	}); ok {
+		return resp
+	}
+
+	return m.repo.UpdateMetadata(name, data)
 }
 
 func (m *MetadataService) UpdateVersion(name string, ver int, data *entity.Version) error {
 	data.Sequence = uint64(ver)
-	if err := m.repo.UpdateVersion(name, data); err != nil {
-		return err
-	}
-	return m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
 		Type: entity.LogUpdate,
 		Dest: entity.DestVersion,
 		Name: name,
 		Sequence: data.Sequence,
 		Version: data,
-	})
+	}); ok {
+		return resp
+	}
+
+	return m.repo.UpdateVersion(name, data)
 }
 
 func (m *MetadataService) RemoveMetadata(name string) error {
-	if err := m.repo.RemoveMetadata(name); err != nil {
-		return err
-	}
-	return m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
 		Type: entity.LogRemove,
 		Dest: entity.DestMetadata,
 		Name: name,
-	})
+	}); ok {
+		return resp
+	}
+	
+	return m.repo.RemoveMetadata(name);
 }
 
 func (m *MetadataService) RemoveVersion(name string, ver int) error {
-	if err := m.repo.RemoveVersion(name, uint64(ver)); err != nil {
-		return err
-	}
-	return m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
 		Type: entity.LogRemove,
-		Dest: entity.DestVersion,
+		Dest: util.IfElse(ver < 0, entity.DestVersionAll, entity.DestVersion),
 		Name: name,
 		Sequence: uint64(ver),
-	})
+	}); ok {
+		return resp
+	}
+
+	if ver < 0 {
+		return m.repo.RemoveAllVersion(name)
+	} else {
+		return m.repo.RemoveVersion(name, uint64(ver))
+	}
 }
 
 // GetMetadata 获取metadata及其版本，如果version为-1则不获取任何版本，返回的版本为nil

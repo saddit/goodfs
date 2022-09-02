@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"common/response"
 	"io"
 	"metaserver/internal/entity"
 	"time"
@@ -31,10 +32,11 @@ type (
 		UpdateVersion(string, *entity.Version) error
 		RemoveMetadata(string) error
 		RemoveVersion(string, uint64) error
+		RemoveAllVersion(string) error
 		GetMetadata(string) (*entity.Metadata, error)
 		GetVersion(string, uint64) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
-		ApplyRaft(*entity.RaftData) error
+		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
 		GetLastVersionNumber(name string) uint64
 		ReadDB() (io.ReadCloser, error)
 		ReplaceDB(io.Reader) error

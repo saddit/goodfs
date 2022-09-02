@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"common/graceful"
 	"common/logs"
+	"common/response"
 	"common/util"
 	"fmt"
 	"io"
@@ -27,21 +28,21 @@ func NewMetadataRepo(db *db.Storage) *MetadataRepo {
 	return &MetadataRepo{Storage: db}
 }
 
-func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) error {
+func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) (bool, *response.RaftFsmResp) {
 	if rf, ok := pool.RaftWrapper.GetRaftIfLeader(); ok {
 		bt := utils.EncodeMsgp(data)
 		if bt == nil {
-			return ErrEncode
+			return true, response.NewRaftFsmResp(ErrEncode)
 		}
 		feat := rf.Apply(bt, 5*time.Second)
 		if err := feat.Error(); err != nil {
-			return err
+			return true, response.NewRaftFsmResp(err)
 		}
 		if resp := feat.Response(); resp != nil {
-			return resp.(error)
+			return true, resp.(*response.RaftFsmResp)
 		}
 	}
-	return nil
+	return false, nil
 }
 
 func (m *MetadataRepo) AddMetadata(data *entity.Metadata) error {
@@ -80,6 +81,19 @@ func (m *MetadataRepo) UpdateVersion(name string, data *entity.Version) error {
 
 func (m *MetadataRepo) RemoveVersion(name string, ver uint64) error {
 	return m.Update(logic.RemoveVer(name, ver))
+}
+
+func (m *MetadataRepo) RemoveAllVersion(name string) error {
+	return m.Update(func(tx *bolt.Tx) error {
+		root := logic.GetRoot(tx)
+		// delete bucket
+		if err := root.DeleteBucket([]byte(name)); err != nil {
+			return err
+		}
+		// create an emtpy bucket
+		_, err := root.CreateBucket([]byte(name))
+		return err
+	})
 }
 
 func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {

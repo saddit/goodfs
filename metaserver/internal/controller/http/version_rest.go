@@ -28,7 +28,7 @@ func (v *VersionController) Post(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	response.OkHeader(gin.H{"Version": ver}, g)
+	response.CreatedHeader(gin.H{"Version": ver}, g)
 }
 
 func (v *VersionController) Put(g *gin.Context) {
@@ -85,7 +85,7 @@ func (v *VersionController) Delete(g *gin.Context) {
 			response.FailErr(err, g)
 			return
 		}
-		response.Ok(g)
+		response.NoContent(g)
 	} else {
 		response.BadRequestMsg("need query param 'version'", g)
 	}
