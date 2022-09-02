@@ -1,13 +1,16 @@
 package service
 
 import (
+	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/selector"
 )
 
 func GetDataServers() []string {
-	//TODO 从注册中心获取
-	ds := make([]string, 0)
-	return ds
+	return pool.Discovery.GetServices(pool.Config.Discovery.DataServName)
+}
+
+func GetMetaServers() []string {
+	return pool.Discovery.GetServices(pool.Config.Discovery.MetaServName)
 }
 
 func SelectDataServer(sel selector.Selector, size int) []string {

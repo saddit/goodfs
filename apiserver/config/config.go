@@ -4,7 +4,6 @@ import (
 	"common/etcd"
 	"common/logs"
 	"common/registry"
-	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -25,9 +24,8 @@ type Config struct {
 }
 
 type DiscoveryConfig struct {
-	DetectInterval time.Duration `yaml:"detect-interval" env:"DETECT_INTERVAL" env-default:"5s"`
-	SuspendTimeout time.Duration `yaml:"suspend-timeout" env:"SUSPEND_TIMEOUT" env-default:"5s"`
-	DeadTimeout    time.Duration `yaml:"dead-timeout" env:"DEAD_TIMEOUT" env-default:"10s"`
+	DataServName string `yaml:"data-serv-name" env-default:"dataserver"`
+	MetaServName string `yaml:"meta-serv-name" env-default:"metaserver"` 
 }
 
 type RsConfig struct {
