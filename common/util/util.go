@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -182,4 +183,37 @@ func ToInt(str string) int {
 		logs.Std().Error(err)
 	}
 	return i
+}
+
+func ToUint64(str string) uint64 {
+	i, err := strconv.ParseUint(str, 10, 64)
+	if err != nil {
+		logs.Std().Error(err)
+	}
+	return i
+}
+
+func UnmarshalFromIO[T any](body io.ReadCloser) (*T, error){
+	defer body.Close()
+	var data T
+	bt, err := io.ReadAll(body)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(bt, &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+func UnmarshalFromIO2[T any](body io.ReadCloser, data T) (T, error){
+	defer body.Close()
+	bt, err := io.ReadAll(body)
+	if err != nil {
+		return data, err
+	}
+	if err := json.Unmarshal(bt, &data); err != nil {
+		return data, err
+	}
+	return data, nil
 }

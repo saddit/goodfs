@@ -2,54 +2,162 @@ package webapi
 
 import (
 	"apiserver/internal/entity"
+	"apiserver/internal/usecase/pool"
+	"bytes"
+	"common/request"
+	"common/response"
+	"common/util"
+	"encoding/json"
 	"fmt"
-	"io"
+	"net/http"
 )
 
 func GetMetadata(ip, name string) (*entity.Metadata, error) {
-	//TODO 获取元数据（不包括版本）
-	return nil, nil
+	resp, err := pool.Http.Get(fmt.Sprint(metaRest(ip, name), "?version=-1"))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return util.UnmarshalFromIO[entity.Metadata](resp.Body)
 }
 
-func PostMetadata(ip, name string) error {
-	//TODO 新增元数据请求（不包括版本）
+func PostMetadata(ip string, data entity.Metadata) error {
+	data.Versions = nil
+	bt, err := json.Marshal(&data)
+	if err != nil {
+		return err
+	}
+	resp, err := pool.Http.Post(metaRest(ip, ""), request.ContentTypeJSON, bytes.NewBuffer(bt))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
 	return nil
 }
 
-func PutMetadata(ip, name string) error {
-	//TODO 覆盖元数据请求 （不包括版本元数据）
+func PutMetadata(ip string, data entity.Metadata) error {
+	data.Versions = nil
+	bt, err := json.Marshal(&data)
+	if err != nil {
+		return err
+	}
+	req, err := request.GetPutReq(bytes.NewBuffer(bt), metaRest(ip, data.Name), request.ContentTypeJSON)
+	if err != nil {
+		return err
+	}
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
 	return nil
 }
 
 func DelMetadata(ip, name string) error {
-	//TODO 删除元数据请求（包括版本元数据）
+	req, err := request.GetDeleteReq(metaRest(ip, name))
+	if err != nil {
+		return err
+	}
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
 	return nil
 }
 
 func GetVersion(ip, name string, verNum int) (*entity.Version, error) {
-	//TODO 获取版本请求
-	return nil, nil
+	resp, err := pool.Http.Get(versionNumRest(ip, name, verNum))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return util.UnmarshalFromIO[entity.Version](resp.Body)
 }
 
-func PostVersion(ip, name string, body io.Reader) (int, error) {
-	//TODO 新增版本请求
-	return -1, nil
+func ListVersion(ip, name string, page, pageSize int) ([]*entity.Version, error) {
+	resp, err := pool.Http.Get(versionListRest(ip, name, page, pageSize))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	arr := make([]*entity.Version, 0)
+	return util.UnmarshalFromIO2(resp.Body, arr)
 }
 
-func PutVersion(ip, name string, verNum int, body io.Reader) error {
-	//TODO 覆盖版本请求
+func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
+	bt, err := json.Marshal(body)
+	if err != nil {
+		return 0, err
+	}
+	resp, err := pool.Http.Post(metaRest(ip, ""), request.ContentTypeJSON, bytes.NewBuffer(bt))
+	if err != nil {
+		return 0, err
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return util.ToUint64(resp.Header.Get("Version")), nil
+}
+
+func PutVersion(ip, name string, verNum int, body *entity.Version) error {
+	bt, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	req, err := request.GetPutReq(bytes.NewBuffer(bt), versionNumRest(ip, name, verNum), request.ContentTypeJSON)
+	if err != nil {
+		return err
+	}
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
 	return nil
 }
 
+// DelVersion verNum < 0 will delete all version
 func DelVersion(ip, name string, verNum int) error {
-	//TODO 删除版本请求
+	req, err := request.GetDeleteReq(versionNumRest(ip, name, verNum))
+	if err != nil {
+		return err
+	}
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
 	return nil
 }
 
 func metaRest(ip, name string) string {
+	if name == "" {
+		return fmt.Sprintf("http://%s/metadata", ip)
+	}
 	return fmt.Sprintf("http://%s/metadata/%s", ip, name)
 }
 
-func versionRest(ip, name string) string {
-	return fmt.Sprintf("http://%s/metadata_version/%s", ip, name)
+func versionListRest(ip, name string, page, pageSize int) string {
+	return fmt.Sprintf("http://%s/metadata_version/%s?page=%d&page_size=%d", ip, name, page, pageSize)
+}
+
+func versionNumRest(ip, name string, num int) string {
+	return fmt.Sprintf("http://%s/metadata_version/%s?version=%d", ip, name, num)
 }
