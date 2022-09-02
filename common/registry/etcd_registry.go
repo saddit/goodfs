@@ -12,7 +12,7 @@ import (
 var log = logs.New("etcd-registry")
 
 type EtcdRegistry struct {
-	*clientv3.Client
+	cli *clientv3.Client
 	cfg       Config
 	leaseId   clientv3.LeaseID
 	group     string
@@ -25,7 +25,7 @@ type EtcdRegistry struct {
 func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdRegistry {
 	ts := time.Now().Unix()
 	return &EtcdRegistry{
-		Client: kv, 
+		cli: kv, 
 		cfg: cfg, 
 		leaseId: -1,
 		group: cfg.Group, 
@@ -88,11 +88,11 @@ func (e *EtcdRegistry) Unregister() error {
 		ctx, cancel := context.WithTimeout(context.Background(), e.cfg.Timeout)
 		defer cancel()
 
-		_, err := e.Delete(ctx, e.Key())
+		_, err := e.cli.Delete(ctx, e.Key())
 		if err != nil {
 			return err
 		}
-		_, err = e.Revoke(ctx, e.leaseId)
+		_, err = e.cli.Revoke(ctx, e.leaseId)
 		if err != nil {
 			return err
 		}
@@ -104,14 +104,14 @@ func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (
 	//grant a lease
 	ctx2, cancel2 := context.WithTimeout(ctx, e.cfg.Timeout)
 	defer cancel2()
-	lease, err := e.Grant(ctx2, int64(e.cfg.Interval.Seconds()))
+	lease, err := e.cli.Grant(ctx2, int64(e.cfg.Interval.Seconds()))
 	if err != nil {
 		return -1, fmt.Errorf("Register interval heartbeat: grant lease error, %v", err)
 	}
 	//create a key with lease
 	ctx3, cancel3 := context.WithTimeout(ctx, e.cfg.Timeout)
 	defer cancel3()
-	if _, err := e.Put(ctx3, key, value, clientv3.WithLease(lease.ID)); err != nil {
+	if _, err := e.cli.Put(ctx3, key, value, clientv3.WithLease(lease.ID)); err != nil {
 		return -1, fmt.Errorf("Register interval heartbeat: send heartbeat error, %v", err)
 	}
 	return lease.ID, nil
@@ -119,6 +119,6 @@ func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (
 
 func (e *EtcdRegistry) keepaliveLease(ctx context.Context, id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, func(), error) {
 	ctx2, cancel := context.WithCancel(ctx)
-	ch, err := e.KeepAlive(ctx2, id)
+	ch, err := e.cli.KeepAlive(ctx2, id)
 	return ch, cancel, err
 }
