@@ -26,7 +26,7 @@ func (m *MetadataController) Post(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	response.Ok(g)
+	response.Created(g)
 }
 
 func (m *MetadataController) Put(g *gin.Context) {
@@ -69,5 +69,5 @@ func (m *MetadataController) Delete(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	response.Ok(g)
+	response.NoContent(g)
 }
