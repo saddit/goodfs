@@ -18,31 +18,36 @@ type EtcdRegistry struct {
 	group     string
 	stdName   string
 	name      string
-	ts 		  int64
 	localAddr string
 	stopFn    func()
 }
 
 func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdRegistry {
+	ts := time.Now().Unix()
 	return &EtcdRegistry{
-		kv, cfg, -1,
-		cfg.Group, cfg.Name, cfg.Name, time.Now().Unix(),
-		localAddr, nil,
+		Client: kv, 
+		cfg: cfg, 
+		leaseId: -1,
+		group: cfg.Group, 
+		stdName: fmt.Sprint(cfg.Name, "_", ts), 
+		name: fmt.Sprint(cfg.Name, "_", ts), 
+		localAddr: localAddr, 
+		stopFn: nil,
 	}
 }
 
 func (e *EtcdRegistry) Key() string {
-	return fmt.Sprintf("%s/%s_%d", e.group, e.name, e.ts)
+	return fmt.Sprint(e.group, "/", e.name)
 }
 
 func (e *EtcdRegistry) AsMaster() *EtcdRegistry {
-	// goodfs/metaserver_master_123123
-	e.name = e.stdName + "_" + "master"
+	// goodfs/metaserver_123123_master
+	e.name = fmt.Sprint(e.stdName, "_", "master")
 	return e
 }
 
 func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
-	e.name = e.stdName + "_" + "slave"
+	e.name = fmt.Sprint(e.stdName, "_", "slave")
 	return e
 }
 
@@ -73,7 +78,7 @@ func (e *EtcdRegistry) Register() error {
 		}
 		log.Infof("stop keepalive %s", e.Key())
 	}()
-
+	log.Infof("registry %s success", e.Key())
 	return nil
 }
 
