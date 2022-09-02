@@ -9,8 +9,8 @@ func GetDataServers() []string {
 	return pool.Discovery.GetServices(pool.Config.Discovery.DataServName)
 }
 
-func GetMetaServers() []string {
-	return pool.Discovery.GetServices(pool.Config.Discovery.MetaServName)
+func GetMetaServers(master bool) []string {
+	return pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, master)
 }
 
 func SelectDataServer(sel selector.Selector, size int) []string {
