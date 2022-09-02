@@ -12,7 +12,7 @@ import (
 )
 
 type EtcdDiscovery struct {
-	*clientv3.Client
+	cli *clientv3.Client
 	group    string
 	services map[string]*serviceList
 }
@@ -23,7 +23,7 @@ func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 	for _, s := range cfg.Services {
 		m[s] = newServiceList()
 		prefix := fmt.Sprintf("%s/%s", cfg.Group, s)
-		ch := d.Watch(context.Background(), prefix, clientv3.WithPrefix())
+		ch := d.cli.Watch(context.Background(), prefix, clientv3.WithPrefix())
 		d.asyncWatch(s, ch)
 	}
 	return d
