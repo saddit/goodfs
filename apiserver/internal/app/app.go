@@ -9,7 +9,6 @@ import (
 	"common/logs"
 	"common/registry"
 	"common/util"
-	"fmt"
 )
 
 func Run(cfg *Config) {
@@ -18,7 +17,7 @@ func Run(cfg *Config) {
 	// init log
 	logs.SetLevel(cfg.LogLevel)
 	//init services
-	netAddr := fmt.Sprint(util.GetHost(), ":", cfg.Port)
+	netAddr := util.GetHostPort(cfg.Port)
 	versionRepo := repo.NewVersionRepo(pool.Etcd)
 	metaRepo := repo.NewMetadataRepo(pool.Etcd, versionRepo)
 	metaService := service.NewMetaService(metaRepo, versionRepo)

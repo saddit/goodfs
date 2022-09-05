@@ -23,6 +23,7 @@ type RaftWrapper struct {
 	Address  string
 	Enabled  bool
 	isLeader bool
+	OnLeaderChanged func(isLeader bool)
 }
 
 func NewDisabledRaft() *RaftWrapper {
@@ -104,6 +105,7 @@ func (rw *RaftWrapper) subscribeLeaderCh() {
 		defer graceful.Recover()
 		for is := range rw.Raft.LeaderCh() {
 			rw.isLeader = is
+			rw.OnLeaderChanged(is)
 			raftLog.Infof("server %s leader", util.IfElse(is, "become", "lose"))
 		}
 	}()
@@ -140,5 +142,6 @@ func (rw *RaftWrapper) Close() error {
 	if !rw.Enabled {
 		return nil
 	}
+	raftLog.Info("shutdown raft..")
 	return rw.Raft.Shutdown().Error()
 }

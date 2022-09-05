@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -21,12 +22,31 @@ func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 	m := make(map[string]*serviceList)
 	d := &EtcdDiscovery{cli, cfg.Group, m}
 	for _, s := range cfg.Services {
-		m[s] = newServiceList()
-		prefix := fmt.Sprintf("%s/%s", cfg.Group, s)
-		ch := d.cli.Watch(context.Background(), prefix, clientv3.WithPrefix())
-		d.asyncWatch(s, ch)
+		d.initService(s)
 	}
 	return d
+}
+
+func (e *EtcdDiscovery) initService(serv string) {
+	// watch kv changing
+	e.services[serv] = newServiceList()
+	prefix := fmt.Sprintf("%s/%s", e.group, serv)
+	ch := e.cli.Watch(context.Background(), prefix, clientv3.WithPrefix())
+	e.asyncWatch(serv, ch)
+	// get original kvs
+	go func() {
+		defer graceful.Recover()
+		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		defer cancel()
+		res, err := e.cli.Get(ctx, prefix, clientv3.WithPrefix())
+		if err != nil {
+			log.Warnf("discovery init service %s error: %s", prefix, err)
+			return
+		}
+		for _, kv := range res.Kvs {
+			e.services[serv].add(string(kv.Value), string(kv.Key))
+		}
+	}()
 }
 
 func (e *EtcdDiscovery) asyncWatch(serv string, ch clientv3.WatchChan) {
