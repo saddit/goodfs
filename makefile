@@ -1,5 +1,7 @@
 source:=api meta object
 
+gen:
+	$(foreach n, $(source), cd $(n)server; go generate ./..; cd ..)
 build-all:
 	$(foreach n, $(source), go build -o bin/$(n) $(n)server/main.go;)
 build-run: build run
