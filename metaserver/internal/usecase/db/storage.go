@@ -12,6 +12,10 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+var (
+	dbLog = logs.New("storage")
+)
+
 type Storage struct {
 	originalPath string
 	current      atomic.Value
@@ -40,13 +44,14 @@ func (s *Storage) Update(fn usecase.TxFunc) error {
 }
 
 func (s *Storage) Stop() error {
+	dbLog.Info("stop db...")
 	curDB := s.DB()
 	curPath := curDB.Path()
 	if err := curDB.Close(); err != nil {
 		return err
 	}
 	if curPath != s.originalPath {
-		logs.Std().Infof("db file has been replaced, rename '%s' to original '%s'", curPath, s.originalPath)
+		dbLog.Infof("db file has been replaced, rename '%s' to original '%s'", curPath, s.originalPath)
 		return os.Rename(curPath, s.originalPath)
 	}
 	return nil

@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"common/registry"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +10,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
@@ -49,4 +52,26 @@ func TestGetMeta(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(string(res))
+}
+
+func TestEtcdRegsitry(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username: "root",
+		Password: "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	disc := registry.NewEtcdDiscovery(etcd, &registry.Config{
+		Group: "goodfs",
+		Services: []string{"metaserver"},
+	})
+	
+	for i := 0; i < 10; i++ {
+		ls := disc.GetServices("metaserver")
+		t.Log(ls)
+		time.Sleep(time.Second)
+	}
+	
 }

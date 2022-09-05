@@ -26,6 +26,19 @@ func Run(cfg *Config) {
 	metaService := service.NewMetadataService(metaRepo)
 	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo)
 	httpServer := http.NewHttpServer(netAddr, metaService)
-	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr).MustRegister().Unregister()
+	reg := registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr)
+	// register on leader change
+	pool.RaftWrapper.OnLeaderChanged = func(isLeader bool) {
+		util.LogErr(reg.Unregister())
+		if isLeader {
+			util.LogErr(reg.AsMaster().Register())
+		} else {
+			util.LogErr(reg.AsSlave().Register())
+		}
+	}
+	// register first time as slave and defer to unregister
+	defer reg.AsSlave().
+		MustRegister().
+		Unregister()
 	graceful.ListenAndServe(httpServer, grpcServer)
 }

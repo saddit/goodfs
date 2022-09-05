@@ -4,6 +4,7 @@ import (
 	"common/logs"
 	"common/util"
 	"context"
+	"errors"
 	"metaserver/config"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
@@ -41,8 +42,18 @@ func (r *RpcRaftServer) Shutdown(ctx context.Context) error {
 	if r.Server == nil {
 		return nil
 	}
-	r.Server.GracefulStop()
-	return nil
+	finish := make(chan struct{})
+	go func () {
+		defer close(finish)
+		r.Server.GracefulStop()
+	}()
+	select {
+	case <-ctx.Done():
+		r.Server.Stop()
+		return errors.New("graceful stop grpc server timeout")
+	case <-finish:
+		return nil
+	}
 }
 
 func (r *RpcRaftServer) ListenAndServe() error {
