@@ -7,19 +7,20 @@ import (
 	"errors"
 	"metaserver/config"
 	"metaserver/internal/usecase"
+	"metaserver/internal/usecase/pb"
 	"metaserver/internal/usecase/raftimpl"
 	"net"
 
-	transport "github.com/Jille/raft-grpc-transport"
+	raftGrpcService "github.com/Jille/raft-grpc-transport"
 	"github.com/hashicorp/raft"
-	ggrpc "google.golang.org/grpc"
+	netGrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 var log = logs.New("grpc-server")
 
 type RpcRaftServer struct {
-	*ggrpc.Server
+	*netGrpc.Server
 	Port string
 }
 
@@ -29,13 +30,17 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo) (*Rp
 		log.Warn("no available nodes, raft disabled")
 		return &RpcRaftServer{nil, cfg.Port}, raftimpl.NewDisabledRaft()
 	}
-	fsm := raftimpl.NewFSM(repo)
-	tm := transport.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []ggrpc.DialOption{ggrpc.WithInsecure()})
-	rf := raftimpl.NewRaft(cfg, fsm, tm.Transport())
-	server := ggrpc.NewServer()
-	tm.Register(server)
-	reflection.Register(server)
-	return &RpcRaftServer{server, cfg.Port}, rf
+	server := netGrpc.NewServer()
+	// init services
+	raftGrpcServ := raftGrpcService.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
+	raftWrapper := raftimpl.NewRaft(cfg, raftimpl.NewFSM(repo), raftGrpcServ.Transport())
+	// register grpc services 
+	{
+		raftGrpcServ.Register(server)
+		reflection.Register(server)
+		pb.RegisterRaftCmdServer(server, NewRaftCmdServer(raftWrapper))
+	}
+	return &RpcRaftServer{server, cfg.Port}, raftWrapper
 }
 
 func (r *RpcRaftServer) Shutdown(ctx context.Context) error {

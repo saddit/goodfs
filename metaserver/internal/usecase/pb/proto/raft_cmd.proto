@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package="../pb";
+
+message Response {
+    bool success = 1;
+    string message = 2;
+}
+
+message RaftServerItem {
+    string id = 1;
+    string address = 2;
+}
+
+message BootstrapReq {
+   repeated RaftServerItem Services = 1;
+}
+
+service RaftCmd {
+    rpc Bootstrap(BootstrapReq) returns (Response) {}
+}
