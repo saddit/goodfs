@@ -23,29 +23,29 @@ var checkRaftNonLeaderMethods = set.OfString([]string {
 	"/proto.RaftCmd/JoinLeader",
 })
 
-func CheckRaftEnabledMid(ctx context.Context, method string, req, reply interface{}, cc *netGrpc.ClientConn, invoker netGrpc.UnaryInvoker, opts ...netGrpc.CallOption) error {
-	if checkRaftEnabledMethods.Contains(method) {
+func CheckRaftEnabledMid(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
+	if checkRaftEnabledMethods.Contains(info.FullMethod) {
 		if !pool.RaftWrapper.Enabled {
-			return errors.New("raft is not enabled")
+			return nil, errors.New("raft is not enabled")
 		}
 	}
-	return invoker(ctx, method, req, reply, cc, opts...)
+	return handler(ctx, req)
 }
 
-func CheckRaftLeaderMid(ctx context.Context, method string, req, reply interface{}, cc *netGrpc.ClientConn, invoker netGrpc.UnaryInvoker, opts ...netGrpc.CallOption) error {
-	if checkRaftLeaderMethods.Contains(method) {
+func CheckRaftLeaderMid(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
+	if checkRaftLeaderMethods.Contains(info.FullMethod) {
 		if !pool.RaftWrapper.IsLeader() {
-			return errors.New("server is not a leader")
+			return nil, errors.New("server is not a leader")
 		}
 	}
-	return invoker(ctx, method, req, reply, cc, opts...)
+	return handler(ctx, req)
 }
 
-func CheckRaftNonLeaderMid(ctx context.Context, method string, req, reply interface{}, cc *netGrpc.ClientConn, invoker netGrpc.UnaryInvoker, opts ...netGrpc.CallOption) error {
-	if checkRaftNonLeaderMethods.Contains(method) {
+func CheckRaftNonLeaderMid(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
+	if checkRaftNonLeaderMethods.Contains(info.FullMethod) {
 		if pool.RaftWrapper.IsLeader() {
-			return errors.New("server is a leader")
+			return nil, errors.New("server is a leader")
 		}
 	}
-	return invoker(ctx, method, req, reply, cc, opts...)
+	return handler(ctx, req)
 }
