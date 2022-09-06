@@ -36,9 +36,10 @@ func Run(cfg *Config) {
 			util.LogErr(reg.AsSlave().Register())
 		}
 	}
-	// register first time as slave and defer to unregister
-	defer reg.AsSlave().
-		MustRegister().
-		Unregister()
+	// register first time
+	if pool.RaftWrapper.Enabled {
+		reg.AsSlave()
+	}
+	defer reg.MustRegister().Unregister()
 	graceful.ListenAndServe(httpServer, grpcServer)
 }
