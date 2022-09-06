@@ -69,8 +69,9 @@ func TestEtcdRegsitry(t *testing.T) {
 	})
 	
 	for i := 0; i < 10; i++ {
-		ls := disc.GetServices("metaserver")
-		t.Log(ls)
+		ls1 := disc.GetServicesWith("metaserver", true)
+		ls2 := disc.GetServicesWith("metaserver", false)
+		t.Log("masters", ls1, "slaves", ls2)
 		time.Sleep(time.Second)
 	}
 	

@@ -26,8 +26,7 @@ type RpcRaftServer struct {
 
 // NewRpcRaftServer init a grpc raft server. if no available nodes return empty object
 func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo) (*RpcRaftServer, *raftimpl.RaftWrapper) {
-	if len(cfg.Nodes) == 0 {
-		log.Warn("no available nodes, raft disabled")
+	if !cfg.Enable {
 		return &RpcRaftServer{nil, cfg.Port}, raftimpl.NewDisabledRaft()
 	}
 	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
@@ -72,5 +71,6 @@ func (r *RpcRaftServer) ListenAndServe() error {
 	if err != nil {
 		panic(err)
 	}
+	log.Infof("server listening on %s", sock.Addr().String())
 	return r.Serve(sock)
 }

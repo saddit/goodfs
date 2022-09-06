@@ -1,6 +1,7 @@
 port: 8010
 data-dir: /workspaces/temp/meta_server
 cluster:
+  enable: false
   id: node
   bootstrap: false
   store-dir: /workspaces/temp/meta_server_raft

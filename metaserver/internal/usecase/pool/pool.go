@@ -19,6 +19,7 @@ var (
 )
 
 func InitPool(cfg *config.Config) {
+	Config = cfg
 	initEtcd(&cfg.Etcd)
 	initStorage(cfg)
 }

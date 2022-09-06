@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var port string
+var address string
 
 func init() {
 	cmd.Register("raft", func(args []string) {
@@ -19,7 +19,7 @@ func init() {
 			fmt.Println("should input command: raft port [add_voter/join_leader/applied_index] [..]")
 			return
 		}
-		port = args[0]
+		address = util.GetHostPort(args[0])
 		switch args[1] {
 		case "add_voter":
 			if len(args) < 3 {
@@ -35,6 +35,12 @@ func init() {
 			joinLeader(args[2])
 		case "applied_index":
 			getAppliedIndex()
+		case "bootstrap":
+			if len(args) < 3 {
+				bootstrap(nil)
+			} else {
+				bootstrap(args[2:])
+			}
 		default:
 			fmt.Printf("no such command %s\n", args[1])
 		}
@@ -42,15 +48,20 @@ func init() {
 }
 
 func getClient() (pb.RaftCmdClient, error) {
-	cc, err := grpc.Dial(fmt.Sprint(":", port))
+	cc, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
+	// if cc.GetState() != connectivity.Ready {
+	// 	fmt.Println("connect to port " + port + " fail")
+	// 	return nil, errors.New("connect fail")
+	// }
 	return pb.NewRaftCmdClient(cc), nil
 }
 
 func addVoter(voters []string) {
-	cli, err := getClient() 
+	cli, err := getClient()
 	if err != nil {
 		return
 	}
@@ -59,30 +70,69 @@ func addVoter(voters []string) {
 		args := strings.Split(v, ",")
 		if len(args) != 3 {
 			fmt.Printf("voter (%s) format error, reuqire id,host:port,index\n", v)
-			continue	
+			continue
 		}
-		req.Voters[i].Id = args[0]
-		req.Voters[i].Address = args[1]
-		req.Voters[i].PrevIndex = util.ToUint64(args[2])
+		req.Voters[i] = &pb.Voter{
+			Id:        args[0],
+			Address:   args[1],
+			PrevIndex: util.ToUint64(args[2]),
+		}
 	}
 	resp, err := cli.AddVoter(context.Background(), req)
-	fmt.Println(util.IfElse(err == nil, resp.Message, err.Error()))
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("success: %v, message: %s\n", resp.Success, resp.Message)
+	}
 }
 
 func joinLeader(leader string) {
-	cli, err := getClient() 
+	cli, err := getClient()
 	if err != nil {
 		return
 	}
 	resp, err := cli.JoinLeader(context.Background(), &pb.JoinLeaderReq{Address: leader})
-	fmt.Println(util.IfElse(err == nil, resp.Message, err.Error()))
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("success: %v, message: %s\n", resp.Success, resp.Message)
+	}
 }
 
 func getAppliedIndex() {
-	cli, err := getClient() 
+	cli, err := getClient()
 	if err != nil {
 		return
 	}
 	resp, err := cli.AppliedIndex(context.Background(), &pb.EmptyReq{})
-	fmt.Println(util.IfElse(err == nil, resp.Message, err.Error()))
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("success: %v, message: %s\n", resp.Success, resp.Message)
+	}
+}
+
+func bootstrap(voters []string) {
+	cli, err := getClient()
+	if err != nil {
+		return
+	}
+	req := &pb.BootstrapReq{Services: make([]*pb.RaftServerItem, len(voters))}
+	for i, v := range voters {
+		args := strings.Split(v, ",")
+		if len(args) != 2 {
+			fmt.Printf("voter (%s) format error, reuqire id,host:port\n", v)
+			continue
+		}
+		req.Services[i] = &pb.RaftServerItem{
+			Id:      args[0],
+			Address: args[1],
+		}
+	}
+	resp, err := cli.Bootstrap(context.Background(), req)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("success: %v, message: %s\n", resp.Success, resp.Message)
+	}
 }

@@ -84,7 +84,7 @@ func (rcs *RaftCmdServerImpl) AddVoter(ctx context.Context, req *pb.AddVoterReq)
 
 func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeaderReq) (*pb.Response, error) {
 	// dial a connection to leader
-	cc, err := grpc.Dial(req.GetAddress())
+	cc, err := grpc.Dial(req.GetAddress(), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}

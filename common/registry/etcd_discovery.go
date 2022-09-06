@@ -77,11 +77,14 @@ func (e *EtcdDiscovery) GetServices(name string) []string {
 
 func (e *EtcdDiscovery) GetServicesWith(name string, master bool) []string {
 	s := util.IfElse(master, "master", "slave")
-
+	c := util.IfElse(master, "slave", "master")
 	if sl, ok := e.services[name]; ok {
 		arr := make([]string, 0, len(sl.data))
 		for k, v := range sl.data {
 			if strings.HasSuffix(v, s) {
+				arr = append(arr, k)
+			} else if !strings.HasSuffix(v, c) {
+				// if doesn't have any suffix means standalone
 				arr = append(arr, k)
 			}
 		}

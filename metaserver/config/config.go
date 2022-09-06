@@ -26,11 +26,12 @@ type Config struct {
 type ClusterConfig struct {
 	ID               string        `yaml:"id" env:"ID" env-required:"true"`
 	Port             string        `yaml:"port" env:"PORT" env-default:"4092"`
+	LogLevel         string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
+	StoreDir         string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
+	Enable           bool          `yaml:"enable" env:"ENABLE" env-default:"false"`
 	Bootstrap        bool          `yaml:"bootstrap" env:"BOOTSTRAP" env-default:"false"`
 	ElectionTimeout  time.Duration `yaml:"election-timeout" env:"ELECTION_TIMEOUT" env-default:"900ms"`
 	HeartbeatTimeout time.Duration `yaml:"heartbeat-timeout" env:"HEARTBEAT_TIMEOUT" env-default:"800ms"`
-	LogLevel         string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
-	StoreDir         string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
 	Nodes            []string      `yaml:"nodes" env:"NODES" env-separator:","`
 }
 
