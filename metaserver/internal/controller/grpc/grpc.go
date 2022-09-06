@@ -30,7 +30,9 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo) (*Rp
 		log.Warn("no available nodes, raft disabled")
 		return &RpcRaftServer{nil, cfg.Port}, raftimpl.NewDisabledRaft()
 	}
-	server := netGrpc.NewServer()
+	server := netGrpc.NewServer(netGrpc.WithChainUnaryInterceptor(
+		CheckRaftEnabledMid, CheckRaftLeaderMid, CheckRaftNonLeaderMid,
+	))
 	// init services
 	raftGrpcServ := raftGrpcService.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
 	raftWrapper := raftimpl.NewRaft(cfg, raftimpl.NewFSM(repo), raftGrpcServ.Transport())

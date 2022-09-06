@@ -4,6 +4,8 @@ package proto;
 
 option go_package="../pb";
 
+message EmptyReq {}
+
 message Response {
     bool success = 1;
     string message = 2;
@@ -18,6 +20,23 @@ message BootstrapReq {
    repeated RaftServerItem Services = 1;
 }
 
+message Voter {
+    string id = 1;
+    string address = 2;
+    uint64 prevIndex = 3;
+}
+
+message AddVoterReq {
+    repeated Voter voters = 1;
+}
+
+message JoinLeaderReq {
+    string address = 1;
+}
+
 service RaftCmd {
     rpc Bootstrap(BootstrapReq) returns (Response) {}
+    rpc AddVoter(AddVoterReq) returns (Response) {}
+    rpc JoinLeader(JoinLeaderReq) returns (Response) {}
+    rpc AppliedIndex(EmptyReq) returns (Response) {}
 }
