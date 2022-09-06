@@ -23,6 +23,9 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RaftCmdClient interface {
 	Bootstrap(ctx context.Context, in *BootstrapReq, opts ...grpc.CallOption) (*Response, error)
+	AddVoter(ctx context.Context, in *AddVoterReq, opts ...grpc.CallOption) (*Response, error)
+	JoinLeader(ctx context.Context, in *JoinLeaderReq, opts ...grpc.CallOption) (*Response, error)
+	AppliedIndex(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 }
 
 type raftCmdClient struct {
@@ -42,11 +45,41 @@ func (c *raftCmdClient) Bootstrap(ctx context.Context, in *BootstrapReq, opts ..
 	return out, nil
 }
 
+func (c *raftCmdClient) AddVoter(ctx context.Context, in *AddVoterReq, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/proto.RaftCmd/AddVoter", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *raftCmdClient) JoinLeader(ctx context.Context, in *JoinLeaderReq, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/proto.RaftCmd/JoinLeader", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *raftCmdClient) AppliedIndex(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/proto.RaftCmd/AppliedIndex", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RaftCmdServer is the server API for RaftCmd service.
 // All implementations must embed UnimplementedRaftCmdServer
 // for forward compatibility
 type RaftCmdServer interface {
 	Bootstrap(context.Context, *BootstrapReq) (*Response, error)
+	AddVoter(context.Context, *AddVoterReq) (*Response, error)
+	JoinLeader(context.Context, *JoinLeaderReq) (*Response, error)
+	AppliedIndex(context.Context, *EmptyReq) (*Response, error)
 	mustEmbedUnimplementedRaftCmdServer()
 }
 
@@ -56,6 +89,15 @@ type UnimplementedRaftCmdServer struct {
 
 func (UnimplementedRaftCmdServer) Bootstrap(context.Context, *BootstrapReq) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Bootstrap not implemented")
+}
+func (UnimplementedRaftCmdServer) AddVoter(context.Context, *AddVoterReq) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddVoter not implemented")
+}
+func (UnimplementedRaftCmdServer) JoinLeader(context.Context, *JoinLeaderReq) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method JoinLeader not implemented")
+}
+func (UnimplementedRaftCmdServer) AppliedIndex(context.Context, *EmptyReq) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AppliedIndex not implemented")
 }
 func (UnimplementedRaftCmdServer) mustEmbedUnimplementedRaftCmdServer() {}
 
@@ -88,6 +130,60 @@ func _RaftCmd_Bootstrap_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RaftCmd_AddVoter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddVoterReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftCmdServer).AddVoter(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RaftCmd/AddVoter",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftCmdServer).AddVoter(ctx, req.(*AddVoterReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RaftCmd_JoinLeader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinLeaderReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftCmdServer).JoinLeader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RaftCmd/JoinLeader",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftCmdServer).JoinLeader(ctx, req.(*JoinLeaderReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RaftCmd_AppliedIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftCmdServer).AppliedIndex(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RaftCmd/AppliedIndex",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftCmdServer).AppliedIndex(ctx, req.(*EmptyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RaftCmd_ServiceDesc is the grpc.ServiceDesc for RaftCmd service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +194,18 @@ var RaftCmd_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Bootstrap",
 			Handler:    _RaftCmd_Bootstrap_Handler,
+		},
+		{
+			MethodName: "AddVoter",
+			Handler:    _RaftCmd_AddVoter_Handler,
+		},
+		{
+			MethodName: "JoinLeader",
+			Handler:    _RaftCmd_JoinLeader_Handler,
+		},
+		{
+			MethodName: "AppliedIndex",
+			Handler:    _RaftCmd_AppliedIndex_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -20,6 +20,44 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type EmptyReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *EmptyReq) Reset() {
+	*x = EmptyReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_raft_cmd_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EmptyReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmptyReq) ProtoMessage() {}
+
+func (x *EmptyReq) ProtoReflect() protoreflect.Message {
+	mi := &file_raft_cmd_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmptyReq.ProtoReflect.Descriptor instead.
+func (*EmptyReq) Descriptor() ([]byte, []int) {
+	return file_raft_cmd_proto_rawDescGZIP(), []int{0}
+}
+
 type Response struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -32,7 +70,7 @@ type Response struct {
 func (x *Response) Reset() {
 	*x = Response{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_raft_cmd_proto_msgTypes[0]
+		mi := &file_raft_cmd_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -45,7 +83,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_raft_cmd_proto_msgTypes[0]
+	mi := &file_raft_cmd_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +96,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_raft_cmd_proto_rawDescGZIP(), []int{0}
+	return file_raft_cmd_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Response) GetSuccess() bool {
@@ -87,7 +125,7 @@ type RaftServerItem struct {
 func (x *RaftServerItem) Reset() {
 	*x = RaftServerItem{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_raft_cmd_proto_msgTypes[1]
+		mi := &file_raft_cmd_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -100,7 +138,7 @@ func (x *RaftServerItem) String() string {
 func (*RaftServerItem) ProtoMessage() {}
 
 func (x *RaftServerItem) ProtoReflect() protoreflect.Message {
-	mi := &file_raft_cmd_proto_msgTypes[1]
+	mi := &file_raft_cmd_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -113,7 +151,7 @@ func (x *RaftServerItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RaftServerItem.ProtoReflect.Descriptor instead.
 func (*RaftServerItem) Descriptor() ([]byte, []int) {
-	return file_raft_cmd_proto_rawDescGZIP(), []int{1}
+	return file_raft_cmd_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RaftServerItem) GetId() string {
@@ -141,7 +179,7 @@ type BootstrapReq struct {
 func (x *BootstrapReq) Reset() {
 	*x = BootstrapReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_raft_cmd_proto_msgTypes[2]
+		mi := &file_raft_cmd_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -154,7 +192,7 @@ func (x *BootstrapReq) String() string {
 func (*BootstrapReq) ProtoMessage() {}
 
 func (x *BootstrapReq) ProtoReflect() protoreflect.Message {
-	mi := &file_raft_cmd_proto_msgTypes[2]
+	mi := &file_raft_cmd_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -167,7 +205,7 @@ func (x *BootstrapReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BootstrapReq.ProtoReflect.Descriptor instead.
 func (*BootstrapReq) Descriptor() ([]byte, []int) {
-	return file_raft_cmd_proto_rawDescGZIP(), []int{2}
+	return file_raft_cmd_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *BootstrapReq) GetServices() []*RaftServerItem {
@@ -177,28 +215,207 @@ func (x *BootstrapReq) GetServices() []*RaftServerItem {
 	return nil
 }
 
+type Voter struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id        string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Address   string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+	PrevIndex uint64 `protobuf:"varint,3,opt,name=prevIndex,proto3" json:"prevIndex,omitempty"`
+}
+
+func (x *Voter) Reset() {
+	*x = Voter{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_raft_cmd_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Voter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Voter) ProtoMessage() {}
+
+func (x *Voter) ProtoReflect() protoreflect.Message {
+	mi := &file_raft_cmd_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Voter.ProtoReflect.Descriptor instead.
+func (*Voter) Descriptor() ([]byte, []int) {
+	return file_raft_cmd_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *Voter) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Voter) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *Voter) GetPrevIndex() uint64 {
+	if x != nil {
+		return x.PrevIndex
+	}
+	return 0
+}
+
+type AddVoterReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Voters []*Voter `protobuf:"bytes,1,rep,name=voters,proto3" json:"voters,omitempty"`
+}
+
+func (x *AddVoterReq) Reset() {
+	*x = AddVoterReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_raft_cmd_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddVoterReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddVoterReq) ProtoMessage() {}
+
+func (x *AddVoterReq) ProtoReflect() protoreflect.Message {
+	mi := &file_raft_cmd_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddVoterReq.ProtoReflect.Descriptor instead.
+func (*AddVoterReq) Descriptor() ([]byte, []int) {
+	return file_raft_cmd_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *AddVoterReq) GetVoters() []*Voter {
+	if x != nil {
+		return x.Voters
+	}
+	return nil
+}
+
+type JoinLeaderReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+}
+
+func (x *JoinLeaderReq) Reset() {
+	*x = JoinLeaderReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_raft_cmd_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *JoinLeaderReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinLeaderReq) ProtoMessage() {}
+
+func (x *JoinLeaderReq) ProtoReflect() protoreflect.Message {
+	mi := &file_raft_cmd_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinLeaderReq.ProtoReflect.Descriptor instead.
+func (*JoinLeaderReq) Descriptor() ([]byte, []int) {
+	return file_raft_cmd_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *JoinLeaderReq) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
 var File_raft_cmd_proto protoreflect.FileDescriptor
 
 var file_raft_cmd_proto_rawDesc = []byte{
 	0x0a, 0x0e, 0x72, 0x61, 0x66, 0x74, 0x5f, 0x63, 0x6d, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x12, 0x05, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x3e, 0x0a, 0x08, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x18, 0x0a,
-	0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
-	0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x22, 0x3a, 0x0a, 0x0e, 0x52, 0x61, 0x66, 0x74, 0x53,
-	0x65, 0x72, 0x76, 0x65, 0x72, 0x49, 0x74, 0x65, 0x6d, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x18, 0x0a, 0x07, 0x61, 0x64, 0x64,
-	0x72, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72,
-	0x65, 0x73, 0x73, 0x22, 0x41, 0x0a, 0x0c, 0x42, 0x6f, 0x6f, 0x74, 0x73, 0x74, 0x72, 0x61, 0x70,
-	0x52, 0x65, 0x71, 0x12, 0x31, 0x0a, 0x08, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x73, 0x18,
-	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x52, 0x61,
-	0x66, 0x74, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x49, 0x74, 0x65, 0x6d, 0x52, 0x08, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x73, 0x32, 0x3e, 0x0a, 0x07, 0x52, 0x61, 0x66, 0x74, 0x43, 0x6d,
-	0x64, 0x12, 0x33, 0x0a, 0x09, 0x42, 0x6f, 0x6f, 0x74, 0x73, 0x74, 0x72, 0x61, 0x70, 0x12, 0x13,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x42, 0x6f, 0x6f, 0x74, 0x73, 0x74, 0x72, 0x61, 0x70,
-	0x52, 0x65, 0x71, 0x1a, 0x0f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x07, 0x5a, 0x05, 0x2e, 0x2e, 0x2f, 0x70, 0x62, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x12, 0x05, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x0a, 0x0a, 0x08, 0x45, 0x6d, 0x70, 0x74, 0x79,
+	0x52, 0x65, 0x71, 0x22, 0x3e, 0x0a, 0x08, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
+	0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08,
+	0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73,
+	0x73, 0x61, 0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73,
+	0x61, 0x67, 0x65, 0x22, 0x3a, 0x0a, 0x0e, 0x52, 0x61, 0x66, 0x74, 0x53, 0x65, 0x72, 0x76, 0x65,
+	0x72, 0x49, 0x74, 0x65, 0x6d, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x18, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22,
+	0x41, 0x0a, 0x0c, 0x42, 0x6f, 0x6f, 0x74, 0x73, 0x74, 0x72, 0x61, 0x70, 0x52, 0x65, 0x71, 0x12,
+	0x31, 0x0a, 0x08, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x15, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x52, 0x61, 0x66, 0x74, 0x53, 0x65,
+	0x72, 0x76, 0x65, 0x72, 0x49, 0x74, 0x65, 0x6d, 0x52, 0x08, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
+	0x65, 0x73, 0x22, 0x4f, 0x0a, 0x05, 0x56, 0x6f, 0x74, 0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x18, 0x0a, 0x07, 0x61,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x1c, 0x0a, 0x09, 0x70, 0x72, 0x65, 0x76, 0x49, 0x6e, 0x64,
+	0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x70, 0x72, 0x65, 0x76, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x22, 0x33, 0x0a, 0x0b, 0x41, 0x64, 0x64, 0x56, 0x6f, 0x74, 0x65, 0x72, 0x52,
+	0x65, 0x71, 0x12, 0x24, 0x0a, 0x06, 0x76, 0x6f, 0x74, 0x65, 0x72, 0x73, 0x18, 0x01, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x56, 0x6f, 0x74, 0x65, 0x72,
+	0x52, 0x06, 0x76, 0x6f, 0x74, 0x65, 0x72, 0x73, 0x22, 0x29, 0x0a, 0x0d, 0x4a, 0x6f, 0x69, 0x6e,
+	0x4c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x65, 0x71, 0x12, 0x18, 0x0a, 0x07, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72,
+	0x65, 0x73, 0x73, 0x32, 0xdc, 0x01, 0x0a, 0x07, 0x52, 0x61, 0x66, 0x74, 0x43, 0x6d, 0x64, 0x12,
+	0x33, 0x0a, 0x09, 0x42, 0x6f, 0x6f, 0x74, 0x73, 0x74, 0x72, 0x61, 0x70, 0x12, 0x13, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x42, 0x6f, 0x6f, 0x74, 0x73, 0x74, 0x72, 0x61, 0x70, 0x52, 0x65,
+	0x71, 0x1a, 0x0f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x00, 0x12, 0x31, 0x0a, 0x08, 0x41, 0x64, 0x64, 0x56, 0x6f, 0x74, 0x65, 0x72,
+	0x12, 0x12, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x41, 0x64, 0x64, 0x56, 0x6f, 0x74, 0x65,
+	0x72, 0x52, 0x65, 0x71, 0x1a, 0x0f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x35, 0x0a, 0x0a, 0x4a, 0x6f, 0x69, 0x6e, 0x4c,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x14, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4a, 0x6f,
+	0x69, 0x6e, 0x4c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x65, 0x71, 0x1a, 0x0f, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x32,
+	0x0a, 0x0c, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x65, 0x64, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x0f,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x71, 0x1a,
+	0x0f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x00, 0x42, 0x07, 0x5a, 0x05, 0x2e, 0x2e, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -213,21 +430,32 @@ func file_raft_cmd_proto_rawDescGZIP() []byte {
 	return file_raft_cmd_proto_rawDescData
 }
 
-var file_raft_cmd_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_raft_cmd_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_raft_cmd_proto_goTypes = []interface{}{
-	(*Response)(nil),       // 0: proto.Response
-	(*RaftServerItem)(nil), // 1: proto.RaftServerItem
-	(*BootstrapReq)(nil),   // 2: proto.BootstrapReq
+	(*EmptyReq)(nil),       // 0: proto.EmptyReq
+	(*Response)(nil),       // 1: proto.Response
+	(*RaftServerItem)(nil), // 2: proto.RaftServerItem
+	(*BootstrapReq)(nil),   // 3: proto.BootstrapReq
+	(*Voter)(nil),          // 4: proto.Voter
+	(*AddVoterReq)(nil),    // 5: proto.AddVoterReq
+	(*JoinLeaderReq)(nil),  // 6: proto.JoinLeaderReq
 }
 var file_raft_cmd_proto_depIdxs = []int32{
-	1, // 0: proto.BootstrapReq.Services:type_name -> proto.RaftServerItem
-	2, // 1: proto.RaftCmd.Bootstrap:input_type -> proto.BootstrapReq
-	0, // 2: proto.RaftCmd.Bootstrap:output_type -> proto.Response
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 0: proto.BootstrapReq.Services:type_name -> proto.RaftServerItem
+	4, // 1: proto.AddVoterReq.voters:type_name -> proto.Voter
+	3, // 2: proto.RaftCmd.Bootstrap:input_type -> proto.BootstrapReq
+	5, // 3: proto.RaftCmd.AddVoter:input_type -> proto.AddVoterReq
+	6, // 4: proto.RaftCmd.JoinLeader:input_type -> proto.JoinLeaderReq
+	0, // 5: proto.RaftCmd.AppliedIndex:input_type -> proto.EmptyReq
+	1, // 6: proto.RaftCmd.Bootstrap:output_type -> proto.Response
+	1, // 7: proto.RaftCmd.AddVoter:output_type -> proto.Response
+	1, // 8: proto.RaftCmd.JoinLeader:output_type -> proto.Response
+	1, // 9: proto.RaftCmd.AppliedIndex:output_type -> proto.Response
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_raft_cmd_proto_init() }
@@ -237,7 +465,7 @@ func file_raft_cmd_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_raft_cmd_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Response); i {
+			switch v := v.(*EmptyReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -249,7 +477,7 @@ func file_raft_cmd_proto_init() {
 			}
 		}
 		file_raft_cmd_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RaftServerItem); i {
+			switch v := v.(*Response); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -261,7 +489,55 @@ func file_raft_cmd_proto_init() {
 			}
 		}
 		file_raft_cmd_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RaftServerItem); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_raft_cmd_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BootstrapReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_raft_cmd_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Voter); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_raft_cmd_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AddVoterReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_raft_cmd_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*JoinLeaderReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -279,7 +555,7 @@ func file_raft_cmd_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_raft_cmd_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
