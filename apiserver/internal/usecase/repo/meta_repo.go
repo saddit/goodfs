@@ -2,9 +2,12 @@ package repo
 
 import (
 	"apiserver/internal/entity"
-
+	"apiserver/internal/usecase/logic"
+	"apiserver/internal/usecase/pool"
+	"apiserver/internal/usecase/selector"
+	"apiserver/internal/usecase/webapi"
+	"common/logs"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	// log "github.com/sirupsen/logrus"
 )
 
 type MetadataRepo struct {
@@ -18,9 +21,16 @@ func NewMetadataRepo(kv clientv3.KV, vr IVersionRepo) *MetadataRepo {
 
 //FindByName 根据文件名查找元数据 不查询版本
 func (m *MetadataRepo) FindByName(name string) *entity.Metadata {
-	var data entity.Metadata
-	//TODO 从etcd获取Metadata所在节点的位置 选择一个可用节点发送获取元数据Header的请求
-	return &data
+	//TODO 从etcd获取所在集群
+	servs := logic.NewDiscovery().GetMetaServers(false)
+	lb := selector.NewIPSelector(pool.Balancer, servs)
+	
+	metadata, err := webapi.GetMetadata(lb.Select(), name)
+	if err != nil {
+		logs.Std().Errorf("find metadata by name error: %s", err)
+		return nil
+	}
+	return metadata
 }
 
 //FindByNameAndVerMode 根据文件名查找元数据 verMode筛选版本数据

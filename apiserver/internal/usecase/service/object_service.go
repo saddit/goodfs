@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"apiserver/internal/usecase/logic"
 	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -149,7 +149,7 @@ func (o *ObjectService) GetObject(ver *entity.Version) (io.ReadSeekCloser, error
 }
 
 func dataServerStream(name string, size int64) (*RSPutStream, error) {
-	ds := SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
+	ds := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
 	if len(ds) == 0 {
 		return nil, ErrServiceUnavailable
 	}
