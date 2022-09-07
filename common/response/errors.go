@@ -1,5 +1,7 @@
 package response
 
+import "fmt"
+
 type IResponseErr interface {
 	error
 	GetMessage() string
@@ -12,7 +14,7 @@ type ResponseErr struct {
 }
 
 func (r ResponseErr) Error() string {
-	return r.Message
+	return fmt.Sprintf("common/reponse/ResponseErr: %s", r.GetMessage())
 }
 
 func NewError(code int, msg string) *ResponseErr {
