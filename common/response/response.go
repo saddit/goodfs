@@ -85,18 +85,17 @@ func FailErr(err error, c *gin.Context) {
 	switch err := err.(type) {
 	case validator.ValidationErrors, *validator.ValidationErrors:
 		BadRequestErr(err, c)
-	case *ResponseErr:
-		c.JSON(err.Status, &FailureResp{
-			Message:    err.Message,
-			SubMessage: err.Error(),
-		})
-	case ResponseErr:
-		c.JSON(err.Status, &FailureResp{
-			Message:    err.Message,
-			SubMessage: err.Error(),
-		})
+	case IResponseErr:
+		if IsOk(err.GetStatus()) {
+			c.Status(err.GetStatus())
+		} else {
+			c.JSON(err.GetStatus(), &FailureResp{
+				Message:    err.GetMessage(),
+				SubMessage: err.Error(),
+			})
+		}
 	default:
-		logs.Std().Error(fmt.Sprintf("request(%s %s): %+v", c.Request.Method, c.FullPath(), err))
+		logs.Std().Error(fmt.Sprintf("request(%s %s): [%T] %s", c.Request.Method, c.FullPath(), err, err))
 		c.JSON(http.StatusInternalServerError, &FailureResp{
 			Message: "系统错误",
 		})

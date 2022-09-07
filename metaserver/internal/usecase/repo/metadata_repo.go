@@ -41,6 +41,7 @@ func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) (bool, *response.RaftFsm
 		if resp := feat.Response(); resp != nil {
 			return true, resp.(*response.RaftFsmResp)
 		}
+		return true, nil
 	}
 	return false, nil
 }
