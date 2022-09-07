@@ -1,20 +1,24 @@
-package service
+package logic
 
 import (
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/selector"
 )
 
-func GetDataServers() []string {
+type Discovery struct{}
+
+func NewDiscovery() Discovery {return Discovery{}}
+
+func (Discovery) GetDataServers() []string {
 	return pool.Discovery.GetServices(pool.Config.Discovery.DataServName)
 }
 
-func GetMetaServers(master bool) []string {
+func (Discovery) GetMetaServers(master bool) []string {
 	return pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, master)
 }
 
-func SelectDataServer(sel selector.Selector, size int) []string {
-	ds := GetDataServers()
+func (d Discovery) SelectDataServer(sel selector.Selector, size int) []string {
+	ds := d.GetDataServers()
 	if len(ds) == 0 {
 		return []string{}
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"apiserver/internal/usecase/logic"
 )
 
 type RSGetStream struct {
@@ -47,7 +48,7 @@ func NewRSGetStream(size int64, hash string, locates []string) (*RSGetStream, er
 	writers := make([]io.Writer, global.Config.Rs.AllShards())
 	dsNum := int64(global.Config.Rs.DataShards)
 	perSize := (size + dsNum - 1) / dsNum
-	lb := selector.IPSelector{Selector: global.Balancer, IPs: GetDataServers()}
+	lb := selector.IPSelector{Selector: global.Balancer, IPs: logic.NewDiscovery().GetDataServers()}
 	var e error
 	for r := range provideGetStream(hash, locates) {
 		if r.err != nil {

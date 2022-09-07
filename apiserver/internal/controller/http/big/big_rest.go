@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-
+	"apiserver/internal/usecase/logic"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,7 +17,7 @@ import (
 //Post 生成大文件上传的Token
 func Post(g *gin.Context) {
 	req := g.Value("BigPostReq").(*entity.BigPostReq)
-	ips := service.SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
+	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
 	if len(ips) == 0 {
 		g.AbortWithStatus(http.StatusServiceUnavailable)
 	}
