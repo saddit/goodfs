@@ -11,7 +11,7 @@ import (
 	"metaserver/internal/usecase/raftimpl"
 	"net"
 
-	raftGrpcService "github.com/Jille/raft-grpc-transport"
+	raftServer "github.com/Jille/raft-grpc-transport"
 	"github.com/hashicorp/raft"
 	netGrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -33,7 +33,7 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo) (*Rp
 		CheckRaftEnabledMid, CheckRaftLeaderMid, CheckRaftNonLeaderMid,
 	))
 	// init services
-	raftGrpcServ := raftGrpcService.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
+	raftGrpcServ := raftServer.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
 	raftWrapper := raftimpl.NewRaft(cfg, raftimpl.NewFSM(repo), raftGrpcServ.Transport())
 	// register grpc services 
 	{
