@@ -102,3 +102,25 @@ func IsSlotInEdges(slot int, edges EdgeList) bool {
 	}
 	return edges[idx].Start <= slot && edges[idx].End > slot
 }
+
+// FindIdentity find identiies in range [start,end)
+func FindRangeCurrentData(start, end int, provider IEdgeProvider) (res EdgeList) {
+	edges := provider.get()
+	for _, edge := range edges {
+		if edge.Start <= start {
+			if edge.End < end {
+				res = append(res, &Edge{start, edge.End, edge.Value})
+			} else {
+				res = append(res, &Edge{start, end, edge.Value})
+				return
+			}
+		} else if edge.Start < end {
+			if edge.End < end {
+				res = append(res, &Edge{edge.Start, edge.End, edge.Value})
+			} else {
+				res = append(res, &Edge{edge.Start, end, edge.Value})
+			}
+		}
+	}
+	return
+}
