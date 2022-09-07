@@ -1,5 +1,6 @@
 port: 8010
 data-dir: /workspaces/temp/meta_server
+hash-slot: ["0-1","2-3"]
 cluster:
   enable: false
   id: node

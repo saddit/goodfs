@@ -1,9 +1,12 @@
 package http
 
 import (
+	"common/hashslot"
 	"common/response"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
+	"metaserver/internal/usecase/pool"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,10 +19,28 @@ func NewMetadataController(service IMetadataService) *MetadataController {
 	return &MetadataController{service}
 }
 
+func (m *MetadataController) RegisterRoute(engine gin.IRouter) {
+	engine.PUT("/metadata/:name", m.Put)
+	engine.POST("/metadata", m.Post)
+	engine.GET("/metadata/:name", m.Get)
+	engine.DELETE("/metadata/:name", m.Delete)
+}
+
 func (m *MetadataController) Post(g *gin.Context) {
 	var data entity.Metadata
 	if err := g.ShouldBindJSON(&data); err != nil {
 		response.FailErr(err, g)
+		return
+	}
+	// get slot's location of this key
+	location, err := hashslot.GetStringIdentify(data.Name, pool.HashSlots)
+	if err != nil {
+		response.FailErr(err, g)
+		return
+	}
+	// if slot is not in this server, redirect request
+	if location != pool.HttpHostPort {
+		g.Redirect(http.StatusSeeOther, location)
 		return
 	}
 	if err := m.service.AddMetadata(&data); err != nil {

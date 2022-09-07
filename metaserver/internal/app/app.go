@@ -21,12 +21,11 @@ func Run(cfg *Config) {
 	defer pool.Close()
 	// init services
 	var grpcServer *grpc.RpcRaftServer
-	netAddr := util.GetHostPort(cfg.Port)
 	metaRepo := repo.NewMetadataRepo(pool.Storage)
 	metaService := service.NewMetadataService(metaRepo)
 	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo)
-	httpServer := http.NewHttpServer(netAddr, metaService)
-	reg := registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr)
+	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService)
+	reg := registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, pool.HttpHostPort)
 	// register on leader change
 	pool.RaftWrapper.OnLeaderChanged = func(isLeader bool) {
 		util.LogErr(reg.Unregister())

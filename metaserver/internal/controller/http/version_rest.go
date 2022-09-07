@@ -17,6 +17,14 @@ func NewVersionController(service IMetadataService) *VersionController {
 	return &VersionController{service}
 }
 
+func (v *VersionController) RegisterRoute(engine gin.IRouter) {
+	engine.PUT("/metadata_version/:name", v.Put)
+	engine.POST("/metadata_version/:name", v.Post)
+	engine.GET("/metadata_version/:name", v.Get)
+	engine.GET("/metadata_version/:name/list", v.List)
+	engine.DELETE("/metadata_version/:name", v.Delete)
+}
+
 func (v *VersionController) Post(g *gin.Context) {
 	var data entity.Version
 	if err := g.ShouldBindJSON(&data); err != nil {
