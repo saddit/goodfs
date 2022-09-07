@@ -17,10 +17,7 @@ type FailureResp struct {
 }
 
 func Ok(c *gin.Context) {
-	c.JSON(http.StatusOK, &FailureResp{
-		Success: true,
-		Message: "success",
-	})
+	c.Status(http.StatusOK)
 }
 
 func OkHeader(h gin.H, c *gin.Context) {
@@ -66,12 +63,14 @@ func NotFoundMsg(msg string, c *gin.Context) {
 func NotFoundErr(err error, c *gin.Context) {
 	c.JSON(http.StatusNotFound, &FailureResp{
 		Message: err.Error(),
+		SubMessage: "resource doesn't exist",
 	})
 }
 
 func BadRequestErr(err error, c *gin.Context) {
 	c.JSON(http.StatusBadRequest, &FailureResp{
 		Message: err.Error(),
+		SubMessage: "check parameters",
 	})
 }
 
@@ -97,7 +96,8 @@ func FailErr(err error, c *gin.Context) {
 	default:
 		logs.Std().Error(fmt.Sprintf("request(%s %s): [%T] %s", c.Request.Method, c.FullPath(), err, err))
 		c.JSON(http.StatusInternalServerError, &FailureResp{
-			Message: "系统错误",
+			Message: "system error",
+			SubMessage: fmt.Sprintf("%T", err),
 		})
 		c.Abort()
 	}
