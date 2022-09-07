@@ -13,6 +13,7 @@ type Server struct {
 
 func NewHttpServer(addr string, service IMetadataService) *Server {
 	engine := gin.Default()
+	engine.Use(CheckLeaderInRaftMode)
 	//Http router
 	mc := NewMetadataController(service)
 	engine.PUT("/metadata/:name", mc.Put)
