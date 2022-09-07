@@ -18,3 +18,7 @@ func MessageFromJSONBody(body io.ReadCloser) string {
 	return mp["message"]
 }
 
+func IsOk(status int) bool {
+	return status / 100 == 2
+}
+

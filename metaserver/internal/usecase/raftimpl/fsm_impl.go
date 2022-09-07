@@ -63,6 +63,9 @@ func (f *fsm) applyVersionAll(data *entity.RaftData) *response.RaftFsmResp {
 }
 
 func (f *fsm) Apply(lg *raft.Log) any {
+	if lg == nil || len(lg.Data) == 0 {
+		return response.NewRaftFsmResp(ErrNilData)
+	}
 	if lg.Type != raft.LogCommand {
 		log.Warn("recieve log type %v", lg.Type)
 		return nil
