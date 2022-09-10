@@ -1,6 +1,8 @@
 package service
 
 import (
+	"apiserver/internal/usecase"
+	"apiserver/internal/usecase/logic"
 	global "apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/selector"
 	"bytes"
@@ -8,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"apiserver/internal/usecase/logic"
 )
 
 type RSGetStream struct {
@@ -59,7 +60,7 @@ func NewRSGetStream(size int64, hash string, locates []string) (*RSGetStream, er
 			}
 			//需更新元数据
 			locates[r.index] = ip
-			e = ErrNeedUpdateMeta
+			e = usecase.ErrNeedUpdateMeta
 		} else {
 			readers[r.index] = r.stream
 		}

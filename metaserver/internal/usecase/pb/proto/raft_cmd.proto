@@ -39,4 +39,5 @@ service RaftCmd {
     rpc AddVoter(AddVoterReq) returns (Response) {}
     rpc JoinLeader(JoinLeaderReq) returns (Response) {}
     rpc AppliedIndex(EmptyReq) returns (Response) {}
+    rpc Peers(EmptyReq) returns (Response) {}
 }

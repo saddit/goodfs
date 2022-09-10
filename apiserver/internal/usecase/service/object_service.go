@@ -3,19 +3,19 @@ package service
 import (
 	"apiserver/internal/entity"
 	. "apiserver/internal/usecase"
+	"apiserver/internal/usecase/logic"
 	"apiserver/internal/usecase/pool"
 	"bufio"
 	"common/logs"
 	"common/util"
 	"context"
 	"fmt"
+	"github.com/google/uuid"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"io"
 	"strconv"
 	"strings"
 	"time"
-	"apiserver/internal/usecase/logic"
-	"github.com/google/uuid"
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 const (
@@ -34,7 +34,7 @@ func getLocateResp(raw string) (ip string, idx int) {
 		panic(err)
 	}
 	ip = strs[0]
-	return 
+	return
 }
 
 type ObjectService struct {
@@ -52,7 +52,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	// 1. 临时建立并watch一个唯一key
 	// 2. object_server 持续watch各自唯一key
 	// 3. set每个object_server的key为（hash+临时key）
-	// 4. objectserver watch到这个变化就定位，成功则向set临时key
+	// 4. object server watch到这个变化就定位，成功则向set临时key
 	// 5. api服务器watch得到文件位置
 	ctx := context.Background()
 	//生成一个唯一key 并在结束后删除

@@ -1,17 +1,16 @@
 package locate
 
 import (
-	"net/http"
-
+	"common/response"
 	"github.com/gin-gonic/gin"
 )
 
-func Get(ctx *gin.Context) {
-	name := ctx.Param("name")
+func Get(c *gin.Context) {
+	name := c.Param("name")
 	info, exist := ObjectService.LocateObject(name)
 	if !exist {
-		ctx.Status(http.StatusNotFound)
+		response.NotFound(c)
 	} else {
-		ctx.JSON(http.StatusOK, info)
+		response.Ok(c).JSON(info)
 	}
 }

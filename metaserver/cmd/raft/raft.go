@@ -41,6 +41,8 @@ func init() {
 			} else {
 				bootstrap(args[2:])
 			}
+		case "peers":
+			peers()
 		default:
 			fmt.Printf("no such command %s\n", args[1])
 		}
@@ -130,6 +132,19 @@ func bootstrap(voters []string) {
 		}
 	}
 	resp, err := cli.Bootstrap(context.Background(), req)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("success: %v, message: %s\n", resp.Success, resp.Message)
+	}
+}
+
+func peers() {
+	cli, err := getClient()
+	if err != nil {
+		return
+	}
+	resp, err := cli.Peers(context.Background(), &pb.EmptyReq{})
 	if err != nil {
 		fmt.Println(err)
 	} else {
