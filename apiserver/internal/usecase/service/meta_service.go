@@ -2,6 +2,7 @@ package service
 
 import (
 	"apiserver/internal/entity"
+	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
 	"context"
@@ -39,7 +40,7 @@ func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
 	}
 
 	if verNum == repo.ErrVersion {
-		return -1, ErrInternalServer
+		return -1, usecase.ErrInternalServer
 	} else {
 		return verNum, nil
 	}
@@ -58,9 +59,10 @@ func (m *MetaService) GetVersion(name string, version int32) (*entity.Version, b
 }
 
 func (m *MetaService) GetMetadata(name string, ver int32) (*entity.Metadata, bool) {
-	res := m.repo.FindByNameAndVerMode(name, entity.VerMode(ver))
+	verMode := entity.VerMode(ver)
+	res := m.repo.FindByNameAndVerMode(name, verMode)
 	if res == nil {
 		return nil, false
 	}
-	return res, true
+	return res, verMode != entity.VerModeNot || len(res.Versions) > 0
 }

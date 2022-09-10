@@ -49,6 +49,16 @@ func WrapSlots(slotsMap map[string][]string) (IEdgeProvider, error) {
 		}
 	}
 	sort.Sort(res)
+	// validate overlap
+	for i, edge := range res {
+		if i == 0 {
+			continue
+		}
+		pre := res[i-1]
+		if pre.Start == edge.Start || pre.End > edge.Start {
+			return nil, fmt.Errorf("overlap %s and %s", pre, edge)
+		}
+	}
 	return &EdgeProvider{res}, nil
 }
 

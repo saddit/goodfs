@@ -2,19 +2,18 @@ package objects
 
 import (
 	"apiserver/internal/entity"
+	"common/response"
 	"common/util"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
 func ValidatePut(g *gin.Context) {
 	var req entity.PutReq
 	if err := req.Bind(g); err != nil {
-		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+		response.BadRequestErr(err, g).Abort()
 		return
 	} else if g.Request.ContentLength == 0 {
-		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": "Empty request"})
+		response.BadRequestMsg("empty request", g).Abort()
 		return
 	} else {
 		defer g.Set("PutReq", &req)

@@ -2,24 +2,21 @@ package big
 
 import (
 	"apiserver/internal/entity"
-	"apiserver/internal/usecase/service"
+	"common/response"
 	"common/util"
-	"log"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
 func FilterDuplicates(g *gin.Context) {
 	var req entity.BigPostReq
-	if e := req.Bind(g); e != nil {
-		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
+	if err := req.Bind(g); err != nil {
+		response.BadRequestErr(err, g).Abort()
 		return
 	} else {
 		g.Set("BigPostReq", &req)
 	}
 	if ips, ok := ObjectService.LocateObject(req.Hash); ok {
-		ver, e := ObjectService.StoreObject(&entity.PutReq{
+		ver, err := ObjectService.StoreObject(&entity.PutReq{
 			Name:     req.Name,
 			Hash:     req.Hash,
 			Ext:      util.GetFileExtOrDefault(req.Name, true, "bytes"),
@@ -32,17 +29,13 @@ func FilterDuplicates(g *gin.Context) {
 				Hash: req.Hash,
 			}},
 		})
-		if util.InstanceOf[service.KnownErr](e) {
-			g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
-			return
-		} else if e != nil {
-			log.Println(e)
-			g.AbortWithStatus(http.StatusInternalServerError)
+		if err != nil {
+			response.FailErr(err, g).Abort()
 			return
 		}
-		g.AbortWithStatusJSON(http.StatusOK, entity.PutResp{
+		response.OkJson(&entity.PutResp{
 			Name:    req.Name,
 			Version: ver,
-		})
+		}, g).Abort()
 	}
 }

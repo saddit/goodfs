@@ -1,9 +1,15 @@
 package hashslot
 
+import "fmt"
+
 type Edge struct {
 	Start int
 	End   int
 	Value string
+}
+
+func (e Edge) String() string {
+	return fmt.Sprintf("%s:(%d-%d)", e.Value, e.Start, e.End)
 }
 
 type EdgeList []*Edge

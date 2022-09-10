@@ -4,11 +4,12 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/service"
+	"common/logs"
+	"common/response"
 	"common/util"
 
-	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"apiserver/internal/usecase/logic"
+	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"net/url"
@@ -19,16 +20,18 @@ func Post(g *gin.Context) {
 	req := g.Value("BigPostReq").(*entity.BigPostReq)
 	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
 	if len(ips) == 0 {
-		g.AbortWithStatus(http.StatusServiceUnavailable)
+		response.ServiceUnavailableMsg("no available servers", g)
+		return
 	}
 	stream, e := service.NewRSResumablePutStream(ips, req.Name, req.Hash, req.Size)
 	if e != nil {
-		AbortInternalError(g, e)
+		response.FailErr(e, g)
 		return
 	}
 	defer stream.Close()
-	g.Header("Location", "/big/"+url.PathEscape(stream.Token()))
-	g.Status(http.StatusCreated)
+	response.CreatedHeader(gin.H{
+		"Location": "/big/" + url.PathEscape(stream.Token()),
+	}, g)
 }
 
 //Head 大文件已上传大小
@@ -36,15 +39,17 @@ func Head(g *gin.Context) {
 	token, _ := url.PathUnescape(g.Param("token"))
 	stream, e := service.NewRSResumablePutStreamFromToken(token)
 	if e != nil {
-		g.JSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
+		response.BadRequestErr(e, g)
 		return
 	}
 	defer stream.Close()
 	size := stream.CurrentSize()
 	if size == -1 {
-		g.Status(http.StatusNotFound)
+		response.NotFound(g)
 	} else {
-		g.Header("Content-Length", util.ToString(size))
+		response.OkHeader(gin.H{
+			"Content-Length": util.ToString(size),
+		}, g)
 	}
 }
 
@@ -52,7 +57,7 @@ func Head(g *gin.Context) {
 func Patch(g *gin.Context) {
 	var req entity.BigPutReq
 	if e := req.Bind(g); e != nil {
-		g.AbortWithStatus(http.StatusBadRequest)
+		response.BadRequestErr(e, g)
 		return
 	}
 	stream, e := service.NewRSResumablePutStreamFromToken(req.Token)
@@ -63,27 +68,27 @@ func Patch(g *gin.Context) {
 	defer stream.Close()
 	curSize := stream.CurrentSize()
 	if curSize != req.Range.Value().First {
-		g.AbortWithStatus(http.StatusRequestedRangeNotSatisfiable)
+		response.Exec(g).Status(http.StatusRequestedRangeNotSatisfiable).Abort()
 		return
 	}
 	bufSize := int64(pool.Config.Rs.BlockSize())
 	for {
 		n, e := io.CopyN(stream, g.Request.Body, bufSize)
 		if e != nil && e != io.EOF && e != io.ErrUnexpectedEOF {
-			AbortInternalError(g, e)
+			response.FailErr(e, g)
 			return
 		}
 		curSize += n
 		//大于预先确定的大小 则属于异常访问
 		if curSize > stream.Size {
 			_ = stream.Commit(false)
-			log.Infoln("resumable put exceed size")
-			g.AbortWithStatus(http.StatusForbidden)
+			logs.Std().Infoln("resumable put exceed size")
+			response.Exec(g).Status(http.StatusForbidden).Abort()
 			return
 		}
 		//上传未完成 中断
 		if n != bufSize && curSize != stream.Size {
-			g.Status(http.StatusPartialContent)
+			response.Exec(g).Status(http.StatusPartialContent)
 			return
 		}
 		//上传完成
@@ -91,20 +96,20 @@ func Patch(g *gin.Context) {
 			if pool.Config.EnableHashCheck {
 				getStream, e := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates)
 				if e != nil {
-					AbortInternalError(g, e)
+					response.FailErr(e, g)
 					return
 				}
 				hash := util.SHA256Hash(getStream)
 				if hash != stream.Hash {
 					if e = stream.Commit(false); e != nil {
-						log.Println(e)
+						logs.Std().Error(e)
 					}
-					g.AbortWithStatus(http.StatusForbidden)
+					response.Exec(g).Status(http.StatusForbidden).Abort()
 					return
 				}
 			}
 			if e = stream.Commit(true); e != nil {
-				AbortInternalError(g, e)
+				response.FailErr(e, g)
 			} else {
 				var verNum int32
 				verNum, e = MetaService.SaveMetadata(&entity.Metadata{
@@ -116,12 +121,12 @@ func Patch(g *gin.Context) {
 					}},
 				})
 				if e != nil {
-					AbortInternalError(g, e)
+					response.FailErr(e, g)
 				} else {
-					g.JSON(http.StatusOK, entity.PutResp{
+					response.OkJson(&entity.PutResp{
 						Name:    stream.Name,
 						Version: verNum,
-					})
+					}, g)
 				}
 			}
 			return

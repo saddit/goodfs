@@ -2,12 +2,10 @@ package objects
 
 import (
 	"apiserver/internal/entity"
-	"apiserver/internal/usecase/service"
-	"common/util"
-	"io"
-	"net/http"
-
+	"apiserver/internal/usecase"
+	"common/response"
 	"github.com/gin-gonic/gin"
+	"io"
 )
 
 func Put(c *gin.Context) {
@@ -21,55 +19,47 @@ func Put(c *gin.Context) {
 		}},
 	})
 
-	if util.InstanceOf[service.KnownErr](err) {
-		c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
-		return
-	} else if err != nil {
-		AbortInternalError(c, err)
+	if err != nil {
+		response.FailErr(err, c)
 		return
 	}
 
-	c.JSON(http.StatusOK, entity.PutResp{
+	response.OkJson(&entity.PutResp{
 		Name:    req.Name,
 		Version: verNum,
-	})
+	}, c)
 }
 
 func Get(c *gin.Context) {
 	var req entity.GetReq
 	if e := req.Bind(c); e != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
+		response.BadRequestErr(e, c)
 		return
 	}
 
 	if metaData, ok := MetaService.GetMetadata(req.Name, req.Version); ok {
 		metaVer := metaData.Versions[0]
-		//表示此版本已经移被删除
-		if metaVer.Size == 0 || metaVer.Hash == "" {
-			c.AbortWithStatus(http.StatusNotFound)
-			return
-		}
 		stream, e := ObjectService.GetObject(metaVer)
 		defer stream.Close()
-		if e == service.ErrBadRequest {
-			c.AbortWithStatus(http.StatusBadRequest)
+		if e == usecase.ErrBadRequest {
+			response.BadRequestErr(e, c).Abort()
 		} else if e != nil {
-			AbortServiceUnavailableError(c, e)
+			response.ServiceUnavailableErr(e, c).Abort()
 		} else {
 			if tp, ok := req.Range.Get(); ok {
 				if _, e = stream.Seek(tp.First, io.SeekCurrent); e != nil {
-					AbortInternalError(c, e)
+					response.FailErr(e, c)
 					return
 				}
 			}
 			_, e = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
 			if e == nil {
-				c.Status(http.StatusOK)
+				response.Ok(c)
 			} else {
-				AbortInternalError(c, e)
+				response.FailErr(e, c)
 			}
 		}
 	} else {
-		c.AbortWithStatus(http.StatusNotFound)
+		response.NotFound(c).Abort()
 	}
 }

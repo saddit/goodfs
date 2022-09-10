@@ -66,7 +66,7 @@ func (rcs *RaftCmdServerImpl) AddVoter(ctx context.Context, req *pb.AddVoterReq)
 	}
 	var resultFeatures []raft.IndexFuture
 	for _, item := range req.GetVoters() {
-		res := rcs.rf.Raft.AddVoter(raft.ServerID(item.GetId()), raft.ServerAddress(item.GetAddress()), item.GetPrevIndex(), 10 * time.Second)
+		res := rcs.rf.Raft.AddVoter(raft.ServerID(item.GetId()), raft.ServerAddress(item.GetAddress()), item.GetPrevIndex(), 10*time.Second)
 		resultFeatures = append(resultFeatures, res)
 	}
 	var msg strings.Builder
@@ -92,8 +92,8 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 	client := pb.NewRaftCmdClient(cc)
 	return client.AddVoter(ctx, &pb.AddVoterReq{
 		Voters: []*pb.Voter{{
-			Id: rcs.rf.ID,
-			Address: rcs.rf.Address,
+			Id:        rcs.rf.ID,
+			Address:   rcs.rf.Address,
 			PrevIndex: rcs.rf.Raft.AppliedIndex(),
 		}},
 	})
@@ -101,4 +101,13 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 
 func (rcs *RaftCmdServerImpl) AppliedIndex(_ context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
 	return &pb.Response{Success: true, Message: fmt.Sprint(rcs.rf.Raft.AppliedIndex())}, nil
+}
+
+func (rcs *RaftCmdServerImpl) Peers(_ context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
+	servers := rcs.rf.Raft.GetConfiguration().Configuration().Servers
+	res := make([]string, 0, len(servers)-1)
+	for _, serv := range servers {
+		res = append(res, string(serv.Address))
+	}
+	return &pb.Response{Success: true, Message: strings.Join(res, ",")}, nil
 }

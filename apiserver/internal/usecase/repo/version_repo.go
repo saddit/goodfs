@@ -2,6 +2,9 @@ package repo
 
 import (
 	"apiserver/internal/entity"
+	"apiserver/internal/usecase/logic"
+	"apiserver/internal/usecase/webapi"
+	"common/logs"
 	"context"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -36,9 +39,17 @@ func (v *VersionRepo) Update(ctx context.Context, ver *entity.Version) bool {
 //Add 为metadata添加一个版本，添加到版本数组的末尾，版本号为数组序号
 //返回对应版本号,如果失败返回ErrVersion -1
 func (v *VersionRepo) Add(ctx context.Context, name string, ver *entity.Version) int32 {
-	//TODO 从etcd元数据所在节点位置，向主节点发送添加版本元数据的请求
-	// 版本号从数据节点中返回
-	return ErrVersion
+	masters := logic.NewDiscovery().GetMetaServers(true)
+	loc, err := logic.NewHashSlot().FindLocOfName(name, masters)
+	if err != nil {
+		return ErrVersion
+	}
+	verNum, err := webapi.PostVersion(loc, name, ver)
+	if err != nil {
+		logs.Std().Error(err)
+		return ErrVersion
+	}
+	return int32(verNum)
 }
 
 func (v *VersionRepo) Delete(ctx context.Context, name string, ver *entity.Version) error {
