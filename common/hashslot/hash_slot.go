@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const MAX_SLOT = 16383
+const MaxSlot = 16383
 
 func formatInt(slot string) (int, int, error) {
 	rg := strings.Split(slot, "-")
@@ -67,11 +67,11 @@ func GetStringIdentify(str string, provide IEdgeProvider) (string, error) {
 }
 
 func GetDataIdentify(data []byte, provider IEdgeProvider) (string, error) {
-	return GetSlotIdentify(TransferSlot(data), provider)
+	return GetSlotIdentify(CalcBytesSlot(data), provider)
 }
 
-func TransferSlot(bt []byte) int {
-	return int(crc32.ChecksumIEEE(bt) & MAX_SLOT)
+func CalcBytesSlot(bt []byte) int {
+	return int(crc32.ChecksumIEEE(bt) & MaxSlot)
 }
 
 func GetSlotIdentify(slot int, provider IEdgeProvider) (string, error) {
@@ -113,7 +113,7 @@ func IsSlotInEdges(slot int, edges EdgeList) bool {
 	return edges[idx].Start <= slot && edges[idx].End > slot
 }
 
-// FindIdentity find identiies in range [start,end)
+// FindRangeCurrentData find identifies in range [start,end)
 func FindRangeCurrentData(start, end int, provider IEdgeProvider) (res EdgeList) {
 	edges := provider.get()
 	for _, edge := range edges {

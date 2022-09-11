@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	Config      *config.Config
-	Storage     *db.Storage
-	RaftWrapper *raftimpl.RaftWrapper
-	Etcd        *clientv3.Client
-	HashSlots   hashslot.IEdgeProvider
+	Config       *config.Config
+	Storage      *db.Storage
+	RaftWrapper  *raftimpl.RaftWrapper
+	Etcd         *clientv3.Client
+	HashSlots    hashslot.IEdgeProvider
 	HttpHostPort string
 	GrpcHostPort string
 )
@@ -62,7 +62,7 @@ func initHashSlot(cfg *config.Config, etcd *clientv3.Client) {
 	slotStr := strings.Join(cfg.HashSlot, ",")
 	logs.Std().Infof("hash slots: %s", slotStr)
 	// save current slot data
-	_, err = etcd.Put(context.Background(), fmt.Sprint("metaserver_hashslot/", HttpHostPort), slotStr, clientv3.WithPrevKV())
+	resp, err := etcd.Put(context.Background(), fmt.Sprint("metaserver_hashslot/", HttpHostPort), slotStr, clientv3.WithPrevKV())
 	if err != nil {
 		panic(fmt.Errorf("save hash slot to etcd err: %s", err))
 	}
@@ -82,9 +82,17 @@ func initHashSlot(cfg *config.Config, etcd *clientv3.Client) {
 	if err != nil {
 		panic(fmt.Errorf("init hash slot err: %s", err))
 	}
-	// TODO migration data
-	// if resp.PrevKv != nil && string(resp.PrevKv.Value) != slotStr {
-	// }
+	// if prevKv exists and doesn't equal to current setting
+	if resp.PrevKv != nil && string(resp.PrevKv.Value) != slotStr {
+		// TODO migration data through a raft way
+		//  1. find out removed slots
+		//  2. delete and transfer to another server
+		//   2.1 map all kvs on bolt-db, recheck the mapping from key to hash-slot by newest hash-slots
+		//   2.2 delete fail: log error and skip
+		//   2.3 transfer fail: rollback and log error
+		//  3. if some data migrate failure, log and panic.
+		//     administrator should find out reason and retry.
+	}
 }
 
 func Close() {
