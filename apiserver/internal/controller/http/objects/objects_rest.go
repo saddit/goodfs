@@ -2,8 +2,8 @@ package objects
 
 import (
 	"apiserver/internal/entity"
-	"apiserver/internal/usecase"
 	"common/response"
+	"common/util"
 	"github.com/gin-gonic/gin"
 	"io"
 )
@@ -36,30 +36,31 @@ func Get(c *gin.Context) {
 		response.BadRequestErr(e, c)
 		return
 	}
-
-	if metaData, ok := MetaService.GetMetadata(req.Name, req.Version); ok {
-		metaVer := metaData.Versions[0]
-		stream, e := ObjectService.GetObject(metaVer)
-		defer stream.Close()
-		if e == usecase.ErrBadRequest {
-			response.BadRequestErr(e, c).Abort()
-		} else if e != nil {
-			response.ServiceUnavailableErr(e, c).Abort()
-		} else {
-			if tp, ok := req.Range.Get(); ok {
-				if _, e = stream.Seek(tp.First, io.SeekCurrent); e != nil {
-					response.FailErr(e, c)
-					return
-				}
-			}
-			_, e = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
-			if e == nil {
-				response.Ok(c)
-			} else {
-				response.FailErr(e, c)
-			}
-		}
-	} else {
-		response.NotFound(c).Abort()
+	// get metadata
+	metaData, err := MetaService.GetMetadata(req.Name, req.Version)
+	if err != nil {
+		response.FailErr(err, c).Abort()
+		return
 	}
+	// get object stream
+	stream, err := ObjectService.GetObject(metaData, metaData.Versions[0])
+	defer util.CloseAndLog(stream)
+	if err != nil {
+		response.FailErr(err, c).Abort()
+		return
+	}
+	// try seek
+	if tp, ok := req.Range.Get(); ok {
+		if _, err = stream.Seek(tp.First, io.SeekCurrent); err != nil {
+			response.FailErr(err, c)
+			return
+		}
+	}
+	// copy to response
+	_, err = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
+	if err == nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
 }

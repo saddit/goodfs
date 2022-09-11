@@ -5,7 +5,6 @@ import (
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
-	"context"
 )
 
 type MetaService struct {
@@ -27,10 +26,16 @@ func saveAlgoInfo(ver *entity.Version) {
 func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
 	saveAlgoInfo(ver)
-	metaD := m.repo.FindByNameAndVerMode(md.Name, entity.VerModeNot)
+	metaD, err := m.repo.FindByNameWithVersion(md.Name, entity.VerModeNot)
+	if err != nil {
+		return -1, nil
+	}
 	var verNum int32
 	if metaD != nil {
-		verNum = m.versionRepo.Add(context.Background(), metaD.Name, ver)
+		verNum, err = m.versionRepo.Add(metaD.Name, ver)
+		if err != nil {
+			return -1, err
+		}
 	} else {
 		verNum = 0
 		var e error
@@ -46,23 +51,33 @@ func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
 	}
 }
 
-func (m *MetaService) UpdateVersion(version *entity.Version) {
-	m.versionRepo.Update(context.Background(), version)
+func (m *MetaService) UpdateVersion(name string, version *entity.Version) (err error) {
+	err = m.versionRepo.Update(name, version)
+	return
 }
 
-func (m *MetaService) GetVersion(name string, version int32) (*entity.Version, bool) {
-	res := m.versionRepo.Find(name, version)
-	if res == nil {
-		return nil, false
+func (m *MetaService) GetVersion(name string, version int32) (*entity.Version, error) {
+	res, err := m.versionRepo.Find(name, version)
+	if err != nil {
+		return nil, err
 	}
-	return res, true
+	if res == nil {
+		return nil, usecase.ErrNotFound
+	}
+	return res, nil
 }
 
-func (m *MetaService) GetMetadata(name string, ver int32) (*entity.Metadata, bool) {
+func (m *MetaService) GetMetadata(name string, ver int32) (*entity.Metadata, error) {
 	verMode := entity.VerMode(ver)
-	res := m.repo.FindByNameAndVerMode(name, verMode)
-	if res == nil {
-		return nil, false
+	res, err := m.repo.FindByNameWithVersion(name, verMode)
+	if err != nil {
+		return nil, err
 	}
-	return res, verMode != entity.VerModeNot || len(res.Versions) > 0
+	if res == nil {
+		return nil, usecase.ErrNotFound
+	}
+	if verMode != entity.VerModeNot && len(res.Versions) == 0 {
+		return res, usecase.ErrNotFound
+	}
+	return res, nil
 }

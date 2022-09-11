@@ -7,22 +7,22 @@ import (
 	"apiserver/internal/controller/http/versions"
 	. "apiserver/internal/usecase"
 	"common/graceful"
-	"net/http"
+	netHttp "net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type HttpServer struct {
+type Server struct {
 	g      *gin.Engine
 	object IObjectService
 	meta   IMetaService
 }
 
-func NewHttpServer(o IObjectService, m IMetaService) *HttpServer {
-	return &HttpServer{gin.Default(), o, m}
+func NewHttpServer(o IObjectService, m IMetaService) *Server {
+	return &Server{gin.Default(), o, m}
 }
 
-func (h *HttpServer) ListenAndServe(addr string) {
+func (h *Server) ListenAndServe(addr string) {
 	r := h.g.Group("/api/v1")
 	versions.MetaService = h.meta
 	locate.ObjectService = h.object
@@ -42,5 +42,5 @@ func (h *HttpServer) ListenAndServe(addr string) {
 	r.HEAD("/big/:token", big.Head)
 	r.PATCH("/big/:token", big.Patch)
 
-	graceful.ListenAndServe(&http.Server{Addr: addr, Handler: h.g})
+	graceful.ListenAndServe(&netHttp.Server{Addr: addr, Handler: h.g})
 }

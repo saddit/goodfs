@@ -7,10 +7,10 @@ import (
 type VerMode int32
 
 const (
-	//VerModeALL 查询全部版本
-	VerModeALL VerMode = -128
+	//VerModeFirst 查询第一个版本
+	VerModeFirst VerMode = 1
 	//VerModeLast 只查询最后一个版本
-	VerModeLast VerMode = -2
+	VerModeLast VerMode = 0
 	// VerModeNot 不查询任何版本
 	VerModeNot VerMode = -1
 )
@@ -30,6 +30,7 @@ func (m *Metadata) LastVersion() *Version {
 }
 
 type Version struct {
+	Sequence     int32     `json:"sequence"`
 	Hash         string    `json:"hash"`
 	Size         int64     `json:"size"`
 	Ts           time.Time `json:"ts"`

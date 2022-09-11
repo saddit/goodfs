@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"common/response"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,7 @@ type PutReq struct {
 
 type GetReq struct {
 	Name    string `uri:"name" binding:"required"`
-	Version int32  `form:"version"`
+	Version int32  `form:"version" binding:"min=0"`
 	Range   Range
 }
 
@@ -83,6 +84,8 @@ func (g *GetReq) Bind(c *gin.Context) error {
 		var r Range
 		if ok := r.convertFrom(rangeStr); ok {
 			g.Range = r
+		} else {
+			return response.NewError(400, "Range format error")
 		}
 	}
 	return nil
