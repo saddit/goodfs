@@ -1,5 +1,6 @@
 port: 8081
-enable-hash-check: false
+log-level: info
+checksum: false
 select-strategy: random
 registry:
   group: "goodfs"
@@ -10,9 +11,8 @@ etcd:
   username: root
   password: xianka
 discovery:
-  detect-interval: 5s
-  suspend-timeout: 5s
-  dead-timeout: 10s
+  meta-server-name: "metaserver"
+  data-server-name: "objectserver"
 rs:
   data-shards: 4
   parity-shards: 2

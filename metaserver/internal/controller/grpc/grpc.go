@@ -35,7 +35,7 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo) (*Rp
 	// init services
 	raftGrpcServ := raftServer.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
 	raftWrapper := raftimpl.NewRaft(cfg, raftimpl.NewFSM(repo), raftGrpcServ.Transport())
-	// register grpc services 
+	// register grpc services
 	{
 		raftGrpcServ.Register(server)
 		reflection.Register(server)
@@ -49,7 +49,7 @@ func (r *RpcRaftServer) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	finish := make(chan struct{})
-	go func () {
+	go func() {
 		defer close(finish)
 		r.Server.GracefulStop()
 	}()
@@ -64,7 +64,6 @@ func (r *RpcRaftServer) Shutdown(ctx context.Context) error {
 
 func (r *RpcRaftServer) ListenAndServe() error {
 	if r.Server == nil {
-		log.Warn("server is nil, avoid listening on ", r.Port)
 		return nil
 	}
 	sock, err := net.Listen("tcp", util.GetHostPort(r.Port))

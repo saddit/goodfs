@@ -1,7 +1,7 @@
 port: 8080
 log-level: info
-storage-path: /workspaces/objects
-temp-path: /workspaces/temp
+storage-path: e:/file/temp/objects
+temp-path: e:/file/temp/objects_temp
 cache:
   max-size-mb: 256
   ttl: 3h

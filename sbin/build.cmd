@@ -1,3 +1,3 @@
-go build apiserver/main.go -y bin/api
-go build metaserver/main.go -y bin/meta
-go build objectserver/main.go -y bin/object
+go build -o %~dp0..\bin\api.exe %~dp0..\apiserver\main.go
+go build -o %~dp0..\bin\meta.exe %~dp0..\metaserver\main.go
+go build -o %~dp0..\bin\object.exe %~dp0..\objectserver\main.go

@@ -93,7 +93,7 @@ func Patch(g *gin.Context) {
 		}
 		//上传完成
 		if curSize == stream.Size {
-			if pool.Config.EnableHashCheck {
+			if pool.Config.Checksum {
 				getStream, e := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates)
 				if e != nil {
 					response.FailErr(e, g)

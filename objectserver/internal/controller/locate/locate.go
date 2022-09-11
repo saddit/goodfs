@@ -3,6 +3,7 @@ package locate
 import (
 	"common/graceful"
 	"common/logs"
+	"common/util"
 	"context"
 	"fmt"
 	"objectserver/internal/usecase/service"
@@ -26,7 +27,8 @@ func New(etcd *clientv3.Client) *Locator {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if res, _ := etcd.Get(ctx, LocationSubKey, clientv3.WithCountOnly()); res.Count == 0 {
-		etcd.Put(ctx, LocationSubKey, "")
+		_, err := etcd.Put(ctx, LocationSubKey, "")
+		util.LogErr(err)
 	}
 	return &Locator{etcd}
 }
@@ -68,19 +70,20 @@ func (l *Locator) handlerLocate(message []byte, ip string) {
 	defer graceful.Recover()
 	tp := strings.Split(string(message), "#")
 	if len(tp) != 2 {
-		log.Errorf("Receive incorrect message %s", string(message))
+		logs.Std().Errorf("Receive incorrect message %s", string(message))
 		return
 	}
 	hash, respKey := tp[0], tp[1]
+	logs.Std().Tracef("handler locating request: hash=%s, response to key %s", hash, respKey)
 	if service.Exist(hash) {
 		tp = strings.Split(hash, ".")
 		if len(tp) != 2 {
-			log.Errorf("Receive incorrect message %s", string(message))
+			logs.Std().Errorf("Receive incorrect message %s", string(message))
 			return
 		}
 		_, err := l.etcd.Put(context.Background(), respKey, fmt.Sprint(ip, "#", tp[1]))
 		if err != nil {
-			log.Errorf("Put locate repsone on key %s error: %s", respKey, err)
+			logs.Std().Errorf("Put locate repsone on key %s error: %s", respKey, err)
 			return
 		}
 	}

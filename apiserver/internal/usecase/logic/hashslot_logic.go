@@ -1,8 +1,8 @@
 package logic
 
 import (
-	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
+	"common/collection/set"
 	"common/hashslot"
 	"context"
 	"fmt"
@@ -17,17 +17,23 @@ func NewHashSlot() *HashSlot {
 	return &HashSlot{}
 }
 
-func (HashSlot) FindLocOfName(name string, locations []string) (string, error) {
+func (HashSlot) FindMetaLocOfName(name string, locations []string) (string, error) {
+	validLocs := set.OfString(locations)
 	slotsMap := make(map[string][]string)
-	for _, loc := range locations {
-		resp, err := pool.Etcd.Get(context.Background(), fmt.Sprint("metaserver_hashslot/", loc), clientv3.WithFirstKey()...)
-		if err != nil {
-			return "", err
+	prefix := fmt.Sprint(pool.Config.Registry.Group, "/", "hash_slot_", pool.Config.Discovery.MetaServName, "/")
+	// get slots data from etcd
+	res, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
+	if err != nil {
+		panic(err)
+	}
+	// wrap slot
+	for _, kv := range res.Kvs {
+		keySplit := strings.Split(string(kv.Key), "/")
+		identify := keySplit[len(keySplit)-1]
+		if validLocs.Contains(identify) {
+			slots := strings.Split(string(kv.Value), ",")
+			slotsMap[identify] = slots
 		}
-		if len(resp.Kvs) == 0 {
-			return "", usecase.ErrServiceUnavailable
-		}
-		slotsMap[loc] = strings.Split(string(resp.Kvs[0].Value), ",")
 	}
 	slots, err := hashslot.WrapSlots(slotsMap)
 	if err != nil {

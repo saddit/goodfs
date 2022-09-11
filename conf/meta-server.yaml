@@ -1,11 +1,11 @@
 port: 8010
-data-dir: /workspaces/temp/meta_server
-hash-slot: ["0-1","2-3"]
+data-dir: e:/file/temp/meta_server
+hash-slot: ["0-16383"]
 cluster:
   enable: false
   id: node
   bootstrap: false
-  store-dir: /workspaces/temp/meta_server_raft
+  store-dir: e:/file/temp/meta_server_raft
 registry:
   group: "goodfs"
   name: "metaserver"

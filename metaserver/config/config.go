@@ -41,6 +41,7 @@ func ReadConfig() Config {
 	if err := cleanenv.ReadConfig(ConfFilePath, &conf); err != nil {
 		panic(err)
 	}
+	logs.Std().Infof("read config from %s", ConfFilePath)
 	return conf
 }
 
@@ -52,5 +53,6 @@ func ReadConfigFrom(path string) Config {
 		}
 		panic(err)
 	}
+	logs.Std().Infof("read config from %s", path)
 	return conf
 }

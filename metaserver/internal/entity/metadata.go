@@ -2,6 +2,8 @@ package entity
 
 //go:generate msgp
 
+//FIXME: 从api-server反序列化得到的Time都是字符串，此处需要对此进行适配
+
 type Metadata struct {
 	Name       string `json:"name" msg:"name" binding:"required"`
 	CreateTime int64  `json:"createTime" msg:"create_time"`

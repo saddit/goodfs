@@ -62,12 +62,14 @@ func initHashSlot(cfg *config.Config, etcd *clientv3.Client) {
 	slotStr := strings.Join(cfg.HashSlot, ",")
 	logs.Std().Infof("hash slots: %s", slotStr)
 	// save current slot data
-	resp, err := etcd.Put(context.Background(), fmt.Sprint("metaserver_hashslot/", HttpHostPort), slotStr, clientv3.WithPrevKV())
+	prefix := fmt.Sprint(cfg.Registry.Group, "/", "hash_slot_", cfg.Registry.Name, "/")
+	resp, err := etcd.Put(context.Background(), fmt.Sprint(prefix, HttpHostPort), slotStr, clientv3.WithPrevKV())
 	if err != nil {
 		panic(fmt.Errorf("save hash slot to etcd err: %s", err))
 	}
+	// FIXME: 逻辑有问题，主从模式下会导致主从节点互相重叠 需要改造进入Raft生命周期内
 	// get slots data from etcd
-	res, err := etcd.Get(context.Background(), "metaserver_hashslot", clientv3.WithPrefix())
+	res, err := etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		panic(err)
 	}

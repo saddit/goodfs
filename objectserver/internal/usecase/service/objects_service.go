@@ -4,18 +4,18 @@ import (
 	"io"
 	global "objectserver/internal/usecase/pool"
 	"os"
+	"path/filepath"
 )
 
 const (
 	LocateKeyPrefix = "LocateCache#"
-	LocationSubKey = "goodfs.location"
 )
 
 func Exist(name string) bool {
 	if global.Cache.Has(LocateKeyPrefix+name) || global.Cache.Has(name) {
 		return true
 	}
-	if ExistPath(global.Config.StoragePath + name) {
+	if ExistPath(filepath.Join(global.Config.StoragePath, name)) {
 		MarkExist(name)
 		return true
 	} else {
@@ -37,11 +37,11 @@ func Put(fileName string, fileStream io.Reader) error {
 }
 
 func Get(name string, writer io.Writer) error {
-	return GetFile(global.Config.StoragePath+name, writer)
+	return GetFile(filepath.Join(global.Config.StoragePath, name), writer)
 }
 
 func GetTemp(name string, writer io.Writer) error {
-	return GetFile(global.Config.TempPath+name, writer)
+	return GetFile(filepath.Join(global.Config.TempPath, name), writer)
 }
 
 func GetFile(fullPath string, writer io.Writer) error {
@@ -61,7 +61,7 @@ func Delete(name string) error {
 }
 
 func DeleteFile(path, name string) error {
-	e := os.Remove(path + name)
+	e := os.Remove(filepath.Join(path, name))
 	if e != nil {
 		return e
 	}
@@ -69,7 +69,8 @@ func DeleteFile(path, name string) error {
 }
 
 func AppendFile(path, fileName string, fileStream io.Reader) error {
-	file, err := os.OpenFile(path+fileName, os.O_CREATE|os.O_APPEND, os.ModePerm)
+	path = filepath.Join(path, fileName)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -82,8 +83,10 @@ func AppendFile(path, fileName string, fileStream io.Reader) error {
 }
 
 func MvTmpToStorage(tmpName, fileName string) error {
-	if ExistPath(global.Config.StoragePath + fileName) {
+	filePath := filepath.Join(global.Config.StoragePath, fileName)
+	tempPath := filepath.Join(global.Config.TempPath, tmpName)
+	if ExistPath(filePath) {
 		return nil
 	}
-	return os.Rename(global.Config.TempPath+tmpName, global.Config.StoragePath+fileName)
+	return os.Rename(tempPath, filePath)
 }

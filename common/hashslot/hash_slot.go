@@ -34,6 +34,9 @@ func formatInt(slot string) (int, int, error) {
 
 // WrapSlots slotsMap(key='identify', value=[]string{'0-100','110-221'})
 func WrapSlots(slotsMap map[string][]string) (IEdgeProvider, error) {
+	if len(slotsMap) == 0 {
+		return nil, fmt.Errorf("empty slotsMap")
+	}
 	res := make(EdgeList, 0, len(slotsMap))
 	for value, slots := range slotsMap {
 		for _, slot := range slots {
