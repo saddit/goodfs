@@ -4,7 +4,6 @@ import (
 	"common/logs"
 	"common/registry"
 	"common/util"
-	"fmt"
 	"objectserver/config"
 
 	"objectserver/internal/controller/http"
@@ -25,11 +24,11 @@ func initDir(cfg *config.Config) {
 
 func Run(cfg *config.Config) {
 	initDir(cfg)
-	netAddr := fmt.Sprint(util.GetHost(), ":", cfg.Port)
 	logs.SetLevel(cfg.LogLevel)
 	//init components
 	pool.InitPool(cfg)
 	defer pool.Close()
+	netAddr := util.GetHostPort(cfg.Port)
 	// register
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr).MustRegister().Unregister()
 	// locating serv

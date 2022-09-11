@@ -22,14 +22,13 @@ type CacheConfig struct {
 }
 
 type Config struct {
-	Port         string          `yaml:"port"`
-	LogLevel     logs.Level      `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
-	StoragePath  string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"objects"`
-	TempPath     string          `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
-	BeatInterval time.Duration   `yaml:"beat-interval" env:"BEAT_INTERVAL" env-default:"5s"`
-	Cache        CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
-	Etcd         etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	Registry     registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Port        string          `yaml:"port"`
+	LogLevel    logs.Level      `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
+	StoragePath string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"objects"`
+	TempPath    string          `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
+	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
+	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 }
 
 func ReadConfig() Config {

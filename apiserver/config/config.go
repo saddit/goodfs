@@ -24,8 +24,8 @@ type Config struct {
 }
 
 type DiscoveryConfig struct {
-	DataServName string `yaml:"data-serv-name" env-default:"dataserver"`
-	MetaServName string `yaml:"meta-serv-name" env-default:"metaserver"` 
+	DataServName string `yaml:"data-serv-name" env-default:"objectserver"`
+	MetaServName string `yaml:"meta-serv-name" env-default:"metaserver"`
 }
 
 type RsConfig struct {
