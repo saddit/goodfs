@@ -139,11 +139,10 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 	return stream.Locates, e
 }
 
-func (o *ObjectService) GetObject(ver *entity.Version) (io.ReadSeekCloser, error) {
+func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
 	r, e := NewRSGetStream(ver.Size, ver.Hash, ver.Locate)
 	if e == ErrNeedUpdateMeta {
-		o.metaService.UpdateVersion(ver)
-		e = nil
+		e = o.metaService.UpdateVersion(meta.Name, ver)
 	}
 	return r, e
 }

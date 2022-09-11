@@ -153,6 +153,12 @@ func LogErrWithPre(prefix string, err error) {
 	}
 }
 
+func CloseAndLog(s io.Closer) {
+	if s != nil {
+		LogErr(s.Close())
+	}
+}
+
 func IfElse[T any](cond bool, t T, f T) T {
 	if cond {
 		return t
@@ -193,7 +199,7 @@ func ToUint64(str string) uint64 {
 	return i
 }
 
-func UnmarshalFromIO[T any](body io.ReadCloser) (*T, error){
+func UnmarshalFromIO[T any](body io.ReadCloser) (*T, error) {
 	defer body.Close()
 	var data T
 	bt, err := io.ReadAll(body)
@@ -206,7 +212,7 @@ func UnmarshalFromIO[T any](body io.ReadCloser) (*T, error){
 	return &data, nil
 }
 
-func UnmarshalFromIO2[T any](body io.ReadCloser, data T) (T, error){
+func UnmarshalFromIO2[T any](body io.ReadCloser, data T) (T, error) {
 	defer body.Close()
 	bt, err := io.ReadAll(body)
 	if err != nil {

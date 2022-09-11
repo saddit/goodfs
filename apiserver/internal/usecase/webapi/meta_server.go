@@ -12,8 +12,8 @@ import (
 	"net/http"
 )
 
-func GetMetadata(ip, name string) (*entity.Metadata, error) {
-	resp, err := pool.Http.Get(fmt.Sprint(metaRest(ip, name), "?version=-1"))
+func GetMetadata(ip, name string, verNum int32) (*entity.Metadata, error) {
+	resp, err := pool.Http.Get(fmt.Sprint(metaRest(ip, name), "?version=", verNum))
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func DelMetadata(ip, name string) error {
 	return nil
 }
 
-func GetVersion(ip, name string, verNum int) (*entity.Version, error) {
+func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
 	resp, err := pool.Http.Get(versionNumRest(ip, name, verNum))
 	if err != nil {
 		return nil, err
@@ -112,12 +112,12 @@ func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
 	return util.ToUint64(resp.Header.Get("Version")), nil
 }
 
-func PutVersion(ip, name string, verNum int, body *entity.Version) error {
+func PutVersion(ip, name string, body *entity.Version) error {
 	bt, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
-	req, err := request.GetPutReq(bytes.NewBuffer(bt), versionNumRest(ip, name, verNum), request.ContentTypeJSON)
+	req, err := request.GetPutReq(bytes.NewBuffer(bt), versionNumRest(ip, name, body.Sequence), request.ContentTypeJSON)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func PutVersion(ip, name string, verNum int, body *entity.Version) error {
 }
 
 // DelVersion verNum < 0 will delete all version
-func DelVersion(ip, name string, verNum int) error {
+func DelVersion(ip, name string, verNum int32) error {
 	req, err := request.GetDeleteReq(versionNumRest(ip, name, verNum))
 	if err != nil {
 		return err
@@ -158,6 +158,6 @@ func versionListRest(ip, name string, page, pageSize int) string {
 	return fmt.Sprintf("http://%s/metadata_version/%s?page=%d&page_size=%d", ip, name, page, pageSize)
 }
 
-func versionNumRest(ip, name string, num int) string {
+func versionNumRest(ip, name string, num int32) string {
 	return fmt.Sprintf("http://%s/metadata_version/%s?version=%d", ip, name, num)
 }
