@@ -2,8 +2,8 @@ package main
 
 import (
 	"common/cmd"
-	"os"
 	_ "objectserver/cmd/app"
+	"os"
 )
 
 func main() {
