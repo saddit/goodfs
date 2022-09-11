@@ -4,6 +4,7 @@ import (
 	"common/etcd"
 	"common/logs"
 	"common/registry"
+	"os"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -13,14 +14,14 @@ const (
 )
 
 type Config struct {
-	Port            string          `yaml:"port" env:"PORT" env-default:"8080"`
-	LogLevel        logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
-	SelectStrategy  string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
-	EnableHashCheck bool            `yaml:"enable-hash-check" env:"ENABLE_HASH_CHECK" env-default:"true"`
-	Etcd            etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	Rs              RsConfig        `yaml:"rs" env-prefix:"RS"`
-	Discovery       DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
-	Registry        registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Port           string          `yaml:"port" env:"PORT" env-default:"8080"`
+	LogLevel       logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
+	SelectStrategy string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
+	Checksum       bool            `yaml:"checksum" env:"CHECKSUM" env-default:"false"`
+	Etcd           etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
+	Rs             RsConfig        `yaml:"rs" env-prefix:"RS"`
+	Discovery      DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
+	Registry       registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 }
 
 type DiscoveryConfig struct {
@@ -43,13 +44,22 @@ func (r *RsConfig) BlockSize() int {
 }
 
 func ReadConfig() Config {
-	return ReadConfigFrom(ConfFilePath)
+	var conf Config
+	if err := cleanenv.ReadConfig(ConfFilePath, &conf); err != nil {
+		panic(err)
+	}
+	logs.Std().Infof("read config from %s", ConfFilePath)
+	return conf
 }
 
 func ReadConfigFrom(path string) Config {
 	var conf Config
 	if err := cleanenv.ReadConfig(path, &conf); err != nil {
+		if os.IsNotExist(err) {
+			return ReadConfig()
+		}
 		panic(err)
 	}
+	logs.Std().Infof("read config from %s", path)
 	return conf
 }

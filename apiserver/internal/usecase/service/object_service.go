@@ -54,7 +54,8 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	// 3. set每个object_server的key为（hash+临时key）
 	// 4. object server watch到这个变化就定位，成功则向set临时key
 	// 5. api服务器watch得到文件位置
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
 	//生成一个唯一key 并在结束后删除
 	tempId := uuid.NewString()
 	if _, err := o.etcd.Put(ctx, tempId, ""); err != nil {
@@ -72,7 +73,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 		select {
 		case resp, ok := <-wt:
 			if !ok {
-				logs.Std().Error("Etcd watching key err, channel closed")
+				logs.Std().Error("etcd watching key err, channel closed")
 				return nil, false
 			}
 			for _, event := range resp.Events {
@@ -82,7 +83,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 			if len(locates) == cap(locates) {
 				return locates, true
 			}
-		case <-time.Tick(time.Minute):
+		case <-time.Tick(5 * time.Second):
 			logs.Std().Errorf("locate object %s timeout!", hash)
 			return nil, false
 		}
@@ -93,7 +94,7 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (in
 	ver := md.Versions[0]
 
 	//文件数据保存
-	if req.Locate == nil {
+	if len(req.Locate) == 0 {
 		var e error
 		if ver.Locate, e = streamToDataServer(req, ver.Size); e != nil {
 			return -1, e
@@ -113,7 +114,7 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 	}
 
 	//digest validation
-	if pool.Config.EnableHashCheck {
+	if pool.Config.Checksum {
 		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
 		hash := util.SHA256Hash(reader)
 		if hash != req.Hash {

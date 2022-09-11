@@ -13,7 +13,7 @@ import (
 )
 
 type EtcdDiscovery struct {
-	cli *clientv3.Client
+	cli      *clientv3.Client
 	group    string
 	services map[string]*serviceList
 }
@@ -36,7 +36,7 @@ func (e *EtcdDiscovery) initService(serv string) {
 	// get original kvs
 	go func() {
 		defer graceful.Recover()
-		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		res, err := e.cli.Get(ctx, prefix, clientv3.WithPrefix())
 		if err != nil {
@@ -84,7 +84,7 @@ func (e *EtcdDiscovery) GetServicesWith(name string, master bool) []string {
 			if strings.HasSuffix(v, s) {
 				arr = append(arr, k)
 			} else if !strings.HasSuffix(v, c) {
-				// if doesn't have any suffix means standalone
+				// if it doesn't have any suffix means standalone
 				arr = append(arr, k)
 			}
 		}

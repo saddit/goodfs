@@ -5,6 +5,8 @@ import (
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
+	"common/response"
+	"net/http"
 )
 
 type MetaService struct {
@@ -27,28 +29,24 @@ func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
 	saveAlgoInfo(ver)
 	metaD, err := m.repo.FindByNameWithVersion(md.Name, entity.VerModeNot)
+
 	if err != nil {
-		return -1, nil
-	}
-	var verNum int32
-	if metaD != nil {
-		verNum, err = m.versionRepo.Add(metaD.Name, ver)
-		if err != nil {
-			return -1, err
+		// if err is NotFound error
+		if respErr, ok := err.(response.IResponseErr); ok && respErr.GetStatus() == http.StatusNotFound {
+			if _, err = m.repo.Insert(md); err != nil {
+				return 0, err
+			}
+		} else {
+			return 0, err
 		}
 	} else {
-		verNum = 0
-		var e error
-		if _, e = m.repo.Insert(md); e != nil {
-			verNum = repo.ErrVersion
+		_, err = m.versionRepo.Add(metaD.Name, ver)
+		if err != nil {
+			return 0, err
 		}
 	}
 
-	if verNum == repo.ErrVersion {
-		return -1, usecase.ErrInternalServer
-	} else {
-		return verNum, nil
-	}
+	return ver.Sequence, nil
 }
 
 func (m *MetaService) UpdateVersion(name string, version *entity.Version) (err error) {

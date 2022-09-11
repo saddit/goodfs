@@ -20,7 +20,7 @@ func NewMetadataRepo(kv clientv3.KV, vr IVersionRepo) *MetadataRepo {
 func (m *MetadataRepo) FindByName(name string) (*entity.Metadata, error) {
 	//FIXME: load balance with slaves
 	servs := logic.NewDiscovery().GetMetaServers(true)
-	loc, err := logic.NewHashSlot().FindLocOfName(name, servs)
+	loc, err := logic.NewHashSlot().FindMetaLocOfName(name, servs)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (m *MetadataRepo) FindByName(name string) (*entity.Metadata, error) {
 func (m *MetadataRepo) FindByNameWithVersion(name string, verMode entity.VerMode) (*entity.Metadata, error) {
 	//FIXME: load balance with slaves
 	servs := logic.NewDiscovery().GetMetaServers(true)
-	loc, err := logic.NewHashSlot().FindLocOfName(name, servs)
+	loc, err := logic.NewHashSlot().FindMetaLocOfName(name, servs)
 	if err != nil {
 		return nil, err
 	}
@@ -40,12 +40,18 @@ func (m *MetadataRepo) FindByNameWithVersion(name string, verMode entity.VerMode
 
 func (m *MetadataRepo) Insert(data *entity.Metadata) (*entity.Metadata, error) {
 	masters := logic.NewDiscovery().GetMetaServers(true)
-	loc, err := logic.NewHashSlot().FindLocOfName(data.Name, masters)
+	loc, err := logic.NewHashSlot().FindMetaLocOfName(data.Name, masters)
 	if err != nil {
 		return nil, err
 	}
 	if err = webapi.PostMetadata(loc, *data); err != nil {
 		return nil, err
+	}
+	if len(data.Versions) > 0 {
+		data.Versions[0].Sequence, err = m.versionRepo.Add(data.Name, data.Versions[0])
+		if err != nil {
+			return data, err
+		}
 	}
 	return data, nil
 }
