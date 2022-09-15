@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/tinylib/msgp/msgp"
 )
 
 const (
@@ -179,6 +180,10 @@ func GetHostPort(port string) string {
 	return fmt.Sprint(GetHost(), ":", port)
 }
 
+func GetHostFromAddr(addr string) string {
+	return strings.Split(addr, ":")[0]
+}
+
 func GetPort(addr string) string {
 	return strings.Split(addr, ":")[1]
 }
@@ -199,7 +204,7 @@ func ToUint64(str string) uint64 {
 	return i
 }
 
-func UnmarshalFromIO[T any](body io.ReadCloser) (*T, error) {
+func UnmarshalPtrFromIO[T any](body io.ReadCloser) (*T, error) {
 	defer body.Close()
 	var data T
 	bt, err := io.ReadAll(body)
@@ -212,8 +217,9 @@ func UnmarshalFromIO[T any](body io.ReadCloser) (*T, error) {
 	return &data, nil
 }
 
-func UnmarshalFromIO2[T any](body io.ReadCloser, data T) (T, error) {
+func UnmarshalFromIO[T any](body io.ReadCloser) (T, error) {
 	defer body.Close()
+	var data T
 	bt, err := io.ReadAll(body)
 	if err != nil {
 		return data, err
@@ -222,4 +228,15 @@ func UnmarshalFromIO2[T any](body io.ReadCloser, data T) (T, error) {
 		return data, err
 	}
 	return data, nil
+}
+
+// DecodeMsgp decode data by msgp
+func DecodeMsgp[T msgp.Unmarshaler](data T, bt []byte) (err error) {
+	_, err = data.UnmarshalMsg(bt)
+	return
+}
+
+// EncodeMsgp encode data with msgp
+func EncodeMsgp(data msgp.MarshalSizer) ([]byte, error) {
+	return data.MarshalMsg(nil)
 }

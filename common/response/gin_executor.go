@@ -35,3 +35,8 @@ func (ge *GinExecutor) Header(hd gin.H) *GinExecutor {
 	}
 	return ge
 }
+
+func (ge *GinExecutor) Redirect(code int, s string) *GinExecutor {
+	ge.ctx.Redirect(code, s)
+	return ge
+}

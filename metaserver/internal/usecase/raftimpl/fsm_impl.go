@@ -7,7 +7,6 @@ import (
 	"io"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
-	"metaserver/internal/usecase/utils"
 
 	"github.com/hashicorp/raft"
 )
@@ -71,8 +70,8 @@ func (f *fsm) Apply(lg *raft.Log) any {
 		return nil
 	}
 	var data entity.RaftData
-	if ok := utils.DecodeMsgp(&data, lg.Data); !ok {
-		return ErrDecode
+	if err := util.DecodeMsgp(&data, lg.Data); err != nil {
+		return err
 	}
 
 	switch data.Dest {

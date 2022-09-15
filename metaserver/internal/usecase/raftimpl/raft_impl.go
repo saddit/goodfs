@@ -23,7 +23,7 @@ type RaftWrapper struct {
 	Address  string
 	Enabled  bool
 	isLeader bool
-	OnLeaderChanged func(isLeader bool)
+	leaderChangedEvents []IRaftLeaderChanged
 }
 
 func NewDisabledRaft() *RaftWrapper {
@@ -109,6 +109,19 @@ func (rw *RaftWrapper) subscribeLeaderCh() {
 			raftLog.Infof("server %s leader", util.IfElse(is, "become", "lose"))
 		}
 	}()
+}
+
+func (rw *RaftWrapper) OnLeaderChanged(isLeader bool) {
+	for _, event := range rw.leaderChangedEvents {
+		go func(e IRaftLeaderChanged) {
+			graceful.Recover()
+			e.OnLeaderChanged(isLeader)
+		}(event)
+	}
+}
+
+func (rw *RaftWrapper) RegisterLeaderChangedEvent(event IRaftLeaderChanged) {
+	rw.leaderChangedEvents = append(rw.leaderChangedEvents, event)
 }
 
 func (rw *RaftWrapper) GetRaftIfLeader() (IRaft, bool) {

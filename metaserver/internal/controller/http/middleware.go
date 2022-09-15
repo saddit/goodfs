@@ -1,9 +1,8 @@
 package http
 
 import (
-	"common/hashslot"
-	"common/logs"
-	"common/util"
+	"common/response"
+	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
 	"net/http"
 
@@ -35,18 +34,8 @@ func CheckKeySlot(c *gin.Context) {
 			c.Next()
 			return
 		}
-		// get slot's location of this key
-		location, err := hashslot.GetStringIdentify(name, pool.HashSlots)
-		if err != nil {
-			logs.Std().Error(err)
-			c.Status(http.StatusServiceUnavailable)
-			c.Abort()
-			return
-		}
-		// if slot is not in this server, redirect request
-		if location != util.GetHostPort(pool.Config.Port) {
-			c.Redirect(http.StatusSeeOther, location)
-			c.Abort()
+		if ok, other := logic.NewHashSlot().IsKeyOnThisServer(name); !ok {
+			response.Exec(c).Redirect(http.StatusSeeOther, other)
 			return
 		}
 	}

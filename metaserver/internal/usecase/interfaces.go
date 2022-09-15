@@ -54,4 +54,8 @@ type (
 		Apply(cmd []byte, timeout time.Duration) raft.ApplyFuture
 		ApplyLog(log raft.Log, timeout time.Duration) raft.ApplyFuture
 	}
+
+	IRaftLeaderChanged interface {
+		OnLeaderChanged(bool)
+	}
 )
