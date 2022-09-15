@@ -2,8 +2,7 @@ go 1.18
 
 use (
 	apiserver
-	common 
-	objectserver
+	common
 	metaserver
+	objectserver
 )
-

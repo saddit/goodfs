@@ -1,11 +1,10 @@
 package http
 
 import (
-	"common/hashslot"
+	"metaserver/internal/usecase/logic"
 	"common/response"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
-	"metaserver/internal/usecase/pool"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -32,15 +31,8 @@ func (m *MetadataController) Post(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	// get slot's location of this key
-	location, err := hashslot.GetStringIdentify(data.Name, pool.HashSlots)
-	if err != nil {
-		response.FailErr(err, g)
-		return
-	}
-	// if slot is not in this server, redirect request
-	if location != pool.HttpHostPort {
-		g.Redirect(http.StatusSeeOther, location)
+	if ok, other := logic.NewHashSlot().IsKeyOnThisServer(data.Name); !ok {
+		response.Exec(g).Redirect(http.StatusSeeOther, other)
 		return
 	}
 	if err := m.service.AddMetadata(&data); err != nil {

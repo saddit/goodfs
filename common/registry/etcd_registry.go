@@ -37,7 +37,7 @@ func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdReg
 }
 
 func (e *EtcdRegistry) Key() string {
-	return fmt.Sprint(e.group, "/", e.name)
+	return fmt.Sprint("registry/", e.group, "/", e.name)
 }
 
 func (e *EtcdRegistry) AsMaster() *EtcdRegistry {

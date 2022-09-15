@@ -2,12 +2,13 @@ package logic
 
 import (
 	"apiserver/internal/usecase/pool"
-	"common/collection/set"
+	"apiserver/internal/usecase/selector"
 	"common/hashslot"
+	"common/util"
 	"context"
 	"fmt"
+
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"strings"
 )
 
 type HashSlot struct {
@@ -17,23 +18,24 @@ func NewHashSlot() *HashSlot {
 	return &HashSlot{}
 }
 
-func (HashSlot) FindMetaLocOfName(name string, locations []string) (string, error) {
-	validLocs := set.OfString(locations)
+// FindMetaLocOfName find metadata location by hash-slot-algo（load balance）
+func (HashSlot) FindMetaLocOfName(name string) (string, error) {
 	slotsMap := make(map[string][]string)
-	prefix := fmt.Sprint(pool.Config.Registry.Group, "/", "hash_slot_", pool.Config.Discovery.MetaServName, "/")
-	// get slots data from etcd
+	prefix := fmt.Sprint("hashslot/", pool.Config.Registry.Group, "/", pool.Config.Discovery.MetaServName, "/")
+	// get slots data from etcd (only master saves into to etcd)
 	res, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		panic(err)
 	}
 	// wrap slot
 	for _, kv := range res.Kvs {
-		keySplit := strings.Split(string(kv.Key), "/")
-		identify := keySplit[len(keySplit)-1]
-		if validLocs.Contains(identify) {
-			slots := strings.Split(string(kv.Value), ",")
-			slotsMap[identify] = slots
+		var info hashslot.SlotInfo
+		if err := util.DecodeMsgp(&info, kv.Value); err != nil {
+			return "", err
 		}
+		// load balance with slaves
+		lb := selector.NewIPSelector(pool.Balancer, info.Peers)
+		slotsMap[lb.Select()] = info.Slots
 	}
 	slots, err := hashslot.WrapSlots(slotsMap)
 	if err != nil {

@@ -13,7 +13,6 @@ import (
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
-	"metaserver/internal/usecase/utils"
 	"os"
 	"time"
 
@@ -30,9 +29,9 @@ func NewMetadataRepo(db *db.Storage) *MetadataRepo {
 
 func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) (bool, *response.RaftFsmResp) {
 	if rf, ok := pool.RaftWrapper.GetRaftIfLeader(); ok {
-		bt := utils.EncodeMsgp(data)
-		if bt == nil {
-			return true, response.NewRaftFsmResp(ErrEncode)
+		bt, err := util.EncodeMsgp(data)
+		if err != nil {
+			return true, response.NewRaftFsmResp(err)
 		}
 		feat := rf.Apply(bt, 5*time.Second)
 		if err := feat.Error(); err != nil {
@@ -128,8 +127,8 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 
 		for k, v := c.Seek(min); k != nil && bytes.Compare(k, max) <= 0; k, v = c.Next() {
 			data := &entity.Version{}
-			if !utils.DecodeMsgp(data, v) {
-				return ErrDecode
+			if err := util.DecodeMsgp(data, v); err != nil {
+				return err
 			}
 			lst = append(lst, data)
 		}

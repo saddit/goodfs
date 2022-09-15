@@ -18,9 +18,7 @@ func NewMetadataRepo(kv clientv3.KV, vr IVersionRepo) *MetadataRepo {
 
 //FindByName 根据文件名查找元数据 不查询版本
 func (m *MetadataRepo) FindByName(name string) (*entity.Metadata, error) {
-	//FIXME: load balance with slaves
-	servs := logic.NewDiscovery().GetMetaServers(true)
-	loc, err := logic.NewHashSlot().FindMetaLocOfName(name, servs)
+	loc, err := logic.NewHashSlot().FindMetaLocOfName(name)
 	if err != nil {
 		return nil, err
 	}
@@ -29,9 +27,7 @@ func (m *MetadataRepo) FindByName(name string) (*entity.Metadata, error) {
 
 //FindByNameWithVersion 根据文件名查找元数据 verMode筛选版本数据
 func (m *MetadataRepo) FindByNameWithVersion(name string, verMode entity.VerMode) (*entity.Metadata, error) {
-	//FIXME: load balance with slaves
-	servs := logic.NewDiscovery().GetMetaServers(true)
-	loc, err := logic.NewHashSlot().FindMetaLocOfName(name, servs)
+	loc, err := logic.NewHashSlot().FindMetaLocOfName(name)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +35,7 @@ func (m *MetadataRepo) FindByNameWithVersion(name string, verMode entity.VerMode
 }
 
 func (m *MetadataRepo) Insert(data *entity.Metadata) (*entity.Metadata, error) {
-	masters := logic.NewDiscovery().GetMetaServers(true)
-	loc, err := logic.NewHashSlot().FindMetaLocOfName(data.Name, masters)
+	loc, err := logic.NewHashSlot().FindMetaLocOfName(data.Name)
 	if err != nil {
 		return nil, err
 	}

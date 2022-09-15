@@ -20,7 +20,7 @@ func GetMetadata(ip, name string, verNum int32) (*entity.Metadata, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
-	return util.UnmarshalFromIO[entity.Metadata](resp.Body)
+	return util.UnmarshalPtrFromIO[entity.Metadata](resp.Body)
 }
 
 func PostMetadata(ip string, data entity.Metadata) error {
@@ -82,7 +82,7 @@ func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
-	return util.UnmarshalFromIO[entity.Version](resp.Body)
+	return util.UnmarshalPtrFromIO[entity.Version](resp.Body)
 }
 
 func ListVersion(ip, name string, page, pageSize int) ([]*entity.Version, error) {
@@ -93,8 +93,7 @@ func ListVersion(ip, name string, page, pageSize int) ([]*entity.Version, error)
 	if resp.StatusCode != http.StatusOK {
 		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
-	arr := make([]*entity.Version, 0)
-	return util.UnmarshalFromIO2(resp.Body, arr)
+	return util.UnmarshalFromIO[[]*entity.Version](resp.Body)
 }
 
 func PostVersion(ip, name string, body *entity.Version) (uint64, error) {

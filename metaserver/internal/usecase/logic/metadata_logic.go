@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
-	"metaserver/internal/usecase/utils"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
+	"common/util"
 )
 
 const (
@@ -24,9 +24,9 @@ func AddMeta(data *entity.Metadata) TxFunc {
 			return ErrExists
 		}
 		// encode data
-		bt := utils.EncodeMsgp(data)
-		if bt == nil {
-			return ErrEncode
+		bt, err := util.EncodeMsgp(data)
+		if err != nil {
+			return err
 		}
 		data.CreateTime = time.Now().Unix()
 		data.UpdateTime = time.Now().Unix()
@@ -63,12 +63,13 @@ func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 		if data.UpdateTime < origin.UpdateTime {
 			return ErrOldData
 		}
-		if bt := utils.EncodeMsgp(data); bt != nil {
-			// update data
-			data.UpdateTime = time.Now().Unix()
-			return root.Put([]byte(name), bt)
+		bt, err := util.EncodeMsgp(data)
+		if err != nil {
+			return err
 		}
-		return ErrEncode
+		// update data
+		data.UpdateTime = time.Now().Unix()
+		return root.Put([]byte(name), bt)
 	}
 }
 
@@ -84,10 +85,11 @@ func AddVer(name string, data *entity.Version) TxFunc {
 			data.Sequence, _ = bucket.NextSequence()
 			data.Ts = time.Now().Unix()
 			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
-			if bt := utils.EncodeMsgp(data); bt != nil {
-				return bucket.Put(key, bt)
+			bt, err := util.EncodeMsgp(data)
+			if err != nil{
+				return err
 			}
-			return ErrEncode
+			return bucket.Put(key, bt)
 		}
 		return ErrNotFound
 	}
@@ -119,12 +121,13 @@ func UpdateVer(name string, data *entity.Version) TxFunc {
 			if data.Ts < origin.Ts {
 				return ErrOldData
 			}
-			if bt := utils.EncodeMsgp(data); bt != nil {
-				// update data
-				data.Ts = time.Now().Unix()
-				return b.Put(key, bt)
+			bt, err := util.EncodeMsgp(data); 
+			if err != nil {
+				return err
 			}
-			return ErrEncode
+			// update data
+			data.Ts = time.Now().Unix()
+			return b.Put(key, bt)
 		}
 		return ErrNotFound
 	}
@@ -163,10 +166,7 @@ func getVer(bucket *bolt.Bucket, name string, ver uint64, dest *entity.Version) 
 	if bt == nil {
 		return ErrNotFound
 	}
-	if !utils.DecodeMsgp(dest, bt) {
-		return ErrDecode
-	}
-	return nil
+	return util.DecodeMsgp(dest, bt)
 }
 
 func getMeta(b *bolt.Bucket, name string, dest *entity.Metadata) error {
@@ -177,8 +177,5 @@ func getMeta(b *bolt.Bucket, name string, dest *entity.Metadata) error {
 	if bt == nil {
 		return ErrNotFound
 	}
-	if !utils.DecodeMsgp(dest, bt) {
-		return ErrDecode
-	}
-	return nil
+	return util.DecodeMsgp(dest, bt) 
 }

@@ -30,7 +30,7 @@ func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 func (e *EtcdDiscovery) initService(serv string) {
 	// watch kv changing
 	e.services[serv] = newServiceList()
-	prefix := fmt.Sprintf("%s/%s", e.group, serv)
+	prefix := fmt.Sprintf("registry/%s/%s", e.group, serv)
 	ch := e.cli.Watch(context.Background(), prefix, clientv3.WithPrefix())
 	e.asyncWatch(serv, ch)
 	// get original kvs
