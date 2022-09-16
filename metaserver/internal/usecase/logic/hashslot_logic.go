@@ -70,7 +70,18 @@ func (h HashSlot) OnLeaderChanged(isLeader bool) {
 		var info hashslot.SlotInfo
 		info.Location = pool.HttpHostPort
 		info.Slots = pool.Config.HashSlot
-		//TODO get http host:port of peers
+		peers, err := NewPeers().GetPeers()
+		if err != nil {
+			util.LogErr(err)
+			return
+		}
+		for _, p := range peers {
+			info.Peers = append(info.Peers, fmt.Sprint(p.Location, ":", p.HttpPort))
+		}
+		// if not enable raft, this will be empty
+		if len(info.Peers) == 0 {
+			info.Peers = append(info.Peers, info.Location)
+		}
 		h.SaveToEtcd(&info)
 	}
 }

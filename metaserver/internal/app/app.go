@@ -3,6 +3,7 @@ package app
 import (
 	"common/graceful"
 	"common/logs"
+	"common/util"
 	. "metaserver/config"
 	"metaserver/internal/controller/grpc"
 	"metaserver/internal/controller/http"
@@ -30,6 +31,7 @@ func Run(cfg *Config) {
 	// register first time
 	if pool.RaftWrapper.Enabled {
 		pool.Registry.AsSlave()
+		util.LogErrWithPre("register to peers info", logic.NewPeers().RegisterSelf())
 	}
 	defer pool.Registry.MustRegister().Unregister()
 	graceful.ListenAndServe(httpServer, grpcServer)
