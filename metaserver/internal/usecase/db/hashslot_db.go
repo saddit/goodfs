@@ -102,7 +102,7 @@ func (h *HashSlotDB) reloadProvider(old any) error {
 	}
 	if h.provider.CompareAndSwap(old, data) {
 		h.updatedAt = time.Now().Unix()
-		hsLog.Infof("update hash-slots success at %s", h.updatedAt)
+		hsLog.Infof("update hash-slots success at %d", h.updatedAt)
 	}
 	return nil
 }
