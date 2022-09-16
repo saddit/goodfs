@@ -25,14 +25,14 @@ type RpcRaftServer struct {
 }
 
 // NewRpcRaftServer init a grpc raft server. if no available nodes return empty object
-func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo) (*RpcRaftServer, *raftimpl.RaftWrapper) {
+func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv usecase.IHashSlotService) (*RpcRaftServer, *raftimpl.RaftWrapper) {
 	if !cfg.Enable {
 		return &RpcRaftServer{nil, cfg.Port}, raftimpl.NewDisabledRaft()
 	}
 	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
 		CheckLocalMid,
-		CheckRaftEnabledMid, 
-		CheckRaftLeaderMid, 
+		CheckRaftEnabledMid,
+		CheckRaftLeaderMid,
 		CheckRaftNonLeaderMid,
 	))
 	// init services
@@ -42,6 +42,7 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo) (*Rp
 	{
 		raftGrpcServ.Register(server)
 		reflection.Register(server)
+		// TODO pb.RegisterHashSlotServer(server,NewHashSlotServer(serv))
 		pb.RegisterRaftCmdServer(server, NewRaftCmdServer(raftWrapper))
 	}
 	return &RpcRaftServer{server, cfg.Port}, raftWrapper
