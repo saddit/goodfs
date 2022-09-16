@@ -1,9 +1,9 @@
 package logic
 
 import (
+	. "common/constrant"
 	"common/util"
 	"context"
-	"fmt"
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase/pool"
 
@@ -17,8 +17,8 @@ func NewPeers() Peers {
 }
 
 func (Peers) GetPeers() ([]*entity.PeerInfo, error) {
-	key := fmt.Sprintf("peers_info/%s/", pool.Config.Cluster.GroupID)
-	res, err := pool.Etcd.Get(context.Background(), key, clientv3.WithPrefix())
+	prefix := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, "")
+	res, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (Peers) GetPeers() ([]*entity.PeerInfo, error) {
 }
 
 func (Peers) RegisterSelf() error {
-	key := fmt.Sprintf("peers_info/%s/%s", pool.Config.Cluster.GroupID, pool.Config.Cluster.ID)
+	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Cluster.ID)
 	info := &entity.PeerInfo{
 		Location: util.GetHost(),
 		HttpPort: pool.Config.Port,
@@ -46,5 +46,11 @@ func (Peers) RegisterSelf() error {
 		return err
 	}
 	_, err = pool.Etcd.Put(context.Background(), key, string(bt))
+	return err
+}
+
+func (Peers) UnregisterSelf() error {
+	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Cluster.ID)
+	_, err := pool.Etcd.Delete(context.Background(), key)
 	return err
 }

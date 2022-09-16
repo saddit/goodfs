@@ -1,6 +1,7 @@
 package registry
 
 import (
+	. "common/constrant"
 	"common/graceful"
 	"common/logs"
 	"context"
@@ -12,12 +13,12 @@ import (
 var log = logs.New("etcd-registry")
 
 type EtcdRegistry struct {
-	cli *clientv3.Client
+	cli       *clientv3.Client
 	cfg       Config
 	leaseId   clientv3.LeaseID
 	group     string
-	stdName   string
-	name      string
+	stdName   string // be like metaserver_150013
+	name      string // be like metaserver_150013_master
 	localAddr string
 	stopFn    func()
 }
@@ -25,19 +26,19 @@ type EtcdRegistry struct {
 func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdRegistry {
 	ts := time.Now().Unix()
 	return &EtcdRegistry{
-		cli: kv, 
-		cfg: cfg, 
-		leaseId: -1,
-		group: cfg.Group, 
-		stdName: fmt.Sprint(cfg.Name, "_", ts), 
-		name: fmt.Sprint(cfg.Name, "_", ts), 
-		localAddr: localAddr, 
-		stopFn: nil,
+		cli:       kv,
+		cfg:       cfg,
+		leaseId:   -1,
+		group:     cfg.Group,
+		stdName:   fmt.Sprint(cfg.Name, "_", ts),
+		name:      fmt.Sprint(cfg.Name, "_", ts),
+		localAddr: localAddr,
+		stopFn:    nil,
 	}
 }
 
 func (e *EtcdRegistry) Key() string {
-	return fmt.Sprint("registry/", e.group, "/", e.name)
+	return EtcdPrefix.FmtRegistry(e.group, e.name)
 }
 
 func (e *EtcdRegistry) AsMaster() *EtcdRegistry {

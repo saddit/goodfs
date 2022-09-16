@@ -21,7 +21,12 @@ type Config struct {
 	Cluster  ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
 	Registry registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 	Etcd     etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	HashSlot []string        `yaml:"hash-slot" env-separator:"," env-default:"0-16383"`
+	HashSlot HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
+}
+
+type HashSlotConfig struct {
+	ID    string   `yaml:"id" env-required:"true"`
+	Slots []string `yaml:"slots" env-separator:"," env-default:"0-16383"`
 }
 
 type ClusterConfig struct {

@@ -34,6 +34,7 @@ func CheckKeySlot(c *gin.Context) {
 			c.Next()
 			return
 		}
+		// TODO 缓存，每5分钟刷新一次
 		if ok, other := logic.NewHashSlot().IsKeyOnThisServer(name); !ok {
 			response.Exec(c).Redirect(http.StatusSeeOther, other)
 			return

@@ -3,10 +3,10 @@ package logic
 import (
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/selector"
+	"common/constrant"
 	"common/hashslot"
 	"common/util"
 	"context"
-	"fmt"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -21,7 +21,7 @@ func NewHashSlot() *HashSlot {
 // FindMetaLocOfName find metadata location by hash-slot-algo（load balance）
 func (HashSlot) FindMetaLocOfName(name string) (string, error) {
 	slotsMap := make(map[string][]string)
-	prefix := fmt.Sprint("hashslot/", pool.Config.Registry.Group, "/", pool.Config.Discovery.MetaServName, "/")
+	prefix := constrant.EtcdPrefix.FmtHashSlot(pool.Config.Registry.Group, pool.Config.Discovery.MetaServName, "")
 	// get slots data from etcd (only master saves into to etcd)
 	res, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {

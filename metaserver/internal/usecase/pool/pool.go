@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"common/constrant"
 	"common/etcd"
 	"common/registry"
 	"common/util"
@@ -9,12 +10,14 @@ import (
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/raftimpl"
 
+
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
 	Config       *config.Config
 	Storage      *db.Storage
+	HashSlot     *db.HashSlotDB
 	RaftWrapper  *raftimpl.RaftWrapper
 	Etcd         *clientv3.Client
 	Registry     *registry.EtcdRegistry
@@ -29,6 +32,7 @@ func InitPool(cfg *config.Config) {
 	initEtcd(&cfg.Etcd)
 	initRegistry(&cfg.Registry, Etcd, HttpHostPort)
 	initStorage(cfg)
+	initHashSlot(&cfg.Registry, Etcd)
 }
 
 func initEtcd(cfg *etcd.Config) {
@@ -55,9 +59,14 @@ func initRegistry(cfg *registry.Config, etcd *clientv3.Client, addr string) {
 	Registry = registry.NewEtcdRegistry(etcd, *cfg, addr)
 }
 
+func initHashSlot(cfg *registry.Config, etcd *clientv3.Client) {
+	HashSlot = db.NewHashSlotDB(constrant.EtcdPrefix.FmtHashSlot(cfg.Group, cfg.Name, ""), etcd)
+}
+
 func Close() {
 	util.LogErr(Storage.Stop())
 	util.LogErr(Etcd.Close())
+	util.LogErr(HashSlot.Close(time.Minute))
 	if RaftWrapper != nil {
 		util.LogErr(RaftWrapper.Close())
 	}

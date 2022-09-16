@@ -3,7 +3,6 @@ package app
 import (
 	"common/graceful"
 	"common/logs"
-	"common/util"
 	. "metaserver/config"
 	"metaserver/internal/controller/grpc"
 	"metaserver/internal/controller/http"
@@ -25,14 +24,22 @@ func Run(cfg *Config) {
 	metaService := service.NewMetadataService(metaRepo)
 	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo)
 	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService)
+	hsService := service.NewHashSlotService(pool.HashSlot, &cfg.HashSlot, pool.HttpHostPort)
 	// register on leader change
-	pool.RaftWrapper.RegisterLeaderChangedEvent(logic.NewHashSlot())
+	pool.RaftWrapper.RegisterLeaderChangedEvent(hsService)
 	pool.RaftWrapper.RegisterLeaderChangedEvent(logic.NewRegistry())
 	// register first time
 	if pool.RaftWrapper.Enabled {
 		pool.Registry.AsSlave()
-		util.LogErrWithPre("register to peers info", logic.NewPeers().RegisterSelf())
+		// register peers
+		peersLogic := logic.NewPeers()
+		if err := peersLogic.RegisterSelf(); err != nil {
+			logs.Std().Error(err)
+			return
+		}
+		defer peersLogic.UnregisterSelf()
 	}
 	defer pool.Registry.MustRegister().Unregister()
+
 	graceful.ListenAndServe(httpServer, grpcServer)
 }
