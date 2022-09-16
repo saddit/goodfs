@@ -4,6 +4,7 @@ hash-slot: ["0-16383"]
 cluster:
   enable: false
   id: node
+  group-id: raft-1
   bootstrap: false
   store-dir: e:/file/temp/meta_server_raft
 registry:
