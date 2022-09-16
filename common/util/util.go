@@ -3,16 +3,20 @@ package util
 import (
 	"bytes"
 	"common/logs"
+	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/tinylib/msgp/msgp"
 )
 
@@ -44,6 +48,13 @@ func SHA256Hash(reader io.Reader) string {
 		return base64.StdEncoding.EncodeToString(b)
 	}
 	return ""
+}
+
+func MD5HashBytes(bt []byte) string {
+	crypto := md5.New()
+	_, _ = crypto.Write(bt)
+	res := crypto.Sum(make([]byte, 0, crypto.BlockSize()))
+	return base64.StdEncoding.EncodeToString(res)
 }
 
 func GobEncode(v interface{}) []byte {
@@ -168,12 +179,16 @@ func IfElse[T any](cond bool, t T, f T) T {
 }
 
 func GetHost() string {
-	host, err := os.Hostname()
-	if err != nil {
-		logs.Std().Error(err)
-		return "localhost"
+	var err error
+	if ip, err := GetClientIp(); err == nil {
+		return ip
 	}
-	return host
+	logs.Std().Error(err)
+	if host, err := os.Hostname(); err == nil {
+		return host
+	}
+	logs.Std().Error(err)
+	return "localhost"
 }
 
 func GetHostPort(port string) string {
@@ -181,11 +196,40 @@ func GetHostPort(port string) string {
 }
 
 func GetHostFromAddr(addr string) string {
-	return strings.Split(addr, ":")[0]
+	// cut http prefix
+	addr = strings.TrimPrefix(addr, "https://")
+	addr = strings.TrimPrefix(addr, "http://")
+	// if doesn't have port
+	if !strings.ContainsRune(addr, ':') {
+		return addr
+	}
+	arr := strings.Split(addr, ":")
+	// remove last one which consider to a port
+	arr = arr[:len(arr)-1]
+	// concat to support ipv6 address
+	return strings.Join(arr, "")
 }
 
 func GetPort(addr string) string {
 	return strings.Split(addr, ":")[1]
+}
+
+func GetClientIp() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, address := range addrs {
+		// 检查ip地址判断是否回环地址
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+
+	return "", errors.New("can not find the client ip address")
 }
 
 func ToInt(str string) int {

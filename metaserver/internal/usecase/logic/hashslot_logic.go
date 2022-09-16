@@ -3,12 +3,7 @@ package logic
 import (
 	"common/hashslot"
 	"common/logs"
-	"common/util"
-	"context"
-	"fmt"
 	"metaserver/internal/usecase/pool"
-
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type HashSlot struct{}
@@ -16,72 +11,49 @@ type HashSlot struct{}
 func NewHashSlot() HashSlot { return HashSlot{} }
 
 func (h HashSlot) IsKeyOnThisServer(key string) (bool, string) {
-	slots, err := h.GetSlotsProvider()
+	id, err := pool.HashSlot.GetKeyIdentify(key)
 	if err != nil {
 		logs.Std().Error(err)
 		return false, ""
 	}
-	// get slot's location of this key
-	location, err := hashslot.GetStringIdentify(key, slots)
-	if err != nil {
-		logs.Std().Error(err)
-		return false, ""
-	}
-	return location == pool.HttpHostPort, location
+	return id == pool.HttpHostPort, id
 }
 
 func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
-	slotsMap := make(map[string][]string)
-	prefix := fmt.Sprint("hashslot/", pool.Config.Registry.Group, "/", pool.Config.Registry.Name, "/")
-	// get slots data from etcd (only master saves into to etcd)
-	res, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
-	if err != nil {
-		return nil, err
-	}
-	// wrap slot
-	for _, kv := range res.Kvs {
-		var info hashslot.SlotInfo
-		if err := util.DecodeMsgp(&info, kv.Value); err != nil {
-			return nil, err
-		}
-		slotsMap[info.Location] = info.Slots
-	}
-	return hashslot.WrapSlots(slotsMap)
+	return pool.HashSlot.GetEdgeProvider(false)
 }
 
-func (HashSlot) SaveToEtcd(info *hashslot.SlotInfo) error {
-	return nil
+func (h HashSlot) SaveToEtcd(id string, info *hashslot.SlotInfo) error {
+	return pool.HashSlot.Save(id, info)
 }
 
-func (HashSlot) RemoveFromEtcd() error {
-	return nil
+func (HashSlot) RemoveFromEtcd(id string) error {
+	return pool.HashSlot.Remove(id)
 }
 
-func (HashSlot) AutoMigrate() {
+// AutoMigrate
+// TODO 如何确保过时的数据全部更新完毕: 由迁移双方自行控制，迁移成功后更新双方slot信息
+// TODO 何时迁移: 指令触发时，指定 A to B with 10-100
+// TODO 如何迁移：将K不在该服务器上的key通过RPC流服务迁移出去，也就是说我需要编写HashSlotRpcServer
+// TODO 何时失败：10-100不完全属于A、A或B繁忙、迁移过程中发生异常中断
+// TODO 合适成功：key-value全部迁移过去。etcd中的slots信息为迁移完成后的slot信息
+func (h HashSlot) AutoMigrate(cur []string) {
 
 }
 
-func (h HashSlot) OnLeaderChanged(isLeader bool) {
-	if err := h.RemoveFromEtcd(); err != nil {
-		util.LogErr(err)
-		return
-	}
-	if isLeader {
-		var info hashslot.SlotInfo
-		info.Location = pool.HttpHostPort
-		info.Slots = pool.Config.HashSlot
-		peers, err := NewPeers().GetPeers()
+// SaveByConfig
+// TODO 只有第一次才从配置文件保存slots信息
+// TODO 但每次都需要更新Peers信息
+// TODO Peers的配置文件需要相同的 hash-slot.id
+func (h HashSlot) SaveByConfig(peers []string) error {
+	var info *hashslot.SlotInfo
+	if info, exist, err := pool.HashSlot.Get(pool.Config.HashSlot.ID); !exist {
 		if err != nil {
-			util.LogErr(err)
-			return
+			return err
 		}
-		for _, p := range peers {
-			info.Peers = append(info.Peers, fmt.Sprint(p.Location, ":", p.HttpPort))
-		}
-		// if not enable raft, this will be empty
-		if len(info.Peers) == 0 {
-			info.Peers = append(info.Peers, info.Location)
-		}
-		h.SaveToEtcd(&info)
+		info.Location = pool.HttpHostPort
+		info.Slots = pool.Config.HashSlot.Slots
 	}
+	info.Peers = peers
+	return h.SaveToEtcd(pool.Config.HashSlot.ID, info)
 }

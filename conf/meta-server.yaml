@@ -1,6 +1,8 @@
 port: 8010
 data-dir: e:/file/temp/meta_server
-hash-slot: ["0-16383"]
+hash-slot:
+  id: node
+  slots: ["0-16383"]
 cluster:
   enable: false
   id: node
