@@ -21,16 +21,17 @@ func NewVersionRepo(kv clientv3.KV) *VersionRepo {
 
 //Find 根据文件名字和版本号返回版本元数据
 func (v *VersionRepo) Find(name string, version int32) (*entity.Version, error) {
-	loc, err := logic.NewHashSlot().FindMetaLocOfName(name)
+	loc, gid, err := logic.NewHashSlot().FindMetaLocOfName(name)
 	if err != nil {
 		return nil, err
 	}
+	loc = logic.NewDiscovery().SelectMetaByGroupID(gid, loc)
 	return webapi.GetVersion(loc, name, version)
 }
 
 //Update updating locate and setting ts to now
 func (v *VersionRepo) Update(name string, ver *entity.Version) error {
-	loc, err := logic.NewHashSlot().FindMetaLocOfName(name)
+	loc, _, err := logic.NewHashSlot().FindMetaLocOfName(name)
 	if err != nil {
 		return err
 	}
@@ -40,7 +41,7 @@ func (v *VersionRepo) Update(name string, ver *entity.Version) error {
 //Add 为metadata添加一个版本
 //返回对应版本号,如果失败返回ErrVersion -1
 func (v *VersionRepo) Add(name string, ver *entity.Version) (int32, error) {
-	loc, err := logic.NewHashSlot().FindMetaLocOfName(name)
+	loc, _, err := logic.NewHashSlot().FindMetaLocOfName(name)
 	if err != nil {
 		return ErrVersion, err
 	}
@@ -53,7 +54,7 @@ func (v *VersionRepo) Add(name string, ver *entity.Version) (int32, error) {
 }
 
 func (v *VersionRepo) Delete(name string, ver *entity.Version) error {
-	loc, err := logic.NewHashSlot().FindMetaLocOfName(name)
+	loc, _, err := logic.NewHashSlot().FindMetaLocOfName(name)
 	if err != nil {
 		return err
 	}

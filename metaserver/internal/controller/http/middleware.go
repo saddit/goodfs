@@ -13,7 +13,7 @@ func isWriteMethod(method string) bool {
 	return method == http.MethodPut ||
 		method == http.MethodDelete ||
 		method == http.MethodPatch ||
-		method == http.MethodPost 
+		method == http.MethodPost
 }
 
 func CheckLeaderInRaftMode(c *gin.Context) {
@@ -34,7 +34,6 @@ func CheckKeySlot(c *gin.Context) {
 			c.Next()
 			return
 		}
-		// TODO 缓存，每5分钟刷新一次
 		if ok, other := logic.NewHashSlot().IsKeyOnThisServer(name); !ok {
 			response.Exec(c).Redirect(http.StatusSeeOther, other)
 			return

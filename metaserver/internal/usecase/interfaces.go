@@ -58,4 +58,8 @@ type (
 	IRaftLeaderChanged interface {
 		OnLeaderChanged(bool)
 	}
+
+	IHashSlotService interface {
+		AutoMigrate(toLoc string, slots []string) error
+	}
 )

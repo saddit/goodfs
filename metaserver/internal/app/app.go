@@ -22,9 +22,9 @@ func Run(cfg *Config) {
 	var grpcServer *grpc.RpcRaftServer
 	metaRepo := repo.NewMetadataRepo(pool.Storage)
 	metaService := service.NewMetadataService(metaRepo)
-	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo)
-	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService)
 	hsService := service.NewHashSlotService(pool.HashSlot, &cfg.HashSlot, pool.HttpHostPort)
+	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo, hsService)
+	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService)
 	// register on leader change
 	pool.RaftWrapper.RegisterLeaderChangedEvent(hsService)
 	pool.RaftWrapper.RegisterLeaderChangedEvent(logic.NewRegistry())
@@ -38,6 +38,8 @@ func Run(cfg *Config) {
 			return
 		}
 		defer peersLogic.UnregisterSelf()
+	} else {
+		hsService.OnLeaderChanged(true)
 	}
 	defer pool.Registry.MustRegister().Unregister()
 
