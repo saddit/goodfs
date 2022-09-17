@@ -4,12 +4,7 @@ package proto;
 
 option go_package="../pb";
 
-message EmptyReq {}
-
-message Response {
-    bool success = 1;
-    string message = 2;
-}
+import "message.proto";
 
 message RaftServerItem {
     string id = 1;

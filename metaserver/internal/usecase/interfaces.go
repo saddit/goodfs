@@ -4,6 +4,7 @@ import (
 	"common/response"
 	"io"
 	"metaserver/internal/entity"
+	"metaserver/internal/usecase/pb"
 	"time"
 
 	"github.com/hashicorp/raft"
@@ -60,6 +61,10 @@ type (
 	}
 
 	IHashSlotService interface {
-		AutoMigrate(toLoc string, slots []string) error
+		AutoMigrate(toLoc *pb.LocationInfo, slots []string) error
+		PrepareMigrationFrom(loc *pb.LocationInfo, slots []string) error
+		PrepareMigrationTo(loc *pb.LocationInfo, slots []string) error
+		ReceiveItem(*pb.MigrationItem) error
+		FinishReceiveItem(bool) error
 	}
 )

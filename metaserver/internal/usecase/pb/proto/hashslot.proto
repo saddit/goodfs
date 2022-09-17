@@ -2,6 +2,38 @@ syntax = "proto3";
 
 package proto;
 
-option go_package="../pb";
+option go_package = "../pb";
+
+import "message.proto";
 
 //TODO hash slot server api 定义
+
+message LocationInfo {
+  string host = 1;
+  string httpPort = 2;
+  string rpcPort = 3;
+}
+
+message MigrationItem {
+  string name = 1;
+  bool isVersion = 2;
+  uint64 sequence = 3;
+  bytes data = 4;
+}
+
+message MigrationReq {
+  LocationInfo targetLocation = 1;
+  repeated string slots = 2;
+}
+
+message PrepareReq {
+  string id = 1;
+  LocationInfo location = 2;
+  repeated string slots = 3;
+}
+
+service HashSlot {
+  rpc PrepareMigration(PrepareReq) returns (Response) {}
+  rpc StartMigration(MigrationReq) returns (Response) {}
+  rpc StreamingReceive(stream MigrationItem) returns (stream Response) {}
+}
