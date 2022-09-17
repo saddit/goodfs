@@ -43,13 +43,14 @@ func StatusDesc(status int32) (string, error) {
 }
 
 type HashSlotDB struct {
-	kv          clientv3.KV
-	status      *atomic.Int32
-	provider    atomic.Value
-	updatedAt   int64
-	migrateTo   string
-	migrateFrom string
-	KeyPrefix   string
+	kv             clientv3.KV
+	status         *atomic.Int32
+	provider       atomic.Value
+	updatedAt      int64
+	migrateTo      string
+	migrateFrom    string
+	migratingSlots []string
+	KeyPrefix      string
 }
 
 func NewHashSlotDB(keyPrefix string, kv clientv3.KV) *HashSlotDB {
@@ -61,7 +62,11 @@ func NewHashSlotDB(keyPrefix string, kv clientv3.KV) *HashSlotDB {
 }
 
 func (h *HashSlotDB) GetMigrateTo() (bool, string) {
-	return h.status.Load() == StatusMigrateTo, h.migrateFrom
+	return h.status.Load() == StatusMigrateTo, h.migrateTo
+}
+
+func (h *HashSlotDB) GetMigrateFrom() (bool, string) {
+	return h.status.Load() == StatusMigrateFrom, h.migrateFrom
 }
 
 func (h *HashSlotDB) IsExpired() bool {
@@ -107,32 +112,55 @@ func (h *HashSlotDB) reloadProvider(old any) error {
 	return nil
 }
 
-func (h *HashSlotDB) ReadyMigrateFrom(loc string) error {
+func (h *HashSlotDB) ReadyMigrateFrom(loc string, slots []string) error {
 	if h.status.CAS(StatusNormal, StatusMigrateFrom) {
 		h.migrateFrom = loc
+		h.migratingSlots = slots
 		return nil
 	}
 	return errors.New("status is not in normal")
 }
 
-func (h *HashSlotDB) ReadyMigrateTo(loc string) error {
+func (h *HashSlotDB) ReadyMigrateTo(loc string, slots []string) error {
 	if h.status.CAS(StatusNormal, StatusMigrateTo) {
 		h.migrateTo = loc
+		h.migratingSlots = slots
 		return nil
 	}
 	return errors.New("status is not in normal")
 }
 
-func (h *HashSlotDB) SetNormalFrom(status int32) error {
-	desc, err := StatusDesc(status)
-	if err != nil {
-		return err
-	}
-	if h.status.CAS(status, StatusNormal) {
+func (h *HashSlotDB) updateSlots() error {
+	//TODO
+	return nil
+}
+
+func (h *HashSlotDB) FinishMigrateTo(ok bool) error {
+	if h.status.CAS(StatusMigrateTo, StatusNormal) {
+		if ok {
+			if err := h.updateSlots(); err != nil {
+				return err
+			}
+		}
 		h.migrateFrom = ""
 		h.migrateTo = ""
+		h.migratingSlots = nil
 	}
-	return fmt.Errorf("status is not in %s", desc)
+	return fmt.Errorf("status is not in migrate-to")
+}
+
+func (h *HashSlotDB) FinishMigrateFrom(ok bool) error {
+	if h.status.CAS(StatusMigrateFrom, StatusNormal) {
+		if ok {
+			if err := h.updateSlots(); err != nil {
+				return err
+			}
+		}
+		h.migrateFrom = ""
+		h.migrateTo = ""
+		h.migratingSlots = nil
+	}
+	return fmt.Errorf("status is not in migrate-from")
 }
 
 func (h *HashSlotDB) Get(id string) (*hashslot.SlotInfo, bool, error) {

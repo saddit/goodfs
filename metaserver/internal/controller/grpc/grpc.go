@@ -30,10 +30,15 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv
 		return &RpcRaftServer{nil, cfg.Port}, raftimpl.NewDisabledRaft()
 	}
 	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
-		CheckLocalMid,
-		CheckRaftEnabledMid,
-		CheckRaftLeaderMid,
-		CheckRaftNonLeaderMid,
+		CheckLocalUnary,
+		CheckWritableUnary,
+		CheckRaftEnabledUnary,
+		CheckRaftLeaderUnary,
+		CheckRaftNonLeaderUnary,
+		AllowValidMetaServerUnary,
+	), netGrpc.ChainStreamInterceptor(
+		CheckWritableStreaming,
+		AllowValidMetaServerStreaming,
 	))
 	// init services
 	raftGrpcServ := raftServer.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
@@ -42,7 +47,7 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv
 	{
 		raftGrpcServ.Register(server)
 		reflection.Register(server)
-		// TODO pb.RegisterHashSlotServer(server,NewHashSlotServer(serv))
+		pb.RegisterHashSlotServer(server, NewHashSlotServer(serv))
 		pb.RegisterRaftCmdServer(server, NewRaftCmdServer(raftWrapper))
 	}
 	return &RpcRaftServer{server, cfg.Port}, raftWrapper
