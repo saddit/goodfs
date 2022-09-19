@@ -284,3 +284,17 @@ func DecodeMsgp[T msgp.Unmarshaler](data T, bt []byte) (err error) {
 func EncodeMsgp(data msgp.MarshalSizer) ([]byte, error) {
 	return data.MarshalMsg(nil)
 }
+
+func MinInt(i, j int) int {
+	if i < j {
+		return i
+	}
+	return j
+}
+
+func MaxInt(i, j int) int {
+	if i < j {
+		return j
+	}
+	return i
+}

@@ -25,8 +25,9 @@ type Config struct {
 }
 
 type HashSlotConfig struct {
-	ID    string   `yaml:"id" env-required:"true"`
-	Slots []string `yaml:"slots" env-separator:"," env-default:"0-16383"`
+	ID             string        `yaml:"id" env-required:"true"`
+	Slots          []string      `yaml:"slots" env-separator:"," env-default:"0-16383"`
+	PrepareTimeout time.Duration `yaml:"prepare-timeout" env-default:"10s"`
 }
 
 type ClusterConfig struct {

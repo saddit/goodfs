@@ -29,6 +29,14 @@ func (el EdgeList) Len() int {
 	return len(el)
 }
 
+func (el EdgeList) Strings() []string {
+	str := make([]string, 0, el.Len())
+	for _, edge := range el {
+		str = append(str, fmt.Sprint(edge.Start, "-", edge.End))
+	}
+	return str
+}
+
 type IEdgeProvider interface {
 	get() EdgeList
 }
