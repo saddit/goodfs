@@ -77,7 +77,6 @@ func WrapSlotsToEdges(slots []string, identify string) (EdgeList, error) {
 }
 
 // WrapSlots slotsMap(key='identify', value=[]string{'0-100','110-221'}). Range: [0,100)
-// FIXME: Automatically fills to 0-16383
 func WrapSlots(slotsMap map[string][]string) (IEdgeProvider, error) {
 	if len(slotsMap) == 0 {
 		return nil, fmt.Errorf("empty slotsMap")

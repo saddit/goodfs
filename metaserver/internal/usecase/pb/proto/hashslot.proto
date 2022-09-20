@@ -6,8 +6,6 @@ option go_package = "../pb";
 
 import "message.proto";
 
-//TODO hash slot server api 定义
-
 message LocationInfo {
   string host = 1;
   string httpPort = 2;
