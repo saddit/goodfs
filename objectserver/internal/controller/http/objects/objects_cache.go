@@ -45,7 +45,7 @@ func SaveToCache(g *gin.Context) {
 		return
 	}
 	if body, e := getBody(g); e == nil {
-		if g.Request.ContentLength < pool.Config.Cache.MaxItemSizeMB.Int64Value() {
+		if g.Request.ContentLength < pool.Config.Cache.MaxItemSize.Byte() {
 			if bt, e := io.ReadAll(body); e == nil {
 				pool.Cache.Set(name, bt)
 				g.Set("Evict", false)

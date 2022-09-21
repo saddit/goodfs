@@ -31,6 +31,7 @@ func (v *VersionController) Post(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
+	data.Sequence = 0
 	ver, err := v.service.AddVersion(g.Param("name"), &data)
 	if err != nil {
 		response.FailErr(err, g)

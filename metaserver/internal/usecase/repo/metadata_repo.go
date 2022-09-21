@@ -115,8 +115,7 @@ func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, err
 func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, err error) {
 	lst = make([]*entity.Version, 0, end-start+1)
 	err = m.DB().View(func(tx *bolt.Tx) error {
-		root, _ := tx.CreateBucketIfNotExists([]byte(logic.BucketName))
-		buk := root.Bucket([]byte(name))
+		buk := logic.GetRootNest(tx, name)
 		if buk == nil {
 			return nil
 		}
@@ -184,4 +183,25 @@ func (m *MetadataRepo) ReplaceDB(r io.Reader) (err error) {
 	}
 	// reopen db
 	return m.Replace(dbPath)
+}
+
+func (m *MetadataRepo) ForeachVersionBytes(name string, fn func([]byte) bool) {
+	_ = m.Storage.View(func(tx *bolt.Tx) error {
+		_ = logic.GetRootNest(tx, name).ForEach(func(k, v []byte) error {
+			if !fn(v) {
+				return ErrNotFound
+			}
+			return nil
+		})
+		return nil
+	})
+}
+
+func (m *MetadataRepo) GetMetadataBytes(key string) ([]byte, error) {
+	var res []byte
+	err := m.Storage.View(func(tx *bolt.Tx) error {
+		res = logic.GetRoot(tx).Get([]byte(key))
+		return nil
+	})
+	return res, err
 }

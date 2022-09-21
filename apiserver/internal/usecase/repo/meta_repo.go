@@ -46,9 +46,6 @@ func (m *MetadataRepo) Insert(data *entity.Metadata) (*entity.Metadata, error) {
 	}
 	if len(data.Versions) > 0 {
 		data.Versions[0].Sequence, err = m.versionRepo.Add(data.Name, data.Versions[0])
-		if err != nil {
-			return data, err
-		}
 	}
-	return data, nil
+	return data, err
 }

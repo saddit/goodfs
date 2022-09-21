@@ -3,10 +3,10 @@ log-level: info
 storage-path: e:/file/temp/objects
 temp-path: e:/file/temp/objects_temp
 cache:
-  max-size-mb: 256
+  max-size: 256MB
   ttl: 3h
   clean-interval: 12m
-  max-item-size-mb: 16
+  max-item-size: 16MB
 registry:
   group: "goodfs"
   name: "objectserver"

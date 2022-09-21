@@ -11,9 +11,21 @@ import (
 )
 
 const (
-	BucketName = "goodfs.metadata"
+	RootBucketName = "goodfs.metadata"
 	Sep        = "."
 )
+
+func ForeachKeys(fn func(string) bool) TxFunc {
+	return func(tx *bolt.Tx) error {
+		root := GetRoot(tx)
+		return root.ForEach(func(k, v []byte) error {
+			if !fn(string(k)) {
+				return ErrNotFound
+			}
+			return nil
+		})
+	}
+}
 
 func AddMeta(data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
@@ -28,8 +40,8 @@ func AddMeta(data *entity.Metadata) TxFunc {
 		if err != nil {
 			return err
 		}
-		data.CreateTime = time.Now().Unix()
-		data.UpdateTime = time.Now().Unix()
+		data.CreateTime = time.Now().UnixMilli()
+		data.UpdateTime = data.CreateTime
 		// create version bucket
 		if _, err := root.CreateBucket([]byte("nest_" + data.Name)); err != nil {
 			return fmt.Errorf("create bucket: %w", err)
@@ -68,7 +80,7 @@ func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 			return err
 		}
 		// update data
-		data.UpdateTime = time.Now().Unix()
+		data.UpdateTime = time.Now().UnixMilli()
 		return root.Put([]byte(name), bt)
 	}
 }
@@ -82,11 +94,20 @@ func GetMeta(name string, data *entity.Metadata) TxFunc {
 func AddVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
-			data.Sequence, _ = bucket.NextSequence()
-			data.Ts = time.Now().Unix()
+			// only if data is migrated from others will do sequnce updating
+			if data.Sequence != 0 {
+				bucket.SetSequence(uint64(util.MaxUint64(bucket.Sequence(), data.Sequence)))
+			} else {
+				data.Sequence, _ = bucket.NextSequence()
+			}
+			data.Ts = time.Now().UnixMilli()
 			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
 			bt, err := util.EncodeMsgp(data)
 			if err != nil{
+				return err
+			}
+			// additional index 
+			if err := NewHashIndexLogic().AddIndex(tx, data.Hash, string(key)); err != nil {
 				return err
 			}
 			return bucket.Put(key, bt)
@@ -102,10 +123,15 @@ func RemoveVer(name string, ver uint64) TxFunc {
 		if b != nil {
 			return ErrNotFound
 		}
-		if err := b.Delete(key); err != nil {
-			return ErrNotFound
+		var data entity.Version
+		if err := getVer(b, name, ver, &data); err != nil {
+			return err
 		}
-		return nil
+		// remove index
+		if err := NewHashIndexLogic().RemoveIndex(tx, data.Hash, string(key)); err != nil {
+			return err
+		}
+		return b.Delete(key)
 	}
 }
 
@@ -113,20 +139,24 @@ func UpdateVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if b := GetRootNest(tx, name); b != nil {
 			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
-			// validate ts
+			// get old one
 			var origin entity.Version
 			if err := getVer(b, name, data.Sequence, &origin); err != nil {
 				return err
 			}
+			// validate timestamp
 			if data.Ts < origin.Ts {
 				return ErrOldData
 			}
+			// those updating are not allowed
+			data.Sequence = origin.Sequence
+			data.Hash = origin.Hash
+			data.Ts = time.Now().UnixMilli()
+			// encode to bytes
 			bt, err := util.EncodeMsgp(data); 
 			if err != nil {
 				return err
 			}
-			// update data
-			data.Ts = time.Now().Unix()
 			return b.Put(key, bt)
 		}
 		return ErrNotFound
@@ -144,13 +174,13 @@ func GetVer(name string, ver uint64, dest *entity.Version) TxFunc {
 
 func GetRoot(tx *bolt.Tx) *bolt.Bucket {
 	if tx.Writable() {
-		root, err := tx.CreateBucketIfNotExists([]byte(BucketName))
+		root, err := tx.CreateBucketIfNotExists([]byte(RootBucketName))
 		if err != nil {
 			panic(err)
 		}
 		return root
 	} else {
-		return tx.Bucket([]byte(BucketName))
+		return tx.Bucket([]byte(RootBucketName))
 	}
 }
 

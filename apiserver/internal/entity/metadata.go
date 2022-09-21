@@ -1,9 +1,5 @@
 package entity
 
-import (
-	"time"
-)
-
 type VerMode int32
 
 const (
@@ -15,10 +11,16 @@ const (
 	VerModeNot VerMode = -1
 )
 
+type ErasureCodeAlgo int8
+
+const (
+	ECReedSolomon ErasureCodeAlgo = 1 << iota
+)
+
 type Metadata struct {
 	Name       string     `json:"name"`
-	CreateTime time.Time  `json:"createTime"`
-	UpdateTime time.Time  `json:"updateTime"`
+	CreateTime int64      `json:"createTime"`
+	UpdateTime int64      `json:"updateTime"`
 	Versions   []*Version `json:"versions"`
 }
 
@@ -30,13 +32,13 @@ func (m *Metadata) LastVersion() *Version {
 }
 
 type Version struct {
-	Sequence     int32     `json:"sequence"`
-	Hash         string    `json:"hash"`
-	Size         int64     `json:"size"`
-	Ts           time.Time `json:"ts"`
-	EcAlgo       int       `json:"ecAlgo"`
-	DataShards   int       `json:"dataShards"`
-	ParityShards int       `json:"parityShards"`
-	ShardSize    int       `json:"shardSize"`
-	Locate       []string  `json:"locate"`
+	Sequence     int32           `json:"sequence"`
+	Hash         string          `json:"hash"`
+	Size         int64           `json:"size"`
+	Ts           int64           `json:"ts"`
+	EcAlgo       ErasureCodeAlgo `json:"ecAlgo"`
+	DataShards   int             `json:"dataShards"`
+	ParityShards int             `json:"parityShards"`
+	ShardSize    int             `json:"shardSize"`
+	Locate       []string        `json:"locate"`
 }

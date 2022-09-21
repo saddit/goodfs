@@ -1,6 +1,7 @@
 package config
 
 import (
+	"common/datasize"
 	"common/etcd"
 	"common/logs"
 	"common/registry"
@@ -22,6 +23,13 @@ type Config struct {
 	Registry registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 	Etcd     etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	HashSlot HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
+	Cache    CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+}
+
+type CacheConfig struct {
+	TTL           time.Duration     `yaml:"ttl" env:"TTL" env-default:"1h"`
+	CleanInterval time.Duration     `yaml:"clean-interval" env:"CLEAN_INTERVAL" env-default:"1h"`
+	MaxSize       datasize.DataSize `yaml:"max-size" env:"MAX_SIZE" env-default:"128MB"`
 }
 
 type HashSlotConfig struct {

@@ -298,3 +298,10 @@ func MaxInt(i, j int) int {
 	}
 	return i
 }
+
+func MaxUint64(i, j uint64) uint64 {
+	if i < j {
+		return j
+	}
+	return i
+}

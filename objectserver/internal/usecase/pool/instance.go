@@ -21,8 +21,8 @@ func InitPool(cfg *config.Config) {
 	{
 		cacheConf := bigcache.DefaultConfig(cfg.Cache.TTL)
 		cacheConf.CleanWindow = cfg.Cache.CleanInterval
-		cacheConf.HardMaxCacheSize = int(cfg.Cache.MaxSizeMB)
-		cacheConf.Shards = (cfg.Cache.MaxSizeMB / cfg.Cache.MaxItemSizeMB).IntValue()
+		cacheConf.HardMaxCacheSize = int(cfg.Cache.MaxSize.MegaByte())
+		cacheConf.Shards = int((cfg.Cache.MaxSize / cfg.Cache.MaxItemSize))
 		Cache = cache.NewCache(cacheConf)
 	}
 

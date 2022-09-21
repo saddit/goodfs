@@ -27,7 +27,7 @@ func (rg *Range) Value() Int64Tuple {
 	if v, ok := rg.Get(); ok {
 		return v
 	}
-	panic("No value contains in range")
+	panic("none value contains in range")
 }
 
 //convertFrom must start with bytes=

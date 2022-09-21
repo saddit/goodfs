@@ -61,6 +61,7 @@ func (s *Storage) Open(path string) error {
 	cur, err := bolt.Open(path, util.OS_ModeUser, &bolt.Options{
 		Timeout:    12 * time.Second,
 		NoGrowSync: false,
+		FreelistType: bolt.FreelistMapType,
 	})
 	if err != nil {
 		return err

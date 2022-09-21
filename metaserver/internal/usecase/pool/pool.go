@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"common/cache"
 	"common/constrant"
 	"common/etcd"
 	"common/registry"
@@ -11,11 +12,13 @@ import (
 	"metaserver/internal/usecase/raftimpl"
 	"time"
 
+	"github.com/allegro/bigcache"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
 	Config       *config.Config
+	Cache        cache.ICache
 	Storage      *db.Storage
 	HashSlot     *db.HashSlotDB
 	RaftWrapper  *raftimpl.RaftWrapper
@@ -29,6 +32,7 @@ func InitPool(cfg *config.Config) {
 	Config = cfg
 	HttpHostPort = util.GetHostPort(cfg.Port)
 	GrpcHostPort = util.GetHostPort(cfg.Cluster.Port)
+	initCache(cfg.Cache)
 	initEtcd(&cfg.Etcd)
 	initRegistry(&cfg.Registry, Etcd, HttpHostPort)
 	initStorage(cfg)
@@ -61,6 +65,13 @@ func initRegistry(cfg *registry.Config, etcd *clientv3.Client, addr string) {
 
 func initHashSlot(cfg *registry.Config, etcd *clientv3.Client) {
 	HashSlot = db.NewHashSlotDB(constrant.EtcdPrefix.FmtHashSlot(cfg.Group, cfg.Name, ""), etcd)
+}
+
+func initCache(cfg config.CacheConfig) {
+	conf := bigcache.DefaultConfig(cfg.TTL)
+	conf.HardMaxCacheSize = int(cfg.MaxSize.MegaByte())
+	conf.CleanWindow = cfg.CleanInterval
+	Cache = cache.NewCache(conf)
 }
 
 func Close() {

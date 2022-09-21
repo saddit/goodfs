@@ -23,24 +23,43 @@ type (
 		GetMetadata(string, int) (*entity.Metadata, *entity.Version, error)
 		GetVersion(string, int) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
+		ForeachVersionBytes(string, func([]byte) bool)
+		GetMetadataBytes(string) ([]byte, error)
+		FilterKeys(fn func(string) bool) []string
 	}
 
-	//IMetadataRepo 负责对文件系统存储
-	IMetadataRepo interface {
+	WritableRepo interface {
 		AddMetadata(*entity.Metadata) error
 		AddVersion(string, *entity.Version) error
 		UpdateMetadata(string, *entity.Metadata) error
 		UpdateVersion(string, *entity.Version) error
 		RemoveMetadata(string) error
 		RemoveVersion(string, uint64) error
-		RemoveAllVersion(string) error
+	}
+
+	ReadableRepo interface {
 		GetMetadata(string) (*entity.Metadata, error)
 		GetVersion(string, uint64) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
+	}
+
+	IBatchMetaRepo interface {
+		WritableRepo
+		ForeachKeys(func(string) bool)
+		Sync() error
+	}
+
+	//IMetadataRepo 负责对文件系统存储
+	IMetadataRepo interface {
+		WritableRepo
+		ReadableRepo
+		RemoveAllVersion(string) error
 		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
 		GetLastVersionNumber(name string) uint64
 		ReadDB() (io.ReadCloser, error)
 		ReplaceDB(io.Reader) error
+		ForeachVersionBytes(string, func([]byte) bool)
+		GetMetadataBytes(string) ([]byte, error)
 	}
 
 	TxFunc func(*bolt.Tx) error
@@ -67,4 +86,6 @@ type (
 		ReceiveItem(*pb.MigrationItem) error
 		FinishReceiveItem(bool) error
 	}
+
+	IMetaCache interface {}
 )

@@ -9,10 +9,12 @@ import (
 
 type MetadataService struct {
 	repo IMetadataRepo
+	batch IBatchMetaRepo
+	cache IMetaCache
 }
 
-func NewMetadataService(repo IMetadataRepo) *MetadataService {
-	return &MetadataService{repo}
+func NewMetadataService(repo IMetadataRepo, batch IBatchMetaRepo, c IMetaCache) *MetadataService {
+	return &MetadataService{repo, batch, c}
 }
 
 func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
@@ -135,4 +137,24 @@ func (m *MetadataService) ListVersions(name string, page int, size int) ([]*enti
 	}
 	start := (page - 1) * size
 	return m.repo.ListVersions(name, start, start+size)
+}
+
+// FilterKeys heavy!
+func (m *MetadataService) FilterKeys(fn func(string) bool) []string {
+	var keys []string
+	m.batch.ForeachKeys(func (key string) bool {
+		if fn(key) {
+			keys = append(keys, key)
+		}
+		return true
+	})
+	return keys
+}
+
+func (m *MetadataService) ForeachVersionBytes(name string, fn func([]byte) bool) {
+	m.repo.ForeachVersionBytes(name, fn)
+}
+
+func (m *MetadataService) GetMetadataBytes(name string) ([]byte, error) {
+	return m.repo.GetMetadataBytes(name)
 }
