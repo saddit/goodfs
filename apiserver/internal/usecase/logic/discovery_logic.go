@@ -25,10 +25,7 @@ func (Discovery) GetMetaServers(master bool) []string {
 
 func (Discovery) SelectMetaByGroupID(gid string, defLoc string) string {
 	resp, err := pool.Etcd.Get(context.Background(), constrant.EtcdPrefix.FmtPeersInfo(gid, ""), clientv3.WithPrefix())
-	if err != nil {
-		return defLoc
-	}
-	if len(resp.Kvs) == 0 {
+	if err != nil || len(resp.Kvs) == 0 {
 		return defLoc
 	}
 	//TODO 缓存group-id的ips

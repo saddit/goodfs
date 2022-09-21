@@ -18,32 +18,32 @@ func NewMetaService(repo repo.IMetadataRepo, versionRepo repo.IVersionRepo) *Met
 	return &MetaService{repo: repo, versionRepo: versionRepo}
 }
 
-func saveAlgoInfo(ver *entity.Version) {
+func setAlgoInfo(ver *entity.Version) {
 	ver.DataShards = pool.Config.Rs.DataShards
 	ver.ParityShards = pool.Config.Rs.ParityShards
 	ver.ShardSize = pool.Config.Rs.BlockPerShard
-	ver.EcAlgo = 1
+	ver.EcAlgo = entity.ECReedSolomon
 }
 
 func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
-	saveAlgoInfo(ver)
+	setAlgoInfo(ver)
 	metaD, err := m.repo.FindByNameWithVersion(md.Name, entity.VerModeNot)
 
-	if err != nil {
+	switch err := err.(type) {
+	case response.IResponseErr:
 		// if err is NotFound error
-		if respErr, ok := err.(response.IResponseErr); ok && respErr.GetStatus() == http.StatusNotFound {
-			if _, err = m.repo.Insert(md); err != nil {
+		if err.GetStatus() == http.StatusNotFound {
+			if _, err := m.repo.Insert(md); err != nil {
 				return 0, err
 			}
-		} else {
+		}
+	case nil:
+		if _, err = m.versionRepo.Add(metaD.Name, ver); err != nil {
 			return 0, err
 		}
-	} else {
-		_, err = m.versionRepo.Add(metaD.Name, ver)
-		if err != nil {
-			return 0, err
-		}
+	default:
+		return 0, err
 	}
 
 	return ver.Sequence, nil

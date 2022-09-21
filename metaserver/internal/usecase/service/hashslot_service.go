@@ -7,28 +7,30 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/tinylib/msgp/msgp"
-	"google.golang.org/grpc"
 	"metaserver/config"
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/pb"
 	"metaserver/internal/usecase/pool"
+	"strings"
 	"time"
+
+	"github.com/tinylib/msgp/msgp"
+	"google.golang.org/grpc"
 )
 
 type HashSlotService struct {
 	Store        *db.HashSlotDB
-	Repo         usecase.IMetadataRepo
+	Serivce      usecase.IMetadataService
 	Cfg          *config.HashSlotConfig
 	startReceive func()
 }
 
-func NewHashSlotService(st *db.HashSlotDB, repo usecase.IMetadataRepo, cfg *config.HashSlotConfig) *HashSlotService {
+func NewHashSlotService(st *db.HashSlotDB, serv usecase.IMetadataService, cfg *config.HashSlotConfig) *HashSlotService {
 	return &HashSlotService{
 		Store:        st,
-		Repo:         repo,
+		Serivce:      serv,
 		Cfg:          cfg,
 		startReceive: func() {},
 	}
@@ -161,8 +163,6 @@ func (h *HashSlotService) FinishReceiveItem(success bool) error {
 func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 	h.startReceive()
 	logData := &entity.RaftData{
-		Dest:     util.IfElse(item.IsVersion, entity.DestVersion, entity.DestMetadata),
-		Type:     entity.LogInsert,
 		Version:  &entity.Version{},
 		Metadata: &entity.Metadata{},
 	}
@@ -172,39 +172,122 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 	); err != nil {
 		return err
 	}
-	if ok, err := h.Repo.ApplyRaft(logData); ok && err != nil {
+	if item.IsVersion {
+		_, err := h.Serivce.AddVersion(item.Name, logData.Version)
 		return err
-	} else if item.IsVersion {
-		if err := h.Repo.AddVersion(item.GetName(), logData.Version); err != nil {
-			return err
-		}
 	} else {
-		if err := h.Repo.AddMetadata(logData.Metadata); err != nil {
-			return err
-		}
+		return h.Serivce.AddMetadata(logData.Metadata)
 	}
-	return nil
 }
 
+// AutoMigrate migrate data
+//TODO(perf): multi gorutine
 func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) error {
+	logger := logs.New("hash-slot-migration")
 	if ok, host, _ := h.Store.GetMigrateTo(); !ok || host != toLoc.GetHost() {
 		return fmt.Errorf("no ready to migrate to %s", toLoc.GetHost())
 	}
-	//TODO 如何确保过时的数据全部更新完毕: 由迁移双方自行控制，迁移成功后更新双方slot信息
-	// 何时迁移: 指令触发时，指定 A to B with 10-100
-	// 如何迁移：将K不在该服务器上的key通过RPC流服务迁移出去
-	// 何时失败：迁移过程中发生异常中断
-	// 合适成功：key-value全部迁移过去。etcd中的slots信息为迁移完成后的slot信息
-	if err := h.Store.FinishMigrateTo(); err != nil {
+	// connect to target
+	cc, err := grpc.Dial(fmt.Sprint(toLoc.Host, ":", toLoc.RpcPort), grpc.WithInsecure())
+	if err != nil {
 		return err
 	}
+	defer cc.Close()
+	stream, err := pb.NewHashSlotClient(cc).StreamingReceive(context.Background())
+	if err != nil {
+		return err
+	}
+	delEdges, _ := hashslot.WrapSlotsToEdges(slots, "")
+	migKeys := h.Serivce.FilterKeys(func(s string) bool {
+		return hashslot.IsSlotInEdges(hashslot.CalcBytesSlot([]byte(s)), delEdges)
+	})
+	var errs []error
+	var sucNum int
+	for _, key := range migKeys {
+		// get data
+		data, err := h.Serivce.GetMetadataBytes(key)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		// send data
+		if err := stream.Send(&pb.MigrationItem{
+			Name: key,
+			Data: data,
+		}); err != nil {
+			logger.Debugf("send metadata %s err: %s", key, err)
+			errs = append(errs, err)
+			continue
+		}
+		// recv response
+		resp, err := stream.Recv()
+		if err != nil {
+			logger.Debugf("recv send-metadata %s response err: %s", key, err)
+			errs = append(errs, err)
+			continue
+		} else if !resp.Success {
+			logger.Debugf("send-metadata %s recv failure resposne: %s", key, err)
+			errs = append(errs, errors.New(resp.Message))
+			continue
+		}
+		// start send versions
+		allVersionSuccess := true
+		h.Serivce.ForeachVersionBytes(key, func(b []byte) bool {
+			// send version
+			if err := stream.Send(&pb.MigrationItem{
+				Name:      key,
+				Data:      b,
+				IsVersion: true,
+			}); err != nil {
+				errs = append(errs, err)
+				allVersionSuccess = false
+				logger.Debugf("send-metadata-version %s err: %s", key, err)
+			}
+			// recv response
+			resp, err := stream.Recv()
+			if err != nil {
+				errs = append(errs, err)
+				allVersionSuccess = false
+				logger.Debugf("send-metadata-version %s recv err: %s", key, err)
+			} else if !resp.Success {
+				errs = append(errs, errors.New(resp.Message))
+				allVersionSuccess = false
+				logger.Debugf("send-metadata-version %s recv failure resposne: %s", key, err)
+			}
+			return true
+		})
+		// delete if all success
+		if allVersionSuccess {
+			if err := h.Serivce.RemoveMetadata(key); err != nil {
+				errs = append(errs, err)
+				logger.Debugf("delete-metadata %s err: %s", key, err)
+			} else {
+				sucNum++
+			}
+		}
+	}
+	if err := h.Store.FinishMigrateTo(); err != nil {
+		errs = append(errs, err)
+		logger.Debugf("switch status to normal err: %s", err)
+	}
+	logger.Infof("migration totally successed %d", sucNum)
+	if len(errs) > 0 {
+		sb := strings.Builder{}
+		sb.WriteString("occurred errros:\n")
+		for _, err := range errs {
+			sb.WriteString(err.Error())
+			sb.WriteRune('\n')
+		}
+		logger.Error(sb.String())
+		return errors.New("migrate partly fails, retry again")
+	}
+	// all migrate success
 	// remove slots from current slot-info
 	info, _, err := h.Store.Get(h.Cfg.ID)
 	if err != nil {
 		return fmt.Errorf("update slot fails after finish migration: %w", err)
 	}
 	curEdges, _ := hashslot.WrapSlotsToEdges(info.Slots, info.Location)
-	delEdges, _ := hashslot.WrapSlotsToEdges(slots, info.Location)
 	info.Slots = hashslot.RemoveEdges(curEdges, delEdges).Strings()
 	// save new slot-info
 	if err = h.Store.Save(h.Cfg.ID, info); err != nil {

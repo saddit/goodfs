@@ -16,10 +16,10 @@ const (
 )
 
 type CacheConfig struct {
-	MaxSizeMB     datasize.DataSize `yaml:"max-size-mb" env:"MAX_SIZE_MB" env-default:"128"`
 	TTL           time.Duration     `yaml:"ttl" env:"TTL" env-default:"1h"`
 	CleanInterval time.Duration     `yaml:"clean-interval" env:"CLEAN_INTERVAL" env-default:"1h"`
-	MaxItemSizeMB datasize.DataSize `yaml:"max-item-size-mb" env:"MAX_ITEM_SIZE_MB" env-default:"12"`
+	MaxItemSize   datasize.DataSize `yaml:"max-item-size" env:"MAX_ITEM_SIZE" env-default:"12MB"`
+	MaxSize       datasize.DataSize `yaml:"max-size" env:"MAX_SIZE" env-default:"128MB"`
 }
 
 type Config struct {
