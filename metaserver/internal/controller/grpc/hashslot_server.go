@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"common/util"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -46,22 +47,23 @@ func (h *HashSlotServer) StreamingReceive(stream pb.HashSlot_StreamingReceiveSer
 		}
 	}()
 	var resp pb.Response
+	var item *pb.MigrationItem
 	for {
 		resp.Success, resp.Message = true, "ok"
-		item, err := stream.Recv()
+		item, err = stream.Recv()
+		// if client side close send
 		if err == io.EOF {
 			return nil
 		}
+		// if client side abort
 		if err != nil {
-			return err
+			return
 		}
-		if err := h.Service.ReceiveItem(item); err != nil {
+		if err = h.Service.ReceiveItem(item); err != nil {
 			resp.Success = false
 			resp.Message = err.Error()
 		}
-		if err := stream.Send(&resp); err != nil {
-			return err
-		}
+		util.LogErr(stream.Send(&resp))
 	}
 }
 

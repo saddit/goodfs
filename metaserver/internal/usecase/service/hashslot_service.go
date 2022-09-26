@@ -134,14 +134,15 @@ func (h *HashSlotService) PrepareMigrationFrom(loc *pb.LocationInfo, slots []str
 	if err := h.Store.ReadyMigrateFrom(loc.GetHost(), slots); err != nil {
 		return err
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	cancelCh := make(chan struct{})
 	h.startReceive = func() {
-		cancel()
+		close(cancelCh)
 		h.startReceive = func() {}
 	}
 	go func() {
 		select {
-		case <-ctx.Done():
+		case <-cancelCh:
+			logs.Std().Debug("migration-from timeout-ctx canceled")
 		case <-time.NewTicker(h.Cfg.PrepareTimeout).C:
 			h.startReceive()
 			_ = h.Store.FinishMigrateFrom()
@@ -152,14 +153,17 @@ func (h *HashSlotService) PrepareMigrationFrom(loc *pb.LocationInfo, slots []str
 }
 
 func (h *HashSlotService) FinishReceiveItem(success bool) error {
-	var newSlots []string
-	if ok, _, slots := h.Store.GetMigrateFrom(); ok {
-		newSlots = slots
-	} else {
+	h.startReceive()
+	var (
+		newSlots []string
+		fromHost string
+		ok       bool
+	)
+	if ok, fromHost, newSlots = h.Store.GetMigrateFrom(); !ok {
 		return fmt.Errorf("get received slots fails: server is not in migrate-from")
 	}
 	if err := h.Store.FinishMigrateFrom(); err != nil {
-		return err
+		util.LogErr(err)
 	}
 	if !success {
 		return nil
@@ -176,6 +180,7 @@ func (h *HashSlotService) FinishReceiveItem(success bool) error {
 	if err = h.Store.Save(h.Cfg.ID, info); err != nil {
 		return fmt.Errorf("save new slot-info fails after finsih migrateion: %w", err)
 	}
+	logs.Std().Debug("finish migration from %s success", fromHost)
 	return nil
 }
 
@@ -212,7 +217,9 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 		return err
 	}
 	defer cc.Close()
-	stream, err := pb.NewHashSlotClient(cc).StreamingReceive(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stream, err := pb.NewHashSlotClient(cc).StreamingReceive(ctx)
 	if err != nil {
 		return err
 	}
@@ -245,7 +252,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 			errs = append(errs, err)
 			continue
 		} else if !resp.Success {
-			logger.Debugf("send-metadata %s recv failure resposne: %s", key, err)
+			logger.Debugf("send-metadata %s recv failure resposne: %s", key, resp.Message)
 			errs = append(errs, errors.New(resp.Message))
 			continue
 		}
@@ -312,5 +319,10 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	if err = h.Store.Save(h.Cfg.ID, info); err != nil {
 		return fmt.Errorf("save new slot-info fails after finsih migrateion: %w", err)
 	}
+	// close stream as success
+	if err := stream.CloseSend(); err != nil {
+		logger.Error(err)
+	}
+	logger.Infof("finish migration to %s success", toLoc.Host)
 	return nil
 }
