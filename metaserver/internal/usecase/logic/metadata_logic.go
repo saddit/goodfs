@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
+	"strings"
 	"time"
 
-	bolt "go.etcd.io/bbolt"
 	"common/util"
+
+	bolt "go.etcd.io/bbolt"
 )
 
 const (
 	RootBucketName = "goodfs.metadata"
+	NestPrefix = "nest_"
 	Sep        = "."
 )
 
@@ -19,6 +22,10 @@ func ForeachKeys(fn func(string) bool) TxFunc {
 	return func(tx *bolt.Tx) error {
 		root := GetRoot(tx)
 		return root.ForEach(func(k, v []byte) error {
+			// skip nest bucket keys
+			if strings.HasPrefix(string(k), NestPrefix) {
+				return nil
+			}
 			if !fn(string(k)) {
 				return ErrNotFound
 			}
@@ -43,7 +50,7 @@ func AddMeta(data *entity.Metadata) TxFunc {
 		data.CreateTime = time.Now().UnixMilli()
 		data.UpdateTime = data.CreateTime
 		// create version bucket
-		if _, err := root.CreateBucket([]byte("nest_" + data.Name)); err != nil {
+		if _, err := root.CreateBucket([]byte(NestPrefix + data.Name)); err != nil {
 			return fmt.Errorf("create bucket: %w", err)
 		}
 		// put metadata
@@ -185,7 +192,7 @@ func GetRoot(tx *bolt.Tx) *bolt.Bucket {
 }
 
 func GetRootNest(tx *bolt.Tx, name string) *bolt.Bucket {
-	return GetRoot(tx).Bucket([]byte("nest_" + name))
+	return GetRoot(tx).Bucket([]byte(NestPrefix + name))
 }
 
 func getVer(bucket *bolt.Bucket, name string, ver uint64, dest *entity.Version) error {
