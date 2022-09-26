@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"metaserver/internal/usecase"
@@ -23,6 +24,7 @@ func (h *HashSlotServer) PrepareMigration(_ context.Context, req *pb.PrepareReq)
 	}
 	return okResp, nil
 }
+
 func (h *HashSlotServer) StartMigration(_ context.Context, req *pb.MigrationReq) (*pb.Response, error) {
 	if err := h.Service.PrepareMigrationTo(req.GetTargetLocation(), req.GetSlots()); err != nil {
 		return &pb.Response{Success: false, Message: err.Error()}, nil
@@ -32,6 +34,7 @@ func (h *HashSlotServer) StartMigration(_ context.Context, req *pb.MigrationReq)
 	}
 	return okResp, nil
 }
+
 func (h *HashSlotServer) StreamingReceive(stream pb.HashSlot_StreamingReceiveServer) (err error) {
 	defer func() {
 		if err != nil {
@@ -60,4 +63,19 @@ func (h *HashSlotServer) StreamingReceive(stream pb.HashSlot_StreamingReceiveSer
 			return err
 		}
 	}
+}
+
+func (h *HashSlotServer) GetCurrentSlots(_ context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
+	mp, err := h.Service.GetCurrentSlots()
+	if err != nil {
+		return nil, err
+	}
+	s, err := json.MarshalIndent(mp, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return &pb.Response{
+		Success: true,
+		Message: string(s),
+	}, nil
 }

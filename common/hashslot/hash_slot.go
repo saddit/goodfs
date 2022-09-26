@@ -111,7 +111,7 @@ func CopyOfEdges(identify string, provider IEdgeProvider) EdgeList {
 	var res EdgeList
 	list := provider.get()
 	for _, v := range list {
-		if v.Value == identify {
+		if identify == "" || v.Value == identify {
 			res = append(res, &Edge{
 				Start: v.Start,
 				End:   v.End,

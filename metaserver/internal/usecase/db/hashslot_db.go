@@ -116,6 +116,7 @@ func (h *HashSlotDB) ReadyMigrateFrom(loc string, slots []string) error {
 	if h.status.CAS(StatusNormal, StatusMigrateFrom) {
 		h.migratingHost = loc
 		h.migratingSlots = slots
+		hsLog.Debugf("switch normal to migrate-from")
 		return nil
 	}
 	return errors.New("status is not in normal")
@@ -125,6 +126,7 @@ func (h *HashSlotDB) ReadyMigrateTo(loc string, slots []string) error {
 	if h.status.CAS(StatusNormal, StatusMigrateTo) {
 		h.migratingHost = loc
 		h.migratingSlots = slots
+		hsLog.Debugf("switch normal to migrate-to")
 		return nil
 	}
 	return errors.New("status is not in normal")
@@ -134,6 +136,8 @@ func (h *HashSlotDB) FinishMigrateTo() error {
 	if h.status.CAS(StatusMigrateTo, StatusNormal) {
 		h.migratingHost = ""
 		h.migratingSlots = nil
+		hsLog.Debugf("switch migrate-to to normal")
+		return nil
 	}
 	return fmt.Errorf("status is not in migrate-to")
 }
@@ -142,6 +146,8 @@ func (h *HashSlotDB) FinishMigrateFrom() error {
 	if h.status.CAS(StatusMigrateFrom, StatusNormal) {
 		h.migratingHost = ""
 		h.migratingSlots = nil
+		hsLog.Debugf("switch migrate-from to normal")
+		return nil
 	}
 	return fmt.Errorf("status is not in migrate-from")
 }

@@ -2,7 +2,9 @@ package test
 
 import (
 	"bytes"
+	"common/constrant"
 	"common/registry"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -75,4 +77,30 @@ func TestEtcdRegsitry(t *testing.T) {
 		time.Sleep(time.Second)
 	}
 	
+}
+
+func TestClearEtcd(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username: "root",
+		Password: "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := etcd.Delete(context.Background(), constrant.EtcdPrefix.HashSlot, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.HashSlot, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), constrant.EtcdPrefix.PeersInfo, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.PeersInfo, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), constrant.EtcdPrefix.Registry, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.Registry, resp.Deleted)
 }

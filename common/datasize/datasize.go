@@ -83,3 +83,12 @@ func (d *DataSize) UnmarshalYAML(node *yaml.Node) error {
 	*d = res
 	return nil
 }
+
+func (d *DataSize) SetValue(s string) error {
+	res, err := Parse(s)
+	if err != nil {
+		return err
+	}
+	*d = res
+	return nil
+}

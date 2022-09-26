@@ -38,19 +38,38 @@ func NewHashSlotService(st *db.HashSlotDB, serv usecase.IMetadataService, cfg *c
 
 func (h *HashSlotService) OnLeaderChanged(isLeader bool) {
 	if isLeader {
-		var info *hashslot.SlotInfo
-		var exist bool
-		var err error
+		var (
+			info  *hashslot.SlotInfo
+			exist bool
+			err   error
+		)
+		// if not exist, read from configuration
 		if info, exist, err = h.Store.Get(h.Cfg.ID); !exist {
 			if err != nil {
-				util.LogErrWithPre("update slot info when leader changed", err)
+				logs.Std().Errorf("get slot-info when leader changed: %s", err)
 				return
 			}
-			info = &hashslot.SlotInfo{Slots: h.Cfg.Slots}
+			info = &hashslot.SlotInfo{Slots: h.Cfg.Slots, GroupID: h.Cfg.ID}
+			logs.Std().Infof("no exist slots, init from config: id=%s, slots=%s", info.GroupID, info.Slots)
 		}
 		info.Location = pool.HttpHostPort
-		util.LogErr(h.Store.Save(h.Cfg.ID, info))
+		if err := h.Store.Save(h.Cfg.ID, info); err != nil {
+			logs.Std().Error(err)
+			return
+		}
 	}
+}
+
+func (h *HashSlotService) GetCurrentSlots() (map[string][]string, error) {
+	prov, err := h.Store.GetEdgeProvider(false)
+	if err != nil {
+		return nil, err
+	}
+	res := make(map[string][]string)
+	for _, v := range hashslot.CopyOfEdges("", prov) {
+		res[v.Value] = append(res[v.Value], fmt.Sprint(v.Start, "-", v.End))
+	}
+	return res, nil
 }
 
 func (h *HashSlotService) PrepareMigrationTo(loc *pb.LocationInfo, slots []string) error {
@@ -70,7 +89,7 @@ func (h *HashSlotService) PrepareMigrationTo(loc *pb.LocationInfo, slots []strin
 		}
 	}
 	// send prepare rpc to target
-	cc, err := grpc.Dial(fmt.Sprint(loc.GetHost(), ":", loc.GetRpcPort()))
+	cc, err := grpc.Dial(fmt.Sprint(loc.GetHost(), ":", loc.GetRpcPort()), grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
@@ -124,7 +143,7 @@ func (h *HashSlotService) PrepareMigrationFrom(loc *pb.LocationInfo, slots []str
 		select {
 		case <-ctx.Done():
 		case <-time.NewTicker(h.Cfg.PrepareTimeout).C:
-			cancel()
+			h.startReceive()
 			_ = h.Store.FinishMigrateFrom()
 			logs.Std().Errorf("timeout migrating from %s", loc.GetHost())
 		}
@@ -270,13 +289,13 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 		errs = append(errs, err)
 		logger.Debugf("switch status to normal err: %s", err)
 	}
-	logger.Infof("migration totally successed %d", sucNum)
+	logger.Infof("migration totally %d metadata and successed %d verions", len(migKeys), sucNum)
 	if len(errs) > 0 {
 		sb := strings.Builder{}
-		sb.WriteString("occurred errros:\n")
+		sb.WriteString("occurred errros:")
 		for _, err := range errs {
-			sb.WriteString(err.Error())
 			sb.WriteRune('\n')
+			sb.WriteString(err.Error())
 		}
 		logger.Error(sb.String())
 		return errors.New("migrate partly fails, retry again")

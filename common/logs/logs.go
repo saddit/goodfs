@@ -50,3 +50,7 @@ func Std() *logrus.Logger {
 func New(name string) *logrus.Entry {
 	return Std().WithField("component", name)
 }
+
+func IsDebug() bool {
+	return Std().Level == logrus.DebugLevel
+}

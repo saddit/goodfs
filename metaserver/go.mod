@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/Jille/raft-grpc-transport v1.1.1
+	github.com/allegro/bigcache v1.2.1
 	github.com/gin-gonic/gin v1.8.1
 	github.com/ilyakaznacheev/cleanenv v1.3.0
 	github.com/tinylib/msgp v1.1.6
@@ -33,7 +34,7 @@ require (
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.4 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.4 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/atomic v1.7.0
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
