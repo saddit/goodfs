@@ -1,12 +1,11 @@
 package http
 
 import (
-	"metaserver/internal/usecase/logic"
 	"common/response"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
+	"metaserver/internal/usecase/logic"
 	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 

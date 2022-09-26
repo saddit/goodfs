@@ -65,7 +65,7 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *RaftWra
 		go func() {
 			f := r.BootstrapCluster(raftCfg)
 			if err := f.Error(); err != nil {
-				logs.Std().Errorf("raft.Raft.BootstrapCluster: %v", err)
+				logs.Std().Warnf("raft.Raft.BootstrapCluster: %v", err)
 			}
 		}()
 	}

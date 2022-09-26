@@ -34,4 +34,5 @@ service HashSlot {
   rpc PrepareMigration(PrepareReq) returns (Response) {}
   rpc StartMigration(MigrationReq) returns (Response) {}
   rpc StreamingReceive(stream MigrationItem) returns (stream Response) {}
+  rpc GetCurrentSlots(EmptyReq) returns (Response) {}
 }

@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -178,58 +177,103 @@ func IfElse[T any](cond bool, t T, f T) T {
 	return f
 }
 
+// LookupIP Return ipv4 if success else return empty string.
+func LookupIP(addr string) string {
+	if ip := ParseIPFromAddr(addr); ip != nil {
+		return ip.String()
+	}
+	return ""
+}
+
 func GetHost() string {
 	var err error
-	if ip, err := GetClientIp(); err == nil {
-		return ip
-	}
-	logs.Std().Error(err)
 	if host, err := os.Hostname(); err == nil {
 		return host
 	}
 	logs.Std().Error(err)
-	return "localhost"
+	return GetServerIP()
 }
 
 func GetHostPort(port string) string {
-	return fmt.Sprint(GetHost(), ":", port)
+	return net.JoinHostPort(GetHost(), port)
 }
 
 func GetHostFromAddr(addr string) string {
 	// cut http prefix
 	addr = strings.TrimPrefix(addr, "https://")
 	addr = strings.TrimPrefix(addr, "http://")
-	// if doesn't have port
-	if !strings.ContainsRune(addr, ':') {
-		return addr
+	host, _, _ := net.SplitHostPort(addr)
+	return host
+}
+
+// ParseIPFromAddr Parse to net.IP if found ipv4 else return private or loopback ip. If no found anything, return nil.
+func ParseIPFromAddr(addr string) net.IP {
+	host := GetHostFromAddr(addr)
+	if netIP := net.ParseIP(host); netIP != nil {
+		return netIP
 	}
-	arr := strings.Split(addr, ":")
-	// remove last one which consider to a port
-	arr = arr[:len(arr)-1]
-	// concat to support ipv6 address
-	return strings.Join(arr, "")
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		LogErr(err)
+		return nil
+	}
+	var loopback net.IP
+	var private net.IP
+	for _, ip := range ips {
+		if ip.IsLoopback() {
+			loopback = ip
+		} else if ip.IsPrivate() {
+			private = ip
+		} else if ip.To4() != nil {
+			return ip
+		}
+	}
+	if private != nil {
+		return private
+	}
+	return loopback
 }
 
-func GetPort(addr string) string {
-	return strings.Split(addr, ":")[1]
+func GetPortFromAddr(addr string) string {
+	// cut http prefix
+	addr = strings.TrimPrefix(addr, "https://")
+	addr = strings.TrimPrefix(addr, "http://")
+	_, port, _ := net.SplitHostPort(addr)
+	return port
 }
 
-func GetClientIp() (string, error) {
+// GetServerIP Return public ipv4 if success else return private or loopback ip. At least, return "127.0.0.1"
+func GetServerIP() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return "", err
+		LogErr(err)
+		return "127.0.0.1"
 	}
 
+	var loopback net.IP
+	var private net.IP
 	for _, address := range addrs {
-		// 检查ip地址判断是否回环地址
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				return ipnet.IP.String(), nil
+		ip := ParseIPFromAddr(address.String())
+		if ip != nil {
+			if ip.IsPrivate() {
+				private = ip
+			} else if ip.IsLoopback() {
+				loopback = ip
+			} else if ip.To4() != nil {
+				return ip.String()
 			}
 		}
 	}
 
-	return "", errors.New("can not find the client ip address")
+	if private != nil {
+		return private.String()
+	}
+
+	if loopback != nil {
+		return loopback.String()
+	}
+
+	return "127.0.0.1"
 }
 
 func ToInt(str string) int {

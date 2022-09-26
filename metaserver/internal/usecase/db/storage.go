@@ -33,10 +33,18 @@ func (s *Storage) DB() *bolt.DB {
 }
 
 func (s *Storage) View(fn usecase.TxFunc) error {
+	if logs.IsDebug() {
+		mill := time.Now().UnixMilli()
+		defer func() { dbLog.Debugf("read-only tx spent %d ms", time.Now().UnixMilli() - mill) }()
+	}
 	return s.DB().View(fn)
 }
 
 func (s *Storage) Update(fn usecase.TxFunc) error {
+	if logs.IsDebug() {
+		mill := time.Now().UnixMilli()
+		defer func() { dbLog.Debugf("read-only tx spent %d ms", time.Now().UnixMilli() - mill) }()
+	}
 	if s.rdOnly.Load().(bool) {
 		return usecase.ErrReadOnly
 	}

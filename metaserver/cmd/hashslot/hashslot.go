@@ -19,8 +19,16 @@ func init() {
 			fmt.Println("start-migration rpc-port target-host target-rpc-port a-b,c-d")
 			return
 		}
-		address = util.GetHostPort(address)
+		address = util.GetHostPort(args[0])
 		startMigration(args[1], args[2], strings.Split(args[3], ","))
+	})
+	cmd.Register("get-slots", func(args []string) {
+		if len(args) == 0 {
+			fmt.Println("get-slots rcp-port")
+			return
+		}
+		address = util.GetHostPort(args[0])
+		getSlots()
 	})
 }
 
@@ -50,4 +58,17 @@ func startMigration(targetHost, rpcPort string, slots []string) {
 		return
 	}
 	fmt.Printf("success: %v, message: %s\n", resp.Success, resp.Message)
+}
+
+func getSlots() {
+	cli, err := getClient()
+	if err != nil {
+		return
+	}
+	resp, err := cli.GetCurrentSlots(context.Background(), &pb.EmptyReq{})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(resp.Message)
 }
