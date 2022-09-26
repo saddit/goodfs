@@ -4,6 +4,7 @@ import (
 	"common/cmd"
 	_ "metaserver/cmd/app"
 	_ "metaserver/cmd/raft"
+	_ "metaserver/cmd/hashslot"
 	"os"
 )
 
