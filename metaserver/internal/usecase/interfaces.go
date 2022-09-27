@@ -85,7 +85,7 @@ type (
 		PrepareMigrationTo(loc *pb.LocationInfo, slots []string) error
 		ReceiveItem(*pb.MigrationItem) error
 		FinishReceiveItem(bool) error
-		GetCurrentSlots() (map[string][]string, error) 
+		GetCurrentSlots(bool) (map[string][]string, error) 
 	}
 
 	IMetaCache interface {}

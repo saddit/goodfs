@@ -39,11 +39,12 @@ func (h *HashSlotServer) StartMigration(_ context.Context, req *pb.MigrationReq)
 func (h *HashSlotServer) StreamingReceive(stream pb.HashSlot_StreamingReceiveServer) (err error) {
 	defer func() {
 		if err != nil {
+			log.Error("stream receive abort, migrate failed")
 			if err2 := h.Service.FinishReceiveItem(false); err2 != nil {
 				err = fmt.Errorf("%w: %s", err2, err)
 			}
-		} else {
-			err = h.Service.FinishReceiveItem(true)
+		} else if err = h.Service.FinishReceiveItem(true); err == nil {
+			log.Info("stream closed, migrate success")
 		}
 	}()
 	var resp pb.Response
@@ -68,7 +69,7 @@ func (h *HashSlotServer) StreamingReceive(stream pb.HashSlot_StreamingReceiveSer
 }
 
 func (h *HashSlotServer) GetCurrentSlots(_ context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
-	mp, err := h.Service.GetCurrentSlots()
+	mp, err := h.Service.GetCurrentSlots(true)
 	if err != nil {
 		return nil, err
 	}

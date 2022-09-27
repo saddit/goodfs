@@ -20,7 +20,7 @@ func (HashIndexLogic) AddIndex(tx *bolt.Tx, hash, key string) error {
 	if err != nil {
 		return err
 	}
-	return hashBuk.Put([]byte{}, []byte{})
+	return hashBuk.Put([]byte(key), []byte{})
 }
 
 func (HashIndexLogic) RemoveIndex(tx *bolt.Tx, hash, key string) error {

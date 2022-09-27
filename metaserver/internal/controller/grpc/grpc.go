@@ -14,7 +14,6 @@ import (
 	raftServer "github.com/Jille/raft-grpc-transport"
 	"github.com/hashicorp/raft"
 	netGrpc "google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 var log = logs.New("grpc-server")
@@ -26,9 +25,6 @@ type RpcRaftServer struct {
 
 // NewRpcRaftServer init a grpc raft server. if no available nodes return empty object
 func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv usecase.IHashSlotService) (*RpcRaftServer, *raftimpl.RaftWrapper) {
-	if !cfg.Enable {
-		return &RpcRaftServer{nil, cfg.Port}, raftimpl.NewDisabledRaft()
-	}
 	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
 		CheckLocalUnary,
 		CheckWritableUnary,
@@ -40,16 +36,18 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv
 		CheckWritableStreaming,
 		AllowValidMetaServerStreaming,
 	))
-	// init services
-	raftGrpcServ := raftServer.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
-	raftWrapper := raftimpl.NewRaft(cfg, raftimpl.NewFSM(repo), raftGrpcServ.Transport())
-	// register grpc services
-	{
+	// init raft service
+	var raftWrapper *raftimpl.RaftWrapper
+	if cfg.Enable {
+		raftGrpcServ := raftServer.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
+		raftWrapper = raftimpl.NewRaft(cfg, raftimpl.NewFSM(repo), raftGrpcServ.Transport())
 		raftGrpcServ.Register(server)
-		reflection.Register(server)
-		pb.RegisterHashSlotServer(server, NewHashSlotServer(serv))
 		pb.RegisterRaftCmdServer(server, NewRaftCmdServer(raftWrapper))
+	} else {
+		raftWrapper = raftimpl.NewDisabledRaft()
 	}
+	// register hash-slot services
+	pb.RegisterHashSlotServer(server, NewHashSlotServer(serv))
 	return &RpcRaftServer{server, cfg.Port}, raftWrapper
 }
 
