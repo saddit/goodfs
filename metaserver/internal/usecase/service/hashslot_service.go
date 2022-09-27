@@ -205,7 +205,7 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 }
 
 // AutoMigrate migrate data
-//TODO(perf): multi gorutine
+//TODO(perf): multi goroutine
 func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) error {
 	logger := logs.New("hash-slot-migration")
 	if ok, host, _ := h.Store.GetMigrateTo(); !ok || host != toLoc.GetHost() {
