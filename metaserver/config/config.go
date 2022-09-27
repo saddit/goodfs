@@ -17,6 +17,7 @@ const (
 
 type Config struct {
 	Port     string          `yaml:"port" env:"PORT" env-default:"4091"`
+	ServerID string 		 `yaml:"server-id" env:"SERVER_ID" env-required:"true"`
 	LogLevel logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	DataDir  string          `yaml:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
 	Cluster  ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
@@ -26,6 +27,15 @@ type Config struct {
 	Cache    CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
 }
 
+func (c *Config) initalize() {
+	if c.Cluster.Enable {
+		c.Cluster.ID = c.ServerID
+		c.HashSlot.StoreID = c.Cluster.GroupID
+	} else {
+		c.HashSlot.StoreID = c.ServerID
+	}
+}
+
 type CacheConfig struct {
 	TTL           time.Duration     `yaml:"ttl" env:"TTL" env-default:"1h"`
 	CleanInterval time.Duration     `yaml:"clean-interval" env:"CLEAN_INTERVAL" env-default:"1h"`
@@ -33,13 +43,13 @@ type CacheConfig struct {
 }
 
 type HashSlotConfig struct {
-	ID             string        `yaml:"id" env-required:"true"`
-	Slots          []string      `yaml:"slots" env-separator:"," env-default:"0-16383"`
+	StoreID        string        `yaml:"-" env:"-"`
+	Slots          []string      `yaml:"slots" env-separator:"," env-default:"0-16384"`
 	PrepareTimeout time.Duration `yaml:"prepare-timeout" env-default:"10s"`
 }
 
 type ClusterConfig struct {
-	ID               string        `yaml:"id" env:"ID" env-required:"true"`
+	ID               string        `yaml:"-" env:"-"`
 	GroupID          string        `yaml:"group-id" env:"GROUP_ID" env-required:"true"`
 	Port             string        `yaml:"port" env:"PORT" env-default:"4092"`
 	LogLevel         string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
@@ -57,6 +67,7 @@ func ReadConfig() Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", ConfFilePath)
+	conf.initalize()
 	return conf
 }
 
@@ -69,5 +80,6 @@ func ReadConfigFrom(path string) Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", path)
+	conf.initalize()
 	return conf
 }
