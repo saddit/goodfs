@@ -44,16 +44,16 @@ func (h *HashSlotService) OnLeaderChanged(isLeader bool) {
 			err   error
 		)
 		// if not exist, read from configuration
-		if info, exist, err = h.Store.Get(h.Cfg.ID); !exist {
+		if info, exist, err = h.Store.Get(h.Cfg.StoreID); !exist {
 			if err != nil {
 				logs.Std().Errorf("get slot-info when leader changed: %s", err)
 				return
 			}
-			info = &hashslot.SlotInfo{Slots: h.Cfg.Slots, GroupID: h.Cfg.ID}
+			info = &hashslot.SlotInfo{Slots: h.Cfg.Slots, GroupID: h.Cfg.StoreID}
 			logs.Std().Infof("no exist slots, init from config: id=%s, slots=%s", info.GroupID, info.Slots)
 		}
 		info.Location = pool.HttpHostPort
-		if err := h.Store.Save(h.Cfg.ID, info); err != nil {
+		if err := h.Store.Save(h.Cfg.StoreID, info); err != nil {
 			logs.Std().Error(err)
 			return
 		}
@@ -95,7 +95,7 @@ func (h *HashSlotService) PrepareMigrationTo(loc *pb.LocationInfo, slots []strin
 	}
 	client := pb.NewHashSlotClient(cc)
 	resp, err := client.PrepareMigration(context.Background(), &pb.PrepareReq{
-		Id: h.Cfg.ID,
+		Id: h.Cfg.StoreID,
 		Location: &pb.LocationInfo{
 			Host:     util.GetHost(),
 			RpcPort:  pool.Config.Cluster.Port,
@@ -168,7 +168,7 @@ func (h *HashSlotService) FinishReceiveItem(success bool) error {
 	if !success {
 		return nil
 	}
-	info, _, err := h.Store.Get(h.Cfg.ID)
+	info, _, err := h.Store.Get(h.Cfg.StoreID)
 	if err != nil {
 		return fmt.Errorf("update slot fails after finish migration: %w", err)
 	}
@@ -177,7 +177,7 @@ func (h *HashSlotService) FinishReceiveItem(success bool) error {
 	newEdges, _ := hashslot.WrapSlotsToEdges(newSlots, info.Location)
 	info.Slots = hashslot.CombineEdges(curEdges, newEdges).Strings()
 	// save new slot-info
-	if err = h.Store.Save(h.Cfg.ID, info); err != nil {
+	if err = h.Store.Save(h.Cfg.StoreID, info); err != nil {
 		return fmt.Errorf("save new slot-info fails after finsih migrateion: %w", err)
 	}
 	logs.Std().Debug("finish migration from %s success", fromHost)
@@ -309,14 +309,14 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	}
 	// all migrate success
 	// remove slots from current slot-info
-	info, _, err := h.Store.Get(h.Cfg.ID)
+	info, _, err := h.Store.Get(h.Cfg.StoreID)
 	if err != nil {
 		return fmt.Errorf("update slot fails after finish migration: %w", err)
 	}
 	curEdges, _ := hashslot.WrapSlotsToEdges(info.Slots, info.Location)
 	info.Slots = hashslot.RemoveEdges(curEdges, delEdges).Strings()
 	// save new slot-info
-	if err = h.Store.Save(h.Cfg.ID, info); err != nil {
+	if err = h.Store.Save(h.Cfg.StoreID, info); err != nil {
 		return fmt.Errorf("save new slot-info fails after finsih migrateion: %w", err)
 	}
 	// close stream as success
