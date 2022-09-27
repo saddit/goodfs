@@ -43,7 +43,7 @@ func (s *Storage) View(fn usecase.TxFunc) error {
 func (s *Storage) Update(fn usecase.TxFunc) error {
 	if logs.IsDebug() {
 		mill := time.Now().UnixMilli()
-		defer func() { dbLog.Debugf("read-only tx spent %d ms", time.Now().UnixMilli() - mill) }()
+		defer func() { dbLog.Debugf("read-write tx spent %d ms", time.Now().UnixMilli() - mill) }()
 	}
 	if s.rdOnly.Load().(bool) {
 		return usecase.ErrReadOnly
