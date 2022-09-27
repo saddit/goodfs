@@ -4,11 +4,23 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/selector"
+	"common/collection/set"
 	"common/constrant"
 	"common/util"
 	"context"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"time"
+)
+
+type ipCache struct {
+	ips       []string
+	updatedAt int64
+}
+
+var (
+	groupIPCache    = map[string]*ipCache{}
+	expiredDuration = int64(time.Minute.Seconds())
 )
 
 type Discovery struct{}
@@ -24,21 +36,30 @@ func (Discovery) GetMetaServers(master bool) []string {
 }
 
 func (Discovery) SelectMetaByGroupID(gid string, defLoc string) string {
+	if cache, ok := groupIPCache[gid]; ok && time.Now().Unix()-cache.updatedAt < expiredDuration {
+		return selector.NewIPSelector(pool.Balancer, cache.ips).Select()
+	}
 	resp, err := pool.Etcd.Get(context.Background(), constrant.EtcdPrefix.FmtPeersInfo(gid, ""), clientv3.WithPrefix())
 	if err != nil || len(resp.Kvs) == 0 {
+		delete(groupIPCache, gid)
 		return defLoc
 	}
-	//TODO 缓存group-id的ips
+	alive := set.OfString(pool.Discovery.GetServices(pool.Config.Discovery.MetaServName))
 	ips := make([]string, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		var info entity.PeerInfo
 		if err = util.DecodeMsgp(&info, kv.Value); err == nil {
-			ips = append(ips, fmt.Sprint(info.Location, ":", info.HttpPort))
+			ip := fmt.Sprint(info.Location, ":", info.HttpPort)
+			if alive.Contains(ip) {
+				ips = append(ips, ip)
+			}
 		}
 	}
 	if len(ips) == 0 {
+		delete(groupIPCache, gid)
 		return defLoc
 	}
+	groupIPCache[gid] = &ipCache{ips, time.Now().Unix()}
 	return selector.NewIPSelector(pool.Balancer, ips).Select()
 }
 
