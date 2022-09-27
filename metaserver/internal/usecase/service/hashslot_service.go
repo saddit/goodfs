@@ -299,13 +299,13 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	logger.Infof("migration totally %d metadata and successed %d verions", len(migKeys), sucNum)
 	if len(errs) > 0 {
 		sb := strings.Builder{}
-		sb.WriteString("occurred errros:")
+		sb.WriteString("occurred errors:")
 		for _, err := range errs {
 			sb.WriteRune('\n')
 			sb.WriteString(err.Error())
 		}
 		logger.Error(sb.String())
-		return errors.New("migrate partly fails, retry again")
+		return errors.New("migrate partly fails, please retry again")
 	}
 	// all migrate success
 	// remove slots from current slot-info
