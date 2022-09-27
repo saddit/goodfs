@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"testing"
 	"time"
-
+	"common/hashslot"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -103,4 +103,28 @@ func TestClearEtcd(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(constrant.EtcdPrefix.Registry, resp.Deleted)
+}
+
+func TestCalcHashSlot(t *testing.T) {
+	input := "test123456.txt"
+	output := hashslot.CalcBytesSlot([]byte(input))
+	t.Log(output)
+}
+
+func TestGetSlots(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username: "root",
+		Password: "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := etcd.Get(context.Background(), constrant.EtcdPrefix.HashSlot, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kv := range resp.Kvs {
+		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
+	}
 }

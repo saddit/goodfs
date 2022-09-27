@@ -14,8 +14,8 @@ import (
 
 const (
 	RootBucketName = "goodfs.metadata"
-	NestPrefix = "nest_"
-	Sep        = "."
+	NestPrefix     = "nest_"
+	Sep            = "."
 )
 
 func ForeachKeys(fn func(string) bool) TxFunc {
@@ -68,7 +68,7 @@ func RemoveMeta(name string) TxFunc {
 		if err := root.Delete(key); err != nil {
 			return err
 		}
-		return root.DeleteBucket(key)
+		return root.DeleteBucket([]byte(fmt.Sprint(NestPrefix, key)))
 	}
 }
 
@@ -102,20 +102,22 @@ func AddVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
 			// only if data is migrated from others will do sequnce updating
-			if data.Sequence != 0 {
-				bucket.SetSequence(uint64(util.MaxUint64(bucket.Sequence(), data.Sequence)))
-			} else {
+			if data.Sequence == 0 {
 				data.Sequence, _ = bucket.NextSequence()
+			} else if bucket.Get([]byte(fmt.Sprint(name, Sep, data.Sequence))) != nil {
+				return ErrExists
+			} else if data.Sequence > bucket.Sequence() {
+				bucket.SetSequence(data.Sequence)
 			}
-			data.Ts = time.Now().UnixMilli()
 			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
+			data.Ts = time.Now().UnixMilli()
 			bt, err := util.EncodeMsgp(data)
-			if err != nil{
+			if err != nil {
 				return err
 			}
-			// additional index 
+			// additional index
 			if err := NewHashIndexLogic().AddIndex(tx, data.Hash, string(key)); err != nil {
-				return err
+				return fmt.Errorf("add hash-index err: %w", err)
 			}
 			return bucket.Put(key, bt)
 		}
@@ -136,7 +138,7 @@ func RemoveVer(name string, ver uint64) TxFunc {
 		}
 		// remove index
 		if err := NewHashIndexLogic().RemoveIndex(tx, data.Hash, string(key)); err != nil {
-			return err
+			return fmt.Errorf("remove hash-index err: %w", err)
 		}
 		return b.Delete(key)
 	}
@@ -160,7 +162,7 @@ func UpdateVer(name string, data *entity.Version) TxFunc {
 			data.Hash = origin.Hash
 			data.Ts = time.Now().UnixMilli()
 			// encode to bytes
-			bt, err := util.EncodeMsgp(data); 
+			bt, err := util.EncodeMsgp(data)
 			if err != nil {
 				return err
 			}
@@ -214,5 +216,5 @@ func getMeta(b *bolt.Bucket, name string, dest *entity.Metadata) error {
 	if bt == nil {
 		return ErrNotFound
 	}
-	return util.DecodeMsgp(dest, bt) 
+	return util.DecodeMsgp(dest, bt)
 }

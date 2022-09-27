@@ -60,8 +60,8 @@ func (h *HashSlotService) OnLeaderChanged(isLeader bool) {
 	}
 }
 
-func (h *HashSlotService) GetCurrentSlots() (map[string][]string, error) {
-	prov, err := h.Store.GetEdgeProvider(false)
+func (h *HashSlotService) GetCurrentSlots(reload bool) (map[string][]string, error) {
+	prov, err := h.Store.GetEdgeProvider(reload)
 	if err != nil {
 		return nil, err
 	}
@@ -197,11 +197,13 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 		return err
 	}
 	if item.IsVersion {
-		_, err := h.Serivce.AddVersion(item.Name, logData.Version)
+		if _, err := h.Serivce.AddVersion(item.Name, logData.Version); err != nil && errors.Is(err, usecase.ErrExists) {
+			return err
+		}
+	} else if err := h.Serivce.AddMetadata(logData.Metadata); err != nil && errors.Is(err, usecase.ErrExists) {
 		return err
-	} else {
-		return h.Serivce.AddMetadata(logData.Metadata)
 	}
+	return nil
 }
 
 // AutoMigrate migrate data
