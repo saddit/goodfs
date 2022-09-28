@@ -12,3 +12,4 @@ run:
 clear:
 	clear
 	rm -r /workspaces/temp/*
+	go test -v metaserver/test/api_test.go -test.run TestClearEtcd
