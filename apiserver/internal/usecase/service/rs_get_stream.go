@@ -6,6 +6,7 @@ import (
 	global "apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/selector"
 	"bytes"
+	"common/graceful"
 	"common/util"
 	"fmt"
 	"io"
@@ -25,11 +26,13 @@ type provideStream struct {
 func provideGetStream(hash string, locates []string) <-chan *provideStream {
 	respChan := make(chan *provideStream, 1)
 	go func() {
+		defer graceful.Recover()
 		defer close(respChan)
 		var wg sync.WaitGroup
 		for i, ip := range locates {
 			wg.Add(1)
 			go func(idx int, ip string) {
+				defer graceful.Recover()
 				defer wg.Done()
 				if len(ip) > 0 {
 					reader, e := NewGetStream(ip, fmt.Sprintf("%s.%d", hash, idx))
@@ -101,6 +104,7 @@ func (g *RSGetStream) Close() error {
 		if util.InstanceOf[Commiter](w) {
 			wg.Todo()
 			go func(cm Commiter) {
+				defer graceful.Recover()
 				defer wg.Done()
 				if e := cm.Commit(true); e != nil {
 					wg.Error(e)

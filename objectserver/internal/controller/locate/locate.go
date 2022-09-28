@@ -74,17 +74,19 @@ func (l *Locator) handlerLocate(message []byte, ip string) {
 		return
 	}
 	hash, respKey := tp[0], tp[1]
-	logs.Std().Tracef("handler locating request: hash=%s, response to key %s", hash, respKey)
+	logs.Std().Debugf("handler locating request: hash=%s, response to key %s", hash, respKey)
 	if service.Exist(hash) {
 		tp = strings.Split(hash, ".")
 		if len(tp) != 2 {
 			logs.Std().Errorf("Receive incorrect message %s", string(message))
 			return
 		}
-		_, err := l.etcd.Put(context.Background(), respKey, fmt.Sprint(ip, "#", tp[1]))
+		loc := fmt.Sprint(ip, "#", tp[1])
+		_, err := l.etcd.Put(context.Background(), respKey, loc)
 		if err != nil {
 			logs.Std().Errorf("Put locate repsone on key %s error: %s", respKey, err)
 			return
 		}
+		logs.Std().Debugf("put %s to key %s success", loc, respKey)
 	}
 }

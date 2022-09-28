@@ -50,7 +50,7 @@ func GetGob2[T interface{}](c ICache, k string, v *T) bool {
 
 func (c *Cache) onRemove(k string, v []byte, r bigcache.RemoveReason) {
 	go func() {
-		graceful.Recover()
+		defer graceful.Recover()
 		for _, ch := range c.notifyEvicted {
 			ch <- Entry{k, v, r}
 		}

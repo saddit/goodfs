@@ -1,6 +1,10 @@
 package util
 
-import "sync"
+import (
+	"sync"
+
+	"go.uber.org/atomic"
+)
 
 type NonErrDoneGroup interface {
 	Add(int)
@@ -13,15 +17,16 @@ type NonErrDoneGroup interface {
 type DoneGroup struct {
 	sync.WaitGroup
 	ec chan error
+	closed *atomic.Bool
 }
 
 // NewNonErrDoneGroup equals to WaitGroup. Only Todo() and WaitDone() func can be used!
 func NewNonErrDoneGroup() NonErrDoneGroup {
-	return &DoneGroup{sync.WaitGroup{}, nil}
+	return &DoneGroup{sync.WaitGroup{}, nil, atomic.NewBool(false)}
 }
 
 func NewDoneGroup() DoneGroup {
-	return DoneGroup{sync.WaitGroup{}, make(chan error, 1)}
+	return DoneGroup{sync.WaitGroup{}, make(chan error, 1), atomic.NewBool(false)}
 }
 
 //Todo equals to wg.Add(1)
@@ -31,6 +36,9 @@ func (d *DoneGroup) Todo() {
 
 //Error deliver an error non blocking
 func (d *DoneGroup) Error(e error) {
+	if d.closed.Load() {
+		return
+	}
 	d.ec <- e
 }
 
@@ -50,6 +58,7 @@ func (d *DoneGroup) WaitDone() <-chan struct{} {
 //Close close the error chan
 func (d *DoneGroup) Close() {
 	close(d.ec)
+	d.closed.CAS(false, true)
 }
 
 //WaitUntilError use select to WaitDone() and WaitError() if has error return it else return nil

@@ -31,5 +31,5 @@ type ipCache struct {
 var (
 	groupIPCache    = map[string]*ipCache{}
 	hashSlotCache = new(slotCache)
-	expiredDuration = int64(time.Second * 60)
+	expiredDuration = int64(time.Minute.Seconds())
 )

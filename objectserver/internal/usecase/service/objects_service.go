@@ -1,6 +1,7 @@
 package service
 
 import (
+	"common/util"
 	"io"
 	global "objectserver/internal/usecase/pool"
 	"os"
@@ -70,7 +71,7 @@ func DeleteFile(path, name string) error {
 
 func AppendFile(path, fileName string, fileStream io.Reader) error {
 	path = filepath.Join(path, fileName)
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND, os.ModePerm)
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, util.OS_ModeUser)
 	if err != nil {
 		return err
 	}
