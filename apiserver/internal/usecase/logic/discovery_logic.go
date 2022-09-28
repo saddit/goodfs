@@ -13,16 +13,6 @@ import (
 	"time"
 )
 
-type ipCache struct {
-	ips       []string
-	updatedAt int64
-}
-
-var (
-	groupIPCache    = map[string]*ipCache{}
-	expiredDuration = int64(time.Minute.Seconds())
-)
-
 type Discovery struct{}
 
 func NewDiscovery() Discovery { return Discovery{} }
