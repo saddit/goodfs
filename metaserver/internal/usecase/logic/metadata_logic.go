@@ -116,9 +116,9 @@ func AddVer(name string, data *entity.Version) TxFunc {
 				return err
 			}
 			// additional index
-			if err := NewHashIndexLogic().AddIndex(tx, data.Hash, string(key)); err != nil {
-				return fmt.Errorf("add hash-index err: %w", err)
-			}
+			// if err := NewHashIndexLogic().AddIndex(tx, data.Hash, string(key)); err != nil {
+			// 	return fmt.Errorf("add hash-index err: %w", err)
+			// }
 			return bucket.Put(key, bt)
 		}
 		return ErrNotFound
@@ -137,9 +137,9 @@ func RemoveVer(name string, ver uint64) TxFunc {
 			return err
 		}
 		// remove index
-		if err := NewHashIndexLogic().RemoveIndex(tx, data.Hash, string(key)); err != nil {
-			return fmt.Errorf("remove hash-index err: %w", err)
-		}
+		// if err := NewHashIndexLogic().RemoveIndex(tx, data.Hash, string(key)); err != nil {
+		// 	return fmt.Errorf("remove hash-index err: %w", err)
+		// }
 		return b.Delete(key)
 	}
 }
