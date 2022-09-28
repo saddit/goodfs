@@ -5,6 +5,7 @@ import (
 	"common/logs"
 	"common/registry"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -15,9 +16,10 @@ const (
 
 type Config struct {
 	Port           string          `yaml:"port" env:"PORT" env-default:"8080"`
-	LogLevel       logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	SelectStrategy string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
 	Checksum       bool            `yaml:"checksum" env:"CHECKSUM" env-default:"false"`
+	LocateTimeout  time.Duration   `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"5s"`
+	LogLevel       logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	Etcd           etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	Rs             RsConfig        `yaml:"rs" env-prefix:"RS"`
 	Discovery      DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`

@@ -64,7 +64,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 		o.etcd.Put(ctx, LocationSubKey, fmt.Sprintf("%s.%d#%s", hash, i, tempId))
 	}
 	//开始监听变化
-	tt := time.NewTicker(time.Second * 5)
+	tt := time.NewTicker(pool.Config.LocateTimeout)
 	defer tt.Stop()
 	for {
 		select {
