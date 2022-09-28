@@ -2,6 +2,7 @@ package response
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 )
 
@@ -11,11 +12,11 @@ func MessageFromJSONBody(body io.ReadCloser) string {
 	if err != nil {
 		return err.Error()
 	}
-	mp := make(map[string]string)
+	mp := make(map[string]interface{})
 	if err := json.Unmarshal(bt, &mp); err != nil {
 		return err.Error()
 	}
-	return mp["message"]
+	return fmt.Sprint(mp["message"])
 }
 
 func IsOk(status int) bool {

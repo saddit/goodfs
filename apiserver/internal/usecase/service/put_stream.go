@@ -2,6 +2,7 @@ package service
 
 import (
 	. "apiserver/internal/usecase/webapi"
+	"common/graceful"
 	"fmt"
 	"io"
 	"sync/atomic"
@@ -67,6 +68,7 @@ func (p *PutStream) startWrite() {
 	reader, writer := io.Pipe()
 	p.writer = writer
 	go func() {
+		defer graceful.Recover()
 		p.errorChan <- PatchTmpObject(p.Locate, p.tmpId, reader)
 	}()
 }

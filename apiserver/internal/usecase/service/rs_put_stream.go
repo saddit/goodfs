@@ -2,6 +2,7 @@ package service
 
 import (
 	"apiserver/internal/usecase/pool"
+	"common/graceful"
 	"common/util"
 	"fmt"
 	"io"
@@ -24,6 +25,7 @@ func NewRSPutStream(ips []string, hash string, size int64) (*RSPutStream, error)
 	for i := range writers {
 		wg.Todo()
 		go func(idx int) {
+			defer graceful.Recover()
 			defer wg.Done()
 			stream, e := NewPutStream(ips[idx], fmt.Sprintf("%s.%d", hash, idx), perShard)
 			if e != nil {
@@ -59,6 +61,7 @@ func (p *RSPutStream) Commit(ok bool) error {
 		if util.InstanceOf[Commiter](w) {
 			wg.Todo()
 			go func(cm Commiter) {
+				defer graceful.Recover()
 				defer wg.Done()
 				if e := cm.Commit(ok); e != nil {
 					wg.Error(e)

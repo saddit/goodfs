@@ -11,8 +11,7 @@ var logger = logs.New("panic-recover")
 
 func Recover() {
 	if err := recover(); err != nil {
-		logger.Errorf("%s\n", err)
-		logger.Println(GetStacks())
+		logger.Errorf("%s\n\t%s", err, GetStacks())
 	}
 }
 

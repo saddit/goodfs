@@ -10,12 +10,13 @@ import (
 	"common/util"
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"io"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 const (
@@ -46,14 +47,8 @@ func NewObjectService(s IMetaService, etcd *clientv3.Client) *ObjectService {
 	return &ObjectService{s, etcd}
 }
 
-// LocateObject 根据Hash定位所有分片位置 send "hash.idx#key" expect "ip#idx"
+// LocateObject locate object shards by hash. send "hash.idx#key" expect "ip#idx"
 func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
-	//利用etcd监听机制实现
-	// 1. 临时建立并watch一个唯一key
-	// 2. object_server 持续watch各自唯一key
-	// 3. set每个object_server的key为（hash+临时key）
-	// 4. object server watch到这个变化就定位，成功则向set临时key
-	// 5. api服务器watch得到文件位置
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	//生成一个唯一key 并在结束后删除
@@ -69,6 +64,8 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 		o.etcd.Put(ctx, LocationSubKey, fmt.Sprintf("%s.%d#%s", hash, i, tempId))
 	}
 	//开始监听变化
+	tt := time.NewTicker(time.Second * 5)
+	defer tt.Stop()
 	for {
 		select {
 		case resp, ok := <-wt:
@@ -78,13 +75,14 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 			}
 			for _, event := range resp.Events {
 				ip, idx := getLocateResp(string(event.Kv.Value))
+				logs.Std().Debugf("located success for index %d of %s", ip, idx, hash)
 				locates[idx] = ip
 			}
 			if len(locates) == cap(locates) {
 				return locates, true
 			}
-		case <-time.Tick(5 * time.Second):
-			logs.Std().Errorf("locate object %s timeout!", hash)
+		case <-tt.C:
+			logs.Std().Warnf("locate object %s timeout!", hash)
 			return nil, false
 		}
 	}
