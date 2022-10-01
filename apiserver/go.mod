@@ -2,7 +2,10 @@ module apiserver
 
 go 1.18
 
-require github.com/google/uuid v1.3.0
+require (
+	github.com/google/uuid v1.3.0
+	github.com/tinylib/msgp v1.1.6
+)
 
 require (
 	github.com/BurntSushi/toml v1.1.0 // indirect
@@ -23,6 +26,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
+	github.com/philhofer/fwd v1.1.1 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.4 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.4 // indirect
