@@ -8,8 +8,8 @@ import (
 	"common/constrant"
 	"common/util"
 	"context"
-	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"net"
 	"time"
 )
 
@@ -39,7 +39,7 @@ func (Discovery) SelectMetaByGroupID(gid string, defLoc string) string {
 	for _, kv := range resp.Kvs {
 		var info entity.PeerInfo
 		if err = util.DecodeMsgp(&info, kv.Value); err == nil {
-			ip := fmt.Sprint(info.Location, ":", info.HttpPort)
+			ip := net.JoinHostPort(info.Location, info.HttpPort)
 			if alive.Contains(ip) {
 				ips = append(ips, ip)
 			}
