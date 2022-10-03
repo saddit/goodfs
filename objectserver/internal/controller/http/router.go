@@ -1,7 +1,7 @@
 package http
 
 import (
-	"common/graceful"
+	"common/logs"
 	"net/http"
 	"objectserver/internal/controller/http/objects"
 	"objectserver/internal/controller/http/temp"
@@ -9,16 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type HttpServer struct {
-	engine *gin.Engine
+type Server struct {
+	*http.Server
 }
 
-func NewHttpServer() *HttpServer {
-	return &HttpServer{gin.Default()}
-}
-
-func (h *HttpServer) ListenAndServe(addr string) {
-	r := h.engine
+func NewHttpServer(addr string) *Server {
+	r := gin.Default()
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get, objects.SaveToCache)
 	//Deprecated
 	r.PUT("/objects/:name", objects.SaveToCache, objects.Put, objects.RemoveCache)
@@ -30,6 +26,10 @@ func (h *HttpServer) ListenAndServe(addr string) {
 	r.HEAD("/temp/:name", temp.FilterExpired, temp.Head)
 	r.GET("/temp/:name", temp.FilterExpired, temp.Get)
 	r.PUT("/temp/:name", temp.FilterExpired, temp.Put)
+	return &Server{&http.Server{Addr: addr, Handler: r}}
+}
 
-	graceful.ListenAndServe(&http.Server{Addr: addr, Handler: h.engine})
+func (h *Server) ListenAndServe() error {
+	logs.Std().Infof("http server listen on: %s", h.Addr)
+	return h.Server.ListenAndServe()
 }

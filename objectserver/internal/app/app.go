@@ -1,10 +1,12 @@
 package app
 
 import (
+	"common/graceful"
 	"common/logs"
 	"common/registry"
 	"common/util"
 	"objectserver/config"
+	"objectserver/internal/controller/grpc"
 
 	"objectserver/internal/controller/http"
 	"objectserver/internal/controller/locate"
@@ -37,5 +39,6 @@ func Run(cfg *config.Config) {
 	defer service.StartTempRemovalBackground(pool.Cache)()
 	// warmup serv
 	service.WarmUpLocateCache()
-	http.NewHttpServer().ListenAndServe(netAddr)
+	// startup server
+	graceful.ListenAndServe(http.NewHttpServer(netAddr), grpc.NewRpcServer(cfg.RpcPort, new(service.MigrationService)))
 }

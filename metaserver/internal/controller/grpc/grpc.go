@@ -18,13 +18,13 @@ import (
 
 var log = logs.New("grpc-server")
 
-type RpcRaftServer struct {
+type Server struct {
 	*netGrpc.Server
 	Port string
 }
 
-// NewRpcRaftServer init a grpc raft server. if no available nodes return empty object
-func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService) (*RpcRaftServer, *raftimpl.RaftWrapper) {
+// NewRpcServer init a grpc raft server. if no available nodes return empty object
+func NewRpcServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService) (*Server, *raftimpl.RaftWrapper) {
 	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
 		CheckLocalUnary,
 		CheckWritableUnary,
@@ -49,10 +49,10 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv
 	// register hash-slot services
 	pb.RegisterHashSlotServer(server, NewHashSlotServer(serv2))
 	pb.RegisterMetadataApiServer(server, NewMetadataApiServer(serv1))
-	return &RpcRaftServer{server, cfg.Port}, raftWrapper
+	return &Server{server, cfg.Port}, raftWrapper
 }
 
-func (r *RpcRaftServer) Shutdown(ctx context.Context) error {
+func (r *Server) Shutdown(ctx context.Context) error {
 	if r.Server == nil {
 		return nil
 	}
@@ -70,7 +70,7 @@ func (r *RpcRaftServer) Shutdown(ctx context.Context) error {
 	}
 }
 
-func (r *RpcRaftServer) ListenAndServe() error {
+func (r *Server) ListenAndServe() error {
 	if r.Server == nil {
 		return nil
 	}

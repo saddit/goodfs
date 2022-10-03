@@ -178,10 +178,11 @@ func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error)
 			return nil, err
 		}
 		res = append(res, &pb.Version{
-			Hash:     ver.Hash,
-			Sequence: ver.Sequence,
-			Size:     ver.Size,
-			Name:     sp[0],
+			Hash:      ver.Hash,
+			Sequence:  ver.Sequence,
+			Size:      ver.Size,
+			Name:      sp[0],
+			Locations: ver.Locate,
 		})
 	}
 	return

@@ -52,6 +52,18 @@ func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
 	return e
 }
 
+func (e *EtcdRegistry) GetAddress(name string) ([]string, error) {
+	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.group, name), clientv3.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+	res := make([]string, len(resp.Kvs))
+	for _, kv := range resp.Kvs {
+		res = append(res, string(kv.Value))
+	}
+	return res, nil
+}
+
 func (e *EtcdRegistry) MustRegister() *EtcdRegistry {
 	if err := e.Register(); err != nil {
 		panic(err)

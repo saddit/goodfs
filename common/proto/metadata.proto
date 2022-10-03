@@ -9,6 +9,7 @@ message Version {
   uint64 sequence = 2;
   int64 size = 3;
   string name = 4;
+  repeated string locations = 5;
 }
 
 message ApiQryResp {
