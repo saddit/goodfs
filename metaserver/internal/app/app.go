@@ -21,7 +21,12 @@ func Run(cfg *Config) {
 	// init services
 	var grpcServer *grpc.RpcRaftServer
 	metaRepo := repo.NewMetadataRepo(pool.Storage)
-	metaService := service.NewMetadataService(metaRepo, repo.NewBatchRepo(pool.Storage), repo.NewMetadataCacheRepo(pool.Cache))
+	metaService := service.NewMetadataService(
+		metaRepo,
+		repo.NewBatchRepo(pool.Storage),
+		repo.NewHashIndexRepo(pool.Storage),
+		repo.NewMetadataCacheRepo(pool.Cache),
+	)
 	hsService := service.NewHashSlotService(pool.HashSlot, metaService, &cfg.HashSlot)
 	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo, metaService, hsService)
 	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService)

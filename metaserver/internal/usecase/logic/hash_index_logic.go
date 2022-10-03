@@ -2,6 +2,7 @@ package logic
 
 import (
 	"fmt"
+	"metaserver/internal/usecase"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -10,42 +11,51 @@ const (
 	HashIndexName = "hashIndex"
 )
 
-type HashIndexLogic struct {}
+type HashIndexLogic struct{}
 
-func NewHashIndexLogic() HashIndexLogic {return HashIndexLogic{}}
+func NewHashIndexLogic() HashIndexLogic { return HashIndexLogic{} }
 
-func (HashIndexLogic) AddIndex(tx *bolt.Tx, hash, key string) error {
-	buk := GetIndexBucket(tx, HashIndexName)
-	hashBuk, err := buk.CreateBucketIfNotExists([]byte(hash))
-	if err != nil {
+func (HashIndexLogic) AddIndex(hash, key string) usecase.TxFunc {
+	return func(tx *bolt.Tx) error {
+		buk := GetIndexBucket(tx, HashIndexName)
+		hashBuk, err := buk.CreateBucketIfNotExists([]byte(hash))
+		if err != nil {
+			return err
+		}
+		return hashBuk.Put([]byte(key), []byte{})
+	}
+}
+
+func (HashIndexLogic) RemoveIndex(hash, key string) usecase.TxFunc {
+	return func(tx *bolt.Tx) error {
+		buk := GetIndexBucket(tx, HashIndexName)
+		if hashBuk := buk.Bucket([]byte(hash)); hashBuk != nil {
+			return hashBuk.Delete([]byte(key))
+		}
+		return nil
+	}
+}
+
+func (HashIndexLogic) GetIndex(hash string, res *[]string) usecase.TxFunc {
+	return func(tx *bolt.Tx) error {
+		buk := GetIndexBucket(tx, HashIndexName)
+		var keys []string
+		if buk == nil {
+			res = &[]string{}
+			return nil
+		}
+		hashBuk := buk.Bucket([]byte(hash))
+		if hashBuk == nil {
+			res = &[]string{}
+			return nil
+		}
+		err := hashBuk.ForEach(func(k, v []byte) error {
+			keys = append(keys, string(k))
+			return nil
+		})
+		res = &keys
 		return err
 	}
-	return hashBuk.Put([]byte(key), []byte{})
-}
-
-func (HashIndexLogic) RemoveIndex(tx *bolt.Tx, hash, key string) error {
-	buk := GetIndexBucket(tx, HashIndexName)
-	if hashBuk := buk.Bucket([]byte(hash)); hashBuk != nil {
-		return hashBuk.Delete([]byte(key))
-	}
-	return nil
-}
-
-func (HashIndexLogic) GetIndex(tx *bolt.Tx, hash string) ([]string, error) {
-	buk := GetIndexBucket(tx, HashIndexName)
-	var keys []string
-	if buk == nil {
-		return keys, nil
-	}
-	hashBuk := buk.Bucket([]byte(hash))
-	if hashBuk == nil {
-		return keys, nil
-	}
-	err := hashBuk.ForEach(func(k, v []byte) error {
-		keys = append(keys, string(k))
-		return nil
-	})
-	return keys, err
 }
 
 func GetIndexBucket(tx *bolt.Tx, indexName string) *bolt.Bucket {

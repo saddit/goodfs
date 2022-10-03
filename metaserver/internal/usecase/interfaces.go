@@ -12,8 +12,15 @@ import (
 )
 
 type (
-	//IMetadataService 负责格式转换，缓存处理等
+	MetadataRpcService interface {
+		ForeachVersionBytes(string, func([]byte) bool)
+		GetMetadataBytes(string) ([]byte, error)
+		FilterKeys(fn func(string) bool) []string
+		FindByHash(hash string) (res []*pb.Version, err error)
+	}
+
 	IMetadataService interface {
+		MetadataRpcService
 		AddMetadata(*entity.Metadata) error
 		AddVersion(string, *entity.Version) (int, error)
 		UpdateMetadata(string, *entity.Metadata) error
@@ -23,9 +30,6 @@ type (
 		GetMetadata(string, int) (*entity.Metadata, *entity.Version, error)
 		GetVersion(string, int) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
-		ForeachVersionBytes(string, func([]byte) bool)
-		GetMetadataBytes(string) ([]byte, error)
-		FilterKeys(fn func(string) bool) []string
 	}
 
 	WritableRepo interface {
@@ -43,13 +47,18 @@ type (
 		ListVersions(string, int, int) ([]*entity.Version, error)
 	}
 
+	IHashIndexRepo interface {
+		Remove(hash, key string) error
+		FindAll(hash string) ([]string, error)
+		Sync() error
+	}
+
 	IBatchMetaRepo interface {
 		WritableRepo
 		ForeachKeys(func(string) bool)
 		Sync() error
 	}
 
-	//IMetadataRepo 负责对文件系统存储
 	IMetadataRepo interface {
 		WritableRepo
 		ReadableRepo

@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetadataApiClient interface {
-	GetMetadataByHash(ctx context.Context, in *ApiQryHash, opts ...grpc.CallOption) (*ApiQryResp, error)
+	GetVersionsByHash(ctx context.Context, in *ApiQryHash, opts ...grpc.CallOption) (*ApiQryResp, error)
 }
 
 type metadataApiClient struct {
@@ -33,9 +33,9 @@ func NewMetadataApiClient(cc grpc.ClientConnInterface) MetadataApiClient {
 	return &metadataApiClient{cc}
 }
 
-func (c *metadataApiClient) GetMetadataByHash(ctx context.Context, in *ApiQryHash, opts ...grpc.CallOption) (*ApiQryResp, error) {
+func (c *metadataApiClient) GetVersionsByHash(ctx context.Context, in *ApiQryHash, opts ...grpc.CallOption) (*ApiQryResp, error) {
 	out := new(ApiQryResp)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getMetadataByHash", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getVersionsByHash", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *metadataApiClient) GetMetadataByHash(ctx context.Context, in *ApiQryHas
 // All implementations must embed UnimplementedMetadataApiServer
 // for forward compatibility
 type MetadataApiServer interface {
-	GetMetadataByHash(context.Context, *ApiQryHash) (*ApiQryResp, error)
+	GetVersionsByHash(context.Context, *ApiQryHash) (*ApiQryResp, error)
 	mustEmbedUnimplementedMetadataApiServer()
 }
 
@@ -54,8 +54,8 @@ type MetadataApiServer interface {
 type UnimplementedMetadataApiServer struct {
 }
 
-func (UnimplementedMetadataApiServer) GetMetadataByHash(context.Context, *ApiQryHash) (*ApiQryResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMetadataByHash not implemented")
+func (UnimplementedMetadataApiServer) GetVersionsByHash(context.Context, *ApiQryHash) (*ApiQryResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVersionsByHash not implemented")
 }
 func (UnimplementedMetadataApiServer) mustEmbedUnimplementedMetadataApiServer() {}
 
@@ -70,20 +70,20 @@ func RegisterMetadataApiServer(s grpc.ServiceRegistrar, srv MetadataApiServer) {
 	s.RegisterService(&MetadataApi_ServiceDesc, srv)
 }
 
-func _MetadataApi_GetMetadataByHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetadataApi_GetVersionsByHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ApiQryHash)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetadataApiServer).GetMetadataByHash(ctx, in)
+		return srv.(MetadataApiServer).GetVersionsByHash(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/getMetadataByHash",
+		FullMethod: "/proto.MetadataApi/getVersionsByHash",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetadataApiServer).GetMetadataByHash(ctx, req.(*ApiQryHash))
+		return srv.(MetadataApiServer).GetVersionsByHash(ctx, req.(*ApiQryHash))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -96,8 +96,8 @@ var MetadataApi_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MetadataApiServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "getMetadataByHash",
-			Handler:    _MetadataApi_GetMetadataByHash_Handler,
+			MethodName: "getVersionsByHash",
+			Handler:    _MetadataApi_GetVersionsByHash_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

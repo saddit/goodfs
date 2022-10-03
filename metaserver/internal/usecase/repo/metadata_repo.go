@@ -20,11 +20,11 @@ import (
 )
 
 type MetadataRepo struct {
-	*db.Storage
+	MainDB *db.Storage
 }
 
 func NewMetadataRepo(db *db.Storage) *MetadataRepo {
-	return &MetadataRepo{Storage: db}
+	return &MetadataRepo{MainDB: db}
 }
 
 func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) (bool, *response.RaftFsmResp) {
@@ -49,42 +49,42 @@ func (m *MetadataRepo) AddMetadata(data *entity.Metadata) error {
 	if data == nil {
 		return ErrNilData
 	}
-	return m.Update(logic.AddMeta(data))
+	return m.MainDB.Update(logic.AddMeta(data))
 }
 
 func (m *MetadataRepo) UpdateMetadata(name string, data *entity.Metadata) error {
-	return m.Update(logic.UpdateMeta(name, data))
+	return m.MainDB.Update(logic.UpdateMeta(name, data))
 }
 
 func (m *MetadataRepo) RemoveMetadata(name string) error {
-	return m.Update(logic.RemoveMeta(name))
+	return m.MainDB.Update(logic.RemoveMeta(name))
 }
 
 func (m *MetadataRepo) GetMetadata(name string) (*entity.Metadata, error) {
 	data := &entity.Metadata{}
-	return data, m.View(logic.GetMeta(name, data))
+	return data, m.MainDB.View(logic.GetMeta(name, data))
 }
 
 func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
 	if data == nil {
 		return ErrNilData
 	}
-	return m.Update(logic.AddVer(name, data))
+	return m.MainDB.Update(logic.AddVer(name, data))
 }
 
 func (m *MetadataRepo) UpdateVersion(name string, data *entity.Version) error {
 	if data == nil {
 		return ErrNilData
 	}
-	return m.Update(logic.UpdateVer(name, data))
+	return m.MainDB.Update(logic.UpdateVer(name, data))
 }
 
 func (m *MetadataRepo) RemoveVersion(name string, ver uint64) error {
-	return m.Update(logic.RemoveVer(name, ver))
+	return m.MainDB.Update(logic.RemoveVer(name, ver))
 }
 
 func (m *MetadataRepo) RemoveAllVersion(name string) error {
-	return m.Update(func(tx *bolt.Tx) error {
+	return m.MainDB.Update(func(tx *bolt.Tx) error {
 		root := logic.GetRoot(tx)
 		// delete bucket
 		if err := root.DeleteBucket([]byte(name)); err != nil {
@@ -98,7 +98,7 @@ func (m *MetadataRepo) RemoveAllVersion(name string) error {
 
 func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 	var max uint64 = 1
-	if err := m.View(func(tx *bolt.Tx) error {
+	if err := m.MainDB.View(func(tx *bolt.Tx) error {
 		max = logic.GetRootNest(tx, name).Sequence()
 		return nil
 	}); err != nil {
@@ -109,12 +109,12 @@ func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 
 func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, error) {
 	data := &entity.Version{}
-	return data, m.DB().View(logic.GetVer(name, ver, data))
+	return data, m.MainDB.DB().View(logic.GetVer(name, ver, data))
 }
 
 func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, err error) {
 	lst = make([]*entity.Version, 0, end-start+1)
-	err = m.DB().View(func(tx *bolt.Tx) error {
+	err = m.MainDB.DB().View(func(tx *bolt.Tx) error {
 		buk := logic.GetRootNest(tx, name)
 		if buk == nil {
 			return nil
@@ -143,7 +143,7 @@ func (m *MetadataRepo) ReadDB() (io.ReadCloser, error) {
 	go func() {
 		defer graceful.Recover()
 		defer writer.Close()
-		tx, err := m.DB().Begin(false)
+		tx, err := m.MainDB.DB().Begin(false)
 		if err != nil {
 			errCh <- err
 			close(errCh)
@@ -164,7 +164,7 @@ func (m *MetadataRepo) ReadDB() (io.ReadCloser, error) {
 }
 
 func (m *MetadataRepo) ReplaceDB(r io.Reader) (err error) {
-	dbPath := m.DB().Path() + "_replace"
+	dbPath := m.MainDB.DB().Path() + "_replace"
 	// open new db file
 	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, util.OS_ModeUser)
 	if err != nil {
@@ -182,11 +182,11 @@ func (m *MetadataRepo) ReplaceDB(r io.Reader) (err error) {
 		return err
 	}
 	// reopen db
-	return m.Replace(dbPath)
+	return m.MainDB.Replace(dbPath)
 }
 
 func (m *MetadataRepo) ForeachVersionBytes(name string, fn func([]byte) bool) {
-	_ = m.Storage.View(func(tx *bolt.Tx) error {
+	_ = m.MainDB.View(func(tx *bolt.Tx) error {
 		_ = logic.GetRootNest(tx, name).ForEach(func(k, v []byte) error {
 			if !fn(v) {
 				return ErrNotFound
@@ -199,7 +199,7 @@ func (m *MetadataRepo) ForeachVersionBytes(name string, fn func([]byte) bool) {
 
 func (m *MetadataRepo) GetMetadataBytes(key string) ([]byte, error) {
 	var res []byte
-	err := m.Storage.View(func(tx *bolt.Tx) error {
+	err := m.MainDB.View(func(tx *bolt.Tx) error {
 		res = logic.GetRoot(tx).Get([]byte(key))
 		return nil
 	})
