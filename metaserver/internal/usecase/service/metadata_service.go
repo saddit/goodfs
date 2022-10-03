@@ -1,27 +1,30 @@
 package service
 
 import (
+	"common/pb"
 	"common/util"
 	"errors"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
+	"strings"
 )
 
 type MetadataService struct {
-	repo IMetadataRepo
-	batch IBatchMetaRepo
-	cache IMetaCache
+	repo      IMetadataRepo
+	batch     IBatchMetaRepo
+	hashIndex IHashIndexRepo
+	cache     IMetaCache
 }
 
-func NewMetadataService(repo IMetadataRepo, batch IBatchMetaRepo, c IMetaCache) *MetadataService {
-	return &MetadataService{repo, batch, c}
+func NewMetadataService(repo IMetadataRepo, batch IBatchMetaRepo, hashIndex IHashIndexRepo, c IMetaCache) *MetadataService {
+	return &MetadataService{repo, batch, hashIndex, c}
 }
 
 func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
-	if ok, resp :=  m.repo.ApplyRaft(&entity.RaftData{
-		Type: entity.LogInsert,
-		Dest: entity.DestMetadata,
-		Name: data.Name,
+	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+		Type:     entity.LogInsert,
+		Dest:     entity.DestMetadata,
+		Name:     data.Name,
 		Metadata: data,
 	}); ok {
 		return resp
@@ -32,12 +35,14 @@ func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
 
 func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, error) {
 	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
-		Type: entity.LogInsert,
-		Dest: entity.DestVersion,
-		Name: name,
+		Type:    entity.LogInsert,
+		Dest:    entity.DestVersion,
+		Name:    name,
 		Version: data,
 	}); ok {
-		if resp.Ok() { return int(resp.Data.(uint64)), nil }
+		if resp.Ok() {
+			return int(resp.Data.(uint64)), nil
+		}
 		return -1, nil
 	}
 
@@ -49,9 +54,9 @@ func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, er
 
 func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) error {
 	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
-		Type: entity.LogUpdate,
-		Dest: entity.DestMetadata,
-		Name: name,
+		Type:     entity.LogUpdate,
+		Dest:     entity.DestMetadata,
+		Name:     name,
 		Metadata: data,
 	}); ok {
 		return resp
@@ -63,11 +68,11 @@ func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) err
 func (m *MetadataService) UpdateVersion(name string, ver int, data *entity.Version) error {
 	data.Sequence = uint64(ver)
 	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
-		Type: entity.LogUpdate,
-		Dest: entity.DestVersion,
-		Name: name,
+		Type:     entity.LogUpdate,
+		Dest:     entity.DestVersion,
+		Name:     name,
 		Sequence: data.Sequence,
-		Version: data,
+		Version:  data,
 	}); ok {
 		return resp
 	}
@@ -83,15 +88,15 @@ func (m *MetadataService) RemoveMetadata(name string) error {
 	}); ok {
 		return resp
 	}
-	
-	return m.repo.RemoveMetadata(name);
+
+	return m.repo.RemoveMetadata(name)
 }
 
 func (m *MetadataService) RemoveVersion(name string, ver int) error {
 	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
-		Type: entity.LogRemove,
-		Dest: util.IfElse(ver < 0, entity.DestVersionAll, entity.DestVersion),
-		Name: name,
+		Type:     entity.LogRemove,
+		Dest:     util.IfElse(ver < 0, entity.DestVersionAll, entity.DestVersion),
+		Name:     name,
 		Sequence: uint64(ver),
 	}); ok {
 		return resp
@@ -142,7 +147,7 @@ func (m *MetadataService) ListVersions(name string, page int, size int) ([]*enti
 // FilterKeys heavy!
 func (m *MetadataService) FilterKeys(fn func(string) bool) []string {
 	var keys []string
-	m.batch.ForeachKeys(func (key string) bool {
+	m.batch.ForeachKeys(func(key string) bool {
 		if fn(key) {
 			keys = append(keys, key)
 		}
@@ -157,4 +162,27 @@ func (m *MetadataService) ForeachVersionBytes(name string, fn func([]byte) bool)
 
 func (m *MetadataService) GetMetadataBytes(name string) ([]byte, error) {
 	return m.repo.GetMetadataBytes(name)
+}
+
+func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error) {
+	keys, err := m.hashIndex.FindAll(hash)
+	if err != nil {
+		return nil, err
+	}
+	for _, key := range keys {
+		sp := strings.Split(key, ".")
+		ver, err := m.GetVersion(sp[0], util.ToInt(sp[1]))
+		if errors.Is(err, ErrNotFound) {
+			_ = m.hashIndex.Remove(hash, key)
+		} else if err != nil {
+			return nil, err
+		}
+		res = append(res, &pb.Version{
+			Hash:     ver.Hash,
+			Sequence: ver.Sequence,
+			Size:     ver.Size,
+			Name:     sp[0],
+		})
+	}
+	return
 }
