@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "../pb";
+
+message Metadata {
+  string name = 1;
+  repeated Version versions = 2;
+}
+
+message Version {
+  string hash = 1;
+  uint64 sequence = 2;
+  int64 size = 3;
+}
+
+message ApiQryResp {
+  repeated Metadata data = 1;
+}
+
+message ApiQryHash {
+  string hash = 1;
+}
+
+service MetadataApi {
+  rpc getMetadataByHash(ApiQryHash) returns (ApiQryResp);
+}
+

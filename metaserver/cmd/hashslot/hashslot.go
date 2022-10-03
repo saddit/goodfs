@@ -2,10 +2,10 @@ package hashslot
 
 import (
 	"common/cmd"
+	"common/pb"
 	"common/util"
 	"context"
 	"fmt"
-	"metaserver/internal/usecase/pb"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -49,7 +49,7 @@ func startMigration(targetHost, rpcPort string, slots []string) {
 	resp, err := cli.StartMigration(context.Background(), &pb.MigrationReq{
 		Slots: slots,
 		TargetLocation: &pb.LocationInfo{
-			Host: targetHost,
+			Host:    targetHost,
 			RpcPort: rpcPort,
 		},
 	})

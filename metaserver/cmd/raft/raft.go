@@ -2,10 +2,10 @@ package raft
 
 import (
 	"common/cmd"
+	"common/pb"
 	"common/util"
 	"context"
 	"fmt"
-	"metaserver/internal/usecase/pb"
 	"strings"
 
 	"google.golang.org/grpc"

@@ -2,12 +2,12 @@ package grpc
 
 import (
 	"common/logs"
+	"common/pb"
 	"common/util"
 	"context"
 	"errors"
 	"metaserver/config"
 	"metaserver/internal/usecase"
-	"metaserver/internal/usecase/pb"
 	"metaserver/internal/usecase/raftimpl"
 	"net"
 
@@ -24,7 +24,7 @@ type RpcRaftServer struct {
 }
 
 // NewRpcRaftServer init a grpc raft server. if no available nodes return empty object
-func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv usecase.IHashSlotService) (*RpcRaftServer, *raftimpl.RaftWrapper) {
+func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService) (*RpcRaftServer, *raftimpl.RaftWrapper) {
 	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
 		CheckLocalUnary,
 		CheckWritableUnary,
@@ -47,7 +47,8 @@ func NewRpcRaftServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv
 		raftWrapper = raftimpl.NewDisabledRaft()
 	}
 	// register hash-slot services
-	pb.RegisterHashSlotServer(server, NewHashSlotServer(serv))
+	pb.RegisterHashSlotServer(server, NewHashSlotServer(serv2))
+	pb.RegisterMetadataApiServer(server, NewMetadataApiServer(serv1))
 	return &RpcRaftServer{server, cfg.Port}, raftWrapper
 }
 

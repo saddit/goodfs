@@ -1,10 +1,10 @@
 package usecase
 
 import (
+	"common/pb"
 	"common/response"
 	"io"
 	"metaserver/internal/entity"
-	"metaserver/internal/usecase/pb"
 	"time"
 
 	"github.com/hashicorp/raft"
@@ -85,8 +85,8 @@ type (
 		PrepareMigrationTo(loc *pb.LocationInfo, slots []string) error
 		ReceiveItem(*pb.MigrationItem) error
 		FinishReceiveItem(bool) error
-		GetCurrentSlots(bool) (map[string][]string, error) 
+		GetCurrentSlots(bool) (map[string][]string, error)
 	}
 
-	IMetaCache interface {}
+	IMetaCache interface{}
 )

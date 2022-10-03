@@ -1,9 +1,9 @@
 package grpc
 
 import (
+	"common/pb"
 	"context"
 	"fmt"
-	"metaserver/internal/usecase/pb"
 	"metaserver/internal/usecase/pool"
 	"metaserver/internal/usecase/raftimpl"
 	"strings"

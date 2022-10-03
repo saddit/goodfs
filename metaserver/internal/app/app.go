@@ -23,7 +23,7 @@ func Run(cfg *Config) {
 	metaRepo := repo.NewMetadataRepo(pool.Storage)
 	metaService := service.NewMetadataService(metaRepo, repo.NewBatchRepo(pool.Storage), repo.NewMetadataCacheRepo(pool.Cache))
 	hsService := service.NewHashSlotService(pool.HashSlot, metaService, &cfg.HashSlot)
-	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo, hsService)
+	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo, metaService, hsService)
 	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService)
 	// register on leader change
 	pool.RaftWrapper.RegisterLeaderChangedEvent(hsService)
