@@ -19,7 +19,7 @@ func Run(cfg *Config) {
 	pool.InitPool(cfg)
 	defer pool.Close()
 	// init services
-	var grpcServer *grpc.RpcRaftServer
+	var grpcServer *grpc.Server
 	metaRepo := repo.NewMetadataRepo(pool.Storage)
 	metaService := service.NewMetadataService(
 		metaRepo,
@@ -28,7 +28,7 @@ func Run(cfg *Config) {
 		repo.NewMetadataCacheRepo(pool.Cache),
 	)
 	hsService := service.NewHashSlotService(pool.HashSlot, metaService, &cfg.HashSlot)
-	grpcServer, pool.RaftWrapper = grpc.NewRpcRaftServer(cfg.Cluster, metaRepo, metaService, hsService)
+	grpcServer, pool.RaftWrapper = grpc.NewRpcServer(cfg.Cluster, metaRepo, metaService, hsService)
 	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService)
 	// register on leader change
 	pool.RaftWrapper.RegisterLeaderChangedEvent(hsService)

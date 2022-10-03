@@ -23,7 +23,8 @@ type CacheConfig struct {
 }
 
 type Config struct {
-	Port        string          `yaml:"port"`
+	Port        string          `yaml:"port" env-default:"8100"`
+	RpcPort     string          `yaml:"rpc-port" env-default:"4100"`
 	LogLevel    logs.Level      `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
 	StoragePath string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"objects"`
 	TempPath    string          `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
