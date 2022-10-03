@@ -3,6 +3,7 @@ package service
 import (
 	"common/hashslot"
 	"common/logs"
+	"common/pb"
 	"common/util"
 	"context"
 	"errors"
@@ -11,7 +12,6 @@ import (
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
-	"metaserver/internal/usecase/pb"
 	"metaserver/internal/usecase/pool"
 	"strings"
 	"time"

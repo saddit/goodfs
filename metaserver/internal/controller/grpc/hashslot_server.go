@@ -1,13 +1,13 @@
 package grpc
 
 import (
+	"common/pb"
 	"common/util"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"metaserver/internal/usecase"
-	"metaserver/internal/usecase/pb"
 )
 
 type HashSlotServer struct {
