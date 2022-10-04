@@ -90,7 +90,14 @@ func (m *MetadataRepo) GetMetadata(name string) (*entity.Metadata, error) {
 		return data, nil
 	}
 	data := &entity.Metadata{}
-	return data, m.MainDB.View(logic.GetMeta(name, data))
+	if err := m.MainDB.View(logic.GetMeta(name, data)); err != nil {
+		return nil, err
+	}
+	go func() {
+		defer graceful.Recover()
+		util.LogErrWithPre("add metadata cache", m.Cache.AddMetadata(data))
+	}()
+	return data, nil
 }
 
 func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
@@ -176,7 +183,14 @@ func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, err
 		return data, nil
 	}
 	data := &entity.Version{}
-	return data, m.MainDB.DB().View(logic.GetVer(name, ver, data))
+	if err := m.MainDB.DB().View(logic.GetVer(name, ver, data)); err != nil {
+		return nil, err
+	}
+	go func() {
+		defer graceful.Recover()
+		util.LogErrWithPre("add metadata cache", m.Cache.AddVersion(name, data))
+	}()
+	return data, nil
 }
 
 func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, err error) {
