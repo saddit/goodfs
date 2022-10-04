@@ -4,15 +4,17 @@ import (
 	"common/cache"
 	"common/util"
 	"objectserver/config"
+	"objectserver/internal/db"
 
 	"github.com/allegro/bigcache"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
-	Config *config.Config
-	Cache  cache.ICache
-	Etcd   *clientv3.Client
+	Config    *config.Config
+	Cache     cache.ICache
+	Etcd      *clientv3.Client
+	ObjectCap *db.ObjectCapacity
 )
 
 func InitPool(cfg *config.Config) {
@@ -34,6 +36,8 @@ func InitPool(cfg *config.Config) {
 	}); e != nil {
 		panic(e)
 	}
+
+	ObjectCap = db.NewObjectCapacity(Etcd, cfg.ServerID)
 }
 
 func Close() {
