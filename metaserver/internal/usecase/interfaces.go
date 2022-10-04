@@ -97,5 +97,8 @@ type (
 		GetCurrentSlots(bool) (map[string][]string, error)
 	}
 
-	IMetaCache interface{}
+	IMetaCache interface {
+		ReadableRepo
+		WritableRepo
+	}
 )
