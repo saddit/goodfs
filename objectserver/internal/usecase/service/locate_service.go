@@ -7,23 +7,33 @@ import (
 	"common/util"
 	"context"
 	"github.com/sirupsen/logrus"
+	"io/fs"
 	"objectserver/internal/entity"
 	"objectserver/internal/usecase/pool"
-	"os"
+	"path/filepath"
 	"strings"
 )
 
 var log = logs.New("locate-service")
 
 func WarmUpLocateCache() {
-	files, e := os.ReadDir(pool.Config.StoragePath)
-	if e != nil {
-		panic(e)
-	}
-	for _, f := range files {
-		if !f.IsDir() {
-			MarkExist(f.Name())
+	err := filepath.Walk(pool.Config.StoragePath, func(_ string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
+		pool.ObjectCap.CurrentCap.Add(uint64(info.Size()))
+		if !info.IsDir() {
+			MarkExist(info.Name())
+		}
+		return nil
+	})
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if err = pool.ObjectCap.Save(); err != nil {
+		log.Error(err)
+		return
 	}
 }
 
