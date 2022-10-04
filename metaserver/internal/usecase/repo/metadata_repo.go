@@ -21,10 +21,11 @@ import (
 
 type MetadataRepo struct {
 	MainDB *db.Storage
+	Cache  IMetaCache
 }
 
-func NewMetadataRepo(db *db.Storage) *MetadataRepo {
-	return &MetadataRepo{MainDB: db}
+func NewMetadataRepo(db *db.Storage, c IMetaCache) *MetadataRepo {
+	return &MetadataRepo{MainDB: db, Cache: c}
 }
 
 func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) (bool, *response.RaftFsmResp) {
@@ -49,18 +50,45 @@ func (m *MetadataRepo) AddMetadata(data *entity.Metadata) error {
 	if data == nil {
 		return ErrNilData
 	}
-	return m.MainDB.Update(logic.AddMeta(data))
+	if err := m.MainDB.Update(logic.AddMeta(data)); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		err := m.Cache.AddMetadata(data)
+		util.LogErrWithPre("metadata cache", err)
+	}()
+	return nil
 }
 
 func (m *MetadataRepo) UpdateMetadata(name string, data *entity.Metadata) error {
-	return m.MainDB.Update(logic.UpdateMeta(name, data))
+	if err := m.MainDB.Update(logic.UpdateMeta(name, data)); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		err := m.Cache.UpdateMetadata(name, data)
+		util.LogErrWithPre("metadata cache", err)
+	}()
+	return nil
 }
 
 func (m *MetadataRepo) RemoveMetadata(name string) error {
-	return m.MainDB.Update(logic.RemoveMeta(name))
+	if err := m.MainDB.Update(logic.RemoveMeta(name)); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		err := m.Cache.RemoveMetadata(name)
+		util.LogErrWithPre("metadata cache", err)
+	}()
+	return nil
 }
 
 func (m *MetadataRepo) GetMetadata(name string) (*entity.Metadata, error) {
+	if data, err := m.Cache.GetMetadata(name); err == nil {
+		return data, nil
+	}
 	data := &entity.Metadata{}
 	return data, m.MainDB.View(logic.GetMeta(name, data))
 }
@@ -69,18 +97,42 @@ func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
 	if data == nil {
 		return ErrNilData
 	}
-	return m.MainDB.Update(logic.AddVer(name, data))
+	if err := m.MainDB.Update(logic.AddVer(name, data)); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		err := m.Cache.AddVersion(name, data)
+		util.LogErrWithPre("metadata cache", err)
+	}()
+	return nil
 }
 
 func (m *MetadataRepo) UpdateVersion(name string, data *entity.Version) error {
 	if data == nil {
 		return ErrNilData
 	}
-	return m.MainDB.Update(logic.UpdateVer(name, data))
+	if err := m.MainDB.Update(logic.UpdateVer(name, data)); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		err := m.Cache.UpdateVersion(name, data)
+		util.LogErrWithPre("metadata cache", err)
+	}()
+	return nil
 }
 
 func (m *MetadataRepo) RemoveVersion(name string, ver uint64) error {
-	return m.MainDB.Update(logic.RemoveVer(name, ver))
+	if err := m.MainDB.Update(logic.RemoveVer(name, ver)); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		err := m.Cache.RemoveVersion(name, ver)
+		util.LogErrWithPre("metadata cache", err)
+	}()
+	return nil
 }
 
 func (m *MetadataRepo) RemoveAllVersion(name string) error {
@@ -90,7 +142,7 @@ func (m *MetadataRepo) RemoveAllVersion(name string) error {
 		if err := root.DeleteBucket([]byte(name)); err != nil {
 			return err
 		}
-		// create an emtpy bucket
+		// create an empty bucket
 		_, err := root.CreateBucket([]byte(name))
 		return err
 	})
@@ -108,12 +160,19 @@ func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 }
 
 func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, error) {
+	if data, err := m.Cache.GetVersion(name, ver); err == nil {
+		return data, nil
+	}
 	data := &entity.Version{}
 	return data, m.MainDB.DB().View(logic.GetVer(name, ver, data))
 }
 
 func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, err error) {
-	lst = make([]*entity.Version, 0, end-start+1)
+	lst, err = m.Cache.ListVersions(name, start, end)
+	if err == nil {
+		return lst, nil
+	}
+	start = util.ToInt(err.Error())
 	err = m.MainDB.DB().View(func(tx *bolt.Tx) error {
 		buk := logic.GetRootNest(tx, name)
 		if buk == nil {

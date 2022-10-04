@@ -13,11 +13,10 @@ type MetadataService struct {
 	repo      IMetadataRepo
 	batch     IBatchMetaRepo
 	hashIndex IHashIndexRepo
-	cache     IMetaCache
 }
 
-func NewMetadataService(repo IMetadataRepo, batch IBatchMetaRepo, hashIndex IHashIndexRepo, c IMetaCache) *MetadataService {
-	return &MetadataService{repo, batch, hashIndex, c}
+func NewMetadataService(repo IMetadataRepo, batch IBatchMetaRepo, hashIndex IHashIndexRepo) *MetadataService {
+	return &MetadataService{repo, batch, hashIndex}
 }
 
 func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
