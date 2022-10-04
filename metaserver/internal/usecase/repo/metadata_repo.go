@@ -136,16 +136,28 @@ func (m *MetadataRepo) RemoveVersion(name string, ver uint64) error {
 }
 
 func (m *MetadataRepo) RemoveAllVersion(name string) error {
-	return m.MainDB.Update(func(tx *bolt.Tx) error {
+	buk := fmt.Sprint(logic.NestPrefix, name)
+	last := m.GetLastVersionNumber(name)
+	if err := m.MainDB.Update(func(tx *bolt.Tx) error {
 		root := logic.GetRoot(tx)
 		// delete bucket
-		if err := root.DeleteBucket([]byte(name)); err != nil {
+		if err := root.DeleteBucket([]byte(buk)); err != nil {
 			return err
 		}
 		// create an empty bucket
-		_, err := root.CreateBucket([]byte(name))
+		_, err := root.CreateBucket([]byte(buk))
 		return err
-	})
+	}); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		for i := uint64(0); i <= last; i++ {
+			err := m.Cache.RemoveVersion(name, i)
+			util.LogErrWithPre("remove version cache", err)
+		}
+	}()
+	return nil
 }
 
 func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
