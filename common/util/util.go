@@ -170,6 +170,12 @@ func CloseAndLog(s io.Closer) {
 	}
 }
 
+func PanicErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func IfElse[T any](cond bool, t T, f T) T {
 	if cond {
 		return t

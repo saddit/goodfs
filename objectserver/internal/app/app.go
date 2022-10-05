@@ -3,7 +3,6 @@ package app
 import (
 	"common/graceful"
 	"common/logs"
-	"common/registry"
 	"common/util"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
@@ -32,7 +31,8 @@ func Run(cfg *config.Config) {
 	defer pool.Close()
 	netAddr := util.GetHostPort(cfg.Port)
 	// register
-	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr).MustRegister().Unregister()
+	util.PanicErr(pool.Registry.Register())
+	defer pool.Registry.Unregister()
 	// locating serv
 	defer locate.New(pool.Etcd).StartLocate(netAddr)()
 	// cleaning serv
@@ -40,5 +40,5 @@ func Run(cfg *config.Config) {
 	// warmup serv
 	service.WarmUpLocateCache()
 	// startup server
-	graceful.ListenAndServe(http.NewHttpServer(netAddr), grpc.NewRpcServer(cfg.RpcPort, new(service.MigrationService)))
+	graceful.ListenAndServe(http.NewHttpServer(netAddr), grpc.NewRpcServer(cfg.RpcPort, service.NewMigrationService(pool.ObjectCap)))
 }

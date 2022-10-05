@@ -2,6 +2,7 @@ package pool
 
 import (
 	"common/cache"
+	"common/registry"
 	"common/util"
 	"objectserver/config"
 	"objectserver/internal/db"
@@ -14,6 +15,8 @@ var (
 	Config    *config.Config
 	Cache     cache.ICache
 	Etcd      *clientv3.Client
+	Registry  registry.Registry
+	Discovery registry.Discovery
 	ObjectCap *db.ObjectCapacity
 )
 
@@ -24,7 +27,7 @@ func InitPool(cfg *config.Config) {
 		cacheConf := bigcache.DefaultConfig(cfg.Cache.TTL)
 		cacheConf.CleanWindow = cfg.Cache.CleanInterval
 		cacheConf.HardMaxCacheSize = int(cfg.Cache.MaxSize.MegaByte())
-		cacheConf.Shards = int((cfg.Cache.MaxSize / cfg.Cache.MaxItemSize))
+		cacheConf.Shards = int(cfg.Cache.MaxSize / cfg.Cache.MaxItemSize)
 		Cache = cache.NewCache(cacheConf)
 	}
 
@@ -37,7 +40,10 @@ func InitPool(cfg *config.Config) {
 		panic(e)
 	}
 
-	ObjectCap = db.NewObjectCapacity(Etcd, cfg.ServerID)
+	ObjectCap = db.NewObjectCapacity(Etcd, cfg.Registry.ServerID)
+
+	er := registry.NewEtcdRegistry(Etcd, cfg.Registry, util.GetHostPort(cfg.Port))
+	Registry, Discovery = er, er
 }
 
 func Close() {

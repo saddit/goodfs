@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"time"
+	"strings"
 )
 
 var log = logs.New("etcd-registry")
@@ -24,14 +24,14 @@ type EtcdRegistry struct {
 }
 
 func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdRegistry {
-	ts := time.Now().Unix()
+	k := fmt.Sprint(cfg.Name, "/", cfg.ServerID)
 	return &EtcdRegistry{
 		cli:       kv,
 		cfg:       cfg,
 		leaseId:   -1,
 		group:     cfg.Group,
-		stdName:   fmt.Sprint(cfg.Name, "_", ts),
-		name:      fmt.Sprint(cfg.Name, "_", ts),
+		stdName:   k,
+		name:      k,
 		localAddr: localAddr,
 		stopFn:    nil,
 	}
@@ -42,7 +42,7 @@ func (e *EtcdRegistry) Key() string {
 }
 
 func (e *EtcdRegistry) AsMaster() *EtcdRegistry {
-	// goodfs/metaserver_123123_master
+	// metaserver/node1_master
 	e.name = fmt.Sprint(e.stdName, "_", "master")
 	return e
 }
@@ -52,16 +52,32 @@ func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
 	return e
 }
 
-func (e *EtcdRegistry) GetAddress(name string) ([]string, error) {
+func (e *EtcdRegistry) GetServiceMapping(name string) map[string]string {
 	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.group, name), clientv3.WithPrefix())
 	if err != nil {
-		return nil, err
+		log.Infof("get services: %s", err)
+		return map[string]string{}
+	}
+	res := make(map[string]string, len(resp.Kvs))
+	for _, kv := range resp.Kvs {
+		sp := strings.Split(string(kv.Key), "/")
+		sp = strings.Split(sp[len(sp)-1], "_")
+		res[sp[0]] = string(kv.Value)
+	}
+	return res
+}
+
+func (e *EtcdRegistry) GetServices(name string) []string {
+	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.group, name), clientv3.WithPrefix())
+	if err != nil {
+		log.Infof("get services: %s", err)
+		return []string{}
 	}
 	res := make([]string, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		res = append(res, string(kv.Value))
 	}
-	return res, nil
+	return res
 }
 
 func (e *EtcdRegistry) MustRegister() *EtcdRegistry {

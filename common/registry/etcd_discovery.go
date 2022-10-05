@@ -54,7 +54,7 @@ func (e *EtcdDiscovery) asyncWatch(serv string, ch clientv3.WatchChan) {
 		defer graceful.Recover()
 		for res := range ch {
 			for _, event := range res.Events {
-				//Key will be like ${serv}_${timestamp}_${optional}
+				//Key will be like ${group}/${serv}/${id}_${slave/master}
 				key := string(event.Kv.Key)
 				addr := string(event.Kv.Value)
 				switch event.Type {
@@ -66,6 +66,18 @@ func (e *EtcdDiscovery) asyncWatch(serv string, ch clientv3.WatchChan) {
 			}
 		}
 	}()
+}
+
+func (e *EtcdDiscovery) GetServiceMapping(name string) map[string]string {
+	res := make(map[string]string)
+	if sl, ok := e.services[name]; ok {
+		for k, v := range sl.data {
+			sp := strings.Split(v, "/")
+			sp = strings.Split(sp[len(sp)-1], "_")
+			res[sp[0]] = k
+		}
+	}
+	return res
 }
 
 func (e *EtcdDiscovery) GetServices(name string) []string {
