@@ -192,6 +192,9 @@ func LookupIP(addr string) string {
 }
 
 func GetHost() string {
+	if host, ok := os.LookupEnv("HOST"); ok {
+		return host
+	}
 	var err error
 	if host, err := os.Hostname(); err == nil {
 		return host
