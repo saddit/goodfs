@@ -48,6 +48,7 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 }
 
 func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
+	logger := logs.New("migration-send")
 	// dail connection to all servers
 	streamMap := make(map[string]pb.ObjectMigration_ReceiveObjectClient, len(sizeMap))
 	conns := make([]*grpc.ClientConn, 0, len(sizeMap))
@@ -72,15 +73,6 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 	wg := sync.WaitGroup{}
 	ctrl := make(chan struct{}, 16)
 	defer close(ctrl)
-	errs := make(chan error)
-	defer close(errs)
-	// open a routine to log error
-	go func() {
-		logger := logs.New("migration-send")
-		for err := range errs {
-			logger.Error(err)
-		}
-	}()
 	next := make(chan string, 1)
 	// open a routine to provide next server
 	go func() {
@@ -93,7 +85,7 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 	lock := sync.RWMutex{}
 	cur := <-next
 	leftSize := sizeMap[cur]
-	errs <- filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -111,7 +103,7 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 			// read data
 			bt, err := os.ReadFile(path)
 			if err != nil {
-				errs <- err
+				logger.Errorf("read file %s err: %s", path, err)
 				return
 			}
 			// send to server
@@ -123,7 +115,7 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 				Data:     bt,
 			})
 			if err != nil {
-				errs <- fmt.Errorf("send %s to server fail: %w", path, err)
+				logger.Errorf("send %s to server fail: %s", path, err)
 				return
 			}
 			// switch to next server if already exceeds left size
@@ -135,13 +127,14 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 			lock.Unlock()
 			// remove local file
 			if err = os.Remove(path); err != nil {
-				errs <- fmt.Errorf("migrate %s success, but delete fail: %w", path, err)
+				logger.Errorf("migrate %s success, but delete fail: %s", path, err)
+				return
 			}
 		}()
 		return nil
 	})
 	wg.Wait()
-	return nil
+	return err
 }
 
 func (ms *MigrationService) Received(data *pb.ObjectData) error {

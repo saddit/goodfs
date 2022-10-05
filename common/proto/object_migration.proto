@@ -13,7 +13,8 @@ message ObjectData {
 
 message RequiredInfo {
   int64 averageCap = 1;
-  string targetAddress = 2;
+  int64 requiredSize = 2;
+  string targetAddress = 3;
 }
 
 service ObjectMigration {
