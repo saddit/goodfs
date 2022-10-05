@@ -17,7 +17,6 @@ const (
 
 type Config struct {
 	Port     string          `yaml:"port" env:"PORT" env-default:"4091"`
-	ServerID string 		 `yaml:"server-id" env:"SERVER_ID" env-required:"true"`
 	LogLevel logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	DataDir  string          `yaml:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
 	Cluster  ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
@@ -27,12 +26,12 @@ type Config struct {
 	Cache    CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
 }
 
-func (c *Config) initalize() {
+func (c *Config) initialize() {
 	if c.Cluster.Enable {
-		c.Cluster.ID = c.ServerID
+		c.Cluster.ID = c.Registry.ServerID
 		c.HashSlot.StoreID = c.Cluster.GroupID
 	} else {
-		c.HashSlot.StoreID = c.ServerID
+		c.HashSlot.StoreID = c.Registry.ServerID
 	}
 }
 
@@ -67,7 +66,7 @@ func ReadConfig() Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", ConfFilePath)
-	conf.initalize()
+	conf.initialize()
 	return conf
 }
 
@@ -80,6 +79,6 @@ func ReadConfigFrom(path string) Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", path)
-	conf.initalize()
+	conf.initialize()
 	return conf
 }

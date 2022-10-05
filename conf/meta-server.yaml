@@ -1,5 +1,4 @@
 port: 8010
-server-id: node
 data-dir: e:/file/temp/meta_server
 hash-slot:
   slots: ["0-16384"]
@@ -11,6 +10,7 @@ cluster:
   store-dir: e:/file/temp/meta_server_raft
   nodes: ["node,localhost:8010"]
 registry:
+  server-id: node
   group: "goodfs"
   name: "metaserver"
 etcd:

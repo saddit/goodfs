@@ -8,6 +8,7 @@ cache:
   clean-interval: 12m
   max-item-size: 16MB
 registry:
+  server-id: node
   group: "goodfs"
   name: "objectserver"
 etcd:

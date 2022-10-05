@@ -3,6 +3,8 @@ package grpc
 import (
 	"common/pb"
 	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"objectserver/internal/usecase/service"
 )
 
@@ -31,6 +33,10 @@ func (ms *MigrationServer) LeaveCommand(context.Context, *pb.EmptyReq) (*pb.Resp
 }
 
 func (ms *MigrationServer) JoinCommand(context.Context, *pb.EmptyReq) (*pb.Response, error) {
-	//TODO(feat): join command
+	sizeMap, err := ms.Service.DeviationValues(true)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	_ = ms.Service.SendingTo(sizeMap)
 	return &pb.Response{Success: true, Message: "ok"}, nil
 }
