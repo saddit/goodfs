@@ -72,15 +72,15 @@ func (ms *MigrationServer) JoinCommand(context.Context, *pb.EmptyReq) (*pb.Respo
 	}
 	// sending request to all servers
 	for k, v := range sizeMap {
-		go func() {
+		go func(key string, value int64) {
 			defer graceful.Recover()
-			if _, err := cliMap[k].RequireSend(context.Background(), &pb.RequiredInfo{
-				RequiredSize:  v,
+			if _, err := cliMap[key].RequireSend(context.Background(), &pb.RequiredInfo{
+				RequiredSize:  value,
 				TargetAddress: util.GetHostPort(pool.Config.RpcPort),
 			}); err != nil {
 				logs.Std().Error(err)
 			}
-		}()
+		}(k, v)
 	}
 	return &pb.Response{Success: true, Message: "ok"}, nil
 }
