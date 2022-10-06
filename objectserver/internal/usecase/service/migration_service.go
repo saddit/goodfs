@@ -1,18 +1,23 @@
 package service
 
 import (
+	"bytes"
 	"common/graceful"
 	"common/logs"
 	"common/pb"
 	"common/util"
+	"common/util/slices"
 	"context"
 	"fmt"
+	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"io/fs"
 	"objectserver/internal/db"
 	"objectserver/internal/usecase/pool"
+	"objectserver/internal/usecase/webapi"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -43,6 +48,9 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 			addr := addrMap[k]
 			res[addr] = int64(v)
 		}
+	}
+	if len(res) == 0 {
+		return nil, fmt.Errorf("non avaliable object servers")
 	}
 	return res, nil
 }
@@ -82,7 +90,7 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 		}
 	}()
 	// record which server to send thread safe
-	lock := sync.RWMutex{}
+	lock := sync.Mutex{}
 	cur := <-next
 	leftSize := sizeMap[cur]
 	err := filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
@@ -107,24 +115,38 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 				return
 			}
 			// send to server
-			lock.RLock()
-			stream := streamMap[cur]
-			lock.RUnlock()
-			err = stream.Send(&pb.ObjectData{
-				FileName: info.Name(),
-				Data:     bt,
-			})
-			if err != nil {
-				logger.Errorf("send %s to server fail: %s", path, err)
+			if ok := func() bool {
+				lock.Lock()
+				defer lock.Unlock()
+				stream := streamMap[cur]
+				err = stream.Send(&pb.ObjectData{
+					FileName: info.Name(),
+					Data:     bt,
+				})
+				if err != nil {
+					logger.Errorf("send %s to server fail: %s", path, err)
+					return false
+				}
+				resp, err := stream.Recv()
+				if err != nil {
+					logger.Errorf("send %s to server fail: %s", path, err)
+					return false
+				}
+				if !resp.Success {
+					logger.Errorf("send %s to server fail: %s", path, resp.Message)
+					return false
+				}
+				// switch to next server if already exceeds left size
+				if leftSize -= info.Size(); leftSize <= 0 {
+					cur = <-next
+					leftSize = sizeMap[cur]
+					// close stream before switch
+					util.LogErr(stream.CloseSend())
+				}
+				return true
+			}(); !ok {
 				return
 			}
-			// switch to next server if already exceeds left size
-			lock.Lock()
-			if leftSize -= info.Size(); leftSize <= 0 {
-				cur = <-next
-				leftSize = sizeMap[cur]
-			}
-			lock.Unlock()
 			// remove local file
 			if err = os.Remove(path); err != nil {
 				logger.Errorf("migrate %s success, but delete fail: %s", path, err)
@@ -138,5 +160,61 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 }
 
 func (ms *MigrationService) Received(data *pb.ObjectData) error {
+	servs := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName)
+	if len(servs) == 0 {
+		return fmt.Errorf("not exist meta-server")
+	}
+	newLoc := util.GetHostPort(pool.Config.Port)
+	hash := strings.Split(data.FileName, ".")[0]
+	versionsMap := make(map[string][]*pb.Version)
+	// get metadata locations of file
+	dg := util.NewDoneGroup()
+	defer dg.Close()
+	for _, addr := range servs {
+		dg.Todo()
+		go func(ip string) {
+			defer graceful.Recover()
+			defer dg.Done()
+			versions, err := webapi.VersionsByHash(ip, hash)
+			if err != nil {
+				dg.Error(err)
+				return
+			}
+			for _, v := range versions {
+				if slices.StringsReplace(v.Locations, data.OriginLocate, newLoc) {
+					versionsMap[ip] = append(versionsMap[ip], v)
+				}
+			}
+		}(addr)
+	}
+	if err := dg.WaitUntilError(); err != nil {
+		return err
+	}
+	// save file
+	if err := Put(data.FileName, bytes.NewBuffer(data.Data)); err != nil {
+		return err
+	}
+	// update locations
+	//FIXME: partly update fails will cause inconsistent state
+	failNum := atomic.NewInt32(0)
+	var total int32
+	for addr, versions := range versionsMap {
+		dg.Todo()
+		total += int32(len(versions))
+		go func(ip string, arr []*pb.Version) {
+			defer graceful.Recover()
+			defer dg.Done()
+			for _, ver := range arr {
+				if err := webapi.UpdateVersionLocates(ip, ver.Name, int(ver.Sequence), ver.Locations); err != nil {
+					logs.Std().Errorf("update %+v to meta-server %s fail: %s", ver, ip, err)
+					failNum.Inc()
+				}
+			}
+		}(addr, versions)
+	}
+	dg.Wait()
+	if fails := failNum.Load(); fails >= total/2 {
+		return fmt.Errorf("too much failures when updating metadata (%d/%d)", fails, total)
+	}
 	return nil
 }

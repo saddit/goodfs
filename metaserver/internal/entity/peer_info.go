@@ -1,6 +1,6 @@
 package entity
 
-//go:generate msgp
+//go:generate msgp -tests=false
 
 type PeerInfo struct {
 	Location string `msg:"location"`

@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
 )
@@ -23,7 +24,18 @@ func NewMigrationServer(service *service.MigrationService) *MigrationServer {
 }
 
 func (ms *MigrationServer) ReceiveObject(stream pb.ObjectMigration_ReceiveObjectServer) error {
-	//TODO(feat): receive api
+	for {
+		data, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if err = ms.Service.Received(data); err != nil {
+			util.LogErr(stream.Send(&pb.Response{Success: false, Message: err.Error()}))
+		}
+	}
 	return nil
 }
 

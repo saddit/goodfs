@@ -1,6 +1,6 @@
 package entity
 
-//go:generate msgp
+//go:generate msgp -tests=false
 
 type Metadata struct {
 	Name       string `json:"name" msg:"name" binding:"required"`

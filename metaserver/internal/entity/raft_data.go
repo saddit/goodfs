@@ -1,6 +1,6 @@
 package entity
 
-//go:generate msgp
+//go:generate msgp -tests=false
 
 type LogType int8
 type Dest int8

@@ -22,6 +22,10 @@ type CacheConfig struct {
 	MaxSize       datasize.DataSize `yaml:"max-size" env:"MAX_SIZE" env-default:"128MB"`
 }
 
+type DiscoveryConfig struct {
+	MetaServName string `yaml:"meta-serv-name" env-default:"metaserver"`
+}
+
 type Config struct {
 	Port        string          `yaml:"port" env-default:"8100"`
 	RpcPort     string          `yaml:"rpc-port" env-default:"4100"`
@@ -31,6 +35,7 @@ type Config struct {
 	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
 	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Discovery   DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 }
 
 func ReadConfig() Config {

@@ -17,6 +17,7 @@ type (
 		GetMetadataBytes(string) ([]byte, error)
 		FilterKeys(fn func(string) bool) []string
 		FindByHash(hash string) (res []*pb.Version, err error)
+		UpdateLocates(name string, seq int, locates []string) error
 	}
 
 	IMetadataService interface {

@@ -191,3 +191,12 @@ func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error)
 	}
 	return
 }
+
+func (m *MetadataService) UpdateLocates(name string, version int, locates []string) error {
+	ver, err := m.GetVersion(name, version)
+	if err != nil {
+		return err
+	}
+	ver.Locate = locates
+	return m.UpdateVersion(name, version, ver)
+}

@@ -2,13 +2,14 @@ syntax = "proto3";
 
 package proto;
 
-option go_package="../pb";
+option go_package = "../pb";
 
 import "message.proto";
 
 message ObjectData {
   string fileName = 1;
-  bytes data = 2;
+  string originLocate = 2;
+  bytes data = 3;
 }
 
 message RequiredInfo {
@@ -18,7 +19,7 @@ message RequiredInfo {
 }
 
 service ObjectMigration {
-  rpc ReceiveObject(stream ObjectData) returns (Response);
+  rpc ReceiveObject(stream ObjectData) returns (stream Response);
   rpc RequireSend(RequiredInfo) returns (Response);
   rpc LeaveCommand(EmptyReq) returns (Response);
   rpc JoinCommand(EmptyReq) returns (Response);
