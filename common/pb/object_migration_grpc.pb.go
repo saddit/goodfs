@@ -47,7 +47,7 @@ func (c *objectMigrationClient) ReceiveObject(ctx context.Context, opts ...grpc.
 
 type ObjectMigration_ReceiveObjectClient interface {
 	Send(*ObjectData) error
-	CloseAndRecv() (*Response, error)
+	Recv() (*Response, error)
 	grpc.ClientStream
 }
 
@@ -59,10 +59,7 @@ func (x *objectMigrationReceiveObjectClient) Send(m *ObjectData) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *objectMigrationReceiveObjectClient) CloseAndRecv() (*Response, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
+func (x *objectMigrationReceiveObjectClient) Recv() (*Response, error) {
 	m := new(Response)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -142,7 +139,7 @@ func _ObjectMigration_ReceiveObject_Handler(srv interface{}, stream grpc.ServerS
 }
 
 type ObjectMigration_ReceiveObjectServer interface {
-	SendAndClose(*Response) error
+	Send(*Response) error
 	Recv() (*ObjectData, error)
 	grpc.ServerStream
 }
@@ -151,7 +148,7 @@ type objectMigrationReceiveObjectServer struct {
 	grpc.ServerStream
 }
 
-func (x *objectMigrationReceiveObjectServer) SendAndClose(m *Response) error {
+func (x *objectMigrationReceiveObjectServer) Send(m *Response) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -241,6 +238,7 @@ var ObjectMigration_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ReceiveObject",
 			Handler:       _ObjectMigration_ReceiveObject_Handler,
+			ServerStreams: true,
 			ClientStreams: true,
 		},
 	},

@@ -16,7 +16,7 @@ type NonErrDoneGroup interface {
 
 type DoneGroup struct {
 	sync.WaitGroup
-	ec chan error
+	ec     chan error
 	closed *atomic.Bool
 }
 
@@ -55,10 +55,10 @@ func (d *DoneGroup) WaitDone() <-chan struct{} {
 	return ch
 }
 
-//Close close the error chan
 func (d *DoneGroup) Close() {
-	close(d.ec)
-	d.closed.CAS(false, true)
+	if d.closed.CAS(false, true) {
+		close(d.ec)
+	}
 }
 
 //WaitUntilError use select to WaitDone() and WaitError() if has error return it else return nil
