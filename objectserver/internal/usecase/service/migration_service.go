@@ -124,16 +124,16 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 					Data:     bt,
 				})
 				if err != nil {
-					logger.Errorf("send %s to server fail: %s", path, err)
+					logger.Errorf("send %s to server %s fail: %s", path, cur, err)
 					return false
 				}
 				resp, err := stream.Recv()
 				if err != nil {
-					logger.Errorf("send %s to server fail: %s", path, err)
+					logger.Errorf("send %s to %s server fail: %s", path, cur, err)
 					return false
 				}
 				if !resp.Success {
-					logger.Errorf("send %s to server fail: %s", path, resp.Message)
+					logger.Errorf("send %s to server %s fail: %s", path, cur, resp.Message)
 					return false
 				}
 				// switch to next server if already exceeds left size
