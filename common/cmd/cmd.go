@@ -8,9 +8,11 @@ import (
 
 var (
 	cmdStr = ""
-	cmdMap = make(map[string]func([]string))
+	cmdMap = make(map[string]CommandFunc)
 	once   = sync.Once{}
 )
+
+type CommandFunc func([]string)
 
 func parse() {
 	once.Do(func() {
