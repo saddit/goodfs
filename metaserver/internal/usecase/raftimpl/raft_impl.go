@@ -11,18 +11,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	raft "github.com/hashicorp/raft"
+	"github.com/hashicorp/raft"
 	boltdb "github.com/hashicorp/raft-boltdb/v2"
 )
 
 var raftLog = logs.New("raft-impl")
 
 type RaftWrapper struct {
-	Raft     *raft.Raft
-	ID       string
-	Address  string
-	Enabled  bool
-	isLeader bool
+	Raft                *raft.Raft
+	ID                  string
+	Address             string
+	Enabled             bool
+	isLeader            bool
 	leaderChangedEvents []IRaftLeaderChanged
 }
 

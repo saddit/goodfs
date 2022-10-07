@@ -2,13 +2,18 @@ source:=api meta object
 
 gen:
 	$(foreach n, $(source), cd $(n)server; go generate ./..; cd ..)
+
 build-all:
 	$(foreach n, $(source), go build -o bin/$(n) $(n)server/main.go;)
-build-run: build run
+
+start: build run
+
 build:
-	go build -o bin/$(n) $(n)server/main.go 
+	go build -o bin/$(n) $(n)server/main.go
+
 run:
 	./bin/$(n) app test_conf/$(n)-server-$(i).yaml
+
 clear:
 	clear
 	rm -r /workspaces/temp/*
