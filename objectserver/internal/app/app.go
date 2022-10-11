@@ -4,6 +4,7 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/util"
+	"objectserver/internal/usecase/logic"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
 
@@ -37,6 +38,8 @@ func Run(cfg *config.Config) {
 	defer locate.New(pool.Etcd).StartLocate(netAddr)()
 	// cleaning serv
 	defer service.StartTempRemovalBackground(pool.Cache)()
+	util.PanicErr(logic.NewPeers().RegisterSelf())
+	defer logic.NewPeers().UnregisterSelf()
 	// warmup serv
 	service.WarmUpLocateCache()
 	// startup server

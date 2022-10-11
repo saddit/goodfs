@@ -65,18 +65,13 @@ func TestEtcdRegsitry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	disc := registry.NewEtcdDiscovery(etcd, &registry.Config{
+	disc := registry.NewEtcdRegistry(etcd, registry.Config{
 		Group: "goodfs",
 		Services: []string{"metaserver"},
-	})
+	}, "")
 	
-	for i := 0; i < 10; i++ {
-		ls1 := disc.GetServicesWith("metaserver", true)
-		ls2 := disc.GetServicesWith("metaserver", false)
-		t.Log("masters", ls1, "slaves", ls2)
-		time.Sleep(time.Second)
-	}
-	
+	lst := disc.GetServices("metaserver")
+	t.Log(lst, len(lst))
 }
 
 func TestGetObjectCaps(t *testing.T) {
