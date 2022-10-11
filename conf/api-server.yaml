@@ -3,6 +3,7 @@ log-level: info
 checksum: false
 select-strategy: random
 registry:
+  server-id: node
   group: "goodfs"
   name: "apiserver"
 etcd:

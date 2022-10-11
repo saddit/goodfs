@@ -1,6 +1,7 @@
 package response
 
 import (
+	"common/logs"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,11 +11,13 @@ func MessageFromJSONBody(body io.ReadCloser) string {
 	defer body.Close()
 	bt, err := io.ReadAll(body)
 	if err != nil {
-		return err.Error()
+		logs.Std().Debugf("MessageFromJSONBody.ReadBody: %f", err)
+		return "unknown"
 	}
 	mp := make(map[string]interface{})
 	if err := json.Unmarshal(bt, &mp); err != nil {
-		return err.Error()
+		logs.Std().Debugf("MessageFromJSONBody.UnmarshalBody: %f", err)
+		return "unknown"
 	}
 	return fmt.Sprint(mp["message"])
 }

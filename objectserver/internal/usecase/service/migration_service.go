@@ -36,6 +36,9 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 		return nil, err
 	}
 	size := util.IfElse(join, len(capMap)+1, len(capMap)-1)
+	if size == 0 {
+		return nil, fmt.Errorf("non avaliable object servers")
+	}
 	var total uint64
 	for _, v := range capMap {
 		total += v
