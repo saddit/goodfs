@@ -1,16 +1,17 @@
-port: 8010
-data-dir: e:/file/temp/meta_server
+port: 8090
+rpc-port: 4090
+data-dir: e:/file/temp/meta_server_1
 hash-slot:
-  slots: ["0-16384"]
+  slots: [ "0-16384" ]
   prepare-timeout: 1m
 cluster:
   enable: false
   bootstrap: false
   group-id: raft-1
-  store-dir: e:/file/temp/meta_server_raft
-  nodes: ["node,localhost:8010"]
+  store-dir: e:/file/temp/meta_server_raft_1
+  nodes: [ "node,localhost:8010" ]
 registry:
-  server-id: node
+  server-id: meta-1
   group: "goodfs"
   name: "metaserver"
 etcd:

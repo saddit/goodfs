@@ -1,14 +1,15 @@
-port: 8080
+port: 8100
+rpc-port: 4100
 log-level: info
-storage-path: e:/file/temp/objects
-temp-path: e:/file/temp/objects_temp
+storage-path: e:/file/temp/objects_1
+temp-path: e:/file/temp/objects_temp_1
 cache:
-  max-size: 256MB
+  max-size: 1G
   ttl: 3h
   clean-interval: 12m
   max-item-size: 16MB
 registry:
-  server-id: node
+  server-id: obj-1
   group: "goodfs"
   name: "objectserver"
 etcd:

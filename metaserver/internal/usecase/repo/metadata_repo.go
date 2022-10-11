@@ -170,8 +170,10 @@ func (m *MetadataRepo) RemoveAllVersion(name string) error {
 func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 	var max uint64 = 1
 	if err := m.MainDB.View(func(tx *bolt.Tx) error {
-		max = logic.GetRootNest(tx, name).Sequence()
-		return nil
+		if buk := logic.GetRootNest(tx, name); buk != nil {
+			max = buk.Sequence()
+		}
+		return ErrNotFound
 	}); err != nil {
 		logs.Std().Errorf("GetLastVersionNumber: %+v", err)
 	}

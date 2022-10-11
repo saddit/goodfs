@@ -37,23 +37,21 @@ func (HashIndexLogic) RemoveIndex(hash, key string) usecase.TxFunc {
 }
 
 func (HashIndexLogic) GetIndex(hash string, res *[]string) usecase.TxFunc {
+	*res = []string{}
 	return func(tx *bolt.Tx) error {
 		buk := GetIndexBucket(tx, HashIndexName)
-		var keys []string
 		if buk == nil {
-			res = &[]string{}
+
 			return nil
 		}
 		hashBuk := buk.Bucket([]byte(hash))
 		if hashBuk == nil {
-			res = &[]string{}
 			return nil
 		}
 		err := hashBuk.ForEach(func(k, v []byte) error {
-			keys = append(keys, string(k))
+			*res = append(*res, string(k))
 			return nil
 		})
-		res = &keys
 		return err
 	}
 }

@@ -170,11 +170,13 @@ func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error)
 	}
 	needSync := false
 	for _, key := range keys {
-		sp := strings.Split(key, ".")
-		ver, err := m.GetVersion(sp[0], util.ToInt(sp[1]))
+		idx := strings.LastIndexByte(key, '.')
+		name, sequence := key[0:idx], util.ToInt(key[idx+1:])
+		ver, err := m.GetVersion(name, sequence)
 		if errors.Is(err, ErrNotFound) {
 			needSync = true
 			_ = m.hashIndex.Remove(hash, key)
+			continue
 		} else if err != nil {
 			return nil, err
 		}
@@ -182,7 +184,7 @@ func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error)
 			Hash:      ver.Hash,
 			Sequence:  ver.Sequence,
 			Size:      ver.Size,
-			Name:      sp[0],
+			Name:      name,
 			Locations: ver.Locate,
 		})
 	}

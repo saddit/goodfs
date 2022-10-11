@@ -16,7 +16,8 @@ const (
 )
 
 type Config struct {
-	Port     string          `yaml:"port" env:"PORT" env-default:"4091"`
+	Port     string          `yaml:"port" env:"PORT" env-default:"8090"`
+	RpcPort  string          `yaml:"rpc-port" env:"RPC_PORT" env-default:"4090"`
 	LogLevel logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	DataDir  string          `yaml:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
 	Cluster  ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
@@ -27,6 +28,7 @@ type Config struct {
 }
 
 func (c *Config) initialize() {
+	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {
 		c.Cluster.ID = c.Registry.ServerID
 		c.HashSlot.StoreID = c.Cluster.GroupID
@@ -52,7 +54,7 @@ type ClusterConfig struct {
 	Bootstrap        bool          `yaml:"bootstrap" env:"BOOTSTRAP" env-default:"false"`
 	ID               string        `yaml:"-" env:"-"`
 	GroupID          string        `yaml:"group-id" env:"GROUP_ID" env-required:"true"`
-	Port             string        `yaml:"port" env:"PORT" env-default:"4092"`
+	Port             string        `yaml:"-" env:"-"`
 	LogLevel         string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
 	StoreDir         string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
 	ElectionTimeout  time.Duration `yaml:"election-timeout" env:"ELECTION_TIMEOUT" env-default:"900ms"`
