@@ -73,7 +73,7 @@ func (e *EtcdRegistry) GetServices(name string) []string {
 		log.Infof("get services: %s", err)
 		return []string{}
 	}
-	res := make([]string, len(resp.Kvs))
+	res := make([]string, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		res = append(res, string(kv.Value))
 	}

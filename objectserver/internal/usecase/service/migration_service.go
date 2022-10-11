@@ -9,16 +9,18 @@ import (
 	"common/util/slices"
 	"context"
 	"fmt"
-	"go.uber.org/atomic"
-	"google.golang.org/grpc"
 	"io/fs"
 	"objectserver/internal/db"
+	"objectserver/internal/usecase/logic"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/webapi"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"go.uber.org/atomic"
+	"google.golang.org/grpc"
 )
 
 type MigrationService struct {
@@ -30,6 +32,7 @@ func NewMigrationService(c *db.ObjectCapacity) *MigrationService {
 }
 
 // DeviationValues calculate the required size of sending to or receiving from others depending on 'join'
+// return map(key=rpc-addr,value=capacity)
 func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error) {
 	capMap, err := ms.CapacityDB.GetAll()
 	if err != nil {
@@ -44,12 +47,22 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 		total += v
 	}
 	avg := total / uint64(size)
-	addrMap := pool.Discovery.GetServiceMapping(pool.Config.Registry.Name)
-	res := make(map[string]int64, len(addrMap))
+	peerMap, err := logic.NewPeers().GetPeerMap()
+	if err != nil {
+		return nil, fmt.Errorf("get peers error: %w", err)
+	}
+	res := make(map[string]int64, len(peerMap))
 	for k, v := range capMap {
+		// skip self
+		if k == pool.Config.Registry.ServerID {
+			continue
+		}
 		if v = util.IfElse(join, v-avg, avg-v); v > 0 {
-			addr := addrMap[k]
-			res[addr] = int64(v)
+			info, ok := peerMap[k]
+			if !ok {
+				return nil, fmt.Errorf("unknown peers '%s'", k)
+			}
+			res[info.RpcAddress()] = int64(v)
 		}
 	}
 	if len(res) == 0 {
@@ -93,12 +106,16 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 		}
 	}()
 	// record which server to send thread safe
+	successFlag := true
 	lock := sync.Mutex{}
 	cur := <-next
 	leftSize := sizeMap[cur]
 	err := filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+		if info.IsDir() {
+			return nil
 		}
 		if cur == "" {
 			return fmt.Errorf("server is depleted but there are still files not being transferred")
@@ -148,10 +165,12 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 				}
 				return true
 			}(); !ok {
+				successFlag = false
 				return
 			}
 			// remove local file
 			if err = os.Remove(path); err != nil {
+				successFlag = false
 				logger.Errorf("migrate %s success, but delete fail: %s", path, err)
 				return
 			}
@@ -159,7 +178,10 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 		return nil
 	})
 	wg.Wait()
-	return err
+	if err != nil {
+		return err
+	}
+	return util.IfElse(successFlag, nil, fmt.Errorf("migration fail, see logs for detail"))
 }
 
 func (ms *MigrationService) Received(data *pb.ObjectData) error {
