@@ -168,6 +168,7 @@ func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error)
 	if err != nil {
 		return nil, err
 	}
+	res = make([]*pb.Version, 0, len(keys))
 	needSync := false
 	for _, key := range keys {
 		idx := strings.LastIndexByte(key, '.')
