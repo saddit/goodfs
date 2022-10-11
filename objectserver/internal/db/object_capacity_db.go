@@ -27,15 +27,15 @@ func (oc *ObjectCapacity) Save() error {
 }
 
 func (oc *ObjectCapacity) GetAll() (map[string]uint64, error) {
-	key := constrant.EtcdPrefix.FmtObjectCap("")
-	resp, err := oc.cli.Get(context.Background(), key, clientv3.WithPrefix())
+	resp, err := oc.cli.Get(context.Background(), constrant.EtcdPrefix.ObjectCap, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
 	res := make(map[string]uint64, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
-		k := strings.TrimPrefix(key, string(kv.Key))
-		res[k] = util.ToUint64(string(kv.Value))
+		sp := strings.Split(string(kv.Key), "/")
+		key := sp[len(sp)-1]
+		res[key] = util.ToUint64(string(kv.Value))
 	}
 	return res, nil
 }

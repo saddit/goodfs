@@ -101,7 +101,7 @@ func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	resp, err := pool.Http.Post(metaRest(ip, ""), request.ContentTypeJSON, bytes.NewBuffer(bt))
+	resp, err := pool.Http.Post(metaVerRest(ip, name), request.ContentTypeJSON, bytes.NewBuffer(bt))
 	if err != nil {
 		return 0, err
 	}
@@ -151,6 +151,13 @@ func metaRest(ip, name string) string {
 		return fmt.Sprintf("http://%s/metadata", ip)
 	}
 	return fmt.Sprintf("http://%s/metadata/%s", ip, name)
+}
+
+func metaVerRest(ip, name string) string {
+	if name == "" {
+		return fmt.Sprintf("http://%s/metadata_version", ip)
+	}
+	return fmt.Sprintf("http://%s/metadata_version/%s", ip, name)
 }
 
 func versionListRest(ip, name string, page, pageSize int) string {

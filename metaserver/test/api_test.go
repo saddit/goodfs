@@ -79,6 +79,57 @@ func TestEtcdRegsitry(t *testing.T) {
 	
 }
 
+func TestGetObjectCaps(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username: "root",
+		Password: "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := constrant.EtcdPrefix.ObjectCap
+	resp, err := etcd.Get(context.Background(), key, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.ObjectCap, resp.Kvs)
+}
+
+func TestGetHashSlot(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username: "root",
+		Password: "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := constrant.EtcdPrefix.HashSlot
+	resp, err := etcd.Get(context.Background(), key, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.HashSlot, resp.Kvs)
+}
+
+func TestGetPeersInfo(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username: "root",
+		Password: "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := constrant.EtcdPrefix.PeersInfo
+	resp, err := etcd.Get(context.Background(), key, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.PeersInfo, resp.Kvs)
+}
+
 func TestClearEtcd(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
@@ -103,6 +154,11 @@ func TestClearEtcd(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(constrant.EtcdPrefix.Registry, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), constrant.EtcdPrefix.ObjectCap, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.ObjectCap, resp.Deleted)
 }
 
 func TestCalcHashSlot(t *testing.T) {
