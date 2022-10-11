@@ -34,6 +34,8 @@ func (ms *MigrationServer) ReceiveObject(stream pb.ObjectMigration_ReceiveObject
 		}
 		if err = ms.Service.Received(data); err != nil {
 			util.LogErr(stream.Send(&pb.Response{Success: false, Message: err.Error()}))
+		} else {
+			util.LogErr(stream.Send(&pb.Response{Success: true}))
 		}
 	}
 	return nil

@@ -110,6 +110,7 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 	lock := sync.Mutex{}
 	cur := <-next
 	leftSize := sizeMap[cur]
+	curLocate := util.GetHostPort(pool.Config.Port)
 	err := filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -142,6 +143,7 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 				err = stream.Send(&pb.ObjectData{
 					FileName: info.Name(),
 					Data:     bt,
+					OriginLocate: curLocate,
 				})
 				if err != nil {
 					logger.Errorf("send %s to server %s fail: %s", path, cur, err)
@@ -195,6 +197,7 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 	// get metadata locations of file
 	dg := util.NewDoneGroup()
 	defer dg.Close()
+	//FIXME: can't update metadata
 	for _, addr := range servs {
 		dg.Todo()
 		go func(ip string) {
@@ -205,6 +208,7 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 				dg.Error(err)
 				return
 			}
+			logs.Std().Infof("versions from %s len=%d", ip, len(versions))
 			for _, v := range versions {
 				if slices.StringsReplace(v.Locations, data.OriginLocate, newLoc) {
 					versionsMap[ip] = append(versionsMap[ip], v)
@@ -214,6 +218,11 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 	}
 	if err := dg.WaitUntilError(); err != nil {
 		return err
+	}
+	// if no metadata exist for this file from 'origin-locate', deprecate it.
+	if len(versionsMap) == 0 {
+		logs.Std().Infof("deprecated: non metadata to update for %s (from %s)", data.FileName, data.OriginLocate)
+		return nil
 	}
 	// save file
 	if err := Put(data.FileName, bytes.NewBuffer(data.Data)); err != nil {

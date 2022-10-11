@@ -33,12 +33,27 @@ func MarkExist(name string) {
 	global.Cache.Set(LocateKeyPrefix+name, []byte{})
 }
 
+func UnMarkExist(name string) {
+	global.Cache.Delete(LocateKeyPrefix+name)
+}
+
 func Put(fileName string, fileStream io.Reader) error {
-	return AppendFile(global.Config.StoragePath, fileName, fileStream)
+	if Exist(fileName) {
+		return nil	
+	}
+	if err := AppendFile(global.Config.StoragePath, fileName, fileStream); err != nil {
+		return err
+	}
+	MarkExist(fileName)
+	return nil
 }
 
 func Get(name string, writer io.Writer) error {
-	return GetFile(filepath.Join(global.Config.StoragePath, name), writer)
+	if err := GetFile(filepath.Join(global.Config.StoragePath, name), writer); err != nil {
+		return err
+	}
+	MarkExist(name)
+	return nil
 }
 
 func GetTemp(name string, writer io.Writer) error {
@@ -58,7 +73,11 @@ func GetFile(fullPath string, writer io.Writer) error {
 }
 
 func Delete(name string) error {
-	return DeleteFile(global.Config.StoragePath, name)
+	if err := DeleteFile(global.Config.StoragePath, name); err != nil {
+		return err
+	}
+	UnMarkExist(name)
+	return nil
 }
 
 func DeleteFile(path, name string) error {
@@ -89,5 +108,9 @@ func MvTmpToStorage(tmpName, fileName string) error {
 	if ExistPath(filePath) {
 		return nil
 	}
-	return os.Rename(tempPath, filePath)
+	if err := os.Rename(tempPath, filePath); err != nil {
+		return err
+	}
+	MarkExist(fileName)
+	return nil	
 }
