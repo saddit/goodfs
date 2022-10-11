@@ -93,6 +93,11 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 		}
 		streamMap[k] = stream
 	}
+	defer func() {
+		for _, stream := range streamMap {
+			util.LogErr(stream.CloseSend())
+		}
+	}()
 	// sending data concurrency, limiting num of routine under 16
 	wg := sync.WaitGroup{}
 	ctrl := make(chan struct{}, 16)
@@ -111,6 +116,8 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 	cur := <-next
 	leftSize := sizeMap[cur]
 	curLocate := util.GetHostPort(pool.Config.Port)
+	//TODO(perf): run multi goroutines to each server
+	// race files by CAS on memory
 	err := filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -141,8 +148,8 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 				defer lock.Unlock()
 				stream := streamMap[cur]
 				err = stream.Send(&pb.ObjectData{
-					FileName: info.Name(),
-					Data:     bt,
+					FileName:     info.Name(),
+					Data:         bt,
 					OriginLocate: curLocate,
 				})
 				if err != nil {
@@ -162,8 +169,6 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 				if leftSize -= info.Size(); leftSize <= 0 {
 					cur = <-next
 					leftSize = sizeMap[cur]
-					// close stream before switch
-					util.LogErr(stream.CloseSend())
 				}
 				return true
 			}(); !ok {
@@ -197,7 +202,6 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 	// get metadata locations of file
 	dg := util.NewDoneGroup()
 	defer dg.Close()
-	//FIXME: can't update metadata
 	for _, addr := range servs {
 		dg.Todo()
 		go func(ip string) {
@@ -229,7 +233,7 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 		return err
 	}
 	// update locations
-	//FIXME: partly update fails will cause inconsistent state
+	//FIXME: this will cause inconsistent state
 	failNum := atomic.NewInt32(0)
 	var total int32
 	for addr, versions := range versionsMap {

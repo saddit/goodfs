@@ -107,7 +107,9 @@ func AddVer(name string, data *entity.Version) TxFunc {
 			} else if bucket.Get([]byte(fmt.Sprint(name, Sep, data.Sequence))) != nil {
 				return ErrExists
 			} else if data.Sequence > bucket.Sequence() {
-				bucket.SetSequence(data.Sequence)
+				if err := bucket.SetSequence(data.Sequence); err != nil {
+					return fmt.Errorf("set sequence err: %w", err)
+				}
 			}
 			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
 			data.Ts = time.Now().UnixMilli()
@@ -115,11 +117,10 @@ func AddVer(name string, data *entity.Version) TxFunc {
 			if err != nil {
 				return err
 			}
-			// additional index
-			if err := NewHashIndexLogic().AddIndex(data.Hash, string(key))(tx); err != nil {
-				return fmt.Errorf("add hash-index err: %w", err)
+			if err := bucket.Put(key, bt); err != nil {
+				return err
 			}
-			return bucket.Put(key, bt)
+			return NewHashIndexLogic().AddIndex(data.Hash, string(key))(tx)
 		}
 		return ErrNotFound
 	}
