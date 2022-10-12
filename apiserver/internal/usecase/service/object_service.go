@@ -66,6 +66,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	//开始监听变化
 	tt := time.NewTicker(pool.Config.LocateTimeout)
 	defer tt.Stop()
+	var cnt int
 	for {
 		select {
 		case resp, ok := <-wt:
@@ -75,10 +76,11 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 			}
 			for _, event := range resp.Events {
 				ip, idx := getLocateResp(string(event.Kv.Value))
-				logs.Std().Debugf("located success for index %d of %s", ip, idx, hash)
+				logs.Std().Debugf("located success for index %d of %s at %s", idx, hash, ip)
 				locates[idx] = ip
+				cnt += 1
 			}
-			if len(locates) == cap(locates) {
+			if len(locates) == cnt {
 				return locates, true
 			}
 		case <-tt.C:
@@ -141,6 +143,7 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
 	r, e := NewRSGetStream(ver.Size, ver.Hash, ver.Locate)
 	if e == ErrNeedUpdateMeta {
+		logs.Std().Debugf("data fix: need update meta %s verison %d", meta.Name, ver.Sequence)
 		e = o.metaService.UpdateVersion(meta.Name, ver)
 	}
 	return r, e

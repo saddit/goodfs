@@ -58,7 +58,7 @@ func Get(c *gin.Context) {
 	}
 	// copy to response
 	_, err = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
-	if err == nil {
+	if err != nil {
 		response.FailErr(err, c)
 		return
 	}

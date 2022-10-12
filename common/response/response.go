@@ -118,7 +118,7 @@ func FailErr(err error, c *gin.Context) *GinExecutor {
 			})
 		}
 	default:
-		logs.Std().Error(fmt.Sprintf("request(%s %s): [%T] %s", c.Request.Method, c.FullPath(), err, err))
+		logs.Std().Errorf("request(%s %s): [%T] %s", c.Request.Method, c.FullPath(), err, err)
 		c.JSON(http.StatusInternalServerError, &FailureResp{
 			Message:    "system error",
 			SubMessage: fmt.Sprintf("%T", err),

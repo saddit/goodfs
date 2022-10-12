@@ -7,6 +7,7 @@ import (
 	"apiserver/internal/usecase/selector"
 	"bytes"
 	"common/graceful"
+	"common/logs"
 	"common/util"
 	"fmt"
 	"io"
@@ -56,6 +57,7 @@ func NewRSGetStream(size int64, hash string, locates []string) (*RSGetStream, er
 	var e error
 	for r := range provideGetStream(hash, locates) {
 		if r.err != nil {
+			logs.Std().Error(r.err)
 			ip := lb.Select()
 			writers[r.index], r.err = NewPutStream(ip, fmt.Sprintf("%s.%d", hash, r.index), perSize)
 			if r.err != nil {

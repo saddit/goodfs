@@ -23,7 +23,7 @@ func NewHttpServer(o IObjectService, m IMetaService) *Server {
 }
 
 func (h *Server) ListenAndServe(addr string) {
-	r := h.g.Group("/api/v1")
+	r := h.g.Group("/v1")
 	versions.MetaService = h.meta
 	locate.ObjectService = h.object
 	objects.MetaService = h.meta
