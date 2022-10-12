@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"bytes"
 	"common/graceful"
 	"common/logs"
 	"common/response"
@@ -196,12 +195,13 @@ func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, err
 }
 
 func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, err error) {
+	size := end - start + 1
 	lst, err = m.Cache.ListVersions(name, start, end)
 	if err == nil {
 		return lst, nil
 	}
 	start = util.ToInt(err.Error())
-	err = m.MainDB.DB().View(func(tx *bolt.Tx) error {
+	err = m.MainDB.View(func(tx *bolt.Tx) error {
 		buk := logic.GetRootNest(tx, name)
 		if buk == nil {
 			return nil
@@ -209,9 +209,8 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 		c := buk.Cursor()
 
 		min := []byte(fmt.Sprint(name, logic.Sep, start))
-		max := []byte(fmt.Sprint(name, logic.Sep, end))
 
-		for k, v := c.Seek(min); k != nil && bytes.Compare(k, max) <= 0; k, v = c.Next() {
+		for k, v := c.Seek(min); k != nil && len(lst) < size; k, v = c.Next() {
 			data := &entity.Version{}
 			if err := util.DecodeMsgp(data, v); err != nil {
 				return err

@@ -91,8 +91,8 @@ func (v *VersionController) ListByCond(c *gin.Context) {
 
 func (v *VersionController) List(g *gin.Context) {
 	body := struct {
-		Page     int `form:"page"`
-		PageSize int `form:"page_size"`
+		Page     int `form:"page" binding:"required"`
+		PageSize int `form:"page_size" binding:"required"`
 	}{}
 	if err := g.ShouldBindQuery(&body); err != nil {
 		response.BadRequestErr(err, g)
