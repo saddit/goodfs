@@ -106,7 +106,7 @@ func (v *VersionController) List(g *gin.Context) {
 	response.OkJson(res, g)
 }
 
-func (v *VersionController) DeDelete(g *gin.Context) {
+func (v *VersionController) Delete(g *gin.Context) {
 	if ver, ok := request.GetQryInt("version", g); ok {
 		if err := v.service.RemoveVersion(g.Param("name"), ver); err != nil {
 			response.FailErr(err, g)
