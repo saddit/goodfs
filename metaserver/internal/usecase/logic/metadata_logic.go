@@ -195,7 +195,10 @@ func GetRoot(tx *bolt.Tx) *bolt.Bucket {
 }
 
 func GetRootNest(tx *bolt.Tx, name string) *bolt.Bucket {
-	return GetRoot(tx).Bucket([]byte(NestPrefix + name))
+	if root := GetRoot(tx); root != nil { 
+		return root.Bucket([]byte(NestPrefix + name))
+	}
+	return nil
 }
 
 func getVer(bucket *bolt.Bucket, name string, ver uint64, dest *entity.Version) error {

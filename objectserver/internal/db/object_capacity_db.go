@@ -2,12 +2,15 @@ package db
 
 import (
 	"common/constrant"
+	"common/graceful"
 	"common/util"
 	"context"
 	"errors"
+	"strings"
+	"time"
+
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/atomic"
-	"strings"
 )
 
 type ObjectCapacity struct {
@@ -18,6 +21,15 @@ type ObjectCapacity struct {
 
 func NewObjectCapacity(c clientv3.KV, id string) *ObjectCapacity {
 	return &ObjectCapacity{c, atomic.NewUint64(0), id}
+}
+
+func (oc *ObjectCapacity) StartAutoSave() {
+	go func() {
+		defer graceful.Recover()
+		for range time.Tick(time.Minute) {
+			util.LogErrWithPre("auto save object-cap", oc.Save())
+		}
+	}()
 }
 
 func (oc *ObjectCapacity) Save() error {

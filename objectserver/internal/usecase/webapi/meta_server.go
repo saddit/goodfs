@@ -3,8 +3,8 @@ package webapi
 import (
 	"bytes"
 	"common/pb"
+	"common/response"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -41,7 +41,7 @@ func UpdateVersionLocates(ip, name string, version int, locates []string) error 
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("update locates fail: status=" + resp.Status)
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
 	return nil
 }
