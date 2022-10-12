@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"math"
 	"objectserver/internal/db"
 	"objectserver/internal/usecase/logic"
 	"objectserver/internal/usecase/pool"
@@ -239,10 +240,10 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 	// update locations
 	//FIXME: this will cause inconsistent state
 	failNum := atomic.NewInt32(0)
-	var total int32
+	var total float64
 	for addr, versions := range versionsMap {
 		dg.Todo()
-		total += int32(len(versions))
+		total += float64(len(versions))
 		go func(ip string, arr []*pb.Version) {
 			defer graceful.Recover()
 			defer dg.Done()
@@ -255,8 +256,8 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 		}(addr, versions)
 	}
 	dg.Wait()
-	if fails := failNum.Load(); fails >= total/2 {
-		return fmt.Errorf("too much failures when updating metadata (%d/%d)", fails, total)
+	if fails := failNum.Load(); fails >= int32(math.Ceil(total/2.0)) {
+		return fmt.Errorf("too much failures when updating metadata (%d/%.0f)", fails, total)
 	}
 	return nil
 }
