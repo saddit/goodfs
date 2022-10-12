@@ -130,7 +130,7 @@ func RemoveVer(name string, ver uint64) TxFunc {
 	return func(tx *bolt.Tx) error {
 		key := []byte(fmt.Sprint(name, Sep, ver))
 		b := GetRootNest(tx, name)
-		if b != nil {
+		if b == nil {
 			return ErrNotFound
 		}
 		var data entity.Version
