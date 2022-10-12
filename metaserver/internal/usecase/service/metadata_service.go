@@ -139,7 +139,8 @@ func (m *MetadataService) ListVersions(name string, page int, size int) ([]*enti
 	if page == 0 {
 		page = 1
 	}
-	start := (page - 1) * size
+	// start at 1
+	start := (page - 1) * size + 1 
 	return m.repo.ListVersions(name, start, start+size)
 }
 
