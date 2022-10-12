@@ -2,8 +2,8 @@ package objects
 
 import (
 	"bytes"
+	"common/logs"
 	"io"
-	"log"
 	"net/http"
 	"objectserver/internal/entity"
 	"objectserver/internal/usecase/pool"
@@ -15,10 +15,10 @@ func GetFromCache(g *gin.Context) {
 	name := g.Param("name")
 	if bt, ok := pool.Cache.HasGet(name); ok {
 		if _, e := g.Writer.Write(bt); e != nil {
-			log.Printf("Match file cache %v, but written to response error: %v\n", name, e)
+			logs.Std().Debug("Match file cache %v, but written to response error: %v\n", name, e)
 			g.AbortWithStatus(http.StatusInternalServerError)
 		} else {
-			log.Printf("Match file cache %v\n", name)
+			logs.Std().Debug("Match file cache %v\n", name)
 			g.AbortWithStatus(http.StatusOK)
 		}
 	} else {
@@ -35,7 +35,7 @@ func getBody(g *gin.Context) (io.ReadCloser, error) {
 			return w, nil
 		}
 	}
-	log.Panicf("Not support http method %v to save cache, check your route configuration", req.Method)
+	logs.Std().Panicf("Not support http method %v to save cache, check your route configuration", req.Method)
 	return nil, nil
 }
 
@@ -49,10 +49,10 @@ func SaveToCache(g *gin.Context) {
 			if bt, e := io.ReadAll(body); e == nil {
 				pool.Cache.Set(name, bt)
 				g.Set("Evict", false)
-				log.Printf("Save %v to cache success\n", name)
+				logs.Std().Debug("Save %v to cache success\n", name)
 			}
 		} else {
-			log.Printf("Skip too big cache: %v\n", name)
+			logs.Std().Debug("Skip too big cache: %v\n", name)
 		}
 	}
 }
@@ -61,6 +61,6 @@ func RemoveCache(g *gin.Context) {
 	name := g.Param("name")
 	if evict, ok := g.Get("Evict"); ok && evict.(bool) {
 		pool.Cache.Delete(name)
-		log.Printf("Success evict cache %v\n", name)
+		logs.Std().Debug("Success evict cache %v\n", name)
 	}
 }

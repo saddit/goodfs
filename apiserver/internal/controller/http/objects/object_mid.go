@@ -2,8 +2,10 @@ package objects
 
 import (
 	"apiserver/internal/entity"
+	"common/logs"
 	"common/response"
 	"common/util"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,6 +29,7 @@ func ValidatePut(g *gin.Context) {
 	}
 	//FIXME: 此处直接使用没有验证过的Hash去重文件
 	if loc, ok := ObjectService.LocateObject(req.Hash); ok {
+		logs.Std().Debugf("find locates for %s: %s", req.Hash, loc)
 		req.Locate = loc
 	}
 }
