@@ -212,9 +212,11 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 				dg.Error(err)
 				return
 			}
-			logs.Std().Infof("versions from %s len=%d", ip, len(versions))
 			for _, v := range versions {
-				if slices.StringsReplace(v.Locations, data.OriginLocate, newLoc) {
+				sp := strings.Split(data.FileName, ".")
+				seq := util.ToInt(slices.Last(sp))
+				if v.Locations[seq] == data.OriginLocate {
+					v.Locations[seq] = newLoc
 					versionsMap[ip] = append(versionsMap[ip], v)
 				}
 			}
@@ -225,7 +227,7 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 	}
 	// if no metadata exist for this file from 'origin-locate', deprecate it.
 	if len(versionsMap) == 0 {
-		logs.Std().Infof("deprecated: non metadata to update for %s (from %s)", data.FileName, data.OriginLocate)
+		logs.Std().Infof("deprecated: non metadata needs to update for %s (from %s)", data.FileName, data.OriginLocate)
 		return nil
 	}
 	// save file

@@ -12,6 +12,10 @@ func StringsReplace(arr []string, origin string, target string) bool {
 	return false
 }
 
+func Last[T any](arr []T) T {
+	return arr[len(arr) - 1]
+}
+
 // SafeChunk [start, end], negative number means counting from tail to head
 func SafeChunk[T any](arr []T, start, end int) []T {
 	// a mod b = a mod (-b)
