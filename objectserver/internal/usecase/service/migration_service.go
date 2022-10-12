@@ -213,8 +213,10 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 				return
 			}
 			for _, v := range versions {
+				// index sensitive: locations[i] to shard[i]
 				sp := strings.Split(data.FileName, ".")
 				seq := util.ToInt(slices.Last(sp))
+				// do not change if location of this shard has been updated
 				if v.Locations[seq] == data.OriginLocate {
 					v.Locations[seq] = newLoc
 					versionsMap[ip] = append(versionsMap[ip], v)
