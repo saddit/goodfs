@@ -6,12 +6,14 @@ import (
 	"common/pb"
 	"common/util"
 	"context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"io"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
+	"sync"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type MigrationServer struct {
@@ -42,6 +44,7 @@ func (ms *MigrationServer) ReceiveObject(stream pb.ObjectMigration_ReceiveObject
 }
 
 func (ms *MigrationServer) RequireSend(_ context.Context, info *pb.RequiredInfo) (*pb.Response, error) {
+	logs.Std().Infof("start sending %dB data to %s", info.RequiredSize, info.TargetAddress)
 	if err := ms.Service.SendingTo(map[string]int64{
 		info.TargetAddress: info.RequiredSize,
 	}); err != nil {
@@ -84,17 +87,26 @@ func (ms *MigrationServer) JoinCommand(context.Context, *pb.EmptyReq) (*pb.Respo
 		conns = append(conns, cc)
 		cliMap[k] = pb.NewObjectMigrationClient(cc)
 	}
+	wg := sync.WaitGroup{}
+	success := true
 	// sending request to all servers
 	for k, v := range sizeMap {
+		wg.Add(1)
 		go func(key string, value int64) {
 			defer graceful.Recover()
+			defer wg.Done()
 			if _, err := cliMap[key].RequireSend(context.Background(), &pb.RequiredInfo{
 				RequiredSize:  value,
 				TargetAddress: util.GetHostPort(pool.Config.RpcPort),
 			}); err != nil {
+				success = false
 				logs.Std().Error(err)
 			}
 		}(k, v)
 	}
-	return &pb.Response{Success: true, Message: "ok"}, nil
+	wg.Wait()
+	return &pb.Response{
+		Success: success, 
+		Message: util.IfElse(success, "ok", "see logs for detail"),
+	}, nil
 }

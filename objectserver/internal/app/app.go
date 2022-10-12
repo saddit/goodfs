@@ -41,6 +41,7 @@ func Run(cfg *config.Config) {
 	util.PanicErr(logic.NewPeers().RegisterSelf())
 	defer logic.NewPeers().UnregisterSelf()
 	// warmup serv
+	pool.ObjectCap.StartAutoSave()
 	service.WarmUpLocateCache()
 	// startup server
 	graceful.ListenAndServe(http.NewHttpServer(netAddr), grpc.NewRpcServer(cfg.RpcPort, service.NewMigrationService(pool.ObjectCap)))

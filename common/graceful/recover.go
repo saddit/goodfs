@@ -11,7 +11,7 @@ var logger = logs.New("panic-recover")
 
 func Recover() {
 	if err := recover(); err != nil {
-		logger.Errorf("%s\n\t%s", err, GetStacks())
+		logger.Errorf("%s\n%s", err, GetStacks())
 	}
 }
 
@@ -22,8 +22,8 @@ func GetStacks() string {
 		if !ok {
 			break
 		}
-		stack = append(stack, fmt.Sprintf("%s:%d", file, line))
+		stack = append(stack, fmt.Sprintf("\t%s:%d", file, line))
 	}
-	joinStr := ",\r\n"
+	joinStr := ",\n"
 	return strings.Join(stack, joinStr)
 }

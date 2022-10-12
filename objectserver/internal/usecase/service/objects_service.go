@@ -1,6 +1,7 @@
 package service
 
 import (
+	"common/graceful"
 	"common/util"
 	"io"
 	global "objectserver/internal/usecase/pool"
@@ -34,17 +35,22 @@ func MarkExist(name string) {
 }
 
 func UnMarkExist(name string) {
-	global.Cache.Delete(LocateKeyPrefix+name)
+	global.Cache.Delete(LocateKeyPrefix + name)
 }
 
 func Put(fileName string, fileStream io.Reader) error {
 	if Exist(fileName) {
-		return nil	
+		return nil
 	}
-	if err := AppendFile(global.Config.StoragePath, fileName, fileStream); err != nil {
+	size, err := AppendFile(global.Config.StoragePath, fileName, fileStream)
+	if err != nil {
 		return err
 	}
-	MarkExist(fileName)
+	go func() {
+		defer graceful.Recover()
+		global.ObjectCap.CurrentCap.Add(uint64(size))
+		MarkExist(fileName)
+	}()
 	return nil
 }
 
@@ -73,33 +79,35 @@ func GetFile(fullPath string, writer io.Writer) error {
 }
 
 func Delete(name string) error {
-	if err := DeleteFile(global.Config.StoragePath, name); err != nil {
-		return err
-	}
-	UnMarkExist(name)
-	return nil
-}
-
-func DeleteFile(path, name string) error {
-	e := os.Remove(filepath.Join(path, name))
-	if e != nil {
-		return e
-	}
-	return nil
-}
-
-func AppendFile(path, fileName string, fileStream io.Reader) error {
-	path = filepath.Join(path, fileName)
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, util.OS_ModeUser)
+ 	size, err := DeleteFile(global.Config.StoragePath, name)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	if _, err = io.Copy(file, fileStream); err != nil {
-		return err
-	}
-	MarkExist(fileName)
+	go func() {
+		defer graceful.Recover()
+		global.ObjectCap.CurrentCap.Sub(uint64(size))
+		UnMarkExist(name)
+	}()
 	return nil
+}
+
+func DeleteFile(path, name string) (int64, error) {
+	pt := filepath.Join(path, name)
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0, err
+	}
+	return info.Size(), os.Remove(pt)
+}
+
+func AppendFile(path, fileName string, fileStream io.Reader) (int64, error) {
+	path = filepath.Join(path, fileName)
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, util.OS_ModeUser)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+	return io.Copy(file, fileStream)
 }
 
 func MvTmpToStorage(tmpName, fileName string) error {
@@ -111,6 +119,12 @@ func MvTmpToStorage(tmpName, fileName string) error {
 	if err := os.Rename(tempPath, filePath); err != nil {
 		return err
 	}
-	MarkExist(fileName)
-	return nil	
+	go func() {
+		defer graceful.Recover()
+		if info, err := os.Stat(filePath); err == nil {
+			global.ObjectCap.CurrentCap.Add(uint64(info.Size()))
+		}
+		MarkExist(fileName)
+	}()
+	return nil
 }

@@ -50,7 +50,7 @@ func StartTempRemovalBackground(cache cache.ICache) func() {
 				if strings.HasPrefix(entry.Key, entity.TempKeyPrefix) {
 					var ti entity.TempInfo
 					if ok := util.GobDecodeGen2(entry.Value, &ti); ok {
-						if e := DeleteFile(pool.Config.TempPath, ti.Id); e != nil {
+						if _, e := DeleteFile(pool.Config.TempPath, ti.Id); e != nil {
 							logrus.Infof("Remove temp %v(name=%v) error, %v", ti.Id, ti.Name, e)
 						}
 					} else {

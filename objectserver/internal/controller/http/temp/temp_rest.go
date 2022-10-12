@@ -16,7 +16,7 @@ import (
 
 func Patch(g *gin.Context) {
 	id := g.Param("name")
-	if e := service.AppendFile(pool.Config.TempPath, id, g.Request.Body); e != nil {
+	if _, e := service.AppendFile(pool.Config.TempPath, id, g.Request.Body); e != nil {
 		_ = g.AbortWithError(http.StatusInternalServerError, e)
 		return
 	}

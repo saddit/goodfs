@@ -43,11 +43,11 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 	if size == 0 {
 		return nil, fmt.Errorf("non avaliable object servers")
 	}
-	var total uint64
+	var total float64
 	for _, v := range capMap {
-		total += v
+		total += float64(v)
 	}
-	avg := total / uint64(size)
+	avg := uint64(math.Ceil(total / float64(size)))
 	peerMap, err := logic.NewPeers().GetPeerMap()
 	if err != nil {
 		return nil, fmt.Errorf("get peers error: %w", err)
@@ -69,6 +69,7 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 	if len(res) == 0 {
 		return nil, fmt.Errorf("non avaliable object servers")
 	}
+	logs.Std().Debugf("DeviationValues: %+v", res)
 	return res, nil
 }
 
@@ -147,7 +148,11 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 			if ok := func() bool {
 				lock.Lock()
 				defer lock.Unlock()
-				stream := streamMap[cur]
+				stream, ok := streamMap[cur]
+				if !ok {
+					logger.Errorf("not found stream of %s", cur)
+					return false
+				}
 				err = stream.Send(&pb.ObjectData{
 					FileName:     info.Name(),
 					Data:         bt,

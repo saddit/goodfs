@@ -204,7 +204,7 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 	err = m.MainDB.View(func(tx *bolt.Tx) error {
 		buk := logic.GetRootNest(tx, name)
 		if buk == nil {
-			return nil
+			return ErrNotFound
 		}
 		c := buk.Cursor()
 
