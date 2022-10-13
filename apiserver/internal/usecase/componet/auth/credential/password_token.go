@@ -1,7 +1,7 @@
 package credential
 
 type PasswordToken struct {
-	emptExtral
+	emptyExtra
 	Username string
 	Password string
 }

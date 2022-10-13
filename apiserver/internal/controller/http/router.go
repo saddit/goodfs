@@ -6,6 +6,7 @@ import (
 	"apiserver/internal/controller/http/objects"
 	"apiserver/internal/controller/http/versions"
 	. "apiserver/internal/usecase"
+	"apiserver/internal/usecase/componet/auth"
 	"common/graceful"
 	netHttp "net/http"
 
@@ -23,7 +24,8 @@ func NewHttpServer(o IObjectService, m IMetaService) *Server {
 }
 
 func (h *Server) ListenAndServe(addr string) {
-	r := h.g.Group("/v1")
+	r := h.g.Group("/v1").
+		Use(auth.AuthenticationMiddleware()...)
 	versions.MetaService = h.meta
 	locate.ObjectService = h.object
 	objects.MetaService = h.meta

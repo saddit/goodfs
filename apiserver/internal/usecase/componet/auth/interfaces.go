@@ -1,5 +1,7 @@
 package auth
 
+import "github.com/gin-gonic/gin"
+
 type (
 	Credential interface {
 		GetUsername() string
@@ -13,5 +15,6 @@ type (
 
 	Verification interface {
 		Verify(Credential) error
+		Middleware(*gin.Context) error
 	}
 )
