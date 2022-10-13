@@ -3,7 +3,7 @@ package logic
 import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase/pool"
-	"apiserver/internal/usecase/selector"
+	"apiserver/internal/usecase/componet/selector"
 	"common/collection/set"
 	"common/constrant"
 	"common/util"

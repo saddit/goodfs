@@ -3,10 +3,11 @@ package constrant
 import "fmt"
 
 type etcdPrefix struct {
-	PeersInfo string
-	HashSlot  string
-	Registry  string
-	ObjectCap string
+	PeersInfo     string
+	HashSlot      string
+	Registry      string
+	ObjectCap     string
+	ApiCredentail string
 }
 
 var EtcdPrefix = etcdPrefix{
@@ -14,6 +15,7 @@ var EtcdPrefix = etcdPrefix{
 	HashSlot:  "hashslot",
 	Registry:  "registry",
 	ObjectCap: "object_cap",
+	ApiCredentail: "api_credentail",
 }
 
 func (e *etcdPrefix) FmtPeersInfo(groupId, id string) string {
