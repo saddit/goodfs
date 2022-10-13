@@ -8,6 +8,7 @@ import (
 	"common/util"
 	"context"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"net/http"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -15,25 +16,29 @@ import (
 
 type PasswordValidator struct {
 	cli clientv3.KV
+	cfg *PasswordConfig
 }
 
-func NewPasswordValidator(cli clientv3.KV, cfg *Config) *PasswordValidator {
-	pv :=  &PasswordValidator{cli}
+func NewPasswordValidator(cli clientv3.KV, cfg *PasswordConfig) *PasswordValidator {
+	pv := &PasswordValidator{cli, cfg}
 	pv.init(cfg)
 	return pv
 }
 
-func (pv *PasswordValidator) init(cfg *Config) {
+func (pv *PasswordValidator) init(cfg *PasswordConfig) {
+	if !cfg.Enable {
+		return
+	}
 	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredentail)
 	if err != nil {
 		panic(err)
 	}
 	if len(resp.Kvs) != 0 || cfg.Username == "" || cfg.Password == "" {
-		logs.Std().Info("exist credentail, skip init admin credentail")
+		logs.Std().Info("exist credential, skip init admin credential")
 		return
 	}
 	bt, err := util.EncodeMsgp(&credential.AdminCredentail{
-		Username: cfg.Username, 
+		Username: cfg.Username,
 		Password: cfg.Password,
 	})
 	if err != nil {
@@ -46,6 +51,9 @@ func (pv *PasswordValidator) init(cfg *Config) {
 }
 
 func (pv *PasswordValidator) Verify(token Credential) error {
+	if !pv.cfg.Enable {
+		return errors.New("not enable password verification")
+	}
 	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredentail)
 	if err != nil {
 		return err
@@ -55,10 +63,14 @@ func (pv *PasswordValidator) Verify(token Credential) error {
 	}
 	var admin credential.AdminCredentail
 	if err := util.DecodeMsgp(&admin, resp.Kvs[0].Value); err != nil {
-		return err	
+		return err
 	}
 	if token.GetUsername() != admin.Username || token.GetPassword() != admin.Password {
 		return response.NewError(http.StatusForbidden, "username or password wrong")
 	}
 	return nil
+}
+
+func (pv *PasswordValidator) Middleware(c *gin.Context) error {
+	return pv.Verify(credential.NewPasswordToken(c.GetHeader("username"), c.GetHeader("password")))
 }

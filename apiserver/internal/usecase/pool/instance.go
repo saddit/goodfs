@@ -13,12 +13,12 @@ import (
 )
 
 var (
-	Config        *config.Config
-	Etcd          *clientv3.Client
-	Http          *http.Client
-	Balancer      selector.Selector
-	Discovery     *registry.EtcdDiscovery
-	Authenticator auth.Verification
+	Config         *config.Config
+	Etcd           *clientv3.Client
+	Http           *http.Client
+	Balancer       selector.Selector
+	Discovery      *registry.EtcdDiscovery
+	Authenticators []auth.Verification
 )
 
 func InitPool(cfg *config.Config) {
@@ -62,12 +62,8 @@ func initBalancer(cfg *config.Config) {
 }
 
 func initAuthenticator(cfg *auth.Config, cli1 *http.Client, cli2 *clientv3.Client) {
-	switch cfg.Mode {
-	case auth.ModeDisable:
-		Authenticator = &auth.DisabledValidator{}
-	case auth.ModePassword:
-		Authenticator = auth.NewPasswordValidator(cli2, cfg)
-	case auth.ModeCallback:
-		Authenticator = auth.NewCallbackValidator(cli1, cfg)
-	}
+	Authenticators = append(Authenticators,
+		auth.NewPasswordValidator(cli2, &cfg.Password),
+		auth.NewCallbackValidator(cli1, &cfg.Callback),
+	)
 }

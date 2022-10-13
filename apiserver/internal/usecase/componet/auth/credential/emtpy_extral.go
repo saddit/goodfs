@@ -1,9 +1,8 @@
 package credential
 
-
-type emptExtral struct {
+type emptyExtra struct {
 }
 
-func (et *emptExtral) GetExtral() map[string][]string {
+func (et *emptyExtra) GetExtra() map[string][]string {
 	return make(map[string][]string)
 }
