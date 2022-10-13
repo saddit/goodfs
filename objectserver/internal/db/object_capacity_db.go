@@ -6,6 +6,7 @@ import (
 	"common/util"
 	"context"
 	"errors"
+	"objectserver/config"
 	"strings"
 	"time"
 
@@ -14,27 +15,35 @@ import (
 )
 
 type ObjectCapacity struct {
-	cli        clientv3.KV
-	CurrentCap *atomic.Uint64
-	CurrentID  string
+	cli         clientv3.KV
+	CurrentCap  *atomic.Uint64
+	CurrentID   string
+	groupName   string
+	serviceName string
 }
 
-func NewObjectCapacity(c clientv3.KV, id string) *ObjectCapacity {
-	return &ObjectCapacity{c, atomic.NewUint64(0), id}
+func NewObjectCapacity(c clientv3.KV, cfg *config.Config) *ObjectCapacity {
+	return &ObjectCapacity{
+		c,
+		atomic.NewUint64(0),
+		cfg.Registry.ServerID,
+		cfg.Registry.Group,
+		cfg.Registry.Name,
+	}
 }
 
 func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
-	ctx,cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	tk := time.NewTicker(interval)
 	go func() {
 		defer graceful.Recover()
 		defer tk.Stop()
-		for  {
+		for {
 			select {
 			case <-tk.C:
 				util.LogErrWithPre("auto save object-cap", oc.Save())
 			case <-ctx.Done():
-				return	
+				return
 			}
 		}
 	}()
@@ -42,7 +51,7 @@ func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 }
 
 func (oc *ObjectCapacity) Save() error {
-	key := constrant.EtcdPrefix.FmtObjectCap(oc.CurrentID)
+	key := constrant.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
 	_, err := oc.cli.Put(context.Background(), key, oc.CurrentCap.String())
 	return err
 }
@@ -65,7 +74,7 @@ func (oc *ObjectCapacity) Get(s string) (uint64, error) {
 	if s == oc.CurrentID {
 		return oc.CurrentCap.Load(), nil
 	}
-	key := constrant.EtcdPrefix.FmtObjectCap(s)
+	key := constrant.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
 	resp, err := oc.cli.Get(context.Background(), key)
 	if err != nil {
 		return 0, err
