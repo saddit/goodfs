@@ -1,6 +1,7 @@
 package raftimpl
 
 import (
+	"common/constrant"
 	"common/graceful"
 	"common/logs"
 	"common/util"
@@ -78,7 +79,7 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *RaftWra
 
 //newRaftStore init storage
 func newRaftStore(baseDir string) (raft.LogStore, raft.StableStore, raft.SnapshotStore) {
-	if err := os.MkdirAll(baseDir, util.OS_ModeUser); err != nil {
+	if err := os.MkdirAll(baseDir, constrant.OS.ModeUser); err != nil {
 		panic(err)
 	}
 

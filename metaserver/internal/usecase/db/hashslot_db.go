@@ -3,6 +3,7 @@ package db
 import (
 	"common/hashslot"
 	"common/logs"
+	"common/util/crypto"
 	"common/util"
 	"context"
 	"errors"
@@ -180,7 +181,7 @@ func (h *HashSlotDB) Save(id string, info *hashslot.SlotInfo) (err error) {
 	}
 	// checksum
 	sort.Strings(info.Slots)
-	info.Checksum = util.MD5HashBytes([]byte(strings.Join(info.Slots, ",")))
+	info.Checksum = crypto.MD5([]byte(strings.Join(info.Slots, ",")))
 	info.GroupID = id
 	// saving
 	_, err = h.kv.Put(context.Background(), key, string(bt))

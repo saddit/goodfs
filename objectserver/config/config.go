@@ -22,6 +22,10 @@ type CacheConfig struct {
 	MaxSize       datasize.DataSize `yaml:"max-size" env:"MAX_SIZE" env-default:"128MB"`
 }
 
+type StateConfig struct {
+	SyncInterval time.Duration `yaml:"sync-interval" env:"SYNC_INTERVAL" env-default:"1m"`
+}
+
 type DiscoveryConfig struct {
 	MetaServName string `yaml:"meta-serv-name" env-default:"metaserver"`
 }
@@ -29,9 +33,10 @@ type DiscoveryConfig struct {
 type Config struct {
 	Port        string          `yaml:"port" env-default:"8100"`
 	RpcPort     string          `yaml:"rpc-port" env-default:"4100"`
-	LogLevel    logs.Level      `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
 	StoragePath string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"objects"`
 	TempPath    string          `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
+	LogLevel    logs.Level      `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
+	State       StateConfig     `yaml:"state" env-prefix:"STATE"`
 	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
 	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`

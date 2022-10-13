@@ -7,12 +7,14 @@ import (
 	"common/logs"
 	"common/response"
 	"common/util"
+	"common/util/crypto"
 
 	"apiserver/internal/usecase/logic"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/gin-gonic/gin"
 )
 
 //Post 生成大文件上传的Token
@@ -99,7 +101,7 @@ func Patch(g *gin.Context) {
 					response.FailErr(e, g)
 					return
 				}
-				hash := util.SHA256Hash(getStream)
+				hash := crypto.SHA256IO(getStream)
 				if hash != stream.Hash {
 					if e = stream.Commit(false); e != nil {
 						logs.Std().Error(e)
