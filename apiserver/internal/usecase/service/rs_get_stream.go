@@ -4,7 +4,7 @@ import (
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/logic"
 	global "apiserver/internal/usecase/pool"
-	"apiserver/internal/usecase/selector"
+	"apiserver/internal/usecase/componet/selector"
 	"bytes"
 	"common/graceful"
 	"common/logs"

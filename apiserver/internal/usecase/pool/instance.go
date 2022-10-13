@@ -2,7 +2,8 @@ package pool
 
 import (
 	"apiserver/config"
-	"apiserver/internal/usecase/selector"
+	"apiserver/internal/usecase/componet/auth"
+	"apiserver/internal/usecase/componet/selector"
 	"common/registry"
 	"common/util"
 	"net/http"
@@ -12,11 +13,12 @@ import (
 )
 
 var (
-	Config    *config.Config
-	Etcd      *clientv3.Client
-	Http      *http.Client
-	Balancer  selector.Selector
-	Discovery *registry.EtcdDiscovery
+	Config        *config.Config
+	Etcd          *clientv3.Client
+	Http          *http.Client
+	Balancer      selector.Selector
+	Discovery     *registry.EtcdDiscovery
+	Authenticator auth.Verification
 )
 
 func InitPool(cfg *config.Config) {
@@ -25,6 +27,7 @@ func InitPool(cfg *config.Config) {
 	initEtcd(cfg)
 	initDiscovery(Etcd, cfg)
 	initBalancer(cfg)
+	initAuthenticator(&cfg.Auth, Http, Etcd)
 }
 
 func Close() {
@@ -56,4 +59,15 @@ func initHttpClient() {
 
 func initBalancer(cfg *config.Config) {
 	Balancer = selector.NewSelector(cfg.SelectStrategy)
+}
+
+func initAuthenticator(cfg *auth.Config, cli1 *http.Client, cli2 *clientv3.Client) {
+	switch cfg.Mode {
+	case auth.ModeDisable:
+		Authenticator = &auth.DisabledValidator{}
+	case auth.ModePassword:
+		Authenticator = auth.NewPasswordValidator(cli2, cfg)
+	case auth.ModeCallback:
+		Authenticator = auth.NewCallbackValidator(cli1, cfg)
+	}
 }
