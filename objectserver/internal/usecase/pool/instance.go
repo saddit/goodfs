@@ -40,7 +40,7 @@ func InitPool(cfg *config.Config) {
 		panic(e)
 	}
 
-	ObjectCap = db.NewObjectCapacity(Etcd, cfg.Registry.ServerID)
+	ObjectCap = db.NewObjectCapacity(Etcd, cfg)
 
 	er := registry.NewEtcdRegistry(Etcd, cfg.Registry, util.GetHostPort(cfg.Port))
 	Registry, Discovery = er, er
