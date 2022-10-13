@@ -23,13 +23,22 @@ func NewObjectCapacity(c clientv3.KV, id string) *ObjectCapacity {
 	return &ObjectCapacity{c, atomic.NewUint64(0), id}
 }
 
-func (oc *ObjectCapacity) StartAutoSave() {
+func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
+	ctx,cancel := context.WithCancel(context.Background())
+	tk := time.NewTicker(interval)
 	go func() {
 		defer graceful.Recover()
-		for range time.Tick(time.Minute) {
-			util.LogErrWithPre("auto save object-cap", oc.Save())
+		defer tk.Stop()
+		for  {
+			select {
+			case <-tk.C:
+				util.LogErrWithPre("auto save object-cap", oc.Save())
+			case <-ctx.Done():
+				return	
+			}
 		}
 	}()
+	return cancel
 }
 
 func (oc *ObjectCapacity) Save() error {

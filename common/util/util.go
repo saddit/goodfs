@@ -3,9 +3,6 @@ package util
 import (
 	"bytes"
 	"common/logs"
-	"crypto/md5"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -17,10 +14,6 @@ import (
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
-)
-
-const (
-	OS_ModeUser = 0700
 )
 
 func GetFileExt(fileName string, withDot bool) (string, bool) {
@@ -37,23 +30,6 @@ func GetFileExtOrDefault(fileName string, withDot bool, def string) string {
 		idx++
 	}
 	return fileName[idx:]
-}
-
-//SHA256Hash sha256算法对二进制流进行计算
-func SHA256Hash(reader io.Reader) string {
-	crypto := sha256.New()
-	if _, e := io.CopyBuffer(crypto, reader, make([]byte, 2048)); e == nil {
-		b := crypto.Sum(make([]byte, 0, crypto.Size()))
-		return base64.StdEncoding.EncodeToString(b)
-	}
-	return ""
-}
-
-func MD5HashBytes(bt []byte) string {
-	crypto := md5.New()
-	_, _ = crypto.Write(bt)
-	res := crypto.Sum(make([]byte, 0, crypto.BlockSize()))
-	return base64.StdEncoding.EncodeToString(res)
 }
 
 func GobEncode(v interface{}) []byte {
@@ -92,10 +68,10 @@ func GobDecodeGen2[T interface{}](bt []byte, v *T) bool {
 //alloc 2 chan, one from time.Tick()
 func ImmediateTick(t time.Duration) <-chan time.Time {
 	ch := make(chan time.Time, 1)
-	tk := time.Tick(t)
+	tk := time.NewTicker(t)
 	go func() {
 		defer close(ch)
-		for t := range tk {
+		for t := range tk.C {
 			ch <- t
 		}
 	}()

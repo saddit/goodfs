@@ -1,6 +1,7 @@
 package db
 
 import (
+	"common/constrant"
 	"common/graceful"
 	"common/logs"
 	"common/util"
@@ -35,7 +36,7 @@ func (s *Storage) DB() *bolt.DB {
 func (s *Storage) View(fn usecase.TxFunc) error {
 	if logs.IsDebug() {
 		mill := time.Now().UnixMilli()
-		defer func() { dbLog.Debugf("read-only tx spent %d ms", time.Now().UnixMilli() - mill) }()
+		defer func() { dbLog.Debugf("read-only tx spent %d ms", time.Now().UnixMilli()-mill) }()
 	}
 	return s.DB().View(fn)
 }
@@ -43,7 +44,7 @@ func (s *Storage) View(fn usecase.TxFunc) error {
 func (s *Storage) Update(fn usecase.TxFunc) error {
 	if logs.IsDebug() {
 		mill := time.Now().UnixMilli()
-		defer func() { dbLog.Debugf("read-write tx spent %d ms", time.Now().UnixMilli() - mill) }()
+		defer func() { dbLog.Debugf("read-write tx spent %d ms", time.Now().UnixMilli()-mill) }()
 	}
 	if s.rdOnly.Load().(bool) {
 		return usecase.ErrReadOnly
@@ -66,9 +67,9 @@ func (s *Storage) Stop() error {
 }
 
 func (s *Storage) Open(path string) error {
-	cur, err := bolt.Open(path, util.OS_ModeUser, &bolt.Options{
-		Timeout:    12 * time.Second,
-		NoGrowSync: false,
+	cur, err := bolt.Open(path, constrant.OS.ModeUser, &bolt.Options{
+		Timeout:      12 * time.Second,
+		NoGrowSync:   false,
 		FreelistType: bolt.FreelistMapType,
 	})
 	if err != nil {
@@ -84,7 +85,7 @@ func (s *Storage) Replace(replacePath string) (err error) {
 	defer s.rdOnly.Store(false)
 
 	var newDB *bolt.DB
-	if newDB, err = bolt.Open(replacePath, util.OS_ModeUser, &bolt.Options{
+	if newDB, err = bolt.Open(replacePath, constrant.OS.ModeUser, &bolt.Options{
 		Timeout:    12 * time.Second,
 		NoGrowSync: false,
 	}); err != nil {

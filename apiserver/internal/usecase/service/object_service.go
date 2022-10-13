@@ -7,7 +7,7 @@ import (
 	"apiserver/internal/usecase/pool"
 	"bufio"
 	"common/logs"
-	"common/util"
+	"common/util/crypto"
 	"context"
 	"fmt"
 	"io"
@@ -116,7 +116,7 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 	//digest validation
 	if pool.Config.Checksum {
 		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
-		hash := util.SHA256Hash(reader)
+		hash := crypto.SHA256IO(reader)
 		if hash != req.Hash {
 			logs.Std().Infof("Digest of %v validation failure\n", req.Name)
 			if e = stream.Commit(false); e != nil {
