@@ -18,3 +18,13 @@ rs:
   data-shards: 4
   parity-shards: 2
   block-per-shard: 8000
+auth:
+  enable: true
+  password:
+    enable: true
+    username: admin
+    password: admin
+  callback:
+    enable: false
+    url: http://localhost:8090/v1/authorize
+    params: ['access-token']

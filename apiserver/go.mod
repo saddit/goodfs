@@ -51,5 +51,5 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	go.etcd.io/etcd/client/v3 v3.5.4
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
-	gopkg.in/yaml.v3 v3.0.1
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

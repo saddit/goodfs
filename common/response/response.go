@@ -111,10 +111,16 @@ func FailErr(err error, c *gin.Context) *GinExecutor {
 	case IResponseErr:
 		if IsOk(err.GetStatus()) {
 			c.Status(err.GetStatus())
+		} else if IsInternal(err.GetStatus()) {
+			logs.Std().Errorf("request(%s %s): [%T] %s", c.Request.Method, c.FullPath(), err, err)
+			c.JSON(err.GetStatus(), &FailureResp{
+				Message:    "system error",
+				SubMessage: fmt.Sprintf("%T", err),
+			})
 		} else {
 			c.JSON(err.GetStatus(), &FailureResp{
-				Message:    err.GetMessage(),
-				SubMessage: err.Error(),
+				Message:    err.Error(),
+				SubMessage: err.GetSubMessage(),
 			})
 		}
 	default:

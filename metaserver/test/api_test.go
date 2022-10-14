@@ -154,6 +154,11 @@ func TestClearEtcd(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(constrant.EtcdPrefix.ObjectCap, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), constrant.EtcdPrefix.ApiCredentail, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.ApiCredentail, resp.Deleted)
 }
 
 func TestCalcHashSlot(t *testing.T) {

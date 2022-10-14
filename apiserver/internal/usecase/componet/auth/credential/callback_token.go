@@ -4,6 +4,7 @@ import "encoding/json"
 
 type CallbackToken struct {
 	Bucket   string              `json:"bucket"`
+	Region   string              `json:"region"`
 	FileName string              `json:"file_name"`
 	Version  int                 `json:"version"`
 	Method   string              `json:"method"`

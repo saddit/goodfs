@@ -26,3 +26,7 @@ func IsOk(status int) bool {
 	return status / 100 == 2
 }
 
+func IsInternal(status int) bool {
+	return status / 100 == 5
+}
+
