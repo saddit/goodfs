@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"apiserver/config"
 	"common/logs"
 	"common/response"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,10 +11,22 @@ import (
 const MiddleKey = "IsAuthenticated"
 const MiddleKeyMessage = "AuthenticatedMessage"
 
-func PreAuthenticate(cfg *config.AuthConfig) gin.HandlerFunc {
+func PreAuthenticate(cfg *Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// if no enable auth, every request is valid
-		c.Set(MiddleKey, !cfg.Enable)
+		if !cfg.Enable {
+			c.Set(MiddleKey, true)
+			return
+		}
+		// filter white list
+		for _, pref := range cfg.whiteList {
+			if strings.HasPrefix(c.FullPath(), pref) {
+				c.Set(MiddleKey, true)
+				return
+			}
+		}
+		// no within white list
+		c.Set(MiddleKey, false)
 	}
 }
 
@@ -40,7 +52,7 @@ func AfterAuthenticate(c *gin.Context) {
 	}
 }
 
-func AuthenticationMiddleware(cfg *config.AuthConfig, authenticators []Verification) gin.HandlersChain {
+func AuthenticationMiddleware(cfg *Config, authenticators []Verification) gin.HandlersChain {
 	chain := []gin.HandlerFunc{PreAuthenticate(cfg)}
 	for _, v := range authenticators {
 		chain = append(chain, AuthenticateWrap(v))

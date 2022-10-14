@@ -8,17 +8,16 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"apiserver/config"
 
 	"github.com/gin-gonic/gin"
 )
 
 type CallbackValidator struct {
-	cfg *config.CallbackConfig
+	cfg *CallbackConfig
 	cli *http.Client
 }
 
-func NewCallbackValidator(cli *http.Client, cfg *config.CallbackConfig) *CallbackValidator {
+func NewCallbackValidator(cli *http.Client, cfg *CallbackConfig) *CallbackValidator {
 	return &CallbackValidator{cfg: cfg, cli: cli}
 }
 

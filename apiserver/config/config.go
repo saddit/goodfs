@@ -5,6 +5,7 @@ import (
 	"common/logs"
 	"common/registry"
 	"github.com/ilyakaznacheev/cleanenv"
+	"apiserver/internal/usecase/componet/auth"
 	"os"
 	"time"
 )
@@ -23,7 +24,7 @@ type Config struct {
 	Rs             RsConfig        `yaml:"rs" env-prefix:"RS"`
 	Discovery      DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 	Registry       registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
-	Auth           AuthConfig      `yaml:"auth" env-prefix:"AUTH"`
+	Auth           auth.Config      `yaml:"auth" env-prefix:"AUTH"`
 }
 
 type DiscoveryConfig struct {

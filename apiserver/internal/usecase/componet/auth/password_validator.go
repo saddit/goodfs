@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"apiserver/config"
 	"apiserver/internal/usecase/componet/auth/credential"
 	"common/constrant"
 	"common/logs"
@@ -18,16 +17,16 @@ import (
 
 type PasswordValidator struct {
 	cli clientv3.KV
-	cfg *config.PasswordConfig
+	cfg *PasswordConfig
 }
 
-func NewPasswordValidator(cli clientv3.KV, cfg *config.PasswordConfig) *PasswordValidator {
+func NewPasswordValidator(cli clientv3.KV, cfg *PasswordConfig) *PasswordValidator {
 	pv := &PasswordValidator{cli, cfg}
 	pv.init(cfg)
 	return pv
 }
 
-func (pv *PasswordValidator) init(cfg *config.PasswordConfig) {
+func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 	if !cfg.Enable {
 		return
 	}

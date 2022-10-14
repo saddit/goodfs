@@ -1,4 +1,4 @@
-package config
+package auth
 
 type CallbackConfig struct {
 	Enable bool     `yaml:"enable" env:"ENABLE"`
@@ -12,8 +12,14 @@ type PasswordConfig struct {
 	Password string `yaml:"password" env:"PASSWORD"`
 }
 
-type AuthConfig struct {
-	Enable   bool           `yaml:"enable" env:"ENABLE"`
-	Callback CallbackConfig `yaml:"callback" env-prefix:"CALLBACK"`
-	Password PasswordConfig `yaml:"password" env-prefix:"PASSWORD"`
+type Config struct {
+	Enable    bool           `yaml:"enable" env:"ENABLE"`
+	Callback  CallbackConfig `yaml:"callback" env-prefix:"CALLBACK"`
+	Password  PasswordConfig `yaml:"password" env-prefix:"PASSWORD"`
+	whiteList []string
+}
+
+func (ac *Config) White(prefix ...string) *Config {
+	ac.whiteList = append(ac.whiteList, prefix...)
+	return ac
 }
