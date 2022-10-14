@@ -9,7 +9,7 @@ import (
 )
 
 const MiddleKey = "IsAuthenticated"
-const MiddleKeyMessage = "AuthenticatedMessage"
+const MiddleErr = "AuthenticatedErr"
 
 func PreAuthenticate(cfg *Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -32,12 +32,12 @@ func PreAuthenticate(cfg *Config) gin.HandlerFunc {
 
 func AuthenticateWrap(validator Verification) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if res, _ := c.Get(MiddleKey); res == true {
+		if c.GetBool(MiddleKey) {
 			return
 		}
 		if err := validator.Middleware(c); err != nil {
 			logs.Std().Infof("authenticate fail: %s", err)
-			c.Set(MiddleKeyMessage, err.Error())
+			c.Set(MiddleErr, err)
 			return
 		}
 		c.Set(MiddleKey, true)
@@ -45,10 +45,9 @@ func AuthenticateWrap(validator Verification) gin.HandlerFunc {
 }
 
 func AfterAuthenticate(c *gin.Context) {
-	res, _ := c.Get(MiddleKey)
-	msg, _ := c.Get(MiddleKeyMessage)
-	if res == false {
-		response.FailErr(response.NewError(403, msg.(string)), c).Abort()
+	if !c.GetBool(MiddleKey) {
+		err, _ := c.Get(MiddleErr)
+		response.FailErr(err.(error), c).Abort()
 	}
 }
 

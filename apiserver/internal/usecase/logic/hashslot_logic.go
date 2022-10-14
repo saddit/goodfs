@@ -4,9 +4,12 @@ import (
 	"apiserver/internal/usecase/pool"
 	"common/constrant"
 	"common/hashslot"
+	"common/response"
 	"common/util"
 	"context"
+	"net/http"
 	"time"
+
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -47,7 +50,7 @@ func (HashSlot) FindMetaLocOfName(name string) (string, string, error) {
 	}
 	slots, err := hashslot.WrapSlots(slotsMap)
 	if err != nil {
-		return "", "", err
+		return "", "", response.NewError(http.StatusServiceUnavailable, err.Error())
 	}
 	// update cache sync
 	go hashSlotCache.update(slots, slotsIdMap)

@@ -49,12 +49,10 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 	if err != nil {
 		panic(err)
 	}
+	logs.Std().Infof("password authenticator init success: username=%s", cfg.Username)
 }
 
 func (pv *PasswordValidator) Verify(token Credential) error {
-	if !pv.cfg.Enable {
-		return errors.New("not enable password verification")
-	}
 	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredentail)
 	if err != nil {
 		return err
@@ -67,11 +65,14 @@ func (pv *PasswordValidator) Verify(token Credential) error {
 		return err
 	}
 	if token.GetUsername() != admin.Username || token.GetPassword() != admin.Password {
-		return response.NewError(http.StatusForbidden, "username or password wrong")
+		return response.NewError(http.StatusUnauthorized, "username or password wrong")
 	}
 	return nil
 }
 
 func (pv *PasswordValidator) Middleware(c *gin.Context) error {
-	return pv.Verify(credential.NewPasswordToken(c.GetHeader("username"), c.GetHeader("password")))
+	if usr,pwd, ok := c.Request.BasicAuth(); ok && pv.cfg.Enable {
+		return pv.Verify(credential.NewPasswordToken(usr, pwd))
+	}
+	return nil
 }

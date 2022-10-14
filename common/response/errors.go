@@ -6,6 +6,7 @@ type IResponseErr interface {
 	error
 	GetMessage() string
 	GetStatus() int
+	GetSubMessage() string
 }
 
 type ResponseErr struct {
@@ -14,7 +15,7 @@ type ResponseErr struct {
 }
 
 func (r ResponseErr) Error() string {
-	return fmt.Sprintf("common/reponse/ResponseErr: %s", r.GetMessage())
+	return r.GetMessage()
 }
 
 func NewError(code int, msg string) *ResponseErr {
@@ -23,6 +24,10 @@ func NewError(code int, msg string) *ResponseErr {
 
 func (r ResponseErr) GetMessage() string {
 	return r.Message
+}
+
+func (r ResponseErr) GetSubMessage() string {
+	return fmt.Sprintf("%T: %s", r, r)
 }
 
 func (r ResponseErr) GetStatus() int {
