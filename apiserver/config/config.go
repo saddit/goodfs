@@ -1,7 +1,6 @@
 package config
 
 import (
-	"apiserver/internal/usecase/componet/auth"
 	"common/etcd"
 	"common/logs"
 	"common/registry"
@@ -24,7 +23,7 @@ type Config struct {
 	Rs             RsConfig        `yaml:"rs" env-prefix:"RS"`
 	Discovery      DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 	Registry       registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
-	Auth           auth.Config     `yaml:"auth" env-prefix:"AUTH"`
+	Auth           AuthConfig      `yaml:"auth" env-prefix:"AUTH"`
 }
 
 type DiscoveryConfig struct {

@@ -1,19 +1,21 @@
 package auth
 
 import (
-	"apiserver/internal/usecase/pool"
+	"apiserver/config"
 	"common/logs"
 	"common/response"
-	"common/util"
+
 	"github.com/gin-gonic/gin"
 )
 
 const MiddleKey = "IsAuthenticated"
 const MiddleKeyMessage = "AuthenticatedMessage"
 
-func PreAuthenticate(c *gin.Context) {
-	isAuth := util.IfElse(pool.Config.Auth.Enable, false, true)
-	c.Set("AuthKey", isAuth)
+func PreAuthenticate(cfg *config.AuthConfig) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// if no enable auth, every request is valid
+		c.Set(MiddleKey, !cfg.Enable)
+	}
 }
 
 func AuthenticateWrap(validator Verification) gin.HandlerFunc {
@@ -38,9 +40,9 @@ func AfterAuthenticate(c *gin.Context) {
 	}
 }
 
-func AuthenticationMiddleware() gin.HandlersChain {
-	chain := []gin.HandlerFunc{PreAuthenticate}
-	for _, v := range pool.Authenticators {
+func AuthenticationMiddleware(cfg *config.AuthConfig, authenticators []Verification) gin.HandlersChain {
+	chain := []gin.HandlerFunc{PreAuthenticate(cfg)}
+	for _, v := range authenticators {
 		chain = append(chain, AuthenticateWrap(v))
 	}
 	return append(chain, AfterAuthenticate)
