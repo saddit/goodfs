@@ -2,16 +2,31 @@ package objects
 
 import (
 	"apiserver/internal/entity"
+	"apiserver/internal/usecase"
 	"common/response"
 	"common/util"
 	"github.com/gin-gonic/gin"
 	"io"
 )
 
-func Put(c *gin.Context) {
+type ObjectsController struct {
+	objectService usecase.IObjectService
+	metaService   usecase.IMetaService
+}
+
+func NewObjectsControoler(obj usecase.IObjectService, meta usecase.IMetaService) *ObjectsController {
+	return &ObjectsController{obj, meta}
+}
+
+func (oc *ObjectsController) Register(r gin.IRoutes) {
+	r.PUT("/objects/:name", ValidatePut(oc.objectService), oc.Put)
+	r.GET("/objects/:name", oc.Get)
+}
+
+func (oc *ObjectsController) Put(c *gin.Context) {
 	req := c.Value("PutReq").(*entity.PutReq)
 	req.Body = c.Request.Body
-	verNum, err := ObjectService.StoreObject(req, &entity.Metadata{
+	verNum, err := oc.objectService.StoreObject(req, &entity.Metadata{
 		Name: req.Name,
 		Versions: []*entity.Version{{
 			Size: c.Request.ContentLength,
@@ -30,20 +45,20 @@ func Put(c *gin.Context) {
 	}, c)
 }
 
-func Get(c *gin.Context) {
+func (oc *ObjectsController) Get(c *gin.Context) {
 	var req entity.GetReq
 	if e := req.Bind(c); e != nil {
 		response.BadRequestErr(e, c)
 		return
 	}
 	// get metadata
-	metaData, err := MetaService.GetMetadata(req.Name, req.Version)
+	metaData, err := oc.metaService.GetMetadata(req.Name, req.Version)
 	if err != nil {
 		response.FailErr(err, c).Abort()
 		return
 	}
 	// get object stream
-	stream, err := ObjectService.GetObject(metaData, metaData.Versions[0])
+	stream, err := oc.objectService.GetObject(metaData, metaData.Versions[0])
 	defer util.CloseAndLog(stream)
 	if err != nil {
 		response.FailErr(err, c).Abort()

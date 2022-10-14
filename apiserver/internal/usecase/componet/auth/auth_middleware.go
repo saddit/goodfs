@@ -52,7 +52,7 @@ func AfterAuthenticate(c *gin.Context) {
 	}
 }
 
-func AuthenticationMiddleware(cfg *Config, authenticators []Verification) gin.HandlersChain {
+func AuthenticationMiddleware(cfg *Config, authenticators ...Verification) gin.HandlersChain {
 	chain := []gin.HandlerFunc{PreAuthenticate(cfg)}
 	for _, v := range authenticators {
 		chain = append(chain, AuthenticateWrap(v))
