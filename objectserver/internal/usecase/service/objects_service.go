@@ -2,6 +2,7 @@ package service
 
 import (
 	"common/constrant"
+	"common/disk"
 	"common/graceful"
 	"io"
 	global "objectserver/internal/usecase/pool"
@@ -67,7 +68,7 @@ func GetTemp(name string, writer io.Writer) error {
 }
 
 func GetFile(fullPath string, writer io.Writer) error {
-	f, e := os.Open(fullPath)
+	f, e := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, 0)
 	if e != nil {
 		return e
 	}
@@ -79,7 +80,7 @@ func GetFile(fullPath string, writer io.Writer) error {
 }
 
 func Delete(name string) error {
- 	size, err := DeleteFile(global.Config.StoragePath, name)
+	size, err := DeleteFile(global.Config.StoragePath, name)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func DeleteFile(path, name string) (int64, error) {
 
 func AppendFile(path, fileName string, fileStream io.Reader) (int64, error) {
 	path = filepath.Join(path, fileName)
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, constrant.OS.ModeUser)
+	file, err := disk.OpenFileDirectIO(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, constrant.OS.ModeUser)
 	if err != nil {
 		return 0, err
 	}

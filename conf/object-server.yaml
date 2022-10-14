@@ -4,7 +4,7 @@ log-level: info
 storage-path: e:/file/temp/objects_1
 temp-path: e:/file/temp/objects_temp_1
 cache:
-  max-size: 1G
+  max-size: 1GB
   ttl: 3h
   clean-interval: 12m
   max-item-size: 16MB

@@ -1,12 +1,14 @@
 package app
 
 import (
+	"common/constrant"
 	"common/graceful"
 	"common/logs"
 	"common/util"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
 	"objectserver/internal/usecase/logic"
+	"os"
 
 	"objectserver/internal/controller/http"
 	"objectserver/internal/controller/locate"
@@ -14,7 +16,17 @@ import (
 	"objectserver/internal/usecase/service"
 )
 
+func initDir(cfg *config.Config) {
+	if e := os.MkdirAll(cfg.TempPath, constrant.OS.ModeUser); e != nil {
+		panic(e)
+	}
+	if e := os.MkdirAll(cfg.StoragePath, constrant.OS.ModeUser); e != nil {
+		panic(e)
+	}
+}
+
 func Run(cfg *config.Config) {
+	initDir(cfg)
 	logs.SetLevel(cfg.LogLevel)
 	//init components
 	pool.InitPool(cfg)
