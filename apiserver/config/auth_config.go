@@ -1,4 +1,4 @@
-package auth
+package config
 
 type CallbackConfig struct {
 	Enable bool     `yaml:"enable" env:"ENABLE"`
@@ -12,7 +12,7 @@ type PasswordConfig struct {
 	Password string `yaml:"password" env:"PASSWORD"`
 }
 
-type Config struct {
+type AuthConfig struct {
 	Enable   bool           `yaml:"enable" env:"ENABLE"`
 	Callback CallbackConfig `yaml:"callback" env-prefix:"CALLBACK"`
 	Password PasswordConfig `yaml:"password" env-prefix:"PASSWORD"`

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"apiserver/config"
 	"apiserver/internal/usecase/componet/auth/credential"
 	"common/constrant"
 	"common/logs"
@@ -8,24 +9,25 @@ import (
 	"common/util"
 	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type PasswordValidator struct {
 	cli clientv3.KV
-	cfg *PasswordConfig
+	cfg *config.PasswordConfig
 }
 
-func NewPasswordValidator(cli clientv3.KV, cfg *PasswordConfig) *PasswordValidator {
+func NewPasswordValidator(cli clientv3.KV, cfg *config.PasswordConfig) *PasswordValidator {
 	pv := &PasswordValidator{cli, cfg}
 	pv.init(cfg)
 	return pv
 }
 
-func (pv *PasswordValidator) init(cfg *PasswordConfig) {
+func (pv *PasswordValidator) init(cfg *config.PasswordConfig) {
 	if !cfg.Enable {
 		return
 	}

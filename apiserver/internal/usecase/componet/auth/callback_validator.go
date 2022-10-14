@@ -6,17 +6,19 @@ import (
 	"common/response"
 	"common/util"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/url"
+	"apiserver/config"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CallbackValidator struct {
-	cfg *CallbackConfig
+	cfg *config.CallbackConfig
 	cli *http.Client
 }
 
-func NewCallbackValidator(cli *http.Client, cfg *CallbackConfig) *CallbackValidator {
+func NewCallbackValidator(cli *http.Client, cfg *config.CallbackConfig) *CallbackValidator {
 	return &CallbackValidator{cfg: cfg, cli: cli}
 }
 

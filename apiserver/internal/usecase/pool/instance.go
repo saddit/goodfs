@@ -61,7 +61,7 @@ func initBalancer(cfg *config.Config) {
 	Balancer = selector.NewSelector(cfg.SelectStrategy)
 }
 
-func initAuthenticator(cfg *auth.Config, cli1 *http.Client, cli2 *clientv3.Client) {
+func initAuthenticator(cfg *config.AuthConfig, cli1 *http.Client, cli2 *clientv3.Client) {
 	Authenticators = append(Authenticators,
 		auth.NewPasswordValidator(cli2, &cfg.Password),
 		auth.NewCallbackValidator(cli1, &cfg.Callback),
