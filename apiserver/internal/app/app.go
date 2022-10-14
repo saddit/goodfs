@@ -6,6 +6,7 @@ import (
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
 	"apiserver/internal/usecase/service"
+	"common/graceful"
 	"common/logs"
 	"common/registry"
 	"common/util"
@@ -25,6 +26,7 @@ func Run(cfg *Config) {
 	// register
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr).MustRegister().Unregister()
 	//start api server
-	apiServer := http.NewHttpServer(objService, metaService)
-	apiServer.ListenAndServe(netAddr)
+	graceful.ListenAndServe(
+		http.NewHttpServer(netAddr, objService, metaService),
+	)
 }

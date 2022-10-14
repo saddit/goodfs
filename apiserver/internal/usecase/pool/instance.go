@@ -27,7 +27,6 @@ func InitPool(cfg *config.Config) {
 	initEtcd(cfg)
 	initDiscovery(Etcd, cfg)
 	initBalancer(cfg)
-	initAuthenticator(&cfg.Auth, Http, Etcd)
 }
 
 func Close() {
@@ -59,11 +58,4 @@ func initHttpClient() {
 
 func initBalancer(cfg *config.Config) {
 	Balancer = selector.NewSelector(cfg.SelectStrategy)
-}
-
-func initAuthenticator(cfg *auth.Config, http *http.Client, etcd *clientv3.Client) {
-	Authenticators = append(Authenticators,
-		auth.NewPasswordValidator(etcd, &cfg.Password),
-		auth.NewCallbackValidator(http, &cfg.Callback),
-	)
 }

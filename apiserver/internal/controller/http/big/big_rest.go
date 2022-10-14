@@ -2,6 +2,7 @@ package big
 
 import (
 	"apiserver/internal/entity"
+	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/service"
 	"common/logs"
@@ -17,8 +18,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type BigObjectsController struct {
+	objectService usecase.IObjectService
+	metaService   usecase.IMetaService
+}
+
+func NewBigObjectsController(obj usecase.IObjectService, meta usecase.IMetaService) *BigObjectsController {
+	return &BigObjectsController{obj, meta}
+}
+
+func (bc *BigObjectsController) Register(r gin.IRoutes) {
+	r.POST("/big/:name", FilterDuplicates(bc.objectService), bc.Post)
+	r.HEAD("/big/:token", bc.Head)
+	r.PATCH("/big/:token", bc.Patch)
+}
+
 //Post 生成大文件上传的Token
-func Post(g *gin.Context) {
+func (bc *BigObjectsController) Post(g *gin.Context) {
 	req := g.Value("BigPostReq").(*entity.BigPostReq)
 	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
 	if len(ips) == 0 {
@@ -37,7 +53,7 @@ func Post(g *gin.Context) {
 }
 
 //Head 大文件已上传大小
-func Head(g *gin.Context) {
+func (bc *BigObjectsController) Head(g *gin.Context) {
 	token, _ := url.PathUnescape(g.Param("token"))
 	stream, e := service.NewRSResumablePutStreamFromToken(token)
 	if e != nil {
@@ -56,7 +72,7 @@ func Head(g *gin.Context) {
 }
 
 //Patch 上传大文件
-func Patch(g *gin.Context) {
+func (bc *BigObjectsController) Patch(g *gin.Context) {
 	var req entity.BigPutReq
 	if e := req.Bind(g); e != nil {
 		response.BadRequestErr(e, g)
@@ -75,9 +91,9 @@ func Patch(g *gin.Context) {
 	}
 	bufSize := int64(pool.Config.Rs.BlockSize())
 	for {
-		n, e := io.CopyN(stream, g.Request.Body, bufSize)
-		if e != nil && e != io.EOF && e != io.ErrUnexpectedEOF {
-			response.FailErr(e, g)
+		n, err := io.CopyN(stream, g.Request.Body, bufSize)
+		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+			response.FailErr(err, g)
 			return
 		}
 		curSize += n
@@ -93,45 +109,44 @@ func Patch(g *gin.Context) {
 			response.Exec(g).Status(http.StatusPartialContent)
 			return
 		}
-		//上传完成
-		if curSize == stream.Size {
-			if pool.Config.Checksum {
-				getStream, e := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates)
-				if e != nil {
-					response.FailErr(e, g)
-					return
-				}
-				hash := crypto.SHA256IO(getStream)
-				if hash != stream.Hash {
-					if e = stream.Commit(false); e != nil {
-						logs.Std().Error(e)
-					}
-					response.Exec(g).Status(http.StatusForbidden).Abort()
-					return
-				}
+		//上传未完成 继续
+		if curSize != stream.Size {
+			continue
+		}
+		if pool.Config.Checksum {
+			getStream, err := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates)
+			if err != nil {
+				response.FailErr(err, g)
+				return
 			}
-			if e = stream.Commit(true); e != nil {
-				response.FailErr(e, g)
-			} else {
-				var verNum int32
-				verNum, e = MetaService.SaveMetadata(&entity.Metadata{
-					Name: stream.Name,
-					Versions: []*entity.Version{{
-						Hash:   stream.Hash,
-						Size:   stream.Size,
-						Locate: stream.Locates,
-					}},
-				})
-				if e != nil {
-					response.FailErr(e, g)
-				} else {
-					response.OkJson(&entity.PutResp{
-						Name:    stream.Name,
-						Version: verNum,
-					}, g)
+			hash := crypto.SHA256IO(getStream)
+			if hash != stream.Hash {
+				if err = stream.Commit(false); err != nil {
+					logs.Std().Error(err)
 				}
+				response.Exec(g).Status(http.StatusForbidden).Abort()
+				return
 			}
+		}
+		if err = stream.Commit(true); err != nil {
+			response.FailErr(err, g)
 			return
 		}
+		verNum, err := bc.metaService.SaveMetadata(&entity.Metadata{
+			Name: stream.Name,
+			Versions: []*entity.Version{{
+				Hash:   stream.Hash,
+				Size:   stream.Size,
+				Locate: stream.Locates,
+			}},
+		})
+		if err != nil {
+			response.FailErr(err, g)
+			return
+		}
+		response.OkJson(&entity.PutResp{
+			Name:    stream.Name,
+			Version: verNum,
+		}, g)
 	}
 }
