@@ -33,7 +33,7 @@ func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdReg
 		stdName:   k,
 		name:      k,
 		localAddr: localAddr,
-		stopFn:    nil,
+		stopFn:    func() {},
 	}
 }
 
@@ -153,5 +153,8 @@ func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (
 func (e *EtcdRegistry) keepaliveLease(ctx context.Context, id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, func(), error) {
 	ctx2, cancel := context.WithCancel(ctx)
 	ch, err := e.cli.KeepAlive(ctx2, id)
-	return ch, cancel, err
+	return ch, func() {
+		defer cancel()
+		e.stopFn = func() {}
+	}, err
 }
