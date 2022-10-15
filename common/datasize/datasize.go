@@ -5,13 +5,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 var suffixRegex = regexp.MustCompile(`([.\d]+)(B|KB|MB|GB|TB|PB)`)
 
-type DataSize int64
+type DataSize uint64
 
 const (
 	Byte DataSize = 1
@@ -22,28 +20,28 @@ const (
 	PB            = 1024 * TB
 )
 
-func (d DataSize) Byte() int64 {
-	return int64(d)
+func (d *DataSize) Byte() int64 {
+	return int64(*d)
 }
 
-func (d DataSize) KiloByte() float32 {
-	return float32(d * 1.0 / KB)
+func (d *DataSize) KiloByte() float32 {
+	return float32(*d * 1.0 / KB)
 }
 
-func (d DataSize) MegaByte() float32 {
-	return float32(d * 1.0 / MB)
+func (d *DataSize) MegaByte() float32 {
+	return float32(*d * 1.0 / MB)
 }
 
-func (d DataSize) GigaByte() float32 {
-	return float32(d * 1.0 / GB)
+func (d *DataSize) GigaByte() float32 {
+	return float32(*d * 1.0 / GB)
 }
 
-func (d DataSize) TeraByte() float32 {
-	return float32(d * 1.0 / TB)
+func (d *DataSize) TeraByte() float32 {
+	return float32(*d * 1.0 / TB)
 }
 
-func (d DataSize) PetaByte() float32 {
-	return float32(d * 1.0 / PB)
+func (d *DataSize) PetaByte() float32 {
+	return float32(*d * 1.0 / PB)
 }
 
 var unitNameMap = map[string]DataSize{
@@ -73,22 +71,4 @@ func MustParse(s string) DataSize {
 		panic(e)
 	}
 	return r
-}
-
-func (d *DataSize) UnmarshalYAML(node *yaml.Node) error {
-	res, err := Parse(node.Value)
-	if err != nil {
-		return err
-	}
-	*d = res
-	return nil
-}
-
-func (d *DataSize) SetValue(s string) error {
-	res, err := Parse(s)
-	if err != nil {
-		return err
-	}
-	*d = res
-	return nil
 }

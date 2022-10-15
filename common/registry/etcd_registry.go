@@ -98,15 +98,15 @@ func (e *EtcdRegistry) Register() error {
 	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), e.localAddr); err != nil {
 		return err
 	}
-	var kach <-chan *clientv3.LeaseKeepAliveResponse
-	kach, e.stopFn, err = e.keepaliveLease(ctx, e.leaseId)
+	var keepAlive <-chan *clientv3.LeaseKeepAliveResponse
+	keepAlive, e.stopFn, err = e.keepaliveLease(ctx, e.leaseId)
 	if err != nil {
 		return err
 	}
 	//listen the heartbeat response
 	go func() {
 		defer graceful.Recover()
-		for resp := range kach {
+		for resp := range keepAlive {
 			log.Tracef("keepalive %s success (%d)", e.Key(), resp.TTL)
 		}
 		log.Infof("stop keepalive %s", e.Key())

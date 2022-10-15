@@ -20,6 +20,7 @@
 package disk
 
 import (
+	"common/datasize"
 	"errors"
 	"fmt"
 	"os"
@@ -76,9 +77,9 @@ func GetInfo(path string) (info Info, err error) {
 	}
 
 	info = Info{
-		Total:  uint64(lpTotalNumberOfBytes),
-		Free:   uint64(lpTotalNumberOfFreeBytes),
-		Used:   uint64(lpTotalNumberOfBytes) - uint64(lpTotalNumberOfFreeBytes),
+		Total:  datasize.DataSize(lpTotalNumberOfBytes),
+		Free:   datasize.DataSize(lpTotalNumberOfFreeBytes),
+		Used:   datasize.DataSize(lpTotalNumberOfBytes) - datasize.DataSize(lpTotalNumberOfFreeBytes),
 		FSType: getFSType(path),
 	}
 

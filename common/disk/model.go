@@ -17,6 +17,8 @@
 
 package disk
 
+import "common/datasize"
+
 //go:generate msgp -tests=false
 
 // Info stat fs struct is container which holds following values
@@ -26,14 +28,14 @@ package disk
 // Ffree - free inodes available
 // FSType - file system type
 type Info struct {
-	Total  uint64 `msg:"total"`
-	Free   uint64 `msg:"free"`
-	Used   uint64 `msg:"used"`
-	Files  uint64 `msg:"files"`
-	Ffree  uint64 `msg:"f_free"`
-	FSType string `msg:"fs_type"`
-	Major  uint32 `msg:"major"`
-	Minor  uint32 `msg:"minor"`
+	Total  datasize.DataSize `msg:"total"`
+	Free   datasize.DataSize `msg:"free"`
+	Used   datasize.DataSize `msg:"used"`
+	Files  uint64            `msg:"files"`
+	Ffree  uint64            `msg:"f_free"`
+	FSType string            `msg:"fs_type"`
+	Major  uint32            `msg:"major"`
+	Minor  uint32            `msg:"minor"`
 }
 
 // DevID is the drive major and minor ids
