@@ -22,8 +22,8 @@ func GetStacks() string {
 		if !ok {
 			break
 		}
-		stack = append(stack, fmt.Sprintf("\t%s:%d", file, line))
+		stack = append(stack, fmt.Sprintf("\tat %s:%d", file, line))
 	}
-	joinStr := ",\n"
+	joinStr := "\n"
 	return strings.Join(stack, joinStr)
 }

@@ -35,8 +35,8 @@ func Run(cfg *Config) {
 	pool.RaftWrapper.Init()
 	// register peers
 	defer logic.NewPeers().MustRegister().Unregister()
-	// register service
-	defer pool.Registry.MustRegister().Unregister()
+	// unregister service
+	defer pool.Registry.Unregister()
 	// auto save disk-info
 	defer logic.NewDiskLogic().StartAutoSave()()
 
