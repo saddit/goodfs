@@ -1,11 +1,11 @@
 package config
 
 import (
+	"apiserver/internal/usecase/componet/auth"
 	"common/etcd"
 	"common/logs"
 	"common/registry"
 	"github.com/ilyakaznacheev/cleanenv"
-	"apiserver/internal/usecase/componet/auth"
 	"os"
 	"time"
 )
@@ -15,16 +15,17 @@ const (
 )
 
 type Config struct {
-	Port           string          `yaml:"port" env:"PORT" env-default:"8080"`
-	SelectStrategy string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
-	Checksum       bool            `yaml:"checksum" env:"CHECKSUM" env-default:"false"`
-	LocateTimeout  time.Duration   `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"5s"`
-	LogLevel       logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
-	Etcd           etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	Rs             RsConfig        `yaml:"rs" env-prefix:"RS"`
-	Discovery      DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
-	Registry       registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
-	Auth           auth.Config      `yaml:"auth" env-prefix:"AUTH"`
+	Port             string          `yaml:"port" env:"PORT" env-default:"8080"`
+	SelectStrategy   string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
+	EnableManagement bool            `yaml:"enable-management" env:"ENABLE_MANAGEMENT" env-default:"true"`
+	Checksum         bool            `yaml:"checksum" env:"CHECKSUM" env-default:"false"`
+	LocateTimeout    time.Duration   `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"5s"`
+	LogLevel         logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
+	Etcd             etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
+	Rs               RsConfig        `yaml:"rs" env-prefix:"RS"`
+	Discovery        DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
+	Registry         registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Auth             auth.Config     `yaml:"auth" env-prefix:"AUTH"`
 }
 
 type DiscoveryConfig struct {

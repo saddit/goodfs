@@ -18,6 +18,10 @@ func NewMetadataCacheRepo(c cache.ICache) *MetadataCacheRepo {
 	return &MetadataCacheRepo{c}
 }
 
+func (m *MetadataCacheRepo) ListMetadata(string, int) ([]*entity.Metadata, error) {
+	panic("unsupported method")
+}
+
 func (m *MetadataCacheRepo) GetMetadata(s string) (*entity.Metadata, error) {
 	if bt, ok := m.cache.HasGet(s); ok {
 		var en entity.Metadata

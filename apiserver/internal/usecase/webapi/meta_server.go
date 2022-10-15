@@ -74,6 +74,17 @@ func DelMetadata(ip, name string) error {
 	return nil
 }
 
+func ListMetadata(ip, prefix string, pageSize int) ([]*entity.Metadata, error) {
+	resp, err := pool.Http.Get(metadataListRest(ip, prefix, pageSize))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return util.UnmarshalFromIO[[]*entity.Metadata](resp.Body)
+}
+
 func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
 	resp, err := pool.Http.Get(versionNumRest(ip, name, verNum))
 	if err != nil {
@@ -101,7 +112,7 @@ func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	resp, err := pool.Http.Post(metaVerRest(ip, name), request.ContentTypeJSON, bytes.NewBuffer(bt))
+	resp, err := pool.Http.Post(versionRest(ip, name), request.ContentTypeJSON, bytes.NewBuffer(bt))
 	if err != nil {
 		return 0, err
 	}
@@ -153,15 +164,19 @@ func metaRest(ip, name string) string {
 	return fmt.Sprintf("http://%s/metadata/%s", ip, name)
 }
 
-func metaVerRest(ip, name string) string {
+func versionRest(ip, name string) string {
 	if name == "" {
 		return fmt.Sprintf("http://%s/metadata_version", ip)
 	}
 	return fmt.Sprintf("http://%s/metadata_version/%s", ip, name)
 }
 
+func metadataListRest(ip, prefix string, pageSize int) string {
+	return fmt.Sprintf("http://%s/metadata/list?page_size=%d&prefix=%s", ip, pageSize, prefix)
+}
+
 func versionListRest(ip, name string, page, pageSize int) string {
-	return fmt.Sprintf("http://%s/metadata_version/%s?page=%d&page_size=%d", ip, name, page, pageSize)
+	return fmt.Sprintf("http://%s/metadata_version/%s/list?page=%d&page_size=%d", ip, name, page, pageSize)
 }
 
 func versionNumRest(ip, name string, num int32) string {
