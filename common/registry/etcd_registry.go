@@ -88,6 +88,10 @@ func (e *EtcdRegistry) MustRegister() *EtcdRegistry {
 }
 
 func (e *EtcdRegistry) Register() error {
+	// skip if already register
+	if e.leaseId != -1 {
+		return nil
+	}
 	ctx := context.Background()
 	var err error
 	//init registered key
