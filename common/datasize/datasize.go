@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var suffixRegex = regexp.MustCompile(`([.\d]+)(KB|MB|GB|TB|PB)`)
+var suffixRegex = regexp.MustCompile(`([.\d]+)(B|KB|MB|GB|TB|PB)`)
 
 type DataSize int64
 
@@ -35,7 +35,7 @@ func (d DataSize) MegaByte() float32 {
 }
 
 func (d DataSize) GigaByte() float32 {
-	return float32(d * 1.0 / MB)
+	return float32(d * 1.0 / GB)
 }
 
 func (d DataSize) TeraByte() float32 {
