@@ -7,15 +7,17 @@ type etcdPrefix struct {
 	HashSlot      string
 	Registry      string
 	ObjectCap     string
-	ApiCredentail string
+	ApiCredential string
+	DiskInfo      string
 }
 
 var EtcdPrefix = etcdPrefix{
-	PeersInfo: "peers_info",
-	HashSlot:  "hashslot",
-	Registry:  "registry",
-	ObjectCap: "object_cap",
-	ApiCredentail: "api_credentail",
+	PeersInfo:     "peers_info",
+	HashSlot:      "hash_slot",
+	Registry:      "registry",
+	ObjectCap:     "object_cap",
+	ApiCredential: "api_credential",
+	DiskInfo:      "disk_info",
 }
 
 func (e *etcdPrefix) FmtPeersInfo(groupId, id string) string {
@@ -32,4 +34,8 @@ func (e *etcdPrefix) FmtHashSlot(groupName, serviceName, id string) string {
 
 func (e *etcdPrefix) FmtObjectCap(groupName, serviceName, name string) string {
 	return fmt.Sprintf("%s/%s/%s/%s", e.ObjectCap, groupName, serviceName, name)
+}
+
+func (e *etcdPrefix) FmtDiskInfo(groupName, serviceName, id string) string {
+	return fmt.Sprintf("%s/%s/%s/%s", e.ObjectCap, groupName, serviceName, id)
 }

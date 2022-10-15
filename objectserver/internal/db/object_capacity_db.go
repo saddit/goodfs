@@ -2,12 +2,14 @@ package db
 
 import (
 	"common/constrant"
+	"common/disk"
 	"common/graceful"
 	"common/util"
 	"context"
 	"errors"
 	"objectserver/config"
 	"strings"
+	"sync"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -51,8 +53,33 @@ func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 }
 
 func (oc *ObjectCapacity) Save() error {
-	key := constrant.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
-	_, err := oc.cli.Put(context.Background(), key, oc.CurrentCap.String())
+	var err error
+	var wg sync.WaitGroup
+	// save object-cap
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		keyCap := constrant.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
+		_, err = oc.cli.Put(context.Background(), keyCap, oc.CurrentCap.String())
+	}()
+	// save disk-info
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		var info disk.Info
+		var bt []byte
+		info, err = oc.CurDiskInfo()
+		if err != nil {
+			return
+		}
+		bt, err = util.EncodeMsgp(&info)
+		if err != nil {
+			return
+		}
+		keyDisk := constrant.EtcdPrefix.FmtDiskInfo(oc.groupName, oc.serviceName, oc.CurrentID)
+		_, err = oc.cli.Put(context.Background(), keyDisk, string(bt))
+	}()
+	wg.Wait()
 	return err
 }
 
@@ -83,4 +110,8 @@ func (oc *ObjectCapacity) Get(s string) (uint64, error) {
 		return 0, errors.New("not exist capacity " + s)
 	}
 	return util.ToUint64(string(resp.Kvs[0].Value)), nil
+}
+
+func (oc *ObjectCapacity) CurDiskInfo() (disk.Info, error) {
+	return disk.GetInfo(`\`)
 }

@@ -30,7 +30,7 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 	if !cfg.Enable {
 		return
 	}
-	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredentail)
+	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredential)
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +45,7 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = pv.cli.Put(context.Background(), constrant.EtcdPrefix.ApiCredentail, string(bt))
+	_, err = pv.cli.Put(context.Background(), constrant.EtcdPrefix.ApiCredential, string(bt))
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +53,7 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 }
 
 func (pv *PasswordValidator) Verify(token Credential) error {
-	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredentail)
+	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredential)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (pv *PasswordValidator) Verify(token Credential) error {
 }
 
 func (pv *PasswordValidator) Middleware(c *gin.Context) error {
-	if usr,pwd, ok := c.Request.BasicAuth(); ok && pv.cfg.Enable {
+	if usr, pwd, ok := c.Request.BasicAuth(); ok && pv.cfg.Enable {
 		return pv.Verify(credential.NewPasswordToken(usr, pwd))
 	}
 	return nil

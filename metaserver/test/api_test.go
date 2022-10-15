@@ -3,17 +3,17 @@ package test
 import (
 	"bytes"
 	"common/constrant"
+	"common/hashslot"
 	"common/registry"
 	"context"
 	"encoding/json"
 	"fmt"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"io/ioutil"
 	"metaserver/internal/entity"
 	"net/http"
 	"testing"
 	"time"
-	"common/hashslot"
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
@@ -59,17 +59,17 @@ func TestGetMeta(t *testing.T) {
 func TestEtcdRegsitry(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
-		Username: "root",
-		Password: "xianka",
+		Username:  "root",
+		Password:  "xianka",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	disc := registry.NewEtcdRegistry(etcd, registry.Config{
-		Group: "goodfs",
+		Group:    "goodfs",
 		Services: []string{"metaserver"},
 	}, "")
-	
+
 	lst := disc.GetServices("metaserver")
 	t.Log(lst, len(lst))
 }
@@ -77,8 +77,8 @@ func TestEtcdRegsitry(t *testing.T) {
 func TestGetObjectCaps(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
-		Username: "root",
-		Password: "xianka",
+		Username:  "root",
+		Password:  "xianka",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -94,8 +94,8 @@ func TestGetObjectCaps(t *testing.T) {
 func TestGetHashSlot(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
-		Username: "root",
-		Password: "xianka",
+		Username:  "root",
+		Password:  "xianka",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -111,8 +111,8 @@ func TestGetHashSlot(t *testing.T) {
 func TestGetPeersInfo(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
-		Username: "root",
-		Password: "xianka",
+		Username:  "root",
+		Password:  "xianka",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -128,8 +128,8 @@ func TestGetPeersInfo(t *testing.T) {
 func TestClearEtcd(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
-		Username: "root",
-		Password: "xianka",
+		Username:  "root",
+		Password:  "xianka",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -154,11 +154,11 @@ func TestClearEtcd(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(constrant.EtcdPrefix.ObjectCap, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), constrant.EtcdPrefix.ApiCredentail, clientv3.WithPrefix())
+	resp, err = etcd.Delete(context.Background(), constrant.EtcdPrefix.ApiCredential, clientv3.WithPrefix())
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(constrant.EtcdPrefix.ApiCredentail, resp.Deleted)
+	t.Log(constrant.EtcdPrefix.ApiCredential, resp.Deleted)
 }
 
 func TestCalcHashSlot(t *testing.T) {
@@ -170,8 +170,8 @@ func TestCalcHashSlot(t *testing.T) {
 func TestGetSlots(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
-		Username: "root",
-		Password: "xianka",
+		Username:  "root",
+		Password:  "xianka",
 	})
 	if err != nil {
 		t.Fatal(err)
