@@ -140,8 +140,15 @@ func (m *MetadataService) ListVersions(name string, page int, size int) ([]*enti
 		page = 1
 	}
 	// start at 1
-	start := (page - 1) * size + 1 
+	start := (page-1)*size + 1
 	return m.repo.ListVersions(name, start, start+size)
+}
+
+func (m *MetadataService) ListMetadata(prefix string, size int) ([]*entity.Metadata, error) {
+	if size == 0 {
+		return []*entity.Metadata{}, nil
+	}
+	return m.repo.ListMetadata(prefix, size)
 }
 
 // FilterKeys heavy!

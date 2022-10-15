@@ -31,6 +31,7 @@ type (
 		GetMetadata(string, int) (*entity.Metadata, *entity.Version, error)
 		GetVersion(string, int) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
+		ListMetadata(prefix string, size int) (lst []*entity.Metadata, err error)
 	}
 
 	WritableRepo interface {
@@ -46,6 +47,7 @@ type (
 		GetMetadata(string) (*entity.Metadata, error)
 		GetVersion(string, uint64) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, error)
+		ListMetadata(prefix string, size int) (lst []*entity.Metadata, err error)
 	}
 
 	IHashIndexRepo interface {

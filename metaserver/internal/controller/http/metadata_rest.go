@@ -2,11 +2,11 @@ package http
 
 import (
 	"common/response"
+	"github.com/gin-gonic/gin"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
 	"net/http"
-	"github.com/gin-gonic/gin"
 )
 
 type MetadataController struct {
@@ -22,6 +22,7 @@ func (m *MetadataController) RegisterRoute(engine gin.IRouter) {
 	engine.POST("/metadata", m.Post)
 	engine.GET("/metadata/:name", m.Get)
 	engine.DELETE("/metadata/:name", m.Delete)
+	engine.GET("/metadata/list", m.List)
 }
 
 func (m *MetadataController) Post(g *gin.Context) {
@@ -82,4 +83,21 @@ func (m *MetadataController) Delete(g *gin.Context) {
 		return
 	}
 	response.NoContent(g)
+}
+
+func (m *MetadataController) List(c *gin.Context) {
+	req := struct {
+		Prefix   string `form:"prefix"`
+		PageSize int    `form:"page_size" binding:"required,lte=10000"`
+	}{}
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	res, err := m.service.ListMetadata(req.Prefix, req.PageSize)
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.OkJson(res, c)
 }
