@@ -224,6 +224,28 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 	return
 }
 
+func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Metadata, err error) {
+	err = m.MainDB.View(func(tx *bolt.Tx) error {
+		cur := logic.GetRoot(tx).Cursor()
+		var k, v []byte
+		if prefix != "" {
+			k, v = cur.Seek([]byte(prefix))
+		} else {
+			k, v = cur.Next()
+		}
+		for k != nil && len(lst) < size {
+			var data entity.Metadata
+			if err := util.DecodeMsgp(&data, v); err != nil {
+				return err
+			}
+			lst = append(lst, &data)
+			k, v = cur.Next()
+		}
+		return nil
+	})
+	return
+}
+
 func (m *MetadataRepo) ReadDB() (io.ReadCloser, error) {
 	reader, writer := io.Pipe()
 	errCh := make(chan error)
