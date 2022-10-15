@@ -4,6 +4,7 @@ import (
 	"common/constrant"
 	"common/disk"
 	"common/graceful"
+	"common/logs"
 	"common/util"
 	"context"
 	"errors"
@@ -45,6 +46,7 @@ func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 			case <-tk.C:
 				util.LogErrWithPre("auto save object-cap", oc.Save())
 			case <-ctx.Done():
+				logs.Std().Info("stop auto save object-cap and disk-info")
 				return
 			}
 		}

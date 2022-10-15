@@ -115,10 +115,16 @@ func (rw *RaftWrapper) subscribeLeaderCh() {
 func (rw *RaftWrapper) OnLeaderChanged(isLeader bool) {
 	for _, event := range rw.leaderChangedEvents {
 		go func(e IRaftLeaderChanged) {
-			graceful.Recover()
+			defer graceful.Recover()
 			e.OnLeaderChanged(isLeader)
 		}(event)
 	}
+}
+
+func (rw *RaftWrapper) Init() {
+	// if enabled raft, init as slave
+	// else init as singleton master
+	rw.OnLeaderChanged(!rw.Enabled)
 }
 
 func (rw *RaftWrapper) RegisterLeaderChangedEvent(event IRaftLeaderChanged) {

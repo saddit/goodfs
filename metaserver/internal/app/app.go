@@ -32,20 +32,13 @@ func Run(cfg *Config) {
 	// register on leader change
 	pool.RaftWrapper.RegisterLeaderChangedEvent(hsService)
 	pool.RaftWrapper.RegisterLeaderChangedEvent(logic.NewRegistry())
-	// register first time
-	if pool.RaftWrapper.Enabled {
-		pool.Registry.AsSlave()
-		// register peers
-		peersLogic := logic.NewPeers()
-		if err := peersLogic.RegisterSelf(); err != nil {
-			logs.Std().Error(err)
-			return
-		}
-		defer peersLogic.UnregisterSelf()
-	} else {
-		hsService.OnLeaderChanged(true)
-	}
+	pool.RaftWrapper.Init()
+	// register peers
+	defer logic.NewPeers().MustRegister().Unregister()
+	// register service
 	defer pool.Registry.MustRegister().Unregister()
+	// auto save disk-info
+	defer logic.NewDiskLogic().StartAutoSave()()
 
 	graceful.ListenAndServe(httpServer, grpcServer)
 }

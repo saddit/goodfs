@@ -33,7 +33,7 @@ func (Peers) GetPeers() ([]*entity.PeerInfo, error) {
 	return infoList, nil
 }
 
-func (Peers) RegisterSelf() error {
+func (Peers) Register() error {
 	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Cluster.ID)
 	info := &entity.PeerInfo{
 		Location: util.GetHost(),
@@ -49,7 +49,12 @@ func (Peers) RegisterSelf() error {
 	return err
 }
 
-func (Peers) UnregisterSelf() error {
+func (p Peers) MustRegister() Peers {
+	util.PanicErr(p.Register())
+	return p
+}
+
+func (Peers) Unregister() error {
 	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Cluster.ID)
 	_, err := pool.Etcd.Delete(context.Background(), key)
 	return err
