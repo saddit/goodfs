@@ -656,19 +656,19 @@ func (z *Info) DecodeMsg(dc *msgp.Reader) (err error) {
 		}
 		switch msgp.UnsafeString(field) {
 		case "total":
-			z.Total, err = dc.ReadUint64()
+			err = z.Total.DecodeMsg(dc)
 			if err != nil {
 				err = msgp.WrapError(err, "Total")
 				return
 			}
 		case "free":
-			z.Free, err = dc.ReadUint64()
+			err = z.Free.DecodeMsg(dc)
 			if err != nil {
 				err = msgp.WrapError(err, "Free")
 				return
 			}
 		case "used":
-			z.Used, err = dc.ReadUint64()
+			err = z.Used.DecodeMsg(dc)
 			if err != nil {
 				err = msgp.WrapError(err, "Used")
 				return
@@ -722,7 +722,7 @@ func (z *Info) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.Total)
+	err = z.Total.EncodeMsg(en)
 	if err != nil {
 		err = msgp.WrapError(err, "Total")
 		return
@@ -732,7 +732,7 @@ func (z *Info) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.Free)
+	err = z.Free.EncodeMsg(en)
 	if err != nil {
 		err = msgp.WrapError(err, "Free")
 		return
@@ -742,7 +742,7 @@ func (z *Info) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.Used)
+	err = z.Used.EncodeMsg(en)
 	if err != nil {
 		err = msgp.WrapError(err, "Used")
 		return
@@ -806,13 +806,25 @@ func (z *Info) MarshalMsg(b []byte) (o []byte, err error) {
 	// map header, size 8
 	// string "total"
 	o = append(o, 0x88, 0xa5, 0x74, 0x6f, 0x74, 0x61, 0x6c)
-	o = msgp.AppendUint64(o, z.Total)
+	o, err = z.Total.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "Total")
+		return
+	}
 	// string "free"
 	o = append(o, 0xa4, 0x66, 0x72, 0x65, 0x65)
-	o = msgp.AppendUint64(o, z.Free)
+	o, err = z.Free.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "Free")
+		return
+	}
 	// string "used"
 	o = append(o, 0xa4, 0x75, 0x73, 0x65, 0x64)
-	o = msgp.AppendUint64(o, z.Used)
+	o, err = z.Used.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "Used")
+		return
+	}
 	// string "files"
 	o = append(o, 0xa5, 0x66, 0x69, 0x6c, 0x65, 0x73)
 	o = msgp.AppendUint64(o, z.Files)
@@ -850,19 +862,19 @@ func (z *Info) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		}
 		switch msgp.UnsafeString(field) {
 		case "total":
-			z.Total, bts, err = msgp.ReadUint64Bytes(bts)
+			bts, err = z.Total.UnmarshalMsg(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "Total")
 				return
 			}
 		case "free":
-			z.Free, bts, err = msgp.ReadUint64Bytes(bts)
+			bts, err = z.Free.UnmarshalMsg(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "Free")
 				return
 			}
 		case "used":
-			z.Used, bts, err = msgp.ReadUint64Bytes(bts)
+			bts, err = z.Used.UnmarshalMsg(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "Used")
 				return
@@ -911,6 +923,6 @@ func (z *Info) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Info) Msgsize() (s int) {
-	s = 1 + 6 + msgp.Uint64Size + 5 + msgp.Uint64Size + 5 + msgp.Uint64Size + 6 + msgp.Uint64Size + 7 + msgp.Uint64Size + 8 + msgp.StringPrefixSize + len(z.FSType) + 6 + msgp.Uint32Size + 6 + msgp.Uint32Size
+	s = 1 + 6 + z.Total.Msgsize() + 5 + z.Free.Msgsize() + 5 + z.Used.Msgsize() + 6 + msgp.Uint64Size + 7 + msgp.Uint64Size + 8 + msgp.StringPrefixSize + len(z.FSType) + 6 + msgp.Uint32Size + 6 + msgp.Uint32Size
 	return
 }

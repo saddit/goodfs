@@ -22,6 +22,7 @@ package disk
 
 import (
 	"bufio"
+	"common/datasize"
 	"fmt"
 	"os"
 	"strconv"
@@ -40,8 +41,8 @@ func GetInfo(path string) (info Info, err error) {
 	}
 	reservedBlocks := s.Bfree - s.Bavail
 	info = Info{
-		Total: uint64(s.Frsize) * (s.Blocks - reservedBlocks),
-		Free:  uint64(s.Frsize) * s.Bavail,
+		Total: datasize.DataSize(s.Frsize) * datasize.DataSize(s.Blocks-reservedBlocks),
+		Free:  datasize.DataSize(s.Frsize) * datasize.DataSize(s.Bavail),
 		Files: s.Files,
 		Ffree: s.Ffree,
 		//nolint:unconvert
