@@ -7,7 +7,8 @@ endef
 gen:
 	$(foreach n, $(source), cd src/$(n)server; go generate ./..; cd ..)
 
-build-all: $(build-ui)
+build-all:
+	$(build-ui)
 	$(foreach n, $(source), go build -o bin/$(n) src/$(n)server/main.go;)
 
 start: build run
