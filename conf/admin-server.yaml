@@ -1,1 +1,8 @@
 port: 80
+discovery:
+  group: "goodfs"
+etcd:
+  endpoint:
+    - pressed.top:2379
+  username: root
+  password: xianka

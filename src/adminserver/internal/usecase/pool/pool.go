@@ -1,35 +1,35 @@
 package pool
 
 import (
-	"apiserver/config"
-	"apiserver/internal/usecase/componet/selector"
+	"adminserver/config"
 	"common/registry"
 	"common/util"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"net/http"
 	"time"
-
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
 	Config    *config.Config
 	Etcd      *clientv3.Client
 	Http      *http.Client
-	Balancer  selector.Selector
 	Discovery *registry.EtcdDiscovery
 )
 
-func InitPool(cfg *config.Config) {
+func Init(cfg *config.Config) {
 	Config = cfg
 	initHttpClient()
 	initEtcd(cfg)
 	initDiscovery(Etcd, cfg)
-	initBalancer(cfg)
 }
 
 func Close() {
 	Http.CloseIdleConnections()
 	util.LogErr(Etcd.Close())
+}
+
+func initHttpClient() {
+	Http = &http.Client{Timeout: 5 * time.Second}
 }
 
 func initEtcd(cfg *config.Config) {
@@ -46,14 +46,7 @@ func initEtcd(cfg *config.Config) {
 }
 
 func initDiscovery(etcd *clientv3.Client, cfg *config.Config) {
-	cfg.Registry.Services = []string{cfg.Discovery.DataServName, cfg.Discovery.MetaServName}
-	Discovery = registry.NewEtcdDiscovery(etcd, &cfg.Registry)
-}
-
-func initHttpClient() {
-	Http = &http.Client{Timeout: 5 * time.Second}
-}
-
-func initBalancer(cfg *config.Config) {
-	Balancer = selector.NewSelector(cfg.SelectStrategy)
+	conf := cfg.GetRegistryCfg()
+	conf.Services = []string{cfg.Discovery.DataServName, cfg.Discovery.MetaServName, cfg.Discovery.ApiServName}
+	Discovery = registry.NewEtcdDiscovery(etcd, conf)
 }
