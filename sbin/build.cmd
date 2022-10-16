@@ -1,4 +1,5 @@
-go build -o %~dp0..\bin\api.exe %~dp0..\apiserver\main.go
-go build -o %~dp0..\bin\meta.exe %~dp0..\metaserver\main.go
-go build -o %~dp0..\bin\object.exe %~dp0..\objectserver\main.go
-go build -o %~dp0..\bin\admin.exe %~dp0..\adminserver\main.go
+cd %~dp0..\src
+go build -o %~dp0..\bin\api.exe apiserver\main.go
+go build -o %~dp0..\bin\meta.exe metaserver\main.go
+go build -o %~dp0..\bin\object.exe objectserver\main.go
+go build -o %~dp0..\bin\admin.exe adminserver\main.go
