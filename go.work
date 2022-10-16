@@ -1,8 +1,9 @@
 go 1.18
 
 use (
-	apiserver
-	common
-	metaserver
-	objectserver
+	src/adminserver
+	src/apiserver
+	src/common
+	src/metaserver
+	src/objectserver
 )
