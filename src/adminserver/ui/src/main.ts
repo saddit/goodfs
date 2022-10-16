@@ -1,4 +1,4 @@
-import "@/api/base"; // before import 'vue' import 'api' to init baseUrl
+import "./config"; // before import 'vue' import 'config' to init variable from backend
 import {createApp} from 'vue'
 import './tailwind.css'
 import App from './App.vue'
