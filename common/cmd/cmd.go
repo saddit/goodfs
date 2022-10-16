@@ -31,10 +31,10 @@ func Register(name string, fn func(args []string)) {
 	cmdMap[name] = fn
 }
 
-func Run(args []string, def ...string) {
+func Run(args []string, defArgs ...string) {
 	parse()
 	if len(args) <= 1 {
-		args = append(args, def...)
+		args = append(args, defArgs...)
 	}
 	// get app cmd
 	cmd := args[1]
@@ -50,6 +50,6 @@ func Run(args []string, def ...string) {
 		return
 	}
 	// print hint if not found cmd
-	fmt.Printf("Not found your command '%s'\n", def)
+	fmt.Printf("Not found your command '%s'\n", cmd)
 	fmt.Println(cmdStr)
 }
