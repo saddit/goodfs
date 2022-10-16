@@ -11,8 +11,7 @@ const (
 )
 
 type Config struct {
-	Port         string `yaml:"port" env:"PORT" env-default:"80"`
-	ResourcePath string `yaml:"resource-path""`
+	Port string `yaml:"port" env:"PORT" env-default:"80"`
 }
 
 func ReadConfig() Config {

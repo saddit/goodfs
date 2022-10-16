@@ -18,6 +18,9 @@ type embedFileSystem struct {
 }
 
 func (e embedFileSystem) Exists(prefix string, path string) bool {
+	if path == "/" {
+		path = "/index.html"
+	}
 	f, err := e.Open(path)
 	if err != nil {
 		logs.Std().Errorf("bad static path: %s, %s", path, err)
