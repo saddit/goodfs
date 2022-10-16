@@ -1,14 +1,19 @@
-source:=api meta object
+source:=api meta object admin
 
 gen:
 	$(foreach n, $(source), cd src/$(n)server; go generate ./..; cd ..)
 
-build-all:
+build-all: build-yarn
 	$(foreach n, $(source), go build -o bin/$(n) src/$(n)server/main.go;)
 
-start: build runs
+build-yarn:
+	cd src/adminserver/ui; yarn
+
+start: build run
 
 build:
+	ifeq ($(n),'admin')
+		build-yarn
 	go build -o bin/$(n) src/$(n)server/main.go
 
 run:
