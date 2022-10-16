@@ -1,20 +1,28 @@
-source:=api meta object
+source:=api meta object admin
+
+define build-ui
+	cd src/adminserver/ui; yarn
+endef
 
 gen:
-	$(foreach n, $(source), cd $(n)server; go generate ./..; cd ..)
+	$(foreach n, $(source), cd src/$(n)server; go generate ./..; cd ..)
 
 build-all:
-	$(foreach n, $(source), go build -o bin/$(n) $(n)server/main.go;)
+	$(build-ui)
+	$(foreach n, $(source), go build -o bin/$(n) src/$(n)server/main.go;)
 
 start: build run
 
 build:
-	go build -o bin/$(n) $(n)server/main.go
+ifeq ($(n),admin)
+	$(build-ui)
+endif
+	go build -o bin/$(n) src/$(n)server/main.go
 
 run:
 	./bin/$(n) app test_conf/$(n)-server-$(i).yaml
 
 clear:
 	clear
-	rm -r /workspaces/temp/*
-	go test -v metaserver/test/api_test.go -test.run TestClearEtcd
+	rm -rf /workspaces/temp/*
+	go test -v src/metaserver/test/api_test.go -test.run TestClearEtcd
