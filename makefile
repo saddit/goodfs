@@ -4,18 +4,17 @@ gen:
 	$(foreach n, $(source), cd src/$(n)server; go generate ./..; cd ..)
 
 build-all:
-	$(foreach n, $(source), cd src; go build -o ../bin/$(n) $(n)server/main.go;)
+	$(foreach n, $(source), go build -o bin/$(n) src/$(n)server/main.go;)
 
-start: build run
+start: build runs
 
 build:
-	cd src
-	go build -o ../bin/$(n) $(n)server/main.go
+	go build -o bin/$(n) src/$(n)server/main.go
 
 run:
 	./bin/$(n) app test_conf/$(n)-server-$(i).yaml
 
 clear:
 	clear
-	rm -r /workspaces/temp/*
+	rm -rf /workspaces/temp/*
 	go test -v src/metaserver/test/api_test.go -test.run TestClearEtcd
