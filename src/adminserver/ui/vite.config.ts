@@ -19,6 +19,7 @@ export default defineConfig({
     open: true,
   },
   build: {
-    outDir: "../resource/web"
+    outDir: "../resource/web",
+    emptyOutDir: true
   }
 })

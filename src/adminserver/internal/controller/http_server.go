@@ -6,17 +6,16 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"path/filepath"
 )
 
 type HttpServer struct {
 	http.Server
 }
 
-func NewHttpServer(addr string, resourcePath string) *HttpServer {
+func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	eng := gin.Default()
 
-	eng.Use(static.Serve("/", static.LocalFile(filepath.Join(resourcePath, "web"), false)))
+	eng.Use(static.Serve("/", webFs))
 
 	route := eng.Group("/api")
 	http2.NewMetadataController().Register(route)
