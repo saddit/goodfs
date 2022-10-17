@@ -2,7 +2,7 @@ package db
 
 import (
 	"common/constrant"
-	"common/disk"
+	"common/system/disk"
 	"common/graceful"
 	"common/logs"
 	"common/util"

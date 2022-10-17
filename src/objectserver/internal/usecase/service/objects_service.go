@@ -2,7 +2,7 @@ package service
 
 import (
 	"common/constrant"
-	"common/disk"
+	"common/system/disk"
 	"common/graceful"
 	"io"
 	global "objectserver/internal/usecase/pool"

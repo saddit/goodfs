@@ -1,4 +1,7 @@
-package util
+//go:build linux || darwin
+// +build linux darwin
+
+package mem
 
 import (
 	"runtime"
@@ -13,14 +16,13 @@ type MemStatus struct {
 }
 
 func MemStat() MemStatus {
-	//自身占用
+	// program memory usage
 	memStat := new(runtime.MemStats)
 	runtime.ReadMemStats(memStat)
 	mem := MemStatus{}
 	mem.Self = memStat.Alloc
 
-	//系统占用,仅linux/mac下有效
-	//system memory usage
+	// system memory usage
 	sysInfo := new(syscall.Sysinfo_t)
 	err := syscall.Sysinfo(sysInfo)
 	if err == nil {
