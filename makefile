@@ -1,7 +1,7 @@
 source:=api meta object admin
 
 define build-ui
-	cd src/adminserver/ui; yarn
+	cd src/adminserver/ui; yarn run build
 endef
 
 gen:
@@ -12,6 +12,9 @@ build-all:
 	$(foreach n, $(source), go build -o bin/$(n) src/$(n)server/main.go;)
 
 start: build run
+
+yarn-build:
+	$(build-ui)
 
 build:
 ifeq ($(n),admin)
