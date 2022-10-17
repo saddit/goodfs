@@ -49,6 +49,7 @@ func (d *DoneGroup) WaitError() <-chan error {
 func (d *DoneGroup) WaitDone() <-chan struct{} {
 	ch := make(chan struct{})
 	go func() {
+		defer close(ch)
 		d.Wait()
 		ch <- struct{}{}
 	}()
@@ -68,9 +69,7 @@ func (d *DoneGroup) WaitUntilError() error {
 		case <-d.WaitDone():
 			return nil
 		case e := <-d.WaitError():
-			if e != nil {
-				return e
-			}
+			return e
 		}
 	}
 }
