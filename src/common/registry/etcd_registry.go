@@ -4,10 +4,12 @@ import (
 	. "common/constrant"
 	"common/graceful"
 	"common/logs"
+	"common/util"
 	"context"
 	"fmt"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"strings"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var log = logs.New("etcd-registry")
@@ -16,29 +18,25 @@ type EtcdRegistry struct {
 	cli       *clientv3.Client
 	cfg       Config
 	leaseId   clientv3.LeaseID
-	group     string
-	stdName   string // be like metaserver_150013
-	name      string // be like metaserver_150013_master
-	localAddr string
+	stdName   string
+	name      string
 	stopFn    func()
 }
 
-func NewEtcdRegistry(kv *clientv3.Client, cfg Config, localAddr string) *EtcdRegistry {
+func NewEtcdRegistry(kv *clientv3.Client, cfg Config) *EtcdRegistry {
 	k := fmt.Sprint(cfg.Name, "/", cfg.ServerID)
 	return &EtcdRegistry{
 		cli:       kv,
 		cfg:       cfg,
 		leaseId:   -1,
-		group:     cfg.Group,
 		stdName:   k,
 		name:      k,
-		localAddr: localAddr,
 		stopFn:    func() {},
 	}
 }
 
 func (e *EtcdRegistry) Key() string {
-	return EtcdPrefix.FmtRegistry(e.group, e.name)
+	return EtcdPrefix.FmtRegistry(e.cfg.Group, e.name)
 }
 
 func (e *EtcdRegistry) AsMaster() *EtcdRegistry {
@@ -52,8 +50,8 @@ func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
 	return e
 }
 
-func (e *EtcdRegistry) GetServiceMapping(name string) map[string]string {
-	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.group, name), clientv3.WithPrefix())
+func (e *EtcdRegistry) GetServiceMapping(name string, rpc bool) map[string]string {
+	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.cfg.Group, name), clientv3.WithPrefix())
 	if err != nil {
 		log.Infof("get services: %s", err)
 		return map[string]string{}
@@ -62,20 +60,22 @@ func (e *EtcdRegistry) GetServiceMapping(name string) map[string]string {
 	for _, kv := range resp.Kvs {
 		sp := strings.Split(string(kv.Key), "/")
 		sp = strings.Split(sp[len(sp)-1], "_")
-		res[sp[0]] = string(kv.Value)
+		value := RegisterValue(kv.Value)
+		res[sp[0]] = util.IfElse(rpc, value.RpcAddr(), value.HttpAddr())
 	}
 	return res
 }
 
-func (e *EtcdRegistry) GetServices(name string) []string {
-	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.group, name), clientv3.WithPrefix())
+func (e *EtcdRegistry) GetServices(name string, rpc bool) []string {
+	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.cfg.Group, name), clientv3.WithPrefix())
 	if err != nil {
 		log.Infof("get services: %s", err)
 		return []string{}
 	}
 	res := make([]string, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
-		res = append(res, string(kv.Value))
+		value := RegisterValue(kv.Value)
+		res = append(res, util.IfElse(rpc, value.RpcAddr(), value.HttpAddr()))
 	}
 	return res
 }
@@ -95,7 +95,8 @@ func (e *EtcdRegistry) Register() error {
 	ctx := context.Background()
 	var err error
 	//init registered key
-	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), e.localAddr); err != nil {
+	registerValue := NewRV(e.cfg.HttpAddr, e.cfg.RpcAddr)
+	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), registerValue); err != nil {
 		return err
 	}
 	var keepAlive <-chan *clientv3.LeaseKeepAliveResponse
@@ -133,7 +134,7 @@ func (e *EtcdRegistry) Unregister() error {
 	return nil
 }
 
-func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (clientv3.LeaseID, error) {
+func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key string, value RegisterValue) (clientv3.LeaseID, error) {
 	//grant a lease
 	ctx2, cancel2 := context.WithTimeout(ctx, e.cfg.Timeout)
 	defer cancel2()
@@ -144,7 +145,7 @@ func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key, value string) (
 	//create a key with lease
 	ctx3, cancel3 := context.WithTimeout(ctx, e.cfg.Timeout)
 	defer cancel3()
-	if _, err := e.cli.Put(ctx3, key, value, clientv3.WithLease(lease.ID)); err != nil {
+	if _, err := e.cli.Put(ctx3, key, string(value), clientv3.WithLease(lease.ID)); err != nil {
 		return -1, fmt.Errorf("Register interval heartbeat: send heartbeat error, %v", err)
 	}
 	return lease.ID, nil

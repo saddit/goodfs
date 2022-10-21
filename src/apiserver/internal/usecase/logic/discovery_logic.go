@@ -18,11 +18,11 @@ type Discovery struct{}
 func NewDiscovery() Discovery { return Discovery{} }
 
 func (Discovery) GetDataServers() []string {
-	return pool.Discovery.GetServices(pool.Config.Discovery.DataServName)
+	return pool.Discovery.GetServices(pool.Config.Discovery.DataServName, false)
 }
 
 func (Discovery) GetMetaServers(master bool) []string {
-	return pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, master)
+	return pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, false, master)
 }
 
 func (Discovery) SelectMetaByGroupID(gid string, defLoc string) string {
@@ -34,7 +34,7 @@ func (Discovery) SelectMetaByGroupID(gid string, defLoc string) string {
 		delete(groupIPCache, gid)
 		return defLoc
 	}
-	alive := set.OfString(pool.Discovery.GetServices(pool.Config.Discovery.MetaServName))
+	alive := set.OfString(pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false))
 	ips := make([]string, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		var info entity.PeerInfo

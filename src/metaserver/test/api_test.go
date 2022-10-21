@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"io/ioutil"
+	"io"
 	"metaserver/internal/entity"
 	"net/http"
 	"testing"
@@ -33,7 +33,7 @@ func TestPostAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := ioutil.ReadAll(resp.Body)
+	res, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestGetMeta(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := ioutil.ReadAll(resp.Body)
+	res, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,10 +68,14 @@ func TestEtcdRegsitry(t *testing.T) {
 	disc := registry.NewEtcdRegistry(etcd, registry.Config{
 		Group:    "goodfs",
 		Services: []string{"metaserver"},
-	}, "")
-
-	lst := disc.GetServices("metaserver")
-	t.Log(lst, len(lst))
+		HttpAddr: "server-a:8080",
+		RpcAddr:  "server-a:4040",
+	})
+	defer disc.MustRegister().Unregister()
+	httpList := disc.GetServices("metaserver", false)
+	rpcList := disc.GetServices("metaserver", true)
+	t.Log(httpList, len(httpList))
+	t.Log(rpcList, len(rpcList))
 }
 
 func TestGetObjectCaps(t *testing.T) {
