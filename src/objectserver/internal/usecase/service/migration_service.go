@@ -48,22 +48,19 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 		total += float64(v)
 	}
 	avg := uint64(math.Ceil(total / float64(size)))
-	peerMap, err := logic.NewPeers().GetPeerMap()
-	if err != nil {
-		return nil, fmt.Errorf("get peers error: %w", err)
-	}
-	res := make(map[string]int64, len(peerMap))
+	rpcMap := logic.NewPeers().GetPeerMap()
+	res := make(map[string]int64, len(rpcMap))
 	for k, v := range capMap {
 		// skip self
 		if k == pool.Config.Registry.ServerID {
 			continue
 		}
 		if v = util.IfElse(join, v-avg, avg-v); v > 0 {
-			info, ok := peerMap[k]
+			rpcAddr, ok := rpcMap[k]
 			if !ok {
 				return nil, fmt.Errorf("unknown peers '%s'", k)
 			}
-			res[info.RpcAddress()] = int64(v)
+			res[rpcAddr] = int64(v)
 		}
 	}
 	if len(res) == 0 {
@@ -198,7 +195,7 @@ func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
 }
 
 func (ms *MigrationService) Received(data *pb.ObjectData) error {
-	servs := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName)
+	servs := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
 	if len(servs) == 0 {
 		return fmt.Errorf("not exist meta-server")
 	}

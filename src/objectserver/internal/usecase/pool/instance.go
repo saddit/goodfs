@@ -41,8 +41,10 @@ func InitPool(cfg *config.Config) {
 	}
 
 	ObjectCap = db.NewObjectCapacity(Etcd, cfg)
-
-	er := registry.NewEtcdRegistry(Etcd, cfg.Registry, util.GetHostPort(cfg.Port))
+	
+	cfg.Registry.HttpAddr = util.GetHostPort(cfg.Port)
+	cfg.Registry.RpcAddr = util.GetHostPort(cfg.RpcPort)
+	er := registry.NewEtcdRegistry(Etcd, cfg.Registry)
 	Registry, Discovery = er, er
 }
 

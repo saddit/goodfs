@@ -18,15 +18,15 @@ func Run(cfg *Config) {
 	// init log
 	logs.SetLevel(cfg.LogLevel)
 	//init services
-	netAddr := util.GetHostPort(cfg.Port)
 	versionRepo := repo.NewVersionRepo(pool.Etcd)
 	metaRepo := repo.NewMetadataRepo(pool.Etcd, versionRepo)
 	metaService := service.NewMetaService(metaRepo, versionRepo)
 	objService := service.NewObjectService(metaService, pool.Etcd)
 	// register
-	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry, netAddr).MustRegister().Unregister()
+	cfg.Registry.HttpAddr = util.GetHostPort(cfg.Port)
+	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry).MustRegister().Unregister()
 	//start api server
 	graceful.ListenAndServe(
-		http.NewHttpServer(netAddr, objService, metaService),
+		http.NewHttpServer(cfg.Registry.HttpAddr, objService, metaService),
 	)
 }

@@ -7,7 +7,6 @@ import (
 	"common/util"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
-	"objectserver/internal/usecase/logic"
 	"os"
 
 	"objectserver/internal/controller/http"
@@ -41,9 +40,6 @@ func Run(cfg *config.Config) {
 	defer service.StartTempRemovalBackground(pool.Cache)()
 	// auto save server capacity info
 	defer pool.ObjectCap.StartAutoSave(cfg.State.SyncInterval)()
-	// register rpc-peer
-	util.PanicErr(logic.NewPeers().RegisterSelf())
-	defer logic.NewPeers().UnregisterSelf()
 	// warmup serv
 	service.WarmUpLocateCache()
 	// startup server

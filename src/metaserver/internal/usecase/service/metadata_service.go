@@ -119,9 +119,7 @@ func (m *MetadataService) GetMetadata(name string, version int) (*entity.Metadat
 		return meta, nil, nil
 	default:
 		ver, err := m.GetVersion(name, version)
-		if errors.Is(err, ErrNotFound) {
-			return meta, nil, nil
-		} else if err != nil {
+		if err != nil && !errors.Is(err, ErrNotFound) {
 			return nil, nil, err
 		}
 		return meta, ver, nil

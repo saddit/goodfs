@@ -34,7 +34,7 @@ func InitPool(cfg *config.Config) {
 	GrpcHostPort = util.GetHostPort(cfg.Cluster.Port)
 	initCache(cfg.Cache)
 	initEtcd(&cfg.Etcd)
-	initRegistry(&cfg.Registry, Etcd, HttpHostPort)
+	initRegistry(&cfg.Registry, Etcd)
 	initStorage(cfg)
 	initHashSlot(&cfg.Registry, Etcd)
 }
@@ -59,8 +59,10 @@ func initStorage(cfg *config.Config) {
 	}
 }
 
-func initRegistry(cfg *registry.Config, etcd *clientv3.Client, addr string) {
-	Registry = registry.NewEtcdRegistry(etcd, *cfg, addr)
+func initRegistry(cfg *registry.Config, etcd *clientv3.Client) {
+	cfg.HttpAddr = HttpHostPort
+	cfg.RpcAddr = GrpcHostPort
+	Registry = registry.NewEtcdRegistry(etcd, *cfg)
 }
 
 func initHashSlot(cfg *registry.Config, etcd *clientv3.Client) {
