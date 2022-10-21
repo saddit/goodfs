@@ -9,8 +9,11 @@ import (
 
 var logger = logs.New("panic-recover")
 
-func Recover() {
+func Recover(fn ...func(msg string)) {
 	if err := recover(); err != nil {
+		if len(fn) > 0 {
+			fn[0](fmt.Sprint(err))
+		}
 		logger.Errorf("%s\n%s", err, GetStacks())
 	}
 }

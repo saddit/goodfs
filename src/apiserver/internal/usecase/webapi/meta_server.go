@@ -9,6 +9,7 @@ import (
 	"common/util"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -96,7 +97,7 @@ func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
 	return util.UnmarshalPtrFromIO[entity.Version](resp.Body)
 }
 
-func ListVersion(ip, name string, page, pageSize int) ([]*entity.Version, error) {
+func ListVersion(ip, name string, page, pageSize int) ([]byte, error) {
 	resp, err := pool.Http.Get(versionListRest(ip, name, page, pageSize))
 	if err != nil {
 		return nil, err
@@ -104,7 +105,8 @@ func ListVersion(ip, name string, page, pageSize int) ([]*entity.Version, error)
 	if resp.StatusCode != http.StatusOK {
 		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
-	return util.UnmarshalFromIO[[]*entity.Version](resp.Body)
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
 }
 
 func PostVersion(ip, name string, body *entity.Version) (uint64, error) {

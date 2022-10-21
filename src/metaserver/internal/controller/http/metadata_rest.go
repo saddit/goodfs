@@ -2,11 +2,13 @@ package http
 
 import (
 	"common/response"
+	"common/util"
 	"github.com/gin-gonic/gin"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
 	"net/http"
+	"sort"
 )
 
 type MetadataController struct {
@@ -89,6 +91,8 @@ func (m *MetadataController) List(c *gin.Context) {
 	req := struct {
 		Prefix   string `form:"prefix"`
 		PageSize int    `form:"page_size" binding:"required,lte=10000"`
+		OrderBy  string `form:"order_by"`
+		Desc     bool   `form:"desc"`
 	}{}
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.FailErr(err, c)
@@ -99,5 +103,19 @@ func (m *MetadataController) List(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
+	sort.Slice(res, func(i, j int) bool {
+		var b bool
+		switch req.OrderBy {
+		default:
+			fallthrough
+		case "create_time":
+			b = res[i].CreateTime < res[j].CreateTime
+		case "update_time":
+			b = res[i].UpdateTime < res[j].UpdateTime
+		case "name":
+			b = res[i].Name < res[j].Name
+		}
+		return util.IfElse(req.Desc, !b, b)
+	})
 	response.OkJson(res, c)
 }
