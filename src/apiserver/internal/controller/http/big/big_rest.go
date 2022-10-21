@@ -64,11 +64,11 @@ func (bc *BigObjectsController) Head(g *gin.Context) {
 	size := stream.CurrentSize()
 	if size == -1 {
 		response.NotFound(g)
-	} else {
-		response.OkHeader(gin.H{
-			"Content-Length": util.ToString(size),
-		}, g)
+		return
 	}
+	response.OkHeader(gin.H{
+		"Content-Length": util.ToString(size),
+	}, g)
 }
 
 //Patch 上传大文件

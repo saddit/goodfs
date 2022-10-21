@@ -2,9 +2,9 @@ package db
 
 import (
 	"common/constrant"
-	"common/system/disk"
 	"common/graceful"
 	"common/logs"
+	"common/system/disk"
 	"common/util"
 	"context"
 	"errors"
@@ -60,6 +60,7 @@ func (oc *ObjectCapacity) Save() error {
 	// save object-cap
 	wg.Add(1)
 	go func() {
+		defer graceful.Recover()
 		defer wg.Done()
 		keyCap := constrant.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
 		_, err = oc.cli.Put(context.Background(), keyCap, oc.CurrentCap.String())
@@ -67,6 +68,7 @@ func (oc *ObjectCapacity) Save() error {
 	// save disk-info
 	wg.Add(1)
 	go func() {
+		defer graceful.Recover()
 		defer wg.Done()
 		var info disk.Info
 		var bt []byte
