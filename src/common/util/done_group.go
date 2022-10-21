@@ -1,6 +1,8 @@
 package util
 
 import (
+	"common/graceful"
+	"errors"
 	"sync"
 
 	"go.uber.org/atomic"
@@ -29,6 +31,14 @@ func NewDoneGroup() DoneGroup {
 	return DoneGroup{sync.WaitGroup{}, make(chan error, 1), atomic.NewBool(false)}
 }
 
+// Done equals to WaitGroup Done() but recover and call Error() on panic
+func (d *DoneGroup) Done() {
+	defer graceful.Recover(func(msg string) {
+		d.Error(errors.New(msg))
+	})
+	d.WaitGroup.Done()
+}
+
 //Todo equals to wg.Add(1)
 func (d *DoneGroup) Todo() {
 	d.Add(1)
@@ -39,7 +49,9 @@ func (d *DoneGroup) Error(e error) {
 	if d.closed.Load() {
 		return
 	}
-	d.ec <- e
+	if d.ec != nil {
+		d.ec <- e
+	}
 }
 
 func (d *DoneGroup) WaitError() <-chan error {

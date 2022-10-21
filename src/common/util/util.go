@@ -334,3 +334,18 @@ func MaxUint64(i, j uint64) uint64 {
 	}
 	return i
 }
+
+func PagingOffset(page, size, total int) (int, int, bool) {
+	if page == 0 {
+		return 0, 0, false
+	}
+	offset := (page - 1) * size
+	if offset >= total {
+		return 0, 0, false
+	}
+	end := offset + size
+	if end > total {
+		end = total
+	}
+	return offset, end, true
+}

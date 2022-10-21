@@ -3,8 +3,11 @@ package controller
 import (
 	http2 "adminserver/internal/controller/http"
 	"common/logs"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"net/http"
 )
 
@@ -14,8 +17,9 @@ type HttpServer struct {
 
 func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	eng := gin.Default()
-
-	eng.Use(static.Serve("/", webFs))
+	randSec := uuid.New()
+	eng.Use(static.Serve("/", webFs)).
+		Use(sessions.Sessions("dfs-admin", cookie.NewStore(randSec[:])))
 
 	route := eng.Group("/api")
 	http2.NewMetadataController().Register(route)
