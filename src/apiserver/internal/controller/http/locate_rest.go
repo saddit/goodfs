@@ -1,4 +1,4 @@
-package locate
+package http
 
 import (
 	"apiserver/internal/usecase"

@@ -36,6 +36,7 @@ type BigPostReq struct {
 	Name string `uri:"name" binding:"required"`
 	Hash string `header:"digest" binding:"required"`
 	Size int64  `header:"size" binding:"required"`
+	Ext  string
 }
 
 type BigPutReq struct {
