@@ -16,5 +16,6 @@ func (ss *ServerStateController) Register(r gin.IRouter) {
 }
 
 func (ss *ServerStateController) RegisterInfo(c *gin.Context) {
+	// apiHttp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.ApiServName, false)
 	// TODO
 }

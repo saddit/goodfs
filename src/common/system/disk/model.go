@@ -28,14 +28,14 @@ import "common/datasize"
 // Ffree - free inodes available
 // FSType - file system type
 type Info struct {
-	Total  datasize.DataSize `msg:"total"`
-	Free   datasize.DataSize `msg:"free"`
-	Used   datasize.DataSize `msg:"used"`
-	Files  uint64            `msg:"files"`
-	Ffree  uint64            `msg:"f_free"`
-	FSType string            `msg:"fs_type"`
-	Major  uint32            `msg:"major"`
-	Minor  uint32            `msg:"minor"`
+	Total  datasize.DataSize `msg:"total" json:"total"`
+	Free   datasize.DataSize `msg:"free" json:"free"`
+	Used   datasize.DataSize `msg:"used" json:"used"`
+	Files  uint64            `msg:"files" json:"files"`
+	Ffree  uint64            `msg:"f_free" json:"ffree"`
+	FSType string            `msg:"fs_type" json:"fsType"`
+	Major  uint32            `msg:"major" json:"major"`
+	Minor  uint32            `msg:"minor" json:"minor"`
 }
 
 // DevID is the drive major and minor ids

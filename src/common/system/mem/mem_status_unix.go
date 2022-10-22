@@ -8,18 +8,11 @@ import (
 	"syscall"
 )
 
-type MemStatus struct {
-	All  uint64 `json:"all"`
-	Used uint64 `json:"used"`
-	Free uint64 `json:"free"`
-	Self uint64 `json:"self"`
-}
-
-func MemStat() MemStatus {
+func MemStat() Status {
 	// program memory usage
 	memStat := new(runtime.MemStats)
 	runtime.ReadMemStats(memStat)
-	mem := MemStatus{}
+	mem := Status{}
 	mem.Self = memStat.Alloc
 
 	// system memory usage
