@@ -14,7 +14,7 @@ type ObjectsController struct {
 	metaService   usecase.IMetaService
 }
 
-func NewObjectsControoler(obj usecase.IObjectService, meta usecase.IMetaService) *ObjectsController {
+func NewObjectsController(obj usecase.IObjectService, meta usecase.IMetaService) *ObjectsController {
 	return &ObjectsController{obj, meta}
 }
 
@@ -39,7 +39,7 @@ func (oc *ObjectsController) Put(c *gin.Context) {
 		return
 	}
 
-	response.OkJson(&entity.PutResp{
+	response.CreatedJson(&entity.PutResp{
 		Name:    req.Name,
 		Version: verNum,
 	}, c)
@@ -72,7 +72,7 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 		}
 	}
 	// copy to response
-	_, err = io.CopyBuffer(c.Writer, stream, make([]byte, 2048))
+	_, err = io.Copy(c.Writer, stream)
 	if err != nil {
 		response.FailErr(err, c)
 		return

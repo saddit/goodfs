@@ -25,7 +25,7 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService) *Server {
 	r := eng.Group("/v1", authMid...)
 
 	//rest api
-	objects.NewObjectsControoler(o, m).Register(r)
+	objects.NewObjectsController(o, m).Register(r)
 	big.NewBigObjectsController(o, m).Register(r)
 	NewLocateController(o).Register(r)
 	NewMetadataController(m).Register(r)

@@ -5,10 +5,8 @@ import (
 	"adminserver/internal/usecase/pool"
 	"adminserver/internal/usecase/webapi"
 	"common/util"
-	"math/rand"
 	"sort"
 	"sync"
-	"time"
 )
 
 type MetadataCond struct {
@@ -70,9 +68,5 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, error)
 }
 
 func (m *Metadata) VersionPaging(cond MetadataCond) ([]byte, error) {
-	servers := pool.Discovery.GetServices(pool.Config.Discovery.ApiServName, false)
-	rand.Seed(time.Now().Unix())
-	idx := rand.Intn(len(servers))
-	ip := servers[idx]
-	return webapi.ListVersion(ip, cond.Name, cond.Page, cond.PageSize)
+	return webapi.ListVersion(SelectApiServer(), cond.Name, cond.Page, cond.PageSize)
 }
