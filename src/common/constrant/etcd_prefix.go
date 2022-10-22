@@ -8,7 +8,7 @@ type etcdPrefix struct {
 	Registry      string
 	ObjectCap     string
 	ApiCredential string
-	DiskInfo      string
+	SystemInfo    string
 }
 
 var EtcdPrefix = etcdPrefix{
@@ -17,7 +17,7 @@ var EtcdPrefix = etcdPrefix{
 	Registry:      "registry",
 	ObjectCap:     "object_cap",
 	ApiCredential: "api_credential",
-	DiskInfo:      "disk_info",
+	SystemInfo:    "disk_info",
 }
 
 func (e *etcdPrefix) FmtPeersInfo(groupId, id string) string {
@@ -36,6 +36,6 @@ func (e *etcdPrefix) FmtObjectCap(groupName, serviceName, name string) string {
 	return fmt.Sprintf("%s/%s/%s/%s", e.ObjectCap, groupName, serviceName, name)
 }
 
-func (e *etcdPrefix) FmtDiskInfo(groupName, serviceName, id string) string {
+func (e *etcdPrefix) FmtSystemInfo(groupName, serviceName, id string) string {
 	return fmt.Sprintf("%s/%s/%s/%s", e.ObjectCap, groupName, serviceName, id)
 }

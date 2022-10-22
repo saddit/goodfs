@@ -2,23 +2,23 @@ package logic
 
 import (
 	"common/constrant"
-	"common/system/disk"
 	"common/graceful"
 	"common/logs"
+	"common/system"
 	"common/util"
 	"context"
 	"metaserver/internal/usecase/pool"
 	"time"
 )
 
-type DiskLogic struct {
+type SystemStatLogic struct {
 }
 
-func NewDiskLogic() *DiskLogic {
-	return &DiskLogic{}
+func NewDiskLogic() *SystemStatLogic {
+	return &SystemStatLogic{}
 }
 
-func (d DiskLogic) StartAutoSave() func() {
+func (d SystemStatLogic) StartAutoSave() func() {
 	ctx, cancel := context.WithCancel(context.Background())
 	tk := time.NewTicker(time.Minute)
 	go func() {
@@ -26,30 +26,26 @@ func (d DiskLogic) StartAutoSave() func() {
 		for {
 			select {
 			case <-ctx.Done():
-				logs.Std().Info("stop auto save disk-info")
+				logs.Std().Info("stop auto save sys-info")
 				return
 			case <-tk.C:
-				util.LogErrWithPre("auto save disk-info", d.Save())
+				util.LogErrWithPre("auto save sys-info", d.Save())
 			}
 		}
 	}()
 	return cancel
 }
 
-func (d DiskLogic) Save() error {
-	info, err := d.CurDiskInfo()
+func (d SystemStatLogic) Save() error {
+	info, err := system.SystemInfo(`/`)
 	if err != nil {
 		return err
 	}
-	bt, err := util.EncodeMsgp(&info)
+	bt, err := util.EncodeMsgp(info)
 	if err != nil {
 		return err
 	}
-	keyDisk := constrant.EtcdPrefix.FmtDiskInfo(pool.Config.Registry.Group, pool.Config.Registry.Name, pool.Config.Registry.ServerID)
+	keyDisk := constrant.EtcdPrefix.FmtSystemInfo(pool.Config.Registry.Group, pool.Config.Registry.Name, pool.Config.Registry.ServerID)
 	_, err = pool.Etcd.Put(context.Background(), keyDisk, string(bt))
 	return err
-}
-
-func (DiskLogic) CurDiskInfo() (disk.Info, error) {
-	return disk.GetInfo(`\`)
 }

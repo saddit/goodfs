@@ -4,13 +4,12 @@ import (
 	"common/constrant"
 	"common/graceful"
 	"common/logs"
-	"common/system/disk"
+	"common/system"
 	"common/util"
 	"context"
 	"errors"
 	"objectserver/config"
 	"strings"
-	"sync"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -44,9 +43,9 @@ func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 		for {
 			select {
 			case <-tk.C:
-				util.LogErrWithPre("auto save object-cap", oc.Save())
+				util.LogErrWithPre("auto-save object-cap and sys-info", oc.Save())
 			case <-ctx.Done():
-				logs.Std().Info("stop auto save object-cap and disk-info")
+				logs.Std().Info("stop auto-save object-cap and sys-info")
 				return
 			}
 		}
@@ -55,36 +54,39 @@ func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 }
 
 func (oc *ObjectCapacity) Save() error {
-	var err error
-	var wg sync.WaitGroup
+	dg := util.NewDoneGroup()
+	defer dg.Close()
 	// save object-cap
-	wg.Add(1)
+	dg.Todo()
 	go func() {
-		defer graceful.Recover()
-		defer wg.Done()
+		defer dg.Done()
 		keyCap := constrant.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
-		_, err = oc.cli.Put(context.Background(), keyCap, oc.CurrentCap.String())
+		if _, err := oc.cli.Put(context.Background(), keyCap, oc.CurrentCap.String()); err != nil {
+			dg.Error(err)
+			return
+		}
 	}()
 	// save disk-info
-	wg.Add(1)
+	dg.Todo()
 	go func() {
-		defer graceful.Recover()
-		defer wg.Done()
-		var info disk.Info
-		var bt []byte
-		info, err = oc.CurDiskInfo()
+		defer dg.Done()
+		info, err := system.SystemInfo(`\`)
 		if err != nil {
+			dg.Error(err)
 			return
 		}
-		bt, err = util.EncodeMsgp(&info)
+		bt, err := util.EncodeMsgp(info)
 		if err != nil {
+			dg.Error(err)
 			return
 		}
-		keyDisk := constrant.EtcdPrefix.FmtDiskInfo(oc.groupName, oc.serviceName, oc.CurrentID)
-		_, err = oc.cli.Put(context.Background(), keyDisk, string(bt))
+		keyDisk := constrant.EtcdPrefix.FmtSystemInfo(oc.groupName, oc.serviceName, oc.CurrentID)
+		if _, err = oc.cli.Put(context.Background(), keyDisk, string(bt)); err != nil {
+			dg.Error(err)
+			return
+		}
 	}()
-	wg.Wait()
-	return err
+	return dg.WaitUntilError()
 }
 
 func (oc *ObjectCapacity) GetAll() (map[string]uint64, error) {
@@ -114,8 +116,4 @@ func (oc *ObjectCapacity) Get(s string) (uint64, error) {
 		return 0, errors.New("not exist capacity " + s)
 	}
 	return util.ToUint64(string(resp.Kvs[0].Value)), nil
-}
-
-func (oc *ObjectCapacity) CurDiskInfo() (disk.Info, error) {
-	return disk.GetInfo(`\`)
 }
