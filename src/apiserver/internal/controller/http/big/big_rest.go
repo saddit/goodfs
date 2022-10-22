@@ -74,13 +74,13 @@ func (bc *BigObjectsController) Head(g *gin.Context) {
 //Patch 上传大文件
 func (bc *BigObjectsController) Patch(g *gin.Context) {
 	var req entity.BigPutReq
-	if e := req.Bind(g); e != nil {
-		response.BadRequestErr(e, g)
+	if err := req.Bind(g); err != nil {
+		response.BadRequestErr(err, g)
 		return
 	}
-	stream, e := service.NewRSResumablePutStreamFromToken(req.Token)
-	if e != nil {
-		g.JSON(http.StatusBadRequest, gin.H{"msg": e.Error()})
+	stream, err := service.NewRSResumablePutStreamFromToken(req.Token)
+	if err != nil {
+		response.BadRequestErr(err, g)
 		return
 	}
 	defer stream.Close()

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ConfFilePath = "../../conf/admin-server.yaml"
+	ConfFilePath = "../../conf/api-server.yaml"
 )
 
 type Config struct {

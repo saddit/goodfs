@@ -2,7 +2,6 @@ package http
 
 import (
 	"apiserver/internal/controller/http/big"
-	"apiserver/internal/controller/http/locate"
 	"apiserver/internal/controller/http/objects"
 	. "apiserver/internal/usecase"
 	"apiserver/internal/usecase/componet/auth"
@@ -28,7 +27,7 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService) *Server {
 	//rest api
 	objects.NewObjectsControoler(o, m).Register(r)
 	big.NewBigObjectsController(o, m).Register(r)
-	locate.NewLocateController(o).Register(r)
+	NewLocateController(o).Register(r)
 	NewMetadataController(m).Register(r)
 
 	return &Server{netHttp.Server{Addr: addr, Handler: eng}}

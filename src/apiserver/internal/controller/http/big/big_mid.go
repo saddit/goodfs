@@ -15,14 +15,14 @@ func FilterDuplicates(obj usecase.IObjectService) gin.HandlerFunc {
 		if err := req.Bind(g); err != nil {
 			response.BadRequestErr(err, g).Abort()
 			return
-		} else {
-			g.Set("BigPostReq", &req)
 		}
+		req.Ext = util.GetFileExtOrDefault(req.Name, false, "bytes")
+		g.Set("BigPostReq", &req)
 		if ips, ok := obj.LocateObject(req.Hash); ok {
 			ver, err := obj.StoreObject(&entity.PutReq{
 				Name:     req.Name,
 				Hash:     req.Hash,
-				Ext:      util.GetFileExtOrDefault(req.Name, true, "bytes"),
+				Ext:      req.Ext,
 				Locate:   ips,
 				FileName: req.Hash,
 			}, &entity.Metadata{
