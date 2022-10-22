@@ -24,6 +24,7 @@ func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	route := eng.Group("/api")
 	http2.NewMetadataController().Register(route)
 	http2.NewServerStateController().Register(route)
+	http2.NewObjectsController().Register(route)
 
 	return &HttpServer{Server: http.Server{Handler: eng, Addr: addr}}
 }

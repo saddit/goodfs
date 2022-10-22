@@ -23,7 +23,8 @@ type Config struct {
 	Port      string          `yaml:"port" env:"PORT" env-default:"80"`
 	Discovery DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 	Etcd      etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	registry  registry.Config
+	TLS       bool            `yaml:"tls" env:"TLS"`
+	registry  registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 }
 
 func (c *Config) init() {
