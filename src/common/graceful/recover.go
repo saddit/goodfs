@@ -14,8 +14,12 @@ func Recover(fn ...func(msg string)) {
 		if len(fn) > 0 {
 			fn[0](fmt.Sprint(err))
 		}
-		logger.Errorf("%s\n%s", err, GetStacks())
+		PrintStacks(err)
 	}
+}
+
+func PrintStacks(msg any) {
+	logger.Errorf("%s\n%s", msg, GetStacks())
 }
 
 func GetStacks() string {

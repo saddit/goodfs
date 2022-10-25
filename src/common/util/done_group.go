@@ -3,6 +3,7 @@ package util
 import (
 	"common/graceful"
 	"errors"
+	"fmt"
 	"sync"
 
 	"go.uber.org/atomic"
@@ -33,10 +34,11 @@ func NewDoneGroup() DoneGroup {
 
 // Done equals to WaitGroup Done() but recover and call Error() on panic
 func (d *DoneGroup) Done() {
-	defer graceful.Recover(func(msg string) {
-		d.Error(errors.New(msg))
-	})
 	d.WaitGroup.Done()
+	if err := recover(); err != nil {
+		graceful.PrintStacks(err)
+		d.Error(errors.New(fmt.Sprint(err)))
+	}
 }
 
 //Todo equals to wg.Add(1)
