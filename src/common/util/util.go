@@ -304,7 +304,7 @@ func UnmarshalFromIO[T any](body io.ReadCloser) (T, error) {
 }
 
 // DecodeMsgp decode data by msgp
-func DecodeMsgp[T msgp.Unmarshaler](data T, bt []byte) (err error) {
+func DecodeMsgp(data msgp.Unmarshaler, bt []byte) (err error) {
 	_, err = data.UnmarshalMsg(bt)
 	return
 }

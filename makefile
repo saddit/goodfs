@@ -1,4 +1,5 @@
-source:=api meta object admin
+source := api meta object admin
+i := 1
 
 define build-ui
 	cd src/adminserver/ui; yarn run build
