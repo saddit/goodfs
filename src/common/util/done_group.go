@@ -25,7 +25,7 @@ type DoneGroup struct {
 
 // NewNonErrDoneGroup equals to WaitGroup. Only Todo() and WaitDone() func can be used!
 func NewNonErrDoneGroup() NonErrDoneGroup {
-	return &DoneGroup{sync.WaitGroup{}, nil, atomic.NewBool(false)}
+	return &DoneGroup{sync.WaitGroup{}, nil, atomic.NewBool(true)}
 }
 
 func NewDoneGroup() DoneGroup {
