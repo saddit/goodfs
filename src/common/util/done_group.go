@@ -41,16 +41,17 @@ func (d *DoneGroup) Done() {
 	}
 }
 
-//Todo equals to wg.Add(1)
+// Todo equals to wg.Add(1)
 func (d *DoneGroup) Todo() {
 	d.Add(1)
 }
 
-//Error deliver an error non blocking
+// Error deliver an error non blocking. Only one error can be received
 func (d *DoneGroup) Error(e error) {
 	if d.closed.Load() {
 		return
 	}
+	defer d.Close()
 	if d.ec != nil {
 		d.ec <- e
 	}
@@ -70,13 +71,14 @@ func (d *DoneGroup) WaitDone() <-chan struct{} {
 	return ch
 }
 
+// Close close the error receive channel. Safe to call multi goroutine and times
 func (d *DoneGroup) Close() {
-	if d.closed.CAS(false, true) {
+	if d.closed.CAS(false, true) && d.ec != nil {
 		close(d.ec)
 	}
 }
 
-//WaitUntilError use select to WaitDone() and WaitError() if has error return it else return nil
+// WaitUntilError use select to WaitDone() and WaitError() if has error return it else return nil
 func (d *DoneGroup) WaitUntilError() error {
 	for {
 		select {
