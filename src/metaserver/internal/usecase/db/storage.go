@@ -7,6 +7,7 @@ import (
 	"common/util"
 	"metaserver/internal/usecase"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -66,7 +67,20 @@ func (s *Storage) Stop() error {
 	return nil
 }
 
+func (s *Storage) checkPath(path string) error {
+	dir := filepath.Dir(path)
+	 _, err := os.Stat(dir); 
+	if err == nil {
+		return nil
+	}
+	if os.IsNotExist(err) {
+		return os.Mkdir(dir, constrant.OS.ModeUser)
+	}
+	return err
+}
+
 func (s *Storage) Open(path string) error {
+	s.checkPath(path)
 	cur, err := bolt.Open(path, constrant.OS.ModeUser, &bolt.Options{
 		Timeout:      12 * time.Second,
 		NoGrowSync:   false,

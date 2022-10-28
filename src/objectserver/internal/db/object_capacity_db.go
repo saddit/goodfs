@@ -5,6 +5,7 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/system"
+	"common/system/disk"
 	"common/util"
 	"context"
 	"errors"
@@ -70,7 +71,7 @@ func (oc *ObjectCapacity) Save() error {
 	dg.Todo()
 	go func() {
 		defer dg.Done()
-		info, err := system.SystemInfo(`\`)
+		info, err := system.SystemInfo(disk.Root)
 		if err != nil {
 			dg.Error(err)
 			return

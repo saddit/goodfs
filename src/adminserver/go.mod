@@ -6,7 +6,7 @@ require (
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
 	github.com/google/uuid v1.3.0
-	github.com/ilyakaznacheev/cleanenv v1.3.0
+	github.com/ilyakaznacheev/cleanenv v1.4.1
 	go.etcd.io/etcd/client/v3 v3.5.4
 )
 
@@ -53,3 +53,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
 )
+
+replace github.com/ilyakaznacheev/cleanenv v1.4.1 => github.com/838239178/cleanenv v1.4.1

@@ -18,8 +18,8 @@ type HttpServer struct {
 func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	eng := gin.Default()
 	randSec := uuid.New()
-	eng.Use(static.Serve("/", webFs)).
-		Use(sessions.Sessions("dfs-admin", cookie.NewStore(randSec[:])))
+	eng.Use(static.Serve("/", webFs))
+	eng.Use(sessions.Sessions("dfs-admin", cookie.NewStore(randSec[:])))
 
 	route := eng.Group("/api")
 	http2.NewMetadataController().Register(route)

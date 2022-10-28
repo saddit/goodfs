@@ -31,6 +31,11 @@ import (
 )
 
 var (
+	Root = `\`
+)
+
+
+var (
 	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
 
 	// GetDiskFreeSpaceEx - https://msdn.microsoft.com/en-us/library/windows/desktop/aa364937(v=vs.85).aspx

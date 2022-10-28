@@ -12,8 +12,8 @@ import (
 type MetadataCond struct {
 	Name     string `form:"name"`
 	Version  int    `form:"version"`
-	Page     int    `form:"page"`
-	PageSize int    `form:"page_size"`
+	Page     int    `form:"page" binding:"required"`
+	PageSize int    `form:"page_size" binding:"required"`
 	OrderBy  string `form:"order_by"`
 	Desc     bool   `form:"desc"`
 }
@@ -27,8 +27,8 @@ func NewMetadata() *Metadata {
 func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, error) {
 	servers := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
 	lst := make([]*entity.Metadata, 0, len(servers)*cond.Page*cond.PageSize)
-	dg := util.NewDoneGroup()
 	mux := sync.Mutex{}
+	dg := util.NewDoneGroup()
 	defer dg.Close()
 	for _, ip := range servers {
 		dg.Add(1)

@@ -32,6 +32,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+var (
+	Root = "/"
+)
+
 // GetInfo returns total and free bytes available in a directory, e.g. `/`.
 func GetInfo(path string) (info Info, err error) {
 	s := syscall.Statfs_t{}

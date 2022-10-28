@@ -6,7 +6,7 @@ require (
 	github.com/Jille/raft-grpc-transport v1.1.1
 	github.com/allegro/bigcache v1.2.1
 	github.com/gin-gonic/gin v1.8.1
-	github.com/ilyakaznacheev/cleanenv v1.3.0
+	github.com/ilyakaznacheev/cleanenv v1.4.0
 	github.com/tinylib/msgp v1.1.6
 	go.etcd.io/bbolt v1.3.6
 	go.etcd.io/etcd/client/v3 v3.5.4

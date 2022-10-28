@@ -5,7 +5,7 @@ import (
 )
 
 func TestGetInfo(t *testing.T) {
-	info, err := GetInfo(`\`)
+	info, err := GetInfo(Root)
 	if err != nil {
 		t.Fatal(err)
 	}

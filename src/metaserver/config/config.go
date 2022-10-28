@@ -53,8 +53,8 @@ type ClusterConfig struct {
 	Enable           bool          `yaml:"enable" env:"ENABLE" env-default:"false"`
 	Bootstrap        bool          `yaml:"bootstrap" env:"BOOTSTRAP" env-default:"false"`
 	ID               string        `yaml:"-" env:"-"`
-	GroupID          string        `yaml:"group-id" env:"GROUP_ID" env-required:"true"`
 	Port             string        `yaml:"-" env:"-"`
+	GroupID          string        `yaml:"group-id" env:"GROUP_ID" env-default:"raft"`
 	LogLevel         string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
 	StoreDir         string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
 	ElectionTimeout  time.Duration `yaml:"election-timeout" env:"ELECTION_TIMEOUT" env-default:"900ms"`
