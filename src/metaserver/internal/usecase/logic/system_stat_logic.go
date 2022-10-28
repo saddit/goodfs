@@ -5,6 +5,7 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/system"
+	"common/system/disk"
 	"common/util"
 	"context"
 	"metaserver/internal/usecase/pool"
@@ -14,7 +15,7 @@ import (
 type SystemStatLogic struct {
 }
 
-func NewDiskLogic() *SystemStatLogic {
+func NewSystemStatLogic() *SystemStatLogic {
 	return &SystemStatLogic{}
 }
 
@@ -37,7 +38,7 @@ func (d SystemStatLogic) StartAutoSave() func() {
 }
 
 func (d SystemStatLogic) Save() error {
-	info, err := system.SystemInfo(`/`)
+	info, err := system.SystemInfo(disk.Root)
 	if err != nil {
 		return err
 	}

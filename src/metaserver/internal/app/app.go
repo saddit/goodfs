@@ -38,7 +38,7 @@ func Run(cfg *Config) {
 	// unregister service
 	defer pool.Registry.Unregister()
 	// auto save disk-info
-	defer logic.NewDiskLogic().StartAutoSave()()
+	defer logic.NewSystemStatLogic().StartAutoSave()()
 
 	graceful.ListenAndServe(httpServer, grpcServer)
 }

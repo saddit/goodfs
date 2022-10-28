@@ -5,22 +5,27 @@ import (
 	"strings"
 )
 
-
 type RegisterValue []byte
 
 func NewRV(httpAddr, rpcAddr string) RegisterValue {
-	return RegisterValue(fmt.Sprint(httpAddr, rpcAddr))
+	return RegisterValue(fmt.Sprint(httpAddr, ",", rpcAddr))
 }
 
 func (rv RegisterValue) HttpAddr() string {
-	return strings.Split(string(rv), ",")[0]
+	v, _ := rv.Addr()
+	return v
 }
 
 func (rv RegisterValue) RpcAddr() string {
-	return strings.Split(string(rv), ",")[1]
+	_, v := rv.Addr()
+	return v
 }
 
 func (rv RegisterValue) Addr() (httpAddr string, rpcAddr string) {
 	sp := strings.Split(string(rv), ",")
-	return sp[0], sp[1]
+	httpAddr = sp[0]
+	if len(sp) > 1 {
+		rpcAddr = sp[1]
+	}
+	return
 }

@@ -32,12 +32,15 @@ func (e embedFileSystem) Exists(prefix string, path string) bool {
 	}
 	f, err := e.Open(path)
 	if err != nil {
-		logs.Std().Errorf("bad static path: %s, %s", path, err)
 		return false
 	}
 
 	// check if indexing is allowed
-	s, _ := f.Stat()
+	s, err := f.Stat()
+	if err != nil {
+		logs.Std().Error(err)
+		return false
+	}
 	if s.IsDir() && !e.indexes {
 		return false
 	}
