@@ -13,7 +13,14 @@ export default defineConfig({
     vue(),
     Components({ resolvers: [HeadlessUiResolver()] }),
     AutoImport({
-      imports: ['vue', '@vueuse/head', VueRouterAutoImports],
+      imports: [
+          'vue', '@vueuse/head', VueRouterAutoImports,
+        {
+          '@/api/': [
+            ['default', 'api']
+          ]
+        }
+      ],
     }),
   ],
   resolve: {
@@ -26,12 +33,6 @@ export default defineConfig({
   },
   build: {
     outDir: "../resource/web",
-    emptyOutDir: true,
-    rollupOptions: {
-      external: ['config.js']
-    }
-  },
-  optimizeDeps:{
-    exclude: ['config.js']
-  },
+    emptyOutDir: true
+  }
 })

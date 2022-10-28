@@ -1,4 +1,4 @@
-import "./config"; // before import 'vue' import 'config' to init variable from backend
+import "./config"; // before import 'vue', import 'config' to init variable from backend
 import {createApp} from 'vue'
 import './tailwind.css'
 import App from './App.vue'

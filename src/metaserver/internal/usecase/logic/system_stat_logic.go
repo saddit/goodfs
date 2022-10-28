@@ -39,7 +39,7 @@ func (d SystemStatLogic) StartAutoSave() func() {
 }
 
 func (d SystemStatLogic) Save() error {
-	info, err := system.SystemInfo(disk.Root)
+	info, err := system.NewInfo(disk.Root)
 	if err != nil {
 		return err
 	}

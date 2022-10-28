@@ -12,7 +12,7 @@ type Info struct {
 	MemStatus mem.Status `json:"memStatus" msg:",inline"`
 }
 
-func SystemInfo(diskPath string) (*Info, error) {
+func NewInfo(diskPath string) (*Info, error) {
 	d, err := disk.GetInfo(diskPath)
 	if err != nil {
 		return nil, err

@@ -8,6 +8,25 @@ module.exports = {
       fontFamily: {
         sans: ['"Inter var"', ...defaultTheme.fontFamily.sans],
       },
+      width: {
+        'fit': 'fit-content'
+      },
+      height: {
+        'fit': 'fit-content'
+      },
+      fontSize: {
+        'huge': '10rem'
+      },
+      minHeight: {
+        '9/10': '90%',
+        '4/5': '80%',
+        '7/10': '70%',
+        '1/2': '50%',
+        '1/3': '33.333%',
+        '44': '11rem',
+        '32': '8rem',
+        '28': '7rem'
+      },
     },
   },
   plugins: [
