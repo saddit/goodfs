@@ -4,6 +4,7 @@ import (
 	"adminserver/internal/entity"
 	"adminserver/internal/usecase/pool"
 	"adminserver/internal/usecase/webapi"
+	"common/logs"
 	"common/util"
 	"sort"
 	"sync"
@@ -27,6 +28,10 @@ func NewMetadata() *Metadata {
 func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, error) {
 	servers := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
 	lst := make([]*entity.Metadata, 0, len(servers)*cond.Page*cond.PageSize)
+	if len(servers) == 0 {
+		logs.Std().Warn("not found any metadata server")
+		return lst, nil
+	}
 	mux := sync.Mutex{}
 	dg := util.NewDoneGroup()
 	defer dg.Close()

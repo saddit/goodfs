@@ -30,15 +30,10 @@ func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 }
 
 func (e *EtcdDiscovery) initService(serv string) {
-	// watch kv changing
-	e.httpService[serv] = newServiceList()
-	e.rpcService[serv] = newServiceList()
-	prefix := constrant.EtcdPrefix.FmtRegistry(e.group, serv)
-	ch := e.cli.Watch(context.Background(), prefix, clientv3.WithPrefix())
-	e.asyncWatch(serv, ch)
-	// get original kvs
 	go func() {
 		defer graceful.Recover()
+		// fetch kvs
+		prefix := constrant.EtcdPrefix.FmtRegistry(e.group, serv)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		res, err := e.cli.Get(ctx, prefix, clientv3.WithPrefix())
@@ -46,11 +41,20 @@ func (e *EtcdDiscovery) initService(serv string) {
 			log.Warnf("discovery init service %s error: %s", prefix, err)
 			return
 		}
+		// wrap kvs
+		https := make(map[string]string)
+		rpcs := make(map[string]string)
 		for _, kv := range res.Kvs {
 			value := RegisterValue(kv.Value)
-			e.httpService[serv].add(value.HttpAddr(), string(kv.Key))
-			e.rpcService[serv].add(value.RpcAddr(), string(kv.Key))
+			https[value.HttpAddr()] = string(kv.Key)
+			rpcs[value.RpcAddr()] = string(kv.Key)
 		}
+		// init serv
+		e.httpService[serv] = newServiceListOf(https)
+		e.rpcService[serv] = newServiceListOf(rpcs)
+		// start watch change
+		ch := e.cli.Watch(context.Background(), prefix, clientv3.WithPrefix())
+		e.asyncWatch(serv, ch)
 	}()
 }
 
@@ -77,7 +81,7 @@ func (e *EtcdDiscovery) GetServiceMapping(name string, rpc bool) map[string]stri
 	res := make(map[string]string)
 	service := util.IfElse(rpc, e.rpcService, e.httpService)
 	if sl, ok := service[name]; ok {
-		for k, v := range sl.data {
+		for k, v := range sl.copy() {
 			sp := strings.Split(v, "/")
 			sp = strings.Split(sp[len(sp)-1], "_")
 			res[sp[0]] = k
