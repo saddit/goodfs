@@ -14,8 +14,8 @@ type MetadataCond struct {
 	Name     string `form:"name"`
 	Version  int    `form:"version"`
 	Page     int    `form:"page" binding:"required"`
-	PageSize int    `form:"page_size" binding:"required"`
-	OrderBy  string `form:"order_by"`
+	PageSize int    `form:"pageSize" binding:"required"`
+	OrderBy  string `form:"orderBy"`
 	Desc     bool   `form:"desc"`
 }
 
