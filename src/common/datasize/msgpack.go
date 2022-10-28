@@ -13,7 +13,6 @@ func (d *DataSize) EncodeMsg(en *msgp.Writer) error {
 }
 
 func (d *DataSize) MarshalMsg(o []byte) ([]byte, error) {
-	o = append(o, 0xa6, 0x66, 0x5f, 0x66, 0x72, 0x65, 0x65)
 	o = msgp.AppendUint64(o, uint64(*d))
 	return o, nil
 }

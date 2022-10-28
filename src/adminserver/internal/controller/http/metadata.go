@@ -21,7 +21,7 @@ func (mc *MetadataController) Register(r gin.IRouter) {
 
 func (mc *MetadataController) Page(c *gin.Context) {
 	var cond logic.MetadataCond
-	if err := c.ShouldBindQuery(&c); err != nil {
+	if err := c.ShouldBindQuery(&cond); err != nil {
 		response.FailErr(err, c)
 		return
 	}
@@ -35,7 +35,7 @@ func (mc *MetadataController) Page(c *gin.Context) {
 
 func (mc *MetadataController) Versions(c *gin.Context) {
 	var cond logic.MetadataCond
-	if err := c.ShouldBindQuery(&c); err != nil {
+	if err := c.ShouldBindQuery(&cond); err != nil {
 		response.FailErr(err, c)
 		return
 	}

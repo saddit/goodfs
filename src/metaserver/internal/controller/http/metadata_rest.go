@@ -3,12 +3,14 @@ package http
 import (
 	"common/response"
 	"common/util"
-	"github.com/gin-gonic/gin"
 	"metaserver/internal/entity"
+	"metaserver/internal/usecase"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
 	"net/http"
 	"sort"
+
+	"github.com/gin-gonic/gin"
 )
 
 type MetadataController struct {
@@ -99,6 +101,10 @@ func (m *MetadataController) List(c *gin.Context) {
 		return
 	}
 	res, err := m.service.ListMetadata(req.Prefix, req.PageSize)
+	if usecase.IsNotFound(err) {
+		response.OkJson([]struct{}{}, c)
+		return
+	}
 	if err != nil {
 		response.FailErr(err, c)
 		return

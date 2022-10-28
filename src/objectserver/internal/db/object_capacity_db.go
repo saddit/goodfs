@@ -38,6 +38,7 @@ func NewObjectCapacity(c clientv3.KV, cfg *config.Config) *ObjectCapacity {
 func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 	ctx, cancel := context.WithCancel(context.Background())
 	tk := time.NewTicker(interval)
+	util.LogErrWithPre("auto-save object-cap and sys-info", oc.Save())
 	go func() {
 		defer graceful.Recover()
 		defer tk.Stop()

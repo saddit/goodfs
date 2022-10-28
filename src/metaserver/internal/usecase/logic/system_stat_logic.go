@@ -22,6 +22,7 @@ func NewSystemStatLogic() *SystemStatLogic {
 func (d SystemStatLogic) StartAutoSave() func() {
 	ctx, cancel := context.WithCancel(context.Background())
 	tk := time.NewTicker(time.Minute)
+	util.LogErrWithPre("auto save sys-info", d.Save())
 	go func() {
 		defer graceful.Recover()
 		for {

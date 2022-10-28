@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"common/response"
+	"errors"
 )
 
 var (
@@ -12,3 +13,7 @@ var (
 	ErrExists   = response.NewError(400, "data exists")
 	ErrNilData  = response.NewError(400, "null value")
 )
+
+func IsNotFound(err error) bool {
+	return errors.Is(err, ErrNotFound)
+}

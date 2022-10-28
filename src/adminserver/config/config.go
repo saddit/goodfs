@@ -41,6 +41,7 @@ func ReadConfig() Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", ConfFilePath)
+	conf.init()
 	return conf
 }
 
@@ -53,5 +54,6 @@ func ReadConfigFrom(path string) Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", path)
+	conf.init()
 	return conf
 }
