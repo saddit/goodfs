@@ -1,1 +1,1 @@
-export const baseUrl = "http://localhost:80"
+window.baseUrl = "http://localhost:8080"
