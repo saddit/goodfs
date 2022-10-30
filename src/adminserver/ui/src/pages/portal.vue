@@ -1,10 +1,14 @@
 <template>
-  <a class="btn-pri">
-    {{ t('link') }}
-  </a>
-  <select v-model="$i18n.locale" @select="setLocale">
-    <option v-for="lang in availableLocales" :key="`locale-${lang}`" :value="lang">{{ lang }}</option>
-  </select>
+  <div class="flex items-baseline space-x-3">
+    <div class="btn-pri">
+      {{ t('link') }}
+    </div>
+    <div class="flex items-baseline">
+      <label class="text-gray-900 text-sm mx-2">{{t('locale-label')}}</label>
+      <PriListBox v-model="locale" :options="availableLocales" class="w-72">
+      </PriListBox>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -16,8 +20,12 @@ useHead({
   title: "Portal"
 })
 
-const {t, availableLocales} = useI18n({
+const {t, locale, availableLocales} = useI18n({
   inheritLocale: true
+})
+
+watch(locale, (lang) => {
+  setLocale(lang.toString())
 })
 
 function setLocale(lang: string) {
@@ -36,6 +44,8 @@ function setLocale(lang: string) {
 <i18n lang="yaml">
 en:
   link: 'linked'
+  locale-label: 'locale'
 zh:
   link: '链接'
+  locale-label: '语言'
 </i18n>
