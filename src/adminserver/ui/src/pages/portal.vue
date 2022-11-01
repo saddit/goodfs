@@ -36,7 +36,7 @@ function setLocale(lang: string) {
 <route lang="json">
 {
 "meta": {
-"title": "Portal"
+"title": "portal"
 }
 }
 </route>

@@ -7,13 +7,12 @@
           class="text-3xl font-extrabold leading-9 tracking-tight text-gray-900 sm:text-4xl sm:leading-10"
       >
         {{ t('hello') }}? http-url: {{ getBaseUrl() }}
-        <br/>
         <span class="text-indigo-600">Vite + Vue 3 + Tailwind CSS</span>
       </h2>
       <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
         <div class="inline-flex rounded-md shadow space-x-2">
-          <router-link to="/about" class="btn-pri">About</router-link>
-          <router-link to="/portal" class="btn-pri">Portal</router-link>
+          <router-link to="/about" class="btn-pri">{{ t('about') }}</router-link>
+          <router-link to="/portal" class="btn-pri">{{ t('portal') }}</router-link>
         </div>
         <ButtonRepo/>
       </div>
@@ -43,7 +42,7 @@ zh:
 <route lang="json">
 {
 "meta": {
-"title": "Home"
+"title": "home"
 }
 }
 </route>
