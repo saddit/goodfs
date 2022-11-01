@@ -7,7 +7,6 @@ import Components from 'unplugin-vue-components/vite'
 import vueI18n from '@intlify/vite-plugin-vue-i18n'
 import { HeadlessUiResolver } from 'unplugin-vue-components/resolvers'
 import { resolve } from 'path'
-import {fileURLToPath} from "url";
 
 export default defineConfig({
   plugins: [
