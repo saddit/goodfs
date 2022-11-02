@@ -18,6 +18,9 @@ start: build run
 yarn-build:
 	$(build-ui)
 
+yarn-dev:
+	cd src/adminserver/ui; yarn run dev
+
 build:
 ifeq ($(n),admin)
 	$(build-ui)

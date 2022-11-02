@@ -4,28 +4,25 @@
       {{ t('link') }}
     </div>
     <div class="flex items-baseline">
-      <label class="text-gray-900 text-sm mx-2">{{t('locale-label')}}</label>
-      <PriListBox v-model="locale" :options="availableLocales" class="w-72">
+      <label class="text-gray-900 text-sm mx-2">{{  t('locale-label')  }}</label>
+      <PriListBox @change="setLocale" v-model="$i18n.locale" :options="$i18n.availableLocales" class="w-72">
       </PriListBox>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {useStore} from "@/store";
-import {useI18n} from "vue-i18n";
+import { useStore } from "@/store";
+import { useI18n } from "vue-i18n";
 
-const store = useStore()
 useHead({
   title: "Portal"
 })
 
-const {t, locale, availableLocales} = useI18n({
-  inheritLocale: true
-})
+const store = useStore()
 
-watch(locale, (lang) => {
-  setLocale(lang.toString())
+const {t} = useI18n({
+  inheritLocale: true
 })
 
 function setLocale(lang: string) {
@@ -35,9 +32,9 @@ function setLocale(lang: string) {
 
 <route lang="json">
 {
-"meta": {
-"title": "portal"
-}
+  "meta": {
+    "title": "portal"
+  }
 }
 </route>
 

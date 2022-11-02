@@ -19,7 +19,7 @@ export default defineConfig({
     Components({ resolvers: [HeadlessUiResolver()] }),
     AutoImport({
       imports: [
-          'vue', '@vueuse/head', VueRouterAutoImports,
+          'vue', '@vueuse/head', '@vueuse/core', VueRouterAutoImports,
         {
           '@/api/': [
             ['default', 'api']
