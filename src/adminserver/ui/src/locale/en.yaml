@@ -1,3 +1,5 @@
 portal: 'Portal'
 home: 'Home'
 about: 'About'
+setting: 'Setting'
+not-found: "Not Found"

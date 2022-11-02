@@ -1,13 +1,28 @@
 <script setup lang="ts">
 import { ChevronLeftIcon, ClipboardIcon } from "@heroicons/vue/20/solid";
 import { ArrowLeftCircleIcon } from '@heroicons/vue/24/outline'
+import { useI18n } from "vue-i18n";
 
 const tabClosed = ref(false)
+
+const { t } = useI18n({
+  inheritLocale: true
+})
 
 function closeTabs() {
   tabClosed.value = !tabClosed.value
 }
 
+function title(metaTitle: string): string {
+  if (!metaTitle) {
+    return ''
+  }
+  let res = t(metaTitle)
+  useHead({
+    title: res
+  })
+  return res
+}
 </script>
 
 <template>
@@ -37,9 +52,10 @@ function closeTabs() {
     <!-- right content -->
     <div class="flex flex-col w-full">
       <div class="inline-flex items-center">
-        <ArrowLeftCircleIcon @click="$router.back()" class="w-7 h-7 mr-3 ml-4 text-indigo-500 transition-transform transform active:scale-75 cursor-pointer" />
+        <ArrowLeftCircleIcon @click="$router.back()"
+          class="w-7 h-7 mr-3 ml-4 text-indigo-500 transition-transform transform active:scale-75 cursor-pointer" />
         <div class="text-xl py-7 font-bold text-gray-900">
-          {{ $t($route.meta.title) }}
+          {{ title($route.meta.title) }}
         </div>
       </div>
       <RouterView />

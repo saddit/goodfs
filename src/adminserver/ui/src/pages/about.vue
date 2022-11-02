@@ -6,10 +6,7 @@
 }
 </route>
 
-<script setup>
-useHead({
-  title: 'About',
-})
+<script setup lang="ts">
 </script>
 
 <template>

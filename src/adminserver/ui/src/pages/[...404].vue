@@ -1,9 +1,3 @@
-<script setup>
-useHead({
-  title: '404',
-})
-</script>
-
 <template>
   <header class="bg-white shadow">
     <div class="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
@@ -11,3 +5,11 @@ useHead({
     </div>
   </header>
 </template>
+
+<route lang="json">
+{
+  "meta": {
+    "title": "not-found"
+  }
+}
+</route>
