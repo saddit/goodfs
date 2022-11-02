@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": "./",
+    "outDir": "../resource/web/assets",
     "allowJs": true,
     "paths": {
       "@/*": ["src/*"]
@@ -15,6 +16,6 @@
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.vue"
-  ],
+, "src/api/base.js"  ],
   "extends": "@vue/tsconfig/tsconfig.json"
 }

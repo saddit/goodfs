@@ -58,15 +58,17 @@
 
 <script setup lang="ts">
 import {CheckIcon, ChevronUpDownIcon} from "@heroicons/vue/20/solid"
-import {defineEmits} from "vue";
-import {useVModel} from "@vueuse/core";
 
 const props = defineProps<{
   modelValue: any
   options: any[]
 }>()
 
-const emits = defineEmits(["update:modelValue"])
+const emits = defineEmits(["update:modelValue", "change"])
 
 const model = useVModel(props, "modelValue", emits)
+
+watch(model, value => {
+  emits('change', value)
+})
 </script>
