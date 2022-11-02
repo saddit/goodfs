@@ -4,18 +4,26 @@
     "outDir": "../resource/web/assets",
     "allowJs": true,
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     },
-    "types": ["@intlify/vite-plugin-vue-i18n/client"]
+    "types": [
+      "@intlify/vite-plugin-vue-i18n/client"
+    ]
   },
-  "exclude": ["node_modules", "dist"],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
   "include": [
     "typed-router.d.ts",
     "components.d.ts",
     "auto-imports.d.ts",
     "src/**/*.ts",
     "src/**/*.d.ts",
-    "src/**/*.vue"
-, "src/api/base.js"  ],
+    "src/**/*.vue",
+    "src/api/base.js"
+  ],
   "extends": "@vue/tsconfig/tsconfig.json"
 }

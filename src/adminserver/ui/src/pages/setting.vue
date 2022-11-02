@@ -15,15 +15,11 @@
 import { useStore } from "@/store";
 import { useI18n } from "vue-i18n";
 
-useHead({
-  title: "Portal"
-})
-
-const store = useStore()
-
 const {t} = useI18n({
   inheritLocale: true
 })
+
+const store = useStore()
 
 function setLocale(lang: string) {
   store.setLocale(lang)
@@ -33,7 +29,7 @@ function setLocale(lang: string) {
 <route lang="json">
 {
   "meta": {
-    "title": "portal"
+    "title": "setting"
   }
 }
 </route>
