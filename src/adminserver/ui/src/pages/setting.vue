@@ -29,7 +29,8 @@ function setLocale(lang: string) {
 <route lang="json">
 {
   "meta": {
-    "title": "setting"
+    "title": "setting",
+    "icon": "chevron-left"
   }
 }
 </route>
