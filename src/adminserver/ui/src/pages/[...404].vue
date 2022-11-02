@@ -9,7 +9,9 @@
 <route lang="json">
 {
   "meta": {
-    "title": "not-found"
+    "title": "not-found",
+    "hideTab": true,
+    "icon": ""
   }
 }
 </route>

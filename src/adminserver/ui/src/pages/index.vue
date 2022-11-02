@@ -35,7 +35,8 @@ zh:
 <route lang="json">
 {
   "meta": {
-    "title": "home"
+    "title": "home",
+    "icon": "chevron-left"
   }
 }
 </route>

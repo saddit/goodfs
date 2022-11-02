@@ -8,6 +8,7 @@ import {createI18n} from "vue-i18n";
 import {createPinia} from "pinia";
 import piniaPluginPersistedState from 'pinia-plugin-persistedstate'
 import messages from '@intlify/vite-plugin-vue-i18n/messages'
+import icon from './font-awesome'
 
 const app = createApp(App)
 const head = createHead()
@@ -23,6 +24,7 @@ const i18n = createI18n({
     messages
 })
 
+app.use(icon)
 app.use(router)
 app.use(head)
 app.use(i18n)
