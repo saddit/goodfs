@@ -8,10 +8,8 @@ export {}
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
     ButtonRepo: typeof import('./src/components/ButtonRepo.vue')['default']
-    Icon: typeof import('./src/components/Icon.vue')['default']
     Listbox: typeof import('@headlessui/vue')['Listbox']
     ListboxButton: typeof import('@headlessui/vue')['ListboxButton']
-    ListboxLabel: typeof import('@headlessui/vue')['ListboxLabel']
     ListboxOption: typeof import('@headlessui/vue')['ListboxOption']
     ListboxOptions: typeof import('@headlessui/vue')['ListboxOptions']
     PriListBox: typeof import('./src/components/PriListBox.vue')['default']

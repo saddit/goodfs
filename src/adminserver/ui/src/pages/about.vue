@@ -2,7 +2,7 @@
 {
   "meta": {
     "title": "about",
-    "icon": "chevron-left"
+    "icon": "info-circle"
   }
 }
 </route>
