@@ -42,7 +42,7 @@ function title(metaTitle: string): string {
       <div class="flex flex-col py-3 pl-2">
         <template v-for="rt in routes" :key="rt.name">
           <div @click="$router.push(rt.path)" v-if="rt.meta && !rt.meta.hideTab"
-            :class="[$route.name == rt.name ? 'text-white': 'text-gray-300']"
+            :class="[$route.name === rt.name ? 'text-white': 'text-gray-300']"
             class="flex items-center ml-4 my-2 pl-2 rounded-md py-4 transition-colors cursor-pointer select-none hover:bg-indigo-800 hover:text-white">
             <font-awesome-icon :icon="rt.meta.icon" class="ml-2 mr-6 text-xl"/>
             <span class="whitespace-nowrap overflow-hidden transition-opacity duration-300"

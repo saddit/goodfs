@@ -3,3 +3,7 @@ home: '首页'
 about: '关于'
 setting: '设置'
 not-found: "未找到"
+server: '服务器'
+api-server: '接口服务'
+meta-server: '元数据服务'
+data-server: '对象数据服务'
