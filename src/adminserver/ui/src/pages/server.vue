@@ -2,12 +2,11 @@
   <TabGroup class="bg-white w-full flex items-end border-b border-gray-200">
     <TabList>
       <Tab v-for="rt in tabs" v-slot="{ selected }" as="template" class="outline-none">
-        <div
-          class="w-32 cursor-pointer transition-all pb-2 px-2 text-center"
-          :class="{
-            'border-indigo-600 border-b-2 text-indigo-600': selected
-          }" @click="$router.push(rt.path)">
-          {{ $t(rt.meta!.title) }}
+        <div v-if="rt.meta"
+             class="w-32 cursor-pointer transition-all pb-2 px-2 text-center"
+             :class="{ 'border-indigo-600 border-b-2 text-indigo-600': selected }"
+             @click="$router.push(rt.path)">
+          {{ $t(rt.meta.title) }}
         </div>
       </Tab>
     </TabList>
@@ -18,8 +17,8 @@
 </template>
 
 <script setup lang="ts">
-import { routes } from "vue-router/auto/routes";
-import type { RouteRecordRaw } from "vue-router/auto";
+import {routes} from "vue-router/auto/routes";
+import type {RouteRecordRaw} from "vue-router/auto";
 
 const tabs: RouteRecordRaw[] = []
 
