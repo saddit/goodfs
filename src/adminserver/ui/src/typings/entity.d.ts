@@ -38,5 +38,5 @@ declare interface ServerInfo {
     serverId: string
     httpAddr: string
     rpcAddr: string
-    sysInfo: SystemInfo
+    sysInfo?: SystemInfo
 }
