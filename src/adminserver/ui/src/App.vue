@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeftIcon, ClipboardIcon } from "@heroicons/vue/20/solid";
+import { ChevronLeftIcon } from "@heroicons/vue/20/solid";
 import { ArrowLeftCircleIcon } from '@heroicons/vue/24/outline'
 import { useI18n } from "vue-i18n";
 import { routes } from "vue-router/auto/routes";
@@ -39,7 +39,7 @@ function title(metaTitle: string): string {
           class="cursor-pointer transition-transform transform" @click="closeTabs" />
       </div>
       <!-- routes -->
-      <div class="flex flex-col py-3 pl-2">
+      <div class="flex flex-col py-3 pl-2 overflow-y-auto no-scrollbar">
         <template v-for="rt in routes" :key="rt.name">
           <div @click="$router.push(rt.path)" v-if="rt.meta && !rt.meta.hideTab"
             :class="[$route.name === rt.name ? 'text-white': 'text-gray-300']"

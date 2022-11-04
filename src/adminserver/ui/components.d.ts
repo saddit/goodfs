@@ -15,5 +15,9 @@ declare module '@vue/runtime-core' {
     PriListBox: typeof import('./src/components/PriListBox.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ServerCard: typeof import('./src/components/ServerCard.vue')['default']
+    Tab: typeof import('@headlessui/vue')['Tab']
+    TabGroup: typeof import('@headlessui/vue')['TabGroup']
+    TabList: typeof import('@headlessui/vue')['TabList']
   }
 }
