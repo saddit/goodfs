@@ -1,6 +1,6 @@
 <template>
-  <div class="text-2xl text-gray-900 font-bold mx-4 mt-2 mb-4">{{ t('overview') }}</div>
-  <div class="grid gap-y-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 justify-items-start px-6 py-2">
+  <div class="text-2xl text-gray-900 font-bold mb-4">{{ t('overview') }}</div>
+  <div class="grid gap-y-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 justify-items-start placeholder:py-2">
     <ServerCard v-for="info in infos" :info="info"></ServerCard>
   </div>
 </template>
