@@ -8,7 +8,7 @@ import (
 	"syscall"
 )
 
-func MemStat() Status {
+func MemStat() (Status, error) {
 	// program memory usage
 	memStat := new(runtime.MemStats)
 	runtime.ReadMemStats(memStat)
@@ -23,5 +23,5 @@ func MemStat() Status {
 		mem.Free = sysInfo.Freeram * uint64(syscall.Getpagesize())
 		mem.Used = mem.All - mem.Free
 	}
-	return mem
+	return mem, nil
 }
