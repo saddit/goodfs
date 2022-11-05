@@ -1,6 +1,7 @@
 package system
 
 import (
+	"common/system/cpu"
 	"common/system/disk"
 	"common/system/mem"
 )
@@ -10,12 +11,25 @@ import (
 type Info struct {
 	DiskInfo  disk.Info  `json:"diskInfo" msg:",inline"`
 	MemStatus mem.Status `json:"memStatus" msg:",inline"`
+	CpuStatus cpu.Stat   `json:"cpuStatus" msg:",inline"`
 }
 
 func NewInfo(diskPath string) (*Info, error) {
-	d, err := disk.GetInfo(diskPath)
+	diskInfo, err := disk.GetInfo(diskPath)
 	if err != nil {
 		return nil, err
 	}
-	return &Info{d, mem.MemStat()}, nil
+	cpuStat, err := cpu.StatInfo()
+	if err != nil {
+		return nil, err
+	}
+	memStat, err := mem.MemStat()
+	if err != nil {
+		return nil, err
+	}
+	return &Info{
+		diskInfo,
+		memStat,
+		cpuStat,
+	}, nil
 }
