@@ -3,6 +3,7 @@ package app
 import (
 	. "apiserver/config"
 	"apiserver/internal/controller/http"
+	"apiserver/internal/usecase/logic"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
 	"apiserver/internal/usecase/service"
@@ -25,6 +26,8 @@ func Run(cfg *Config) {
 	// register
 	cfg.Registry.HttpAddr = util.GetHostPort(cfg.Port)
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry).MustRegister().Unregister()
+	// system-info auto saving
+	defer logic.NewSystemStatLogic().StartAutoSave()()
 	//start api server
 	graceful.ListenAndServe(
 		http.NewHttpServer(cfg.Registry.HttpAddr, objService, metaService),

@@ -3,6 +3,7 @@ package constrant
 import "fmt"
 
 type etcdPrefix struct {
+	Sep           []byte
 	PeersInfo     string
 	HashSlot      string
 	Registry      string
@@ -12,6 +13,7 @@ type etcdPrefix struct {
 }
 
 var EtcdPrefix = etcdPrefix{
+	Sep:           []byte("/"),
 	PeersInfo:     "peers_info",
 	HashSlot:      "hash_slot",
 	Registry:      "registry",

@@ -2,6 +2,7 @@ package logic
 
 import (
 	"adminserver/internal/entity"
+	"adminserver/internal/usecase/db"
 	"adminserver/internal/usecase/pool"
 	"common/constrant"
 	"common/system"
@@ -12,7 +13,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-type ServerMonitor struct {}
+type ServerMonitor struct{}
 
 func NewServerMonitor() *ServerMonitor {
 	return new(ServerMonitor)
@@ -28,7 +29,7 @@ func (ServerMonitor) SysInfo(servName string) (map[string]*system.Info, error) {
 	for _, kv := range resp.Kvs {
 		var info system.Info
 		if err = util.DecodeMsgp(&info, kv.Value); err != nil {
-			return nil, err	
+			return nil, err
 		}
 		sp := strings.Split(string(kv.Key), "/")
 		serverId := sp[len(sp)-1]
@@ -53,4 +54,23 @@ func (sm ServerMonitor) ServerStat(servName string) (map[string]*entity.ServerIn
 		mp[id].RpcAddr = rpcAddr
 	}
 	return mp, nil
+}
+
+// StatTimeline cpu or mem stat timeline, startType = "cpu" | "mem", servNo = 0 | 1 | 2
+func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*db.TimeStat {
+	var servName string
+	switch servNo {
+	case 0:
+		servName = pool.Config.Discovery.ApiServName
+	case 1:
+		servName = pool.Config.Discovery.MetaServName
+	case 2:
+		servName = pool.Config.Discovery.DataServName
+	}
+	tl := pool.StatDB.GetTimeline(servName)
+	res := make(map[string][]*db.TimeStat, len(tl))
+	for k, v := range tl {
+		res[k] = util.IfElse(statType == "cpu", v.CpuTimeline, v.MemTimeline)
+	}
+	return res
 }
