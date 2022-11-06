@@ -1,6 +1,6 @@
 <template>
-  <div class="min-w-40 flex flex-col py-3 px-2 bg-white h-44 shadow-lg rounded">
-    <div class="inline-flex justify-between items-center px-2">
+  <div class="relative min-w-40 py-3 px-2 bg-white h-40 w-40 md:h-44 md:w-44 shadow-lg rounded">
+    <div class="inline-flex justify-between items-center px-2 w-full">
       <ServerIcon class="text-indigo-600 w-10 h-10"/>
       <span class="font-bold text-gray-900 text-lg">{{ info.serverId }}</span>
     </div>
@@ -9,7 +9,7 @@
       <div class="justify-self-start text-gray-500 text-xs">{{ $t('core') }}: {{ info.sysInfo.cpuStatus.physicalCount }}</div>
       <div class="justify-self-start text-gray-500 text-xs">{{ $t('thread') }}: {{ info.sysInfo.cpuStatus.logicalCount }}</div>
     </div>
-    <div class="space-y-1 ">
+    <div class="space-y-1 absolute bottom-2">
       <div class="text-gray-500 text-xs px-2">HTTP: {{ info.httpAddr }}</div>
       <div class="text-gray-500 text-xs px-2">GRPC: {{ info.rpcAddr }}</div>
     </div>
