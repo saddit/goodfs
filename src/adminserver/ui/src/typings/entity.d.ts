@@ -29,14 +29,26 @@ declare interface MemStat {
     self: number
 }
 
+declare interface CpuStat {
+    usedPercent: number
+    logicalCount: number
+    physicalCount: number
+}
+
 declare interface SystemInfo {
     diskInfo: DiskInfo
     memStatus: MemStat
+    cpuStatus: CpuStat
+}
+
+declare interface TimeStat {
+    time: string
+    percent: number
 }
 
 declare interface ServerInfo {
     serverId: string
     httpAddr: string
     rpcAddr: string
-    sysInfo?: SystemInfo
+    sysInfo: SystemInfo
 }

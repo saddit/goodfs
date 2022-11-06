@@ -2,6 +2,7 @@ package pool
 
 import (
 	"adminserver/config"
+	"adminserver/internal/usecase/db"
 	"common/registry"
 	"common/util"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -14,6 +15,7 @@ var (
 	Etcd      *clientv3.Client
 	Http      *http.Client
 	Discovery *registry.EtcdDiscovery
+	StatDB    *db.ServerStatDB
 )
 
 func Init(cfg *config.Config) {
@@ -21,11 +23,13 @@ func Init(cfg *config.Config) {
 	initHttpClient()
 	initEtcd(cfg)
 	initDiscovery(Etcd, cfg)
+	initStatDB(Etcd, cfg)
 }
 
 func Close() {
 	Http.CloseIdleConnections()
 	util.LogErr(Etcd.Close())
+	util.LogErr(StatDB.Close())
 }
 
 func initHttpClient() {
@@ -49,4 +53,9 @@ func initDiscovery(etcd *clientv3.Client, cfg *config.Config) {
 	conf := cfg.GetRegistryCfg()
 	conf.Services = []string{cfg.Discovery.DataServName, cfg.Discovery.MetaServName, cfg.Discovery.ApiServName}
 	Discovery = registry.NewEtcdDiscovery(etcd, conf)
+}
+
+func initStatDB(etcd *clientv3.Client, cfg *config.Config) {
+	services := []string{cfg.Discovery.DataServName, cfg.Discovery.MetaServName, cfg.Discovery.ApiServName}
+	StatDB = db.NewServerStatDB(etcd, cfg.Discovery.Group, services)
 }
