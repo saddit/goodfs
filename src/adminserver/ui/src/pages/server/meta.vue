@@ -9,13 +9,6 @@
 const infos = ref<ServerInfo[]>([])
 
 onBeforeMount(() => {
-  for (let i = 0; i < 3; i++) {
-    infos.value.push({
-      serverId: 'Node-A',
-      httpAddr: '192.168.0.1:8080',
-      rpcAddr: '192.168.0.1:4040',
-    })
-  }
 })
 </script>
 

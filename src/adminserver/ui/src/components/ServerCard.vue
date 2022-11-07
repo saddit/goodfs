@@ -1,13 +1,19 @@
 <template>
   <div class="relative min-w-40 py-3 px-2 bg-white h-40 w-40 md:h-44 md:w-44 shadow-lg rounded">
     <div class="inline-flex justify-between items-center px-2 w-full">
-      <ServerIcon class="text-indigo-600 w-10 h-10"/>
+      <ServerIcon class="text-indigo-600 w-10 h-10" />
       <span class="font-bold text-gray-900 text-lg">{{ info.serverId }}</span>
     </div>
-    <div class="grid grid-rows-2 grid-cols-2 w-fit">
-      <CpuChipIcon class="justify-self-center row-span-2 w-8 h-8 text-indigo-600"/>
-      <div class="justify-self-start text-gray-500 text-xs">{{ $t('core') }}: {{ info.sysInfo.cpuStatus.physicalCount }}</div>
-      <div class="justify-self-start text-gray-500 text-xs">{{ $t('thread') }}: {{ info.sysInfo.cpuStatus.logicalCount }}</div>
+    <div class="inline-flex items-center w-fit py-2">
+      <CpuChipIcon class="w-8 h-8 mx-1 text-indigo-600" />
+      <div>
+        <div class="text-gray-500 text-[0.5rem]">{{ $t('core') }}: {{
+            info.sysInfo.cpuStatus.physicalCount
+        }}</div>
+        <div class="text-gray-500 text-[0.5rem]">{{ $t('thread') }}: {{
+            info.sysInfo.cpuStatus.logicalCount
+        }}</div>
+      </div>
     </div>
     <div class="space-y-1 absolute bottom-2">
       <div class="text-gray-500 text-xs px-2">HTTP: {{ info.httpAddr }}</div>
@@ -17,8 +23,8 @@
 </template>
 
 <script setup lang="ts">
-import {ServerIcon} from "@heroicons/vue/20/solid"
-import {CpuChipIcon} from "@heroicons/vue/24/outline"
+import { ServerIcon } from "@heroicons/vue/20/solid"
+import { CpuChipIcon } from "@heroicons/vue/24/outline"
 
 const props = defineProps<{
   info: ServerInfo
