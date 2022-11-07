@@ -54,7 +54,7 @@ function title(metaTitle: string): string {
     </div>
     <!-- right content -->
     <div class="flex flex-col w-full">
-      <div class="inline-flex items-center py-6 px-4">
+      <div class="inline-flex items-center py-6 px-4 bg-white">
         <ArrowLeftCircleIcon @click="$router.back()"
                              class="w-7 h-7 mr-3 text-indigo-500 transition-transform transform active:scale-75 cursor-pointer"/>
         <div class="text-xl flex-grow font-bold text-gray-900">
