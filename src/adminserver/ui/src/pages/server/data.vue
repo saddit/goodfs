@@ -6,7 +6,7 @@
   </div>
   <div class="mb-4 mt-8">
     <!-- capacity card -->
-    <div class="bg-white rounded-lg shadow-lg inline-flex items-center w-2/5 p-2 relative">
+    <div class="bg-white rounded-lg shadow-lg inline-flex items-center w-[32%] relative">
       <span class="absolute top-2 left-2 text-indigo-600 font-bold">{{$t('capacity')}}</span>
       <div id="cap-chart" ref="capChart" class="w-1/2 h-40"></div>
       <div class="w-fit">

@@ -7,10 +7,10 @@
     <div class="inline-flex items-center w-fit py-2">
       <CpuChipIcon class="w-8 h-8 mx-1 text-indigo-600" />
       <div>
-        <div class="text-gray-500 text-[0.5rem]">{{ $t('core') }}: {{
+        <div class="text-gray-500 text-xs">{{ $t('core') }}: {{
             info.sysInfo.cpuStatus.physicalCount
         }}</div>
-        <div class="text-gray-500 text-[0.5rem]">{{ $t('thread') }}: {{
+        <div class="text-gray-500 text-xs">{{ $t('thread') }}: {{
             info.sysInfo.cpuStatus.logicalCount
         }}</div>
       </div>
