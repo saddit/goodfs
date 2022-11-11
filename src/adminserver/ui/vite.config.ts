@@ -23,6 +23,9 @@ export default defineConfig({
           '@/api/': [
             ['default', 'api']
           ]
+        },
+        {
+          '@/pkg/': [['default','pkg']]
         }
       ],
     }),

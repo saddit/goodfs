@@ -24,6 +24,9 @@ const i18n = createI18n({
     messages
 })
 
+// see src/typings/vue-cus.d.ts
+app.config.globalProperties.$utils = pkg.utils
+
 app.use(icon)
 app.use(router)
 app.use(head)
