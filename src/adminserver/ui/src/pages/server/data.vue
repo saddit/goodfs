@@ -10,10 +10,10 @@
       <span class="absolute top-2 left-2 text-indigo-600 font-bold">{{$t('capacity')}}</span>
       <div id="cap-chart" ref="capChart" class="w-1/2 h-40"></div>
       <div class="w-fit">
-        <div class="text-2xl md:text-3xl text-gray-800 lg:text-4xl xl:text-[3rem] font-extrabold text-center py-1">{{ formatBytes(capInfo.used) }}</div>
+        <div class="text-2xl md:text-3xl text-gray-800 lg:text-4xl xl:text-[3rem] font-extrabold text-center py-1">{{ $utils.formatBytes(capInfo.used) }}</div>
         <div class="text-gray-500 text-xs md:text-sm font-mono font-light text-right">
-          <div>Free: {{ formatBytes(capInfo.free) }}</div>
-          <div>Total: {{ formatBytes(capInfo.total) }}</div>
+          <div>Free: {{ $utils.formatBytes(capInfo.free) }}</div>
+          <div>Total: {{ $utils.formatBytes(capInfo.total) }}</div>
         </div>
       </div>
     </div>
@@ -40,18 +40,6 @@ const memChart = ref()
 const capChart = ref()
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({ used: 0, total: 0, free: 0 })
-
-function formatBytes(bytes: number, decimals = 1) {
-  if (!+bytes) return '0 Bytes'
-
-  const k = 1024
-  const dm = decimals < 0 ? 0 : decimals
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
-}
 
 onBeforeMount(() => {
   for (let i = 0; i < 3; i++) {
