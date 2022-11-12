@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import {ChevronLeftIcon, UserCircleIcon} from "@heroicons/vue/20/solid";
 import {ArrowLeftCircleIcon, ArrowLeftOnRectangleIcon} from '@heroicons/vue/24/outline'
-import {useI18n} from "vue-i18n";
 import {routes} from "vue-router/auto/routes";
-import {useStore} from "@/store";
 
 const store = useStore()
 
@@ -20,6 +18,11 @@ function title(metaTitle: string): string {
     title: res
   })
   return res
+}
+
+function loginOut() {
+  store.setAuth("","")
+  needLogin.value = true
 }
 </script>
 
@@ -70,7 +73,7 @@ function title(metaTitle: string): string {
             <PopTransition>
               <PopoverPanel class="pop-panel">
                 <div class="grid gap-2 bg-white p-3">
-                  <div class="pop-panel-item">
+                  <div class="pop-panel-item" @click="loginOut">
                     <ArrowLeftOnRectangleIcon class="w-5 h-5 text-indigo-600 mr-2"/>
                     <span>{{ t('login-out') }}</span>
                   </div>

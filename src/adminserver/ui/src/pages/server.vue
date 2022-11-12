@@ -29,6 +29,14 @@ for (let i in routes) {
     })
   }
 }
+
+onBeforeMount(()=>{
+  api.serverStat.stat().then((res)=>{
+    useStore().setServerInfo(res)
+  }).catch((err: Error)=>{
+    useToast().error(err.message)
+  })
+})
 </script>
 
 <style scoped>

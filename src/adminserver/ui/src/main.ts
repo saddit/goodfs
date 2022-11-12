@@ -8,6 +8,8 @@ import {createI18n} from "vue-i18n";
 import {createPinia} from "pinia";
 import piniaPluginPersistedState from 'pinia-plugin-persistedstate'
 import messages from '@intlify/vite-plugin-vue-i18n/messages'
+import Toast from "vue-toastification";
+import "vue-toastification/dist/index.css";
 import icon from './font-awesome'
 
 const app = createApp(App)
@@ -27,6 +29,7 @@ const i18n = createI18n({
 // see src/typings/vue-cus.d.ts
 app.config.globalProperties.$utils = pkg.utils
 
+app.use(Toast, pkg.cst.notify)
 app.use(icon)
 app.use(router)
 app.use(head)

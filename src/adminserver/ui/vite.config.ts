@@ -20,12 +20,19 @@ export default defineConfig({
       imports: [
           'vue', '@vueuse/head', '@vueuse/core', VueRouterAutoImports,
         {
-          '@/api/': [
-            ['default', 'api']
-          ]
+          '@/api/': [['default', 'api']]
         },
         {
           '@/pkg/': [['default','pkg']]
+        },
+        {
+          'vue-toastification':[['useToast', 'useToast']]
+        },
+        {
+          '@/store':[['useStore', 'useStore']]
+        },
+        {
+          'vue-i18n':[['useI18n', 'useI18n']]
         }
       ],
     }),
