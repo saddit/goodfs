@@ -26,30 +26,9 @@ const memChart = ref()
 const infos = ref<ServerInfo[]>([])
 
 onBeforeMount(() => {
-  for (let i = 0; i < 3; i++) {
-    infos.value.push({
-      serverId: 'Node-A',
-      httpAddr: '192.168.0.1:8080',
-      rpcAddr: '192.168.0.1:4040',
-      sysInfo: {
-        cpuStatus: {
-          usedPercent: 0.9,
-          logicalCount: 16,
-          physicalCount: 8
-        },
-        memStatus: {
-          used: 0,
-          free: 0,
-          self: 0,
-          all: 0
-        },
-        diskInfo: {
-          used: 0,
-          total: 0,
-          free: 0
-        }
-      }
-    })
+  let stats =  useStore().serverStat.apiServer
+  for (let k in stats) {
+    infos.value.push(stats[k])
   }
 })
 

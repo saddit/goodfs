@@ -46,9 +46,6 @@
 </template>
   
 <script setup lang="ts">
-import { useStore } from '@/store';
-import { useI18n } from 'vue-i18n';
-
 const props = withDefaults(defineProps<{
   modelValue: boolean
 }>(), {

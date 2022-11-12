@@ -42,34 +42,13 @@ const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({ used: 0, total: 0, free: 0 })
 
 onBeforeMount(() => {
-  for (let i = 0; i < 3; i++) {
-    let d = {
-      used: 10008320,
-      total: 103923492,
-      free: (103923492 - 10008320)
-    }
-    capInfo.value.used += d.used
-    capInfo.value.total += d.total
-    capInfo.value.free += d.free
-    infos.value.push({
-      serverId: 'Node-A',
-      httpAddr: '192.168.0.1:8080',
-      rpcAddr: '192.168.0.1:4040',
-      sysInfo: {
-        cpuStatus: {
-          usedPercent: 0.9,
-          logicalCount: 16,
-          physicalCount: 8
-        },
-        memStatus: {
-          used: 0,
-          free: 0,
-          self: 0,
-          all: 0
-        },
-        diskInfo: d
-      }
-    })
+  let stats =  useStore().serverStat.dataServer
+  for (let k in stats) {
+    let v = stats[k]
+    infos.value.push(v)
+    capInfo.value.used += v.sysInfo.diskInfo.used
+    capInfo.value.total += v.sysInfo.diskInfo.total
+    capInfo.value.free += v.sysInfo.diskInfo.free
   }
 })
 
