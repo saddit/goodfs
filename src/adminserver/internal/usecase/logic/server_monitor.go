@@ -56,7 +56,7 @@ func (sm ServerMonitor) ServerStat(servName string) (map[string]*entity.ServerIn
 	return mp, nil
 }
 
-// StatTimeline cpu or mem stat timeline, startType = "cpu" | "mem", servNo = 0 | 1 | 2
+// StatTimeline cpu or mem stat timeline, statType = "cpu" | "mem", servNo = 0 | 1 | 2
 func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*db.TimeStat {
 	var servName string
 	switch servNo {

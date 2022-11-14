@@ -16,3 +16,9 @@ export const notify: PluginOptions = {
     maxToasts: 20,
     newestOnTop: true
 }
+
+export const statTypeMem = "mem"
+export const statTypeCpu = "cpu"
+export const apiServerNo = 0
+export const metaServerNo = 1
+export const dataServerNo = 2

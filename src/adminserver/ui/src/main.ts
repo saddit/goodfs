@@ -28,6 +28,7 @@ const i18n = createI18n({
 
 // see src/typings/vue-cus.d.ts
 app.config.globalProperties.$utils = pkg.utils
+app.config.globalProperties.$cst = pkg.cst
 
 app.use(Toast, pkg.cst.notify)
 app.use(icon)
