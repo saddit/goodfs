@@ -163,6 +163,11 @@ func TestClearEtcd(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(constrant.EtcdPrefix.ApiCredential, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), constrant.EtcdPrefix.SystemInfo, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(constrant.EtcdPrefix.SystemInfo, resp.Deleted)
 }
 
 func TestCalcHashSlot(t *testing.T) {
@@ -181,6 +186,42 @@ func TestGetSlots(t *testing.T) {
 		t.Fatal(err)
 	}
 	resp, err := etcd.Get(context.Background(), constrant.EtcdPrefix.HashSlot, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kv := range resp.Kvs {
+		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
+	}
+}
+
+func TestGetRegistry(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username:  "root",
+		Password:  "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := etcd.Get(context.Background(), constrant.EtcdPrefix.Registry, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kv := range resp.Kvs {
+		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
+	}
+}
+
+func TestGetSystemInfo(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username:  "root",
+		Password:  "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := etcd.Get(context.Background(), constrant.EtcdPrefix.SystemInfo, clientv3.WithPrefix())
 	if err != nil {
 		t.Fatal(err)
 	}

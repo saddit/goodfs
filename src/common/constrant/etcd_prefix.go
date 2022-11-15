@@ -19,7 +19,7 @@ var EtcdPrefix = etcdPrefix{
 	Registry:      "registry",
 	ObjectCap:     "object_cap",
 	ApiCredential: "api_credential",
-	SystemInfo:    "disk_info",
+	SystemInfo:    "sys_info",
 }
 
 func (e *etcdPrefix) FmtPeersInfo(groupId, id string) string {
@@ -39,5 +39,5 @@ func (e *etcdPrefix) FmtObjectCap(groupName, serviceName, name string) string {
 }
 
 func (e *etcdPrefix) FmtSystemInfo(groupName, serviceName, id string) string {
-	return fmt.Sprintf("%s/%s/%s/%s", e.ObjectCap, groupName, serviceName, id)
+	return fmt.Sprintf("%s/%s/%s/%s", e.SystemInfo, groupName, serviceName, id)
 }

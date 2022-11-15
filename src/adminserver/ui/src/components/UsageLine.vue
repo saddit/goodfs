@@ -79,7 +79,7 @@ onMounted(() => {
 			bottom: 40
 		}
 	})
-	setInterval(() => {
+	pkg.utils.invokeInterval(() => {
 		fetchTl().then(res => {
 			chart.setOption({
 				xAxis: {

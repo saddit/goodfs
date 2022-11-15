@@ -3,6 +3,7 @@ package controller
 import (
 	http2 "adminserver/internal/controller/http"
 	"common/logs"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
@@ -17,9 +18,15 @@ type HttpServer struct {
 
 func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	eng := gin.Default()
+
 	randSec := uuid.New()
 	eng.Use(static.Serve("/", webFs))
 	eng.Use(sessions.Sessions("dfs-admin", cookie.NewStore(randSec[:])))
+	eng.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost", "http://localhost:5173"},
+		AllowMethods: []string{"PUT", "PATCH", "POST", "GET", "OPTION"},
+		AllowHeaders: []string{"Authorization"},
+	}))
 
 	route := eng.Group("/api")
 	http2.NewMetadataController().Register(route)

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ConfFilePath = "../../conf/admin-server.yaml"
+	ConfFilePath = "../../conf/object-server.yaml"
 )
 
 type CacheConfig struct {

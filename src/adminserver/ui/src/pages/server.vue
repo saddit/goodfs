@@ -20,6 +20,12 @@
 import {routes} from "vue-router/auto/routes";
 import type {RouteRecordRaw} from "vue-router/auto";
 
+api.serverStat.stat().then((res)=>{
+  useStore().setServerInfo(res)
+}).catch((err: Error)=>{
+  useToast().error(err.message)
+})
+
 const tabs: RouteRecordRaw[] = []
 
 for (let i in routes) {
@@ -29,14 +35,6 @@ for (let i in routes) {
     })
   }
 }
-
-onBeforeMount(()=>{
-  api.serverStat.stat().then((res)=>{
-    useStore().setServerInfo(res)
-  }).catch((err: Error)=>{
-    useToast().error(err.message)
-  })
-})
 </script>
 
 <style scoped>
