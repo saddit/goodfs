@@ -30,6 +30,8 @@ func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 }
 
 func (e *EtcdDiscovery) initService(serv string) {
+	e.httpService[serv] = newServiceList()
+	e.rpcService[serv] = newServiceList()
 	go func() {
 		defer graceful.Recover()
 		// fetch kvs
@@ -50,8 +52,8 @@ func (e *EtcdDiscovery) initService(serv string) {
 			rpcs[value.RpcAddr()] = string(kv.Key)
 		}
 		// init serv
-		e.httpService[serv] = newServiceListOf(https)
-		e.rpcService[serv] = newServiceListOf(rpcs)
+		e.httpService[serv].replace(https)
+		e.rpcService[serv].replace(rpcs)
 		// start watch change
 		ch := e.cli.Watch(context.Background(), prefix, clientv3.WithPrefix())
 		e.asyncWatch(serv, ch)

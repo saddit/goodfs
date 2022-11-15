@@ -9,3 +9,8 @@ export function formatBytes(bytes: number, decimals = 1) {
 
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
+
+export function invokeInterval(fn: ()=>void, ts: number) {
+    fn()
+    setInterval(fn, ts)
+}

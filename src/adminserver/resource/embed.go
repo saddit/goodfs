@@ -27,6 +27,9 @@ func (e embedFileSystem) Open(name string) (http.File, error) {
 }
 
 func (e embedFileSystem) Exists(prefix string, path string) bool {
+	if strings.HasPrefix(path, "/api") {
+		return false
+	}
 	if path == "/" {
 		path = "/index.html"
 	}

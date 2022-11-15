@@ -15,6 +15,10 @@ func newServiceListOf(mp map[string]string) *serviceList {
 	return &serviceList{mp, &sync.RWMutex{}}
 }
 
+func (s serviceList) replace(mp map[string]string) {
+	s.data = mp
+}
+
 func (s serviceList) add(ip string, key string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
