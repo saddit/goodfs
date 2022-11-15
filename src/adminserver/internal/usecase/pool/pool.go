@@ -57,5 +57,6 @@ func initDiscovery(etcd *clientv3.Client, cfg *config.Config) {
 
 func initStatDB(etcd *clientv3.Client, cfg *config.Config) {
 	services := []string{cfg.Discovery.DataServName, cfg.Discovery.MetaServName, cfg.Discovery.ApiServName}
-	StatDB = db.NewServerStatDB(etcd, cfg.Discovery.Group, services)
+	cli := db.ServerStatCli{Watcher: etcd, KV: etcd}
+	StatDB = db.NewServerStatDB(cli, cfg.Discovery.Group, services)
 }
