@@ -8,8 +8,10 @@ import (
 	"common/system"
 	"common/util"
 	"context"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"time"
+
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
@@ -47,15 +49,20 @@ func (st *statTimeline) Append(cpu *TimeStat, mem *TimeStat) {
 	st.MemTimeline = append(st.MemTimeline, mem)
 }
 
+type ServerStatCli struct {
+	clientv3.Watcher
+	clientv3.KV
+}
+
 type ServerStatDB struct {
-	Cli       clientv3.Watcher
+	Cli       ServerStatCli
 	GroupName string
 	Services  []string
 	closeFn   func()
 	timeline  map[string]map[string]statTimeline
 }
 
-func NewServerStatDB(cli clientv3.Watcher, groupName string, services []string) *ServerStatDB {
+func NewServerStatDB(cli ServerStatCli, groupName string, services []string) *ServerStatDB {
 	o := &ServerStatDB{
 		Cli:       cli,
 		GroupName: groupName,
@@ -76,39 +83,62 @@ func (sdb *ServerStatDB) GetTimeline(servName string) map[string]statTimeline {
 func (sdb *ServerStatDB) init() {
 	ctx, cancel := context.WithCancel(context.Background())
 	sdb.closeFn = cancel
-	for _, v := range sdb.Services {
-		ch := sdb.Cli.Watch(ctx, constrant.EtcdPrefix.FmtSystemInfo(sdb.GroupName, v, ""))
-		go sdb.watching(v, ch)
+	for _, name := range sdb.Services {
+		go func(v string) {
+			defer graceful.Recover()
+			prefix := constrant.EtcdPrefix.FmtSystemInfo(sdb.GroupName, v, "")
+			// init value
+			res, err := sdb.Cli.Get(ctx, prefix, clientv3.WithPrefix())
+			if err != nil {
+				statLog.Errorf("init stat of %s fail, %s", v, err)
+			}
+			for _, kv := range res.Kvs {
+				sdb.addStat(v, kv.Key, kv.Value)
+			}
+			// watch channel
+			ch := sdb.Cli.Watch(ctx, prefix, clientv3.WithPrefix())
+			sdb.watching(v, ch)
+		}(name)
 	}
-	return
+}
+
+func (sdb *ServerStatDB) addStat(serv string, key, value []byte) error {
+	ts := time.Now()
+	mp, ok := sdb.timeline[serv]
+	if !ok {
+		mp = map[string]statTimeline{}
+		sdb.timeline[serv] = mp
+	}
+	idx := bytes.LastIndex(key, constrant.EtcdPrefix.Sep)
+	id := string(key[idx+1:])
+	var sysInfo system.Info
+	if err := util.DecodeMsgp(&sysInfo, value); err != nil {
+		return err
+	}
+	tl, ok := mp[id]
+	if !ok {
+		mp[id] = newStatTimeline()
+		tl = mp[id]
+	}
+	tl.Append(&TimeStat{
+		Time:    ts,
+		Percent: sysInfo.CpuStatus.UsedPercent,
+	}, &TimeStat{
+		Time:    ts,
+		Percent: float64(sysInfo.MemStatus.Used) / float64(sysInfo.MemStatus.All),
+	})
+	return nil
 }
 
 func (sdb *ServerStatDB) watching(serv string, ch clientv3.WatchChan) {
-	defer graceful.Recover()
-	sdb.timeline[serv] = map[string]statTimeline{}
-	mp := sdb.timeline[serv]
 	for v := range ch {
-		ts := time.Now()
 		for _, event := range v.Events {
-			idx := bytes.LastIndex(event.Kv.Key, constrant.EtcdPrefix.Sep)
-			id := string(event.Kv.Key[idx+1:])
-			var sysInfo system.Info
-			if err := util.DecodeMsgp(&sysInfo, event.Kv.Value); err != nil {
-				statLog.Error(err)
+			if event.Type != mvccpb.PUT {
 				continue
 			}
-			tl, ok := mp[id]
-			if !ok {
-				mp[id] = newStatTimeline()
-				tl = mp[id]
+			if err := sdb.addStat(serv, event.Kv.Key, event.Kv.Value); err != nil {
+				statLog.Error(err)
 			}
-			tl.Append(&TimeStat{
-				Time:    ts,
-				Percent: sysInfo.CpuStatus.UsedPercent,
-			}, &TimeStat{
-				Time:    ts,
-				Percent: float64(sysInfo.MemStatus.Used) / float64(sysInfo.MemStatus.All),
-			})
 		}
 	}
 }
