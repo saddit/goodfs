@@ -14,12 +14,24 @@
 
 <script setup lang="ts">
 const infos = ref<ServerInfo[]>([])
+const store = useStore()
 
-onBeforeMount(() => {
-  let stats = useStore().serverStat.apiServer
+function updateInfo(state: any) {
+  if (infos.value.length > 0) {
+    return
+  }
+  let stats = state.serverStat.apiServer
   for (let k in stats) {
     infos.value.push(stats[k])
   }
+}
+
+store.$subscribe((mutation, state)=>{
+  updateInfo(state)
+})
+
+onBeforeMount(()=>{
+  updateInfo(store)
 })
 </script>
 

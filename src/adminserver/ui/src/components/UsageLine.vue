@@ -25,7 +25,7 @@ async function fetchTl(): Promise<[string[], number[]]> {
 		for (let i = 0; i < v.length; i++) {
 			let date = new Date(v[i].time)
 			if (valueList.length <= i) {
-				dateList.push(`${date.getHours()}:${date.getMinutes}`)
+				dateList.push(`${date.getHours()}:${date.getMinutes()}`)
 				valueList.push(v[i].percent * 100)
 			} else {
 				valueList[i] = (valueList[i] + v[i].percent * 100) / 2

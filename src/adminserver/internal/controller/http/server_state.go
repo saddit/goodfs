@@ -70,7 +70,7 @@ func (ss *ServerStateController) Stat(c *gin.Context) {
 
 func (ss *ServerStateController) UsageTimeline(c *gin.Context) {
 	usageType := c.Param("type")
-	sn := c.GetInt("server")
-	res := logic.NewServerMonitor().StatTimeline(sn, usageType)
+	sn := c.Query("server")
+	res := logic.NewServerMonitor().StatTimeline(util.ToInt(sn), usageType)
 	response.OkJson(res, c)
 }

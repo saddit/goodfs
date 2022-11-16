@@ -5,6 +5,8 @@ import (
 	"common/constrant"
 	"common/hashslot"
 	"common/registry"
+	"common/system"
+	"common/util"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -226,6 +228,10 @@ func TestGetSystemInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, kv := range resp.Kvs {
-		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
+		var sysInfo system.Info
+		if err := util.DecodeMsgp(&sysInfo, kv.Value); err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("key=%s, value=%+v", kv.Key, sysInfo)
 	}
 }

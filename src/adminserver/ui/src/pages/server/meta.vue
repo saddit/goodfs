@@ -19,8 +19,13 @@
 <script setup lang="ts">
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({ used: 0, total: 0, free: 0 })
-onBeforeMount(() => {
-  let stats = useStore().serverStat.metaServer
+const store = useStore()
+
+function updateInfo(state: any) {
+  if (infos.value.length > 0) {
+    return
+  }
+  let stats = state.serverStat.dataServer
   for (let k in stats) {
     let v = stats[k]
     infos.value.push(v)
@@ -28,6 +33,14 @@ onBeforeMount(() => {
     capInfo.value.total += v.sysInfo.diskInfo.total
     capInfo.value.free += v.sysInfo.diskInfo.free
   }
+}
+
+store.$subscribe((mutation, state)=>{
+  updateInfo(state)
+})
+
+onBeforeMount(()=>{
+  updateInfo(store)
 })
 </script>
 
