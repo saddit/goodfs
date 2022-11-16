@@ -20,8 +20,8 @@ var (
 )
 
 type TimeStat struct {
-	Time    time.Time
-	Percent float64
+	Time    time.Time `json:"time"`
+	Percent float64   `json:"percent"`
 }
 
 type statTimeline struct {
@@ -29,8 +29,8 @@ type statTimeline struct {
 	MemTimeline []*TimeStat
 }
 
-func newStatTimeline() statTimeline {
-	return statTimeline{
+func newStatTimeline() *statTimeline {
+	return &statTimeline{
 		CpuTimeline: make([]*TimeStat, 0, 60),
 		MemTimeline: make([]*TimeStat, 0, 60),
 	}
@@ -59,7 +59,7 @@ type ServerStatDB struct {
 	GroupName string
 	Services  []string
 	closeFn   func()
-	timeline  map[string]map[string]statTimeline
+	timeline  map[string]map[string]*statTimeline
 }
 
 func NewServerStatDB(cli ServerStatCli, groupName string, services []string) *ServerStatDB {
@@ -67,17 +67,17 @@ func NewServerStatDB(cli ServerStatCli, groupName string, services []string) *Se
 		Cli:       cli,
 		GroupName: groupName,
 		Services:  services,
-		timeline:  map[string]map[string]statTimeline{},
+		timeline:  map[string]map[string]*statTimeline{},
 	}
 	o.init()
 	return o
 }
 
-func (sdb *ServerStatDB) GetTimeline(servName string) map[string]statTimeline {
+func (sdb *ServerStatDB) GetTimeline(servName string) map[string]*statTimeline {
 	if tls, ok := sdb.timeline[servName]; ok {
 		return tls
 	}
-	return map[string]statTimeline{}
+	return map[string]*statTimeline{}
 }
 
 func (sdb *ServerStatDB) init() {
@@ -93,7 +93,9 @@ func (sdb *ServerStatDB) init() {
 				statLog.Errorf("init stat of %s fail, %s", v, err)
 			}
 			for _, kv := range res.Kvs {
-				sdb.addStat(v, kv.Key, kv.Value)
+				if err := sdb.addStat(v, kv.Key, kv.Value); err != nil {
+					statLog.Error(err)
+				}
 			}
 			// watch channel
 			ch := sdb.Cli.Watch(ctx, prefix, clientv3.WithPrefix())
@@ -106,7 +108,7 @@ func (sdb *ServerStatDB) addStat(serv string, key, value []byte) error {
 	ts := time.Now()
 	mp, ok := sdb.timeline[serv]
 	if !ok {
-		mp = map[string]statTimeline{}
+		mp = map[string]*statTimeline{}
 		sdb.timeline[serv] = mp
 	}
 	idx := bytes.LastIndex(key, constrant.EtcdPrefix.Sep)
