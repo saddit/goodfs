@@ -1,9 +1,9 @@
 <template>
 	<div class="bg-white rounded-lg shadow-lg inline-flex items-center relative justify-center">
 		<span class="absolute top-2 left-2 text-indigo-600 font-bold">{{ $t('capacity') }}</span>
-		<div id="cap-chart" ref="capChart" class="w-1/2 h-40"></div>
+		<div id="cap-chart" ref="capChart" class="w-1/2 h-44"></div>
 		<div class="w-fit">
-			<div class="text-2xl md:text-3xl text-gray-800 lg:text-4xl xl:text-[3rem] font-extrabold text-center py-1">{{
+			<div class="text-2xl md:text-3xl text-gray-800 lg:text-4xl 2xl:text-[3rem] font-extrabold text-center py-1">{{
 					$utils.formatBytes(capInfo.used)
 			}}</div>
 			<div class="text-gray-500 text-xs md:text-sm font-mono font-light text-right">
