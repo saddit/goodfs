@@ -89,22 +89,19 @@ func (h *HashSlotDB) reloadProvider(old any) error {
 	// get slots data from etcd (only master saves into to etcd)
 	res, err := h.kv.Get(context.Background(), h.KeyPrefix, clientv3.WithPrefix())
 	if err != nil {
-		hsLog.Error(err)
-		return &time.ParseError{}
+		return fmt.Errorf("reloadProvider: %w", err)
 	}
 	// wrap slot
 	for _, kv := range res.Kvs {
 		var info hashslot.SlotInfo
 		if err := util.DecodeMsgp(&info, kv.Value); err != nil {
-			hsLog.Error(err)
-			return err
+			return fmt.Errorf("reloadProvider: %w", err)
 		}
 		slotsMap[info.Location] = info.Slots
 	}
 	data, err := hashslot.WrapSlots(slotsMap)
 	if err != nil {
-		hsLog.Error(err)
-		return err
+		return fmt.Errorf("reloadProvider: %w", err)
 	}
 	if h.provider.CompareAndSwap(old, data) {
 		h.updatedAt = time.Now().Unix()
