@@ -4,6 +4,7 @@ import (
 	"common/pb"
 	"common/response"
 	"io"
+	"io/fs"
 	"metaserver/internal/entity"
 	"time"
 
@@ -62,13 +63,17 @@ type (
 		Sync() error
 	}
 
+	DBReader interface {
+		ReadDB() (io.ReadCloser, fs.FileInfo, error)
+	}
+
 	IMetadataRepo interface {
 		WritableRepo
 		ReadableRepo
+		DBReader
 		RemoveAllVersion(string) error
 		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
 		GetLastVersionNumber(name string) uint64
-		ReadDB() (io.ReadCloser, error)
 		ReplaceDB(io.Reader) error
 		ForeachVersionBytes(string, func([]byte) bool)
 		GetMetadataBytes(string) ([]byte, error)
