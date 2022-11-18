@@ -5,6 +5,7 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/util"
+	"io/fs"
 	"metaserver/internal/usecase"
 	"os"
 	"path/filepath"
@@ -67,9 +68,13 @@ func (s *Storage) Stop() error {
 	return nil
 }
 
+func (s *Storage) FileInfo() (fs.FileInfo, error) {
+	return os.Stat(s.DB().Path())
+}
+
 func (s *Storage) checkPath(path string) error {
 	dir := filepath.Dir(path)
-	 _, err := os.Stat(dir); 
+	_, err := os.Stat(dir)
 	if err == nil {
 		return nil
 	}

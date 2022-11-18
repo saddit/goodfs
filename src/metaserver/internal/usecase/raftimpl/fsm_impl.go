@@ -86,7 +86,7 @@ func (f *fsm) Apply(lg *raft.Log) any {
 }
 
 func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
-	reader, err := f.repo.ReadDB()
+	reader, _, err := f.repo.ReadDB()
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"common/util"
 	"fmt"
 	"io"
+	"io/fs"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
@@ -250,30 +251,27 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 	return
 }
 
-func (m *MetadataRepo) ReadDB() (io.ReadCloser, error) {
+func (m *MetadataRepo) ReadDB() (io.ReadCloser, fs.FileInfo, error) {
+	fi, err := m.MainDB.FileInfo()
+	if err != nil {
+		return nil, nil, err
+	}
+	tx, err := m.MainDB.DB().Begin(false)
+	if err != nil {
+		return nil, nil, err
+	}
 	reader, writer := io.Pipe()
-	errCh := make(chan error)
 	go func() {
 		defer graceful.Recover()
 		defer writer.Close()
-		tx, err := m.MainDB.DB().Begin(false)
-		if err != nil {
-			errCh <- err
-			close(errCh)
-			return
-		}
 		defer tx.Rollback()
-		close(errCh)
 		n, err := tx.WriteTo(writer)
 		if err != nil {
 			logs.Std().Error("writer (ReadDB) error: %v, written %d", err, n)
 			return
 		}
 	}()
-	if err := <-errCh; err != nil {
-		return nil, err
-	}
-	return reader, nil
+	return reader, fi, nil
 }
 
 func (m *MetadataRepo) ReplaceDB(r io.Reader) (err error) {
