@@ -8,6 +8,7 @@ import (
 	"common/system"
 	"common/util"
 	"context"
+	"math"
 	"time"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -127,7 +128,7 @@ func (sdb *ServerStatDB) addStat(serv string, key, value []byte) error {
 		Percent: sysInfo.CpuStatus.UsedPercent,
 	}, &TimeStat{
 		Time:    ts,
-		Percent: float64(sysInfo.MemStatus.Used) / float64(sysInfo.MemStatus.All),
+		Percent: math.Ceil(float64(sysInfo.MemStatus.Used) * 100 / float64(sysInfo.MemStatus.All)) / 100,
 	})
 	return nil
 }

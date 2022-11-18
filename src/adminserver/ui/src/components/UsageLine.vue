@@ -24,8 +24,16 @@ async function fetchTl(): Promise<[string[], number[]]> {
 		let v = res[k]
 		for (let i = 0; i < v.length; i++) {
 			let date = new Date(v[i].time)
+			let hh = date.getHours().toString()
+			if (date.getHours() < 10) {
+				hh = '0' + hh
+			}
+			let mm = date.getMinutes().toString()
+			if (date.getMinutes() < 10) {
+				mm = '0' + mm
+			}
 			if (valueList.length <= i) {
-				dateList.push(`${date.getHours()}:${date.getMinutes()}`)
+				dateList.push(`${hh}:${mm}`)
 				valueList.push(v[i].percent * 100)
 			} else {
 				valueList[i] = (valueList[i] + v[i].percent * 100) / 2
@@ -56,24 +64,33 @@ onMounted(() => {
 				},
 			},
 		],
+		tooltip: {
+			trigger: 'axis',
+		},
 		xAxis: {
 			type: 'category',
 			boundaryGap: false,
 			data: [],
 		},
 		yAxis: {
-			type: 'value'
+			type: 'value',
+			axisLabel: {
+				formatter: '{value} %'
+			}
 		},
 		series: [
 			{
 				name: 'percent',
 				data: [],
 				type: 'line',
-				areaStyle: {}
+				areaStyle: {},
+				tooltip: {
+					valueFormatter: (value: any) => value + ' %'
+				},
 			}
 		],
 		grid: {
-			left: 46,
+			left: 50,
 			top: 40,
 			right: 46,
 			bottom: 40

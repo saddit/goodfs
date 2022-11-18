@@ -1,1 +1,1 @@
-window.baseUrl = "http://localhost:80/api"
+window.baseUrl = "http://localhost:2600/api"
