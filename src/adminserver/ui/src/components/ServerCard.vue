@@ -17,7 +17,7 @@
     </div>
     <div class="space-y-1 absolute bottom-2">
       <div class="text-gray-500 text-xs px-2">HTTP: {{ info.httpAddr }}</div>
-      <div class="text-gray-500 text-xs px-2">GRPC: {{ info.rpcAddr }}</div>
+      <div v-if="info.rpcAddr" class="text-gray-500 text-xs px-2">GRPC: {{ info.rpcAddr }}</div>
     </div>
   </div>
 </template>
