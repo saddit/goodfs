@@ -62,7 +62,7 @@ func (s *Storage) Stop() error {
 		return err
 	}
 	if curPath != s.originalPath {
-		dbLog.Infof("db file has been replaced, rename '%s' to original '%s'", curPath, s.originalPath)
+		dbLog.Infof("db file has been replaced, rename original '%s' to '%s'", s.originalPath, curPath)
 		return os.Rename(curPath, s.originalPath)
 	}
 	return nil
@@ -75,10 +75,7 @@ func (s *Storage) FileInfo() (fs.FileInfo, error) {
 func (s *Storage) checkPath(path string) error {
 	dir := filepath.Dir(path)
 	_, err := os.Stat(dir)
-	if err == nil {
-		return nil
-	}
-	if os.IsNotExist(err) {
+	if err != nil && os.IsNotExist(err) {
 		return os.Mkdir(dir, constrant.OS.ModeUser)
 	}
 	return err
