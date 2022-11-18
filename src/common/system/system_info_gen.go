@@ -36,6 +36,12 @@ func (z *Info) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "MemStatus")
 				return
 			}
+		case "CpuStatus":
+			err = z.CpuStatus.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "CpuStatus")
+				return
+			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -49,9 +55,9 @@ func (z *Info) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Info) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 2
+	// map header, size 3
 	// write "DiskInfo"
-	err = en.Append(0x82, 0xa8, 0x44, 0x69, 0x73, 0x6b, 0x49, 0x6e, 0x66, 0x6f)
+	err = en.Append(0x83, 0xa8, 0x44, 0x69, 0x73, 0x6b, 0x49, 0x6e, 0x66, 0x6f)
 	if err != nil {
 		return
 	}
@@ -70,15 +76,25 @@ func (z *Info) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "MemStatus")
 		return
 	}
+	// write "CpuStatus"
+	err = en.Append(0xa9, 0x43, 0x70, 0x75, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73)
+	if err != nil {
+		return
+	}
+	err = z.CpuStatus.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "CpuStatus")
+		return
+	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *Info) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 2
+	// map header, size 3
 	// string "DiskInfo"
-	o = append(o, 0x82, 0xa8, 0x44, 0x69, 0x73, 0x6b, 0x49, 0x6e, 0x66, 0x6f)
+	o = append(o, 0x83, 0xa8, 0x44, 0x69, 0x73, 0x6b, 0x49, 0x6e, 0x66, 0x6f)
 	o, err = z.DiskInfo.MarshalMsg(o)
 	if err != nil {
 		err = msgp.WrapError(err, "DiskInfo")
@@ -89,6 +105,13 @@ func (z *Info) MarshalMsg(b []byte) (o []byte, err error) {
 	o, err = z.MemStatus.MarshalMsg(o)
 	if err != nil {
 		err = msgp.WrapError(err, "MemStatus")
+		return
+	}
+	// string "CpuStatus"
+	o = append(o, 0xa9, 0x43, 0x70, 0x75, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73)
+	o, err = z.CpuStatus.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "CpuStatus")
 		return
 	}
 	return
@@ -124,6 +147,12 @@ func (z *Info) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "MemStatus")
 				return
 			}
+		case "CpuStatus":
+			bts, err = z.CpuStatus.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "CpuStatus")
+				return
+			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -138,6 +167,6 @@ func (z *Info) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Info) Msgsize() (s int) {
-	s = 1 + 9 + z.DiskInfo.Msgsize() + 10 + z.MemStatus.Msgsize()
+	s = 1 + 9 + z.DiskInfo.Msgsize() + 10 + z.MemStatus.Msgsize() + 10 + z.CpuStatus.Msgsize()
 	return
 }

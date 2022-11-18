@@ -25,7 +25,7 @@ function updateInfo(state: any) {
   if (infos.value.length > 0) {
     return
   }
-  let stats = state.serverStat.dataServer
+  let stats = state.serverStat.metaServer
   for (let k in stats) {
     let v = stats[k]
     infos.value.push(v)

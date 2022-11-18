@@ -23,7 +23,8 @@ func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	eng.Use(static.Serve("/", webFs))
 	eng.Use(sessions.Sessions("dfs-admin", cookie.NewStore(randSec[:])))
 	eng.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost", "http://localhost:5173"},
+		AllowAllOrigins: true,
+		// AllowOrigins: []string{"http://localhost", "http://localhost:5173"},
 		AllowMethods: []string{"PUT", "PATCH", "POST", "GET", "OPTION"},
 		AllowHeaders: []string{"Authorization"},
 	}))

@@ -1,5 +1,7 @@
 package cpu
 
+//go:generate msgp -tests=false
+
 type Stat struct {
 	UsedPercent   float64 `msg:"used_percent" json:"usedPercent"`
 	LogicalCount  int     `msg:"logical_count" json:"logicalCount"`
