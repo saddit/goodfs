@@ -1,5 +1,8 @@
 <template>
   <div class="relative min-w-40 py-3 px-2 bg-white h-40 w-40 md:h-44 md:w-44 shadow-lg rounded">
+    <span v-if="info.isMaster" class="absolute -top-2 -left-5 font-bold text-red-500">
+      Master
+    </span>
     <div class="inline-flex justify-between items-center px-2 w-full">
       <ServerIcon class="text-indigo-600 w-10 h-10" />
       <span class="font-bold text-gray-900 text-lg">{{ info.serverId }}</span>
