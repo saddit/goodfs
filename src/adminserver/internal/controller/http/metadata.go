@@ -16,7 +16,8 @@ func NewMetadataController() *MetadataController {
 func (mc *MetadataController) Register(r gin.IRouter) {
 	r.Group("metadata").
 		GET("/page", mc.Page).
-		GET("/versions", mc.Versions)
+		GET("/versions", mc.Versions).
+		POST("/migration", mc.Migration)
 }
 
 func (mc *MetadataController) Page(c *gin.Context) {
@@ -48,4 +49,17 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
+}
+
+func (mc *MetadataController) Migration(c *gin.Context) {
+	body := struct {
+		SrcServerId  string   `json:"srcServerId" binding:"required"`
+		DestServerId string   `json:"destServerId" binding:"required"`
+		Slots        []string `json:"slots" binding:"required"`
+	}{}
+	if err := logic.NewMetadata().StartMigration(body.SrcServerId, body.DestServerId, body.Slots); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
 }

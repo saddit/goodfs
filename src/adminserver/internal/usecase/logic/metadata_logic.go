@@ -5,7 +5,12 @@ import (
 	"adminserver/internal/usecase/pool"
 	"adminserver/internal/usecase/webapi"
 	"common/logs"
+	"common/pb"
+	"common/response"
 	"common/util"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"net"
 	"sort"
 	"sync"
 )
@@ -74,4 +79,35 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, error)
 
 func (m *Metadata) VersionPaging(cond MetadataCond) ([]byte, error) {
 	return webapi.ListVersion(SelectApiServer(), cond.Name, cond.Page, cond.PageSize)
+}
+
+func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	srcAddr, destAddr := mp[srcID], mp[destID]
+	if srcAddr == "" || destAddr == "" {
+		return response.NewError(400, "invalid server id")
+	}
+	cc, err := grpc.Dial(srcAddr)
+	if err != nil {
+		return err
+	}
+	cli := pb.NewHashSlotClient(cc)
+	host, port, err := net.SplitHostPort(destAddr)
+	if err != nil {
+		return err
+	}
+	resp, err := cli.StartMigration(context.Background(), &pb.MigrationReq{
+		Slots: slots,
+		TargetLocation: &pb.LocationInfo{
+			Host:    host,
+			RpcPort: port,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return response.NewError(400, resp.GetMessage())
+	}
+	return nil
 }
