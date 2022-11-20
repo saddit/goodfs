@@ -25,7 +25,7 @@ func PreAuthenticate(cfg *Config) gin.HandlerFunc {
 				return
 			}
 		}
-		// no within white list
+		// not within white list
 		c.Set(MiddleKey, false)
 	}
 }
@@ -35,12 +35,13 @@ func AuthenticateWrap(validator Verification) gin.HandlerFunc {
 		if c.GetBool(MiddleKey) {
 			return
 		}
-		if err := validator.Middleware(c); err != nil {
+		ok, err := validator.Middleware(c)
+		if err != nil {
 			logs.Std().Infof("authenticate fail: %s", err)
 			c.Set(MiddleErr, err)
 			return
 		}
-		c.Set(MiddleKey, true)
+		c.Set(MiddleKey, ok)
 	}
 }
 

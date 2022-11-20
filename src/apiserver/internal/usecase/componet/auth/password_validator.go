@@ -70,9 +70,10 @@ func (pv *PasswordValidator) Verify(token Credential) error {
 	return nil
 }
 
-func (pv *PasswordValidator) Middleware(c *gin.Context) error {
+func (pv *PasswordValidator) Middleware(c *gin.Context) (bool, error) {
 	if usr, pwd, ok := c.Request.BasicAuth(); ok && pv.cfg.Enable {
-		return pv.Verify(credential.NewPasswordToken(usr, pwd))
+		err := pv.Verify(credential.NewPasswordToken(usr, pwd))
+		return err == nil, err
 	}
-	return nil
+	return false, nil
 }
