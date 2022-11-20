@@ -26,15 +26,15 @@ type Server struct {
 // NewRpcServer init a grpc raft server. if no available nodes return empty object
 func NewRpcServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService) (*Server, *raftimpl.RaftWrapper) {
 	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
-		CheckLocalUnary,
+		// CheckLocalUnary,
 		CheckWritableUnary,
 		CheckRaftEnabledUnary,
 		CheckRaftLeaderUnary,
 		CheckRaftNonLeaderUnary,
-		AllowValidMetaServerUnary,
+		// AllowValidMetaServerUnary,
 	), netGrpc.ChainStreamInterceptor(
 		CheckWritableStreaming,
-		AllowValidMetaServerStreaming,
+		// AllowValidMetaServerStreaming,
 	))
 	// init raft service
 	var raftWrapper *raftimpl.RaftWrapper
