@@ -4,6 +4,7 @@ import (
 	"adminserver/internal/entity"
 	"adminserver/internal/usecase/db"
 	"adminserver/internal/usecase/pool"
+	"common/collection/set"
 	"common/constrant"
 	"common/system"
 	"common/util"
@@ -47,11 +48,17 @@ func (sm ServerMonitor) ServerStat(servName string) (map[string]*entity.ServerIn
 	for id, sysInfo := range sysMap {
 		mp[id] = &entity.ServerInfo{SysInfo: sysInfo, ServerID: id}
 	}
+	var masters set.Set = set.NewMapSet()
+	if servName == pool.Config.Discovery.MetaServName {
+		masters = set.OfMapKeys(pool.Discovery.GetServiceMappingWith(servName, false, true))
+	}
 	for id, httpAddr := range pool.Discovery.GetServiceMapping(servName, false) {
 		mp[id].HttpAddr = httpAddr
+		mp[id].IsMaster = masters.Contains(id)
 	}
 	for id, rpcAddr := range pool.Discovery.GetServiceMapping(servName, true) {
 		mp[id].RpcAddr = rpcAddr
+		mp[id].IsMaster = masters.Contains(id)
 	}
 	return mp, nil
 }

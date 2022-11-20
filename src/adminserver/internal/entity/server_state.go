@@ -9,5 +9,5 @@ type ServerInfo struct {
 	HttpAddr string       `json:"httpAddr"`
 	RpcAddr  string       `json:"rpcAddr"`
 	SysInfo  *system.Info `json:"sysInfo"`
-	// IsMaster bool        `json:"isMaster"`
+	IsMaster bool         `json:"isMaster,omitempty"`
 }

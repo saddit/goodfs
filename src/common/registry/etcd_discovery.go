@@ -100,23 +100,32 @@ func (e *EtcdDiscovery) GetServices(name string, rpc bool) []string {
 	return []string{}
 }
 
-func (e *EtcdDiscovery) GetServicesWith(name string, rpc bool, master bool) []string {
+func (e *EtcdDiscovery) GetServiceMappingWith(name string, rpc bool, master bool) map[string]string {
 	s := util.IfElse(master, "master", "slave")
 	c := util.IfElse(master, "slave", "master")
 	service := util.IfElse(rpc, e.rpcService, e.httpService)
 	if sl, ok := service[name]; ok {
-		arr := make([]string, 0, len(sl.data))
-		for k, v := range sl.data {
-			if strings.HasSuffix(v, s) {
-				arr = append(arr, k)
-			} else if !strings.HasSuffix(v, c) {
-				// if it doesn't have any suffix means standalone
-				arr = append(arr, k)
+		res := make(map[string]string, len(sl.data))
+		for k, v := range sl.copy() {
+			sp := strings.Split(v, "/")
+			sp = strings.Split(sp[len(sp)-1], "_")
+			// if it doesn't have any suffix means standalone
+			if strings.HasSuffix(v, s) || !strings.HasSuffix(v, c) {
+				res[sp[0]] = k
 			}
 		}
-		return arr
+		return res
 	}
-	return []string{}
+	return map[string]string{}
+}
+
+func (e *EtcdDiscovery) GetServicesWith(name string, rpc bool, master bool) []string {
+	mp := e.GetServiceMappingWith(name, rpc, master)
+	arr := make([]string, len(mp))
+	for _, v := range mp {
+		arr = append(arr, v)
+	}
+	return arr
 }
 
 func (e *EtcdDiscovery) addService(name string, value RegisterValue, key string) {
