@@ -11,6 +11,9 @@
       </Tab>
     </TabList>
   </TabGroup>
+  <div class="group p-0 btn-pri w-10 h-10 fixed right-8 top-36 rounded-full" @click="refreshBtn">
+    <ArrowPathIcon class="text-white w-5 h-5 transform duration-300 transition-transform group-hover:rotate-180"/>
+  </div>
   <div class="w-full h-full px-8 py-6 bg-gray-100 overflow-y-auto">
     <RouterView></RouterView>
   </div>
@@ -19,12 +22,27 @@
 <script setup lang="ts">
 import {routes} from "vue-router/auto/routes";
 import type {RouteRecordRaw} from "vue-router/auto";
+import {ArrowPathIcon} from "@heroicons/vue/24/outline"
+import {useI18n} from "vue-i18n";
 
-api.serverStat.stat().then((res)=>{
-  useStore().setServerInfo(res)
-}).catch((err: Error)=>{
-  useToast().error(err.message)
+onBeforeMount(() => {
+  api.serverStat.stat().then((res) => {
+    useStore().setServerInfo(res)
+  }).catch((err: Error) => {
+    useToast().error(err.message)
+  })
 })
+
+const {t} = useI18n()
+
+function refreshBtn() {
+  api.serverStat.stat().then((res) => {
+    useStore().setServerInfo(res)
+    useToast().success(t('refresh-success'))
+  }).catch((err: Error) => {
+    useToast().error(err.message)
+  })
+}
 
 const tabs: RouteRecordRaw[] = []
 
@@ -49,3 +67,10 @@ for (let i in routes) {
   }
 }
 </route>
+
+<i18n lang="yaml">
+en:
+  refresh-success: 'Refresh Success!'
+zh:
+  refresh-success: '刷新成功'
+</i18n>
