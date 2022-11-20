@@ -36,13 +36,13 @@ func (cv *CallbackValidator) Verify(token Credential) error {
 	return nil
 }
 
-func (cv *CallbackValidator) Middleware(c *gin.Context) error {
+func (cv *CallbackValidator) Middleware(c *gin.Context) (bool, error) {
 	if !cv.cfg.Enable {
-		return nil
+		return false, nil
 	}
 	sp := strings.Split(c.Request.Host, ".")
 	if len(sp) == 0 {
-		return response.NewError(http.StatusBadRequest, "Host does not contains bucket")
+		return false, response.NewError(http.StatusBadRequest, "Host does not contains bucket")
 	}
 	token := &credential.CallbackToken{
 		Bucket:   sp[0],
@@ -59,5 +59,6 @@ func (cv *CallbackValidator) Middleware(c *gin.Context) error {
 		}
 		token.Extra[key] = arr
 	}
-	return cv.Verify(token)
+	err := cv.Verify(token)
+	return err == nil, err
 }

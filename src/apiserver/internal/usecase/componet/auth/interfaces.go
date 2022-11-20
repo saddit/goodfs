@@ -15,6 +15,6 @@ type (
 
 	Verification interface {
 		Verify(Credential) error
-		Middleware(*gin.Context) error
+		Middleware(*gin.Context) (bool, error)
 	}
 )
