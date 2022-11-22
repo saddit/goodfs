@@ -164,11 +164,11 @@ func (m *MetadataRepo) RemoveAllVersion(name string) error {
 	if err := m.MainDB.Update(func(tx *bolt.Tx) error {
 		root := logic.GetRoot(tx)
 		// delete bucket
-		if err := root.DeleteBucket([]byte(buk)); err != nil {
+		if err := root.DeleteBucket(util.StrToBytes(buk)); err != nil {
 			return err
 		}
 		// create an empty bucket
-		_, err := root.CreateBucket([]byte(buk))
+		_, err := root.CreateBucket(util.StrToBytes(buk))
 		return err
 	}); err != nil {
 		return err
@@ -225,7 +225,7 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 		}
 		c := buk.Cursor()
 
-		min := []byte(fmt.Sprint(name, logic.Sep, start))
+		min := util.StrToBytes(fmt.Sprint(name, logic.Sep, start))
 
 		for k, v := c.Seek(min); k != nil && len(lst) < size; k, v = c.Next() {
 			data := &entity.Version{}
@@ -249,7 +249,7 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 		cur := root.Cursor()
 		var k, v []byte
 		if prefix != "" {
-			k, v = cur.Seek([]byte(prefix))
+			k, v = cur.Seek(util.StrToBytes(prefix))
 		} else {
 			k, v = cur.Next()
 		}
@@ -326,7 +326,7 @@ func (m *MetadataRepo) ForeachVersionBytes(name string, fn func([]byte) bool) {
 func (m *MetadataRepo) GetMetadataBytes(key string) ([]byte, error) {
 	var res []byte
 	err := m.MainDB.View(func(tx *bolt.Tx) error {
-		res = logic.GetRoot(tx).Get([]byte(key))
+		res = logic.GetRoot(tx).Get(util.StrToBytes(key))
 		return nil
 	})
 	return res, err

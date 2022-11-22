@@ -1,7 +1,7 @@
 package hashslot
 
 import (
-	"common/util"
+	"common/util/math"
 	"fmt"
 	"hash/crc32"
 	"sort"
@@ -146,8 +146,7 @@ func FindRangeCurrentData(start, end int, provider IEdgeProvider) (res EdgeList,
 	edges := provider.get()
 	rangeLen := end - start
 	for _, edge := range edges {
-		// TODO replace to common/util/math
-		ed := util.MinInt(edge.End, end)
+		ed := math.MinInt(edge.End, end)
 		if edge.Start < start && start < edge.End {
 			res = append(res, &Edge{start, ed, edge.Value})
 			rangeLen -= ed - start
@@ -179,9 +178,8 @@ func CombineEdges(src EdgeList, dest EdgeList) EdgeList {
 		idx := sort.Search(src.Len(), func(i int) bool { return src[i].End >= nw.Start })
 		// nw.Start > od.End is impossible
 		if idx < src.Len() && nw.End >= src[idx].Start {
-			// TODO replace to common/util/math
-			src[idx].Start = util.MinInt(src[idx].Start, nw.Start)
-			src[idx].End = util.MaxInt(src[idx].End, nw.End)
+			src[idx].Start = math.MinInt(src[idx].Start, nw.Start)
+			src[idx].End = math.MaxInt(src[idx].End, nw.End)
 		} else {
 			newAdd = append(newAdd, nw)
 		}
