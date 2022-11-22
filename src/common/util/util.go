@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/tinylib/msgp/msgp"
 )
@@ -64,8 +65,8 @@ func GobDecodeGen2[T interface{}](bt []byte, v *T) bool {
 	return true
 }
 
-//ImmediateTick Immediately tick once then tick interval
-//alloc 2 chan, one from time.Tick()
+// ImmediateTick Immediately tick once then tick interval
+// alloc 2 chan, one from time.Tick()
 func ImmediateTick(t time.Duration) <-chan time.Time {
 	ch := make(chan time.Time, 1)
 	tk := time.NewTicker(t)
@@ -87,10 +88,10 @@ func InstanceOf[T any](obj any) bool {
 	return false
 }
 
-//NumToString format number to string by strconv.
-//uint and int with base 10.
-//float with fmt='f' and prec=10.
-//others return empty string
+// NumToString format number to string by strconv.
+// uint and int with base 10.
+// float with fmt='f' and prec=10.
+// others return empty string
 func NumToString(n interface{}) string {
 	switch n := n.(type) {
 	case int:
@@ -348,4 +349,14 @@ func PagingOffset(page, size, total int) (int, int, bool) {
 		end = total
 	}
 	return offset, end, true
+}
+
+// BytesToStr performs unholy acts to avoid allocations 
+func BytesToStr(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+// StrToBytes performs unholy acts to avoid allocations
+func StrToBytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&s))
 }
