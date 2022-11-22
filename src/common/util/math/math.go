@@ -6,3 +6,24 @@ func LogicMod(a, b int) int {
 	}
 	return a % b
 }
+
+func MinInt(i, j int) int {
+	if i < j {
+		return i
+	}
+	return j
+}
+
+func MaxInt(i, j int) int {
+	if i < j {
+		return j
+	}
+	return i
+}
+
+func MaxUint64(i, j uint64) uint64 {
+	if i < j {
+		return j
+	}
+	return i
+}
