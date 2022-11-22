@@ -315,27 +315,6 @@ func EncodeMsgp(data msgp.MarshalSizer) ([]byte, error) {
 	return data.MarshalMsg(nil)
 }
 
-func MinInt(i, j int) int {
-	if i < j {
-		return i
-	}
-	return j
-}
-
-func MaxInt(i, j int) int {
-	if i < j {
-		return j
-	}
-	return i
-}
-
-func MaxUint64(i, j uint64) uint64 {
-	if i < j {
-		return j
-	}
-	return i
-}
-
 func PagingOffset(page, size, total int) (int, int, bool) {
 	if page == 0 {
 		return 0, 0, false
@@ -351,7 +330,7 @@ func PagingOffset(page, size, total int) (int, int, bool) {
 	return offset, end, true
 }
 
-// BytesToStr performs unholy acts to avoid allocations 
+// BytesToStr performs unholy acts to avoid allocations
 func BytesToStr(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }

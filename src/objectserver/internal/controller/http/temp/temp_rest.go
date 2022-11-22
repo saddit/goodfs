@@ -42,7 +42,7 @@ func Post(g *gin.Context) {
 		g.AbortWithStatus(http.StatusServiceUnavailable)
 	}
 	g.Status(http.StatusOK)
-	_, _ = g.Writer.Write([]byte(tmpInfo.Id))
+	_, _ = g.Writer.Write(util.StrToBytes(tmpInfo.Id))
 }
 
 func Put(g *gin.Context) {

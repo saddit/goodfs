@@ -37,7 +37,7 @@ func ForeachKeys(fn func(string) bool) TxFunc {
 func AddMeta(data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
 		root := GetRoot(tx)
-		key := []byte(data.Name)
+		key := util.StrToBytes(data.Name)
 		// check duplicate
 		if root.Get(key) != nil {
 			return ErrExists
@@ -50,7 +50,7 @@ func AddMeta(data *entity.Metadata) TxFunc {
 		data.CreateTime = time.Now().UnixMilli()
 		data.UpdateTime = data.CreateTime
 		// create version bucket
-		if _, err := root.CreateBucket([]byte(NestPrefix + data.Name)); err != nil {
+		if _, err := root.CreateBucket(util.StrToBytes(NestPrefix + data.Name)); err != nil {
 			return fmt.Errorf("create bucket: %w", err)
 		}
 		// put metadata
@@ -60,7 +60,7 @@ func AddMeta(data *entity.Metadata) TxFunc {
 
 func RemoveMeta(name string) TxFunc {
 	return func(tx *bolt.Tx) error {
-		key := []byte(name)
+		key := util.StrToBytes(name)
 		root := GetRoot(tx)
 		if root.Get(key) == nil {
 			return ErrNotFound
@@ -68,7 +68,7 @@ func RemoveMeta(name string) TxFunc {
 		if err := root.Delete(key); err != nil {
 			return err
 		}
-		return root.DeleteBucket([]byte(fmt.Sprint(NestPrefix, key)))
+		return root.DeleteBucket(util.StrToBytes(fmt.Sprint(NestPrefix, key)))
 	}
 }
 
@@ -88,7 +88,7 @@ func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 		}
 		// update data
 		data.UpdateTime = time.Now().UnixMilli()
-		return root.Put([]byte(name), bt)
+		return root.Put(util.StrToBytes(name), bt)
 	}
 }
 
@@ -104,14 +104,14 @@ func AddVer(name string, data *entity.Version) TxFunc {
 			// only if data is migrated from others will do sequnce updating
 			if data.Sequence == 0 {
 				data.Sequence, _ = bucket.NextSequence()
-			} else if bucket.Get([]byte(fmt.Sprint(name, Sep, data.Sequence))) != nil {
+			} else if bucket.Get(util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))) != nil {
 				return ErrExists
 			} else if data.Sequence > bucket.Sequence() {
 				if err := bucket.SetSequence(data.Sequence); err != nil {
 					return fmt.Errorf("set sequence err: %w", err)
 				}
 			}
-			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
+			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
 			data.Ts = time.Now().UnixMilli()
 			bt, err := util.EncodeMsgp(data)
 			if err != nil {
@@ -128,7 +128,7 @@ func AddVer(name string, data *entity.Version) TxFunc {
 
 func RemoveVer(name string, ver uint64) TxFunc {
 	return func(tx *bolt.Tx) error {
-		key := []byte(fmt.Sprint(name, Sep, ver))
+		key := util.StrToBytes(fmt.Sprint(name, Sep, ver))
 		b := GetRootNest(tx, name)
 		if b == nil {
 			return ErrNotFound
@@ -148,7 +148,7 @@ func RemoveVer(name string, ver uint64) TxFunc {
 func UpdateVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if b := GetRootNest(tx, name); b != nil {
-			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
+			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
 			// get old one
 			var origin entity.Version
 			if err := getVer(b, name, data.Sequence, &origin); err != nil {
@@ -184,19 +184,19 @@ func GetVer(name string, ver uint64, dest *entity.Version) TxFunc {
 
 func GetRoot(tx *bolt.Tx) *bolt.Bucket {
 	if tx.Writable() {
-		root, err := tx.CreateBucketIfNotExists([]byte(RootBucketName))
+		root, err := tx.CreateBucketIfNotExists(util.StrToBytes(RootBucketName))
 		if err != nil {
 			panic(err)
 		}
 		return root
 	} else {
-		return tx.Bucket([]byte(RootBucketName))
+		return tx.Bucket(util.StrToBytes(RootBucketName))
 	}
 }
 
 func GetRootNest(tx *bolt.Tx, name string) *bolt.Bucket {
 	if root := GetRoot(tx); root != nil {
-		return root.Bucket([]byte(NestPrefix + name))
+		return root.Bucket(util.StrToBytes(NestPrefix + name))
 	}
 	return nil
 }
@@ -205,7 +205,7 @@ func getVer(bucket *bolt.Bucket, name string, ver uint64, dest *entity.Version) 
 	if bucket == nil {
 		return ErrNotFound
 	}
-	bt := bucket.Get([]byte(fmt.Sprint(name, Sep, ver)))
+	bt := bucket.Get(util.StrToBytes(fmt.Sprint(name, Sep, ver)))
 	if bt == nil {
 		return ErrNotFound
 	}
@@ -216,7 +216,7 @@ func getMeta(b *bolt.Bucket, name string, dest *entity.Metadata) error {
 	if b == nil {
 		return ErrNotFound
 	}
-	bt := b.Get([]byte(name))
+	bt := b.Get(util.StrToBytes(name))
 	if bt == nil {
 		return ErrNotFound
 	}

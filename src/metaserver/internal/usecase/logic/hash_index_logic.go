@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"common/util"
 	"fmt"
 	"metaserver/internal/usecase"
 
@@ -18,19 +19,19 @@ func NewHashIndexLogic() HashIndexLogic { return HashIndexLogic{} }
 func (HashIndexLogic) AddIndex(hash, key string) usecase.TxFunc {
 	return func(tx *bolt.Tx) error {
 		buk := GetIndexBucket(tx, HashIndexName)
-		hashBuk, err := buk.CreateBucketIfNotExists([]byte(hash))
+		hashBuk, err := buk.CreateBucketIfNotExists(util.StrToBytes(hash))
 		if err != nil {
 			return err
 		}
-		return hashBuk.Put([]byte(key), []byte{})
+		return hashBuk.Put(util.StrToBytes(key), []byte{})
 	}
 }
 
 func (HashIndexLogic) RemoveIndex(hash, key string) usecase.TxFunc {
 	return func(tx *bolt.Tx) error {
 		buk := GetIndexBucket(tx, HashIndexName)
-		if hashBuk := buk.Bucket([]byte(hash)); hashBuk != nil {
-			return hashBuk.Delete([]byte(key))
+		if hashBuk := buk.Bucket(util.StrToBytes(hash)); hashBuk != nil {
+			return hashBuk.Delete(util.StrToBytes(key))
 		}
 		return nil
 	}
@@ -44,12 +45,12 @@ func (HashIndexLogic) GetIndex(hash string, res *[]string) usecase.TxFunc {
 
 			return nil
 		}
-		hashBuk := buk.Bucket([]byte(hash))
+		hashBuk := buk.Bucket(util.StrToBytes(hash))
 		if hashBuk == nil {
 			return nil
 		}
 		err := hashBuk.ForEach(func(k, v []byte) error {
-			*res = append(*res, string(k))
+			*res = append(*res, util.BytesToStr(k))
 			return nil
 		})
 		return err
@@ -57,7 +58,7 @@ func (HashIndexLogic) GetIndex(hash string, res *[]string) usecase.TxFunc {
 }
 
 func GetIndexBucket(tx *bolt.Tx, indexName string) *bolt.Bucket {
-	bt := []byte(fmt.Sprint("goodfs.metadata.", indexName))
+	bt := util.StrToBytes(fmt.Sprint("goodfs.metadata.", indexName))
 	if tx.Writable() {
 		res, _ := tx.CreateBucketIfNotExists(bt)
 		return res
