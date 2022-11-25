@@ -51,6 +51,25 @@ func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, er
 	return int(data.Sequence), nil
 }
 
+func (m *MetadataService) ReceiveVersion(name string, data *entity.Version) error {
+	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+		Type:    entity.LogMigrate,
+		Dest:    entity.DestVersion,
+		Name:    name,
+		Version: data,
+	}); ok {
+		if resp.Ok() {
+			return nil
+		}
+		return nil
+	}
+
+	if err := m.repo.AddVersionWithSequnce(name, data); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) error {
 	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogUpdate,

@@ -116,6 +116,21 @@ func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
 	return nil
 }
 
+func (m *MetadataRepo) AddVersionWithSequnce(name string, data *entity.Version) error {
+	if data == nil {
+		return ErrNilData
+	}
+	if err := m.MainDB.Update(logic.AddVerWithSequnce(name, data)); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		err := m.Cache.AddVersion(name, data)
+		util.LogErrWithPre("metadata cache", err)
+	}()
+	return nil
+}
+
 func (m *MetadataRepo) UpdateVersion(name string, data *entity.Version) error {
 	if data == nil {
 		return ErrNilData

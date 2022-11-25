@@ -98,20 +98,41 @@ func GetMeta(name string, data *entity.Metadata) TxFunc {
 	}
 }
 
-func AddVer(name string, data *entity.Version) TxFunc {
+func AddVerWithSequnce(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
 			// only if data is migrated from others will do sequnce updating
-			if data.Sequence == 0 {
-				data.Sequence, _ = bucket.NextSequence()
-			} else if bucket.Get([]byte(fmt.Sprint(name, Sep, data.Sequence))) != nil {
-				return ErrExists
-			} else if data.Sequence > bucket.Sequence() {
+			if data.Sequence > bucket.Sequence() {
 				if err := bucket.SetSequence(data.Sequence); err != nil {
 					return fmt.Errorf("set sequence err: %w", err)
 				}
 			}
+			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
+			if bucket.Get(key) != nil {
+				return ErrExists
+			}
+			data.Ts = time.Now().UnixMilli()
+			bt, err := util.EncodeMsgp(data)
+			if err != nil {
+				return err
+			}
+			if err := bucket.Put(key, bt); err != nil {
+				return err
+			}
+			return NewHashIndexLogic().AddIndex(data.Hash, string(key))(tx)
+		}
+		return ErrNotFound
+	}
+}
+
+func AddVer(name string, data *entity.Version) TxFunc {
+	return func(tx *bolt.Tx) error {
+		if bucket := GetRootNest(tx, name); bucket != nil {
+			data.Sequence, _ = bucket.NextSequence()
 			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
+			if bucket.Get(key) != nil {
+				return ErrExists
+			}
 			data.Ts = time.Now().UnixMilli()
 			bt, err := util.EncodeMsgp(data)
 			if err != nil {

@@ -38,6 +38,9 @@ func (f *fsm) applyMetadata(data *entity.RaftData) *response.RaftFsmResp {
 
 func (f *fsm) applyVersion(data *entity.RaftData) *response.RaftFsmResp {
 	switch data.Type {
+	case entity.LogMigrate:
+		resp := response.NewRaftFsmResp(f.repo.AddVersionWithSequnce(data.Name, data.Version))
+		return resp
 	case entity.LogInsert:
 		resp := response.NewRaftFsmResp(f.repo.AddVersion(data.Name, data.Version))
 		resp.Data = data.Version.Sequence

@@ -197,7 +197,7 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 		return err
 	}
 	if item.IsVersion {
-		if _, err := h.Serivce.AddVersion(item.Name, logData.Version); err != nil && errors.Is(err, usecase.ErrExists) {
+		if err := h.Serivce.ReceiveVersion(item.Name, logData.Version); err != nil && errors.Is(err, usecase.ErrExists) {
 			return err
 		}
 	} else if err := h.Serivce.AddMetadata(logData.Metadata); err != nil && errors.Is(err, usecase.ErrExists) {
