@@ -337,5 +337,7 @@ func BytesToStr(b []byte) string {
 
 // StrToBytes performs unholy acts to avoid allocations
 func StrToBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
+	pt := *(*[]uintptr)(unsafe.Pointer(&s))
+	bpt := []uintptr{pt[0], pt[1], pt[1]}
+	return *(*[]byte)(unsafe.Pointer(&bpt))
 }

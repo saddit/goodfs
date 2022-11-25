@@ -120,7 +120,7 @@ func (m *MetadataRepo) AddVersionWithSequnce(name string, data *entity.Version) 
 	if data == nil {
 		return ErrNilData
 	}
-	if err := m.MainDB.Update(logic.AddVerWithSequnce(name, data)); err != nil {
+	if err := m.MainDB.Update(logic.AddVerWithSequence(name, data)); err != nil {
 		return err
 	}
 	go func() {

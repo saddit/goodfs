@@ -98,7 +98,7 @@ func GetMeta(name string, data *entity.Metadata) TxFunc {
 	}
 }
 
-func AddVerWithSequnce(name string, data *entity.Version) TxFunc {
+func AddVerWithSequence(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
 			// only if data is migrated from others will do sequnce updating
@@ -129,7 +129,7 @@ func AddVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
 			data.Sequence, _ = bucket.NextSequence()
-			key := []byte(fmt.Sprint(name, Sep, data.Sequence))
+			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
 			if bucket.Get(key) != nil {
 				return ErrExists
 			}
