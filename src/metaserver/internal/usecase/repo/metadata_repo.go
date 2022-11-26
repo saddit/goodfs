@@ -75,13 +75,16 @@ func (m *MetadataRepo) UpdateMetadata(name string, data *entity.Metadata) error 
 }
 
 func (m *MetadataRepo) RemoveMetadata(name string) error {
+	lastVer := m.GetLastVersionNumber(name)
 	if err := m.MainDB.Update(logic.RemoveMeta(name)); err != nil {
 		return err
 	}
 	go func() {
 		defer graceful.Recover()
-		err := m.Cache.RemoveMetadata(name)
-		util.LogErrWithPre("metadata cache", err)
+		util.LogErrWithPre("metadata cache", m.Cache.RemoveMetadata(name))
+		for i := uint64(1); i <= lastVer; i++ {
+			util.LogErrWithPre("metadata cache", m.Cache.RemoveVersion(name, i))
+		}
 	}()
 	return nil
 }
