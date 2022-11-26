@@ -42,7 +42,7 @@ func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, er
 		if resp.Ok() {
 			return int(resp.Data.(uint64)), nil
 		}
-		return -1, nil
+		return -1, resp
 	}
 
 	if err := m.repo.AddVersion(name, data); err != nil {
@@ -58,13 +58,10 @@ func (m *MetadataService) ReceiveVersion(name string, data *entity.Version) erro
 		Name:    name,
 		Version: data,
 	}); ok {
-		if resp.Ok() {
-			return nil
-		}
-		return nil
+		return resp
 	}
 
-	if err := m.repo.AddVersionWithSequnce(name, data); err != nil {
+	if err := m.repo.AddVersionWithSequence(name, data); err != nil {
 		return err
 	}
 	return nil

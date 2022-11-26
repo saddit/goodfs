@@ -72,7 +72,7 @@ type (
 		WritableRepo
 		ReadableRepo
 		DBReader
-		AddVersionWithSequnce(string, *entity.Version) error
+		AddVersionWithSequence(string, *entity.Version) error
 		RemoveAllVersion(string) error
 		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
 		GetLastVersionNumber(name string) uint64

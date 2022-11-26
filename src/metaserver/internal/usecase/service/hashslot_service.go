@@ -180,7 +180,7 @@ func (h *HashSlotService) FinishReceiveItem(success bool) error {
 	if err = h.Store.Save(h.Cfg.StoreID, info); err != nil {
 		return fmt.Errorf("save new slot-info fails after finsih migrateion: %w", err)
 	}
-	logs.Std().Debug("finish migration from %s success", fromHost)
+	logs.Std().Debugf("finish migration from %s success", fromHost)
 	return nil
 }
 
@@ -197,10 +197,16 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 		return err
 	}
 	if item.IsVersion {
-		if err := h.Serivce.ReceiveVersion(item.Name, logData.Version); err != nil && errors.Is(err, usecase.ErrExists) {
+		if err := h.Serivce.ReceiveVersion(item.Name, logData.Version); err != nil {
+			if errors.Is(err, usecase.ErrExists) {
+				return nil
+			}
 			return err
 		}
-	} else if err := h.Serivce.AddMetadata(logData.Metadata); err != nil && errors.Is(err, usecase.ErrExists) {
+	} else if err := h.Serivce.AddMetadata(logData.Metadata); err != nil {
+		if errors.Is(err, usecase.ErrExists) {
+			return nil
+		}
 		return err
 	}
 	return nil
@@ -227,8 +233,9 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	}
 	delEdges, _ := hashslot.WrapSlotsToEdges(slots, "")
 	migKeys := h.Serivce.FilterKeys(func(s string) bool {
-		return hashslot.IsSlotInEdges(hashslot.CalcBytesSlot([]byte(s)), delEdges)
+		return hashslot.IsSlotInEdges(hashslot.CalcBytesSlot(util.StrToBytes(s)), delEdges)
 	})
+	logger.Debugf("migration keys:\n %v", migKeys)
 	var errs []error
 	var sucNum int
 	for _, key := range migKeys {
@@ -280,7 +287,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 			} else if !resp.Success {
 				errs = append(errs, errors.New(resp.Message))
 				allVersionSuccess = false
-				logger.Debugf("send-metadata-version %s recv failure resposne: %s", key, err)
+				logger.Debugf("send-metadata-version %s recv failure resposne: %s", key, resp.Message)
 			}
 			return true
 		})

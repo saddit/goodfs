@@ -19,8 +19,7 @@ func isWriteMethod(method string) bool {
 func CheckLeaderInRaftMode(c *gin.Context) {
 	if pool.RaftWrapper.Enabled {
 		if isWriteMethod(c.Request.Method) && !pool.RaftWrapper.IsLeader() {
-			c.Status(http.StatusServiceUnavailable)
-			c.Abort()
+			response.Exec(c).Status(http.StatusServiceUnavailable).Abort()
 			return
 		}
 	}

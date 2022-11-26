@@ -116,7 +116,7 @@ func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
 	return nil
 }
 
-func (m *MetadataRepo) AddVersionWithSequnce(name string, data *entity.Version) error {
+func (m *MetadataRepo) AddVersionWithSequence(name string, data *entity.Version) error {
 	if data == nil {
 		return ErrNilData
 	}
@@ -191,7 +191,7 @@ func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 		}
 		return ErrNotFound
 	}); err != nil {
-		logs.Std().Errorf("GetLastVersionNumber: %+v", err)
+		return 0
 	}
 	return max
 }

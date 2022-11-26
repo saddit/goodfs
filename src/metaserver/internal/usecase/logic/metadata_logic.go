@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"errors"
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
@@ -68,7 +69,12 @@ func RemoveMeta(name string) TxFunc {
 		if err := root.Delete(key); err != nil {
 			return err
 		}
-		return root.DeleteBucket(util.StrToBytes(fmt.Sprint(NestPrefix, key)))
+		err := root.DeleteBucket(util.StrToBytes(fmt.Sprint(NestPrefix, key)))
+		// ignore err of bucket not found
+		if err != nil && !errors.Is(err, bolt.ErrBucketNotFound) {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -101,7 +107,7 @@ func GetMeta(name string, data *entity.Metadata) TxFunc {
 func AddVerWithSequence(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
-			// only if data is migrated from others will do sequnce updating
+			// only if data is migrated from others will do sequence updating
 			if data.Sequence > bucket.Sequence() {
 				if err := bucket.SetSequence(data.Sequence); err != nil {
 					return fmt.Errorf("set sequence err: %w", err)
