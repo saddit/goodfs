@@ -26,6 +26,9 @@ func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
 		Name:     data.Name,
 		Metadata: data,
 	}); ok {
+		if resp.Ok() {
+			return nil
+		}
 		return resp
 	}
 
@@ -58,6 +61,9 @@ func (m *MetadataService) ReceiveVersion(name string, data *entity.Version) erro
 		Name:    name,
 		Version: data,
 	}); ok {
+		if resp.Ok() {
+			return nil
+		}
 		return resp
 	}
 
@@ -74,6 +80,9 @@ func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) err
 		Name:     name,
 		Metadata: data,
 	}); ok {
+		if resp.Ok() {
+			return nil
+		}
 		return resp
 	}
 
@@ -89,6 +98,9 @@ func (m *MetadataService) UpdateVersion(name string, ver int, data *entity.Versi
 		Sequence: data.Sequence,
 		Version:  data,
 	}); ok {
+		if resp.Ok() {
+			return nil
+		}
 		return resp
 	}
 
@@ -101,6 +113,9 @@ func (m *MetadataService) RemoveMetadata(name string) error {
 		Dest: entity.DestMetadata,
 		Name: name,
 	}); ok {
+		if resp.Ok() {
+			return nil
+		}
 		return resp
 	}
 
@@ -114,6 +129,9 @@ func (m *MetadataService) RemoveVersion(name string, ver int) error {
 		Name:     name,
 		Sequence: uint64(ver),
 	}); ok {
+		if resp.Ok() {
+			return nil
+		}
 		return resp
 	}
 
