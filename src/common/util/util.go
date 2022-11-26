@@ -307,12 +307,19 @@ func UnmarshalFromIO[T any](body io.ReadCloser) (T, error) {
 // DecodeMsgp decode data by msgp
 func DecodeMsgp(data msgp.Unmarshaler, bt []byte) (err error) {
 	_, err = data.UnmarshalMsg(bt)
+	if err != nil {
+		err = fmt.Errorf("encode-msgp: %w", err)
+	}
 	return
 }
 
 // EncodeMsgp encode data with msgp
 func EncodeMsgp(data msgp.MarshalSizer) ([]byte, error) {
-	return data.MarshalMsg(nil)
+	bt, err := data.MarshalMsg(nil)
+	if err != nil {
+		return nil, fmt.Errorf("decode-msgp: %w", err)
+	}
+	return bt, err
 }
 
 func PagingOffset(page, size, total int) (int, int, bool) {
@@ -337,5 +344,7 @@ func BytesToStr(b []byte) string {
 
 // StrToBytes performs unholy acts to avoid allocations
 func StrToBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
+	x := (*[2]uintptr)(unsafe.Pointer(&s))
+	h := [3]uintptr{x[0], x[1], x[1]}
+	return *(*[]byte)(unsafe.Pointer(&h))
 }

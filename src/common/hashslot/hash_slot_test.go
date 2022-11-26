@@ -98,3 +98,8 @@ func TestIsSlotInEdges(t *testing.T) {
 	assert.New(t).False(IsSlotInEdges(105, p))
 	assert.New(t).False(IsSlotInEdges(120, p))
 }
+
+func TestCalcBytesSlot(t *testing.T) {
+	res := CalcBytesSlot([]byte("x-www-form-url.location.form"))
+	t.Log(res)
+}

@@ -9,6 +9,7 @@ const (
 	LogInsert LogType = 1 << iota
 	LogRemove
 	LogUpdate
+	LogMigrate
 )
 
 const (
