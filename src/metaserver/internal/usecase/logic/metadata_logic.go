@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"errors"
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
@@ -68,7 +69,12 @@ func RemoveMeta(name string) TxFunc {
 		if err := root.Delete(key); err != nil {
 			return err
 		}
-		return root.DeleteBucket(util.StrToBytes(fmt.Sprint(NestPrefix, key)))
+		err := root.DeleteBucket(util.StrToBytes(fmt.Sprint(NestPrefix, key)))
+		// ignore err of bucket not found
+		if err != nil && !errors.Is(err, bolt.ErrBucketNotFound) {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -98,20 +104,41 @@ func GetMeta(name string, data *entity.Metadata) TxFunc {
 	}
 }
 
-func AddVer(name string, data *entity.Version) TxFunc {
+func AddVerWithSequence(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetRootNest(tx, name); bucket != nil {
-			// only if data is migrated from others will do sequnce updating
-			if data.Sequence == 0 {
-				data.Sequence, _ = bucket.NextSequence()
-			} else if bucket.Get(util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))) != nil {
-				return ErrExists
-			} else if data.Sequence > bucket.Sequence() {
+			// only if data is migrated from others will do sequence updating
+			if data.Sequence > bucket.Sequence() {
 				if err := bucket.SetSequence(data.Sequence); err != nil {
 					return fmt.Errorf("set sequence err: %w", err)
 				}
 			}
 			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
+			if bucket.Get(key) != nil {
+				return ErrExists
+			}
+			data.Ts = time.Now().UnixMilli()
+			bt, err := util.EncodeMsgp(data)
+			if err != nil {
+				return err
+			}
+			if err := bucket.Put(key, bt); err != nil {
+				return err
+			}
+			return NewHashIndexLogic().AddIndex(data.Hash, string(key))(tx)
+		}
+		return ErrNotFound
+	}
+}
+
+func AddVer(name string, data *entity.Version) TxFunc {
+	return func(tx *bolt.Tx) error {
+		if bucket := GetRootNest(tx, name); bucket != nil {
+			data.Sequence, _ = bucket.NextSequence()
+			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
+			if bucket.Get(key) != nil {
+				return ErrExists
+			}
 			data.Ts = time.Now().UnixMilli()
 			bt, err := util.EncodeMsgp(data)
 			if err != nil {

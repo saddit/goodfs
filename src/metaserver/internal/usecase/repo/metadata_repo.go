@@ -75,13 +75,16 @@ func (m *MetadataRepo) UpdateMetadata(name string, data *entity.Metadata) error 
 }
 
 func (m *MetadataRepo) RemoveMetadata(name string) error {
+	lastVer := m.GetLastVersionNumber(name)
 	if err := m.MainDB.Update(logic.RemoveMeta(name)); err != nil {
 		return err
 	}
 	go func() {
 		defer graceful.Recover()
-		err := m.Cache.RemoveMetadata(name)
-		util.LogErrWithPre("metadata cache", err)
+		util.LogErrWithPre("metadata cache", m.Cache.RemoveMetadata(name))
+		for i := uint64(1); i <= lastVer; i++ {
+			util.LogErrWithPre("metadata cache", m.Cache.RemoveVersion(name, i))
+		}
 	}()
 	return nil
 }
@@ -106,6 +109,21 @@ func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
 		return ErrNilData
 	}
 	if err := m.MainDB.Update(logic.AddVer(name, data)); err != nil {
+		return err
+	}
+	go func() {
+		defer graceful.Recover()
+		err := m.Cache.AddVersion(name, data)
+		util.LogErrWithPre("metadata cache", err)
+	}()
+	return nil
+}
+
+func (m *MetadataRepo) AddVersionWithSequence(name string, data *entity.Version) error {
+	if data == nil {
+		return ErrNilData
+	}
+	if err := m.MainDB.Update(logic.AddVerWithSequence(name, data)); err != nil {
 		return err
 	}
 	go func() {
@@ -176,7 +194,7 @@ func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 		}
 		return ErrNotFound
 	}); err != nil {
-		logs.Std().Errorf("GetLastVersionNumber: %+v", err)
+		return 0
 	}
 	return max
 }

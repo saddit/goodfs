@@ -38,6 +38,9 @@ func (f *fsm) applyMetadata(data *entity.RaftData) *response.RaftFsmResp {
 
 func (f *fsm) applyVersion(data *entity.RaftData) *response.RaftFsmResp {
 	switch data.Type {
+	case entity.LogMigrate:
+		resp := response.NewRaftFsmResp(f.repo.AddVersionWithSequence(data.Name, data.Version))
+		return resp
 	case entity.LogInsert:
 		resp := response.NewRaftFsmResp(f.repo.AddVersion(data.Name, data.Version))
 		resp.Data = data.Version.Sequence
@@ -66,7 +69,7 @@ func (f *fsm) Apply(lg *raft.Log) any {
 		return response.NewRaftFsmResp(ErrNilData)
 	}
 	if lg.Type != raft.LogCommand {
-		log.Warn("recieve log type %v", lg.Type)
+		log.Warnf("recieve log type %v", lg.Type)
 		return nil
 	}
 	var data entity.RaftData

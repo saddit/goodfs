@@ -37,17 +37,6 @@ func GetGob[T interface{}](c ICache, k string) (*T, bool) {
 	return nil, false
 }
 
-func GetGob2[T interface{}](c ICache, k string, v *T) bool {
-	if bt := c.Get(k); bt != nil {
-		if r, ok := util.GobDecodeGen[T](bt); ok {
-			*v = *r
-			return true
-		}
-		return false
-	}
-	return false
-}
-
 func (c *Cache) onRemove(k string, v []byte, r bigcache.RemoveReason) {
 	go func() {
 		defer graceful.Recover()
@@ -85,7 +74,10 @@ func (c *Cache) Set(k string, v []byte) bool {
 }
 
 func (c *Cache) Delete(k string) {
-	c.cache.Delete(k)
+	if !c.Has(k) {
+		return
+	}
+	_ = c.cache.Delete(k)
 }
 
 func (c *Cache) Close() error {

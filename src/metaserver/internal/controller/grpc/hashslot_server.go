@@ -39,7 +39,7 @@ func (h *HashSlotServer) StartMigration(_ context.Context, req *pb.MigrationReq)
 func (h *HashSlotServer) StreamingReceive(stream pb.HashSlot_StreamingReceiveServer) (err error) {
 	defer func() {
 		if err != nil {
-			log.Error("stream receive abort, migrate failed")
+			log.Errorf("stream receive abort, migrate failed: %s", err)
 			if err2 := h.Service.FinishReceiveItem(false); err2 != nil {
 				err = fmt.Errorf("%w: %s", err2, err)
 			}
