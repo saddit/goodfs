@@ -100,6 +100,19 @@ func (e *EtcdDiscovery) GetServices(name string, rpc bool) []string {
 	return []string{}
 }
 
+func (e *EtcdDiscovery) GetServiceByAddr(name, addr string, rpc bool) (id string, httpAddr string, rpcAddr string) {
+	if rpc {
+		id = e.rpcService[name].data[addr]
+		rpcAddr = addr
+		httpAddr = e.GetServiceMapping(name, false)[id]
+	} else {
+		id = e.httpService[name].data[addr]
+		httpAddr = addr
+		rpcAddr = e.GetServiceMapping(name, true)[id]
+	}
+	return
+}
+
 func (e *EtcdDiscovery) GetServiceMappingWith(name string, rpc bool, master bool) map[string]string {
 	s := util.IfElse(master, "master", "slave")
 	c := util.IfElse(master, "slave", "master")
