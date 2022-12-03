@@ -30,6 +30,12 @@ func (z *SlotInfo) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "GroupID")
 				return
 			}
+		case "server_id":
+			z.ServerID, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "ServerID")
+				return
+			}
 		case "location":
 			z.Location, err = dc.ReadString()
 			if err != nil {
@@ -74,15 +80,25 @@ func (z *SlotInfo) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *SlotInfo) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 4
+	// map header, size 5
 	// write "id"
-	err = en.Append(0x84, 0xa2, 0x69, 0x64)
+	err = en.Append(0x85, 0xa2, 0x69, 0x64)
 	if err != nil {
 		return
 	}
 	err = en.WriteString(z.GroupID)
 	if err != nil {
 		err = msgp.WrapError(err, "GroupID")
+		return
+	}
+	// write "server_id"
+	err = en.Append(0xa9, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x5f, 0x69, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.ServerID)
+	if err != nil {
+		err = msgp.WrapError(err, "ServerID")
 		return
 	}
 	// write "location"
@@ -128,10 +144,13 @@ func (z *SlotInfo) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *SlotInfo) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 4
+	// map header, size 5
 	// string "id"
-	o = append(o, 0x84, 0xa2, 0x69, 0x64)
+	o = append(o, 0x85, 0xa2, 0x69, 0x64)
 	o = msgp.AppendString(o, z.GroupID)
+	// string "server_id"
+	o = append(o, 0xa9, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x5f, 0x69, 0x64)
+	o = msgp.AppendString(o, z.ServerID)
 	// string "location"
 	o = append(o, 0xa8, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
 	o = msgp.AppendString(o, z.Location)
@@ -169,6 +188,12 @@ func (z *SlotInfo) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			z.GroupID, bts, err = msgp.ReadStringBytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "GroupID")
+				return
+			}
+		case "server_id":
+			z.ServerID, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ServerID")
 				return
 			}
 		case "location":
@@ -216,7 +241,7 @@ func (z *SlotInfo) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *SlotInfo) Msgsize() (s int) {
-	s = 1 + 3 + msgp.StringPrefixSize + len(z.GroupID) + 9 + msgp.StringPrefixSize + len(z.Location) + 9 + msgp.StringPrefixSize + len(z.Checksum) + 6 + msgp.ArrayHeaderSize
+	s = 1 + 3 + msgp.StringPrefixSize + len(z.GroupID) + 10 + msgp.StringPrefixSize + len(z.ServerID) + 9 + msgp.StringPrefixSize + len(z.Location) + 9 + msgp.StringPrefixSize + len(z.Checksum) + 6 + msgp.ArrayHeaderSize
 	for za0001 := range z.Slots {
 		s += msgp.StringPrefixSize + len(z.Slots[za0001])
 	}

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"metaserver/internal/usecase/logic"
 	"common/hashslot"
 	"common/logs"
 	"common/pb"
@@ -52,8 +53,7 @@ func (h *HashSlotService) OnLeaderChanged(isLeader bool) {
 			info = &hashslot.SlotInfo{Slots: h.Cfg.Slots, GroupID: h.Cfg.StoreID}
 			logs.Std().Infof("no exist slots, init from config: id=%s, slots=%s", info.GroupID, info.Slots)
 		}
-		info.Location = pool.HttpHostPort
-		if err := h.Store.Save(h.Cfg.StoreID, info); err != nil {
+		if err := logic.NewHashSlot().SaveToEtcd(h.Cfg.StoreID, info); err != nil {
 			logs.Std().Error(err)
 			return
 		}

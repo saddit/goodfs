@@ -15,23 +15,23 @@ import (
 var log = logs.New("etcd-registry")
 
 type EtcdRegistry struct {
-	cli       *clientv3.Client
-	cfg       Config
-	leaseId   clientv3.LeaseID
-	stdName   string
-	name      string
-	stopFn    func()
+	cli     *clientv3.Client
+	cfg     Config
+	leaseId clientv3.LeaseID
+	stdName string
+	name    string
+	stopFn  func()
 }
 
 func NewEtcdRegistry(kv *clientv3.Client, cfg Config) *EtcdRegistry {
 	k := fmt.Sprint(cfg.Name, "/", cfg.ServerID)
 	return &EtcdRegistry{
-		cli:       kv,
-		cfg:       cfg,
-		leaseId:   -1,
-		stdName:   k,
-		name:      k,
-		stopFn:    func() {},
+		cli:     kv,
+		cfg:     cfg,
+		leaseId: -1,
+		stdName: k,
+		name:    k,
+		stopFn:  func() {},
 	}
 }
 
@@ -121,7 +121,6 @@ func (e *EtcdRegistry) Unregister() error {
 	if e.leaseId != -1 {
 		ctx, cancel := context.WithTimeout(context.Background(), e.cfg.Timeout)
 		defer cancel()
-
 		_, err := e.cli.Delete(ctx, e.Key())
 		if err != nil {
 			return err
@@ -130,6 +129,7 @@ func (e *EtcdRegistry) Unregister() error {
 		if err != nil {
 			return err
 		}
+		e.leaseId = -1
 	}
 	return nil
 }

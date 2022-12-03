@@ -8,8 +8,8 @@
     {{$t('no-servers')}}
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
-  <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.metaServerNo" />
-  <UsageLine :type="$cst.statTypeMem" :server-no="$cst.metaServerNo" />
+  <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.apiServerNo" />
+  <UsageLine :type="$cst.statTypeMem" :server-no="$cst.apiServerNo" />
 </template>
 
 <script setup lang="ts">

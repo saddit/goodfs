@@ -6,6 +6,10 @@
     .btn-pri {
         @apply inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-5 py-3 text-base font-medium leading-6 text-white transition duration-150 ease-in-out hover:bg-indigo-500 focus:outline-none cursor-pointer select-none
     }
+
+    .btn-revert {
+        @apply inline-flex items-center justify-center rounded-md border border-transparent bg-red-600 hover:bg-red-500 px-5 py-3 text-base font-medium leading-6 text-white transition duration-150 ease-in-out focus:outline-none cursor-pointer select-none
+    }
     
     /* Hide scrollbar for Chrome, Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {

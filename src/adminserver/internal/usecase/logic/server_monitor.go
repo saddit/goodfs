@@ -4,7 +4,6 @@ import (
 	"adminserver/internal/entity"
 	"adminserver/internal/usecase/db"
 	"adminserver/internal/usecase/pool"
-	"common/collection/set"
 	"common/constrant"
 	"common/system"
 	"common/util"
@@ -48,25 +47,18 @@ func (sm ServerMonitor) ServerStat(servName string) (map[string]*entity.ServerIn
 	for id, sysInfo := range sysMap {
 		mp[id] = &entity.ServerInfo{SysInfo: sysInfo, ServerID: id}
 	}
-	var masters set.Set = set.NewMapSet()
-	if servName == pool.Config.Discovery.MetaServName {
-		masters = set.OfMapKeys(pool.Discovery.GetServiceMappingWith(servName, false, true))
-	}
 	for id, httpAddr := range pool.Discovery.GetServiceMapping(servName, false) {
 		mp[id].HttpAddr = httpAddr
-		mp[id].IsMaster = masters.Contains(id)
 	}
 	for id, rpcAddr := range pool.Discovery.GetServiceMapping(servName, true) {
 		mp[id].RpcAddr = rpcAddr
-		mp[id].IsMaster = masters.Contains(id)
 	}
 	return mp, nil
 }
 
-// StatTimeline cpu or mem stat timeline, statType = "cpu" | "mem", servNo = 0 | 1 | 2
-func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*db.TimeStat {
+func (sm ServerMonitor) NameOfServerNo(num int) string {
 	var servName string
-	switch servNo {
+	switch num {
 	case 0:
 		servName = pool.Config.Discovery.ApiServName
 	case 1:
@@ -74,7 +66,12 @@ func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*
 	case 2:
 		servName = pool.Config.Discovery.DataServName
 	}
-	tl := pool.StatDB.GetTimeline(servName)
+	return servName
+}
+
+// StatTimeline cpu or mem stat timeline, statType = "cpu" | "mem", servNo = 0 | 1 | 2
+func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*db.TimeStat {
+	tl := pool.StatDB.GetTimeline(sm.NameOfServerNo(servNo))
 	res := make(map[string][]*db.TimeStat, len(tl))
 	for k, v := range tl {
 		res[k] = util.IfElse(statType == "cpu", v.CpuTimeline, v.MemTimeline)

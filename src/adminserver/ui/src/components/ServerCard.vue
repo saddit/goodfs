@@ -9,10 +9,6 @@
       <CpuChipIcon class="w-8 h-8 mx-1 text-indigo-600"/>
       <div>
         <div>{{ $t('core') }}: {{
-            info.sysInfo.cpuStatus.physicalCount
-          }}
-        </div>
-        <div>{{ $t('thread') }}: {{
             info.sysInfo.cpuStatus.logicalCount
           }}
         </div>
