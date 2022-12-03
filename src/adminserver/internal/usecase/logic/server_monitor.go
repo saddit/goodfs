@@ -56,10 +56,9 @@ func (sm ServerMonitor) ServerStat(servName string) (map[string]*entity.ServerIn
 	return mp, nil
 }
 
-// StatTimeline cpu or mem stat timeline, statType = "cpu" | "mem", servNo = 0 | 1 | 2
-func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*db.TimeStat {
+func (sm ServerMonitor) NameOfServerNo(num int) string {
 	var servName string
-	switch servNo {
+	switch num {
 	case 0:
 		servName = pool.Config.Discovery.ApiServName
 	case 1:
@@ -67,7 +66,12 @@ func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*
 	case 2:
 		servName = pool.Config.Discovery.DataServName
 	}
-	tl := pool.StatDB.GetTimeline(servName)
+	return servName
+}
+
+// StatTimeline cpu or mem stat timeline, statType = "cpu" | "mem", servNo = 0 | 1 | 2
+func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*db.TimeStat {
+	tl := pool.StatDB.GetTimeline(sm.NameOfServerNo(servNo))
 	res := make(map[string][]*db.TimeStat, len(tl))
 	for k, v := range tl {
 		res[k] = util.IfElse(statType == "cpu", v.CpuTimeline, v.MemTimeline)

@@ -118,23 +118,24 @@ func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {
 }
 
 func (m *Metadata) GetSlotsDetail() (map[string]*hashslot.SlotInfo, error) {
-    prefix := constrant.EtcdPrefix.FmtHashSlot(pool.Config.Discovery.Group, pool.Config.Discovery.MetaServName, "")
-    resp, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
-    if err != nil {
-        return nil, err
-    }
-    res := make(map[string]*hashslot.SlotInfo, len(resp.Kvs))
-    for _, kv := range resp.Kvs {
-        var info hashslot.SlotInfo
-        if err := util.DecodeMsgp(&info, kv.Value); err != nil {
-            return nil, err
-        }
-        res[info.GroupID] = &info
-    }
-    return res, nil
+	prefix := constrant.EtcdPrefix.FmtHashSlot(pool.Config.Discovery.Group, pool.Config.Discovery.MetaServName, "")
+	resp, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+	res := make(map[string]*hashslot.SlotInfo, len(resp.Kvs))
+	for _, kv := range resp.Kvs {
+		var info hashslot.SlotInfo
+		if err := util.DecodeMsgp(&info, kv.Value); err != nil {
+			return nil, err
+		}
+		res[info.GroupID] = &info
+	}
+	return res, nil
 }
 
 func (m *Metadata) GetMasterServerIds() set.Set {
-	masters := set.OfMapKeys(pool.Discovery.GetServiceMappingWith(pool.Config.Discovery.MetaServName, false, true))
+	mp := pool.Discovery.GetServiceMappingWith(pool.Config.Discovery.MetaServName, false, true)
+	masters := set.OfMapKeys(mp)
 	return masters
 }
