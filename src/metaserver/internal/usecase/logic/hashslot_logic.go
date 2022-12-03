@@ -24,6 +24,8 @@ func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
 }
 
 func (h HashSlot) SaveToEtcd(id string, info *hashslot.SlotInfo) error {
+	info.Location = pool.HttpHostPort
+	info.ServerID = pool.Config.Registry.ServerID
 	return pool.HashSlot.Save(id, info)
 }
 

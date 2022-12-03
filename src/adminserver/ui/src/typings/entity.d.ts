@@ -53,3 +53,11 @@ declare interface ServerInfo {
     isMaster?: boolean
     sysInfo: SystemInfo
 }
+
+declare interface SlotsInfo {
+    id: string
+    serverId: string
+    location: string
+    checksum: string
+    slots: string[]
+}

@@ -17,7 +17,8 @@ func (mc *MetadataController) Register(r gin.IRouter) {
 	r.Group("metadata").
 		GET("/page", mc.Page).
 		GET("/versions", mc.Versions).
-		POST("/migration", mc.Migration)
+		POST("/migration", mc.Migration).
+		GET("/slots_detail", mc.SlotsDetail)
 }
 
 func (mc *MetadataController) Page(c *gin.Context) {
@@ -62,4 +63,13 @@ func (mc *MetadataController) Migration(c *gin.Context) {
 		return
 	}
 	response.Ok(c)
+}
+
+func (mc *MetadataController) SlotsDetail(c *gin.Context) {
+	detail, err := logic.NewMetadata().GetSlotsDetail()
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.OkJson(detail, c)
 }
