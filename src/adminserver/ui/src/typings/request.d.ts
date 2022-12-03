@@ -11,3 +11,9 @@ declare interface MetadataReq extends Pageable {
     name: string
     version?: number
 }
+
+declare interface MetaMigrateReq {
+    srcServerId: string
+    destServerId: string
+    slots: string[]
+}

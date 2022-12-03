@@ -35,6 +35,11 @@ func (ss *ServerStateController) Stat(c *gin.Context) {
 			dg.Error(err)
 			return
 		}
+		// mark master server
+		masters := logic.NewMetadata().GetMasterServerIds()
+		for _, v := range metaInfo {
+			v.IsMaster = masters.Contains(v.ServerID)
+		}
 		info[0] = metaInfo
 	}()
 	dg.Todo()

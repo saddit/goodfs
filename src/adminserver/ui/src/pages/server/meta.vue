@@ -14,12 +14,33 @@
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
   <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.metaServerNo" />
   <UsageLine :type="$cst.statTypeMem" :server-no="$cst.metaServerNo" />
+  <ModalTemplate v-model="openMigrateDialog" :title="t('migration')">
+    <template #panel>
+      <div class="mt-6 grid grid-cols-3 items-center gap-y-4 gap-x-1 rounded-md">
+        <!-- row 1-->
+        <span class="text-sm text-gray-700">{{ t('src-server') }}</span>
+        <SelectBox class="col-span-2" v-model="migrateReq.srcServerId"
+          :options="['WestWest', 'EastEast', 'NorthNorth']"></SelectBox>
+        <!-- row 2-->
+        <span class="text-sm text-gray-700">{{ t('dest-server') }}</span>
+        <SelectBox class="col-span-2" v-model="migrateReq.destServerId"
+          :options="['WestWest', 'EastEast', 'NorthNorth']"></SelectBox>
+        <!-- row 3-->
+        <span class="text-sm text-gray-700">{{ t('which-slots') }}</span>
+        <input id="slots" name="slots" type="text" required class="text-input col-span-2" />
+      </div>
+    </template>
+  </ModalTemplate>
 </template>
 
 <script setup lang="ts">
 const infos = ref<ServerInfo[]>([])
+const slots = ref<any>()
 const capInfo = ref<DiskInfo>({ used: 0, total: 0, free: 0 })
+const migrateReq = ref<MetaMigrateReq>({ srcServerId: "", destServerId: "", slots: [] })
+const openMigrateDialog = ref(true)
 const store = useStore()
+const { t } = useI18n({ inheritLocale: true })
 
 function updateInfo(state: any) {
   if (infos.value.length > 0) {
@@ -35,14 +56,36 @@ function updateInfo(state: any) {
   }
 }
 
-store.$subscribe((mutation, state)=>{
+function getSlotsDetail() {
+  api.metadata.slotsDetail().then(res => {
+    slots.value = res
+  }).catch((err: Error) => {
+    useToast().error(err.message)
+  })
+}
+
+function startMigrate() {
+  api.metadata.startMigrate(migrateReq.value)
+    .catch((err: Error) => {
+      useToast().error(err.message)
+    })
+}
+
+store.$subscribe((mutation, state) => {
   updateInfo(state)
 })
 
-onBeforeMount(()=>{
+onBeforeMount(() => {
   updateInfo(store)
+  getSlotsDetail()
 })
 </script>
+
+<style scoped>
+.text-input {
+  @apply block appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm
+}
+</style>
 
 <route lang="json">
 {
@@ -51,3 +94,16 @@ onBeforeMount(()=>{
   }
 }
 </route>
+
+<i18n lang="yaml">
+en:
+  migration: 'Data Migration'
+  src-server: 'Migrate from'
+  dest-server: 'Migrate to'
+  which-slots: 'Migrate slots'
+zh:
+  migration: '数据迁移'
+  src-server: '源服务器'
+  dest-server: '目标服务器'
+  which-slots: '迁移序列'
+</i18n>
