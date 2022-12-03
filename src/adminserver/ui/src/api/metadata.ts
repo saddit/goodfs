@@ -14,7 +14,7 @@ async function versionPage(req: MetadataReq): Promise<Metadata[]> {
     return resp.data
 }
 
-async function slotsDetail(): Promise<[string:SlotsInfo]> {
+async function slotsDetail(): Promise<{ [key: string]: SlotsInfo }> {
     let resp = await axios.get("/metadata/slots_detail")
     return resp.data
 }
