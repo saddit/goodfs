@@ -10,6 +10,7 @@ type etcdPrefix struct {
 	ObjectCap     string
 	ApiCredential string
 	SystemInfo    string
+	Configure     string
 }
 
 var EtcdPrefix = etcdPrefix{
@@ -20,6 +21,7 @@ var EtcdPrefix = etcdPrefix{
 	ObjectCap:     "object_cap",
 	ApiCredential: "api_credential",
 	SystemInfo:    "sys_info",
+	Configure:     "configure",
 }
 
 func (e *etcdPrefix) FmtPeersInfo(groupId, id string) string {
@@ -40,4 +42,8 @@ func (e *etcdPrefix) FmtObjectCap(groupName, serviceName, name string) string {
 
 func (e *etcdPrefix) FmtSystemInfo(groupName, serviceName, id string) string {
 	return fmt.Sprintf("%s/%s/%s/%s", e.SystemInfo, groupName, serviceName, id)
+}
+
+func (e *etcdPrefix) FmtConfigure(groupName, serviceName, id string) string {
+	return fmt.Sprintf("%s/%s/%s/%s", e.Configure, groupName, serviceName, id)
 }
