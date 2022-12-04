@@ -20,6 +20,6 @@ func (d *DataSize) SetValue(s string) error {
 	return nil
 }
 
-func (d *DataSize) MarshalYAML() (interface{}, error) {
+func (d DataSize) MarshalYAML() (interface{}, error) {
 	return d.String(), nil
 }

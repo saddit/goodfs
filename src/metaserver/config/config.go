@@ -1,11 +1,15 @@
 package config
 
 import (
+	"common/constrant"
 	"common/datasize"
 	"common/etcd"
 	"common/logs"
 	"common/registry"
+	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -25,9 +29,11 @@ type Config struct {
 	Etcd     etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	HashSlot HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
 	Cache    CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+	filePath string          `yaml:"-" env:"-"`
 }
 
-func (c *Config) initialize() {
+func (c *Config) initialize(filePath string) {
+	c.filePath, _ = filepath.Abs(filePath)
 	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {
 		c.Cluster.ID = c.Registry.ServerID
@@ -35,6 +41,22 @@ func (c *Config) initialize() {
 	} else {
 		c.HashSlot.StoreID = c.Registry.ServerID
 	}
+}
+
+func (c *Config) Persist() error {
+	fi, err := os.OpenFile(c.filePath, os.O_RDONLY|os.O_CREATE, constrant.OS.ModeUser)
+	if err != nil {
+		return fmt.Errorf("write data to config '%s': %w", c.filePath, err)
+	}
+	defer fi.Close()
+	enc := yaml.NewEncoder(fi)
+	defer enc.Close()
+	enc.SetIndent(2)
+	err = enc.Encode(c)
+	if err != nil {
+		return fmt.Errorf("marshal config to yaml: %w", err)
+	}
+	return nil
 }
 
 type CacheConfig struct {
@@ -68,7 +90,7 @@ func ReadConfig() Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", ConfFilePath)
-	conf.initialize()
+	conf.initialize(ConfFilePath)
 	return conf
 }
 
@@ -81,6 +103,6 @@ func ReadConfigFrom(path string) Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", path)
-	conf.initialize()
+	conf.initialize(path)
 	return conf
 }
