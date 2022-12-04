@@ -8,7 +8,7 @@ type Config struct {
 	Name     string        `yaml:"name" env:"NAME" env-required:"true"`
 	Interval time.Duration `yaml:"interval" env:"INTERVAL" env-default:"5s"`
 	Timeout  time.Duration `yaml:"timeout" env:"TIMEOUT" env-default:"3s"`
-	Services []string      `yaml:"services" env:"SERVICES" env-separator:","`
+	Services []string      `yaml:"services,omitempty" env:"SERVICES" env-separator:","`
 	HttpAddr string        `yaml:"-"`
 	RpcAddr  string        `yaml:"-"`
 }
