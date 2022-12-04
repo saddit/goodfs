@@ -2,7 +2,7 @@ package db
 
 import (
 	"bytes"
-	"common/constrant"
+	"common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/system"
@@ -87,7 +87,7 @@ func (sdb *ServerStatDB) init() {
 	for _, name := range sdb.Services {
 		go func(v string) {
 			defer graceful.Recover()
-			prefix := constrant.EtcdPrefix.FmtSystemInfo(sdb.GroupName, v, "")
+			prefix := cst.EtcdPrefix.FmtSystemInfo(sdb.GroupName, v, "")
 			// init value
 			res, err := sdb.Cli.Get(ctx, prefix, clientv3.WithPrefix())
 			if err != nil {
@@ -112,7 +112,7 @@ func (sdb *ServerStatDB) addStat(serv string, key, value []byte) error {
 		mp = map[string]*statTimeline{}
 		sdb.timeline[serv] = mp
 	}
-	idx := bytes.LastIndex(key, constrant.EtcdPrefix.Sep)
+	idx := bytes.LastIndex(key, cst.EtcdPrefix.Sep)
 	id := string(key[idx+1:])
 	var sysInfo system.Info
 	if err := util.DecodeMsgp(&sysInfo, value); err != nil {
@@ -128,7 +128,7 @@ func (sdb *ServerStatDB) addStat(serv string, key, value []byte) error {
 		Percent: sysInfo.CpuStatus.UsedPercent,
 	}, &TimeStat{
 		Time:    ts,
-		Percent: math.Ceil(float64(sysInfo.MemStatus.Used) * 100 / float64(sysInfo.MemStatus.All)) / 100,
+		Percent: math.Ceil(float64(sysInfo.MemStatus.Used)*100/float64(sysInfo.MemStatus.All)) / 100,
 	})
 	return nil
 }

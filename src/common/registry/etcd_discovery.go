@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"common/constrant"
+	"common/cst"
 	"common/graceful"
 	"common/util"
 	"context"
@@ -35,7 +35,7 @@ func (e *EtcdDiscovery) initService(serv string) {
 	go func() {
 		defer graceful.Recover()
 		// fetch kvs
-		prefix := constrant.EtcdPrefix.FmtRegistry(e.group, serv)
+		prefix := cst.EtcdPrefix.FmtRegistry(e.group, serv)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		res, err := e.cli.Get(ctx, prefix, clientv3.WithPrefix())

@@ -5,7 +5,7 @@ import (
 	"apiserver/internal/usecase/componet/selector"
 	"apiserver/internal/usecase/pool"
 	"common/collection/set"
-	"common/constrant"
+	"common/cst"
 	"common/util"
 	"context"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -29,7 +29,7 @@ func (Discovery) SelectMetaByGroupID(gid string, defLoc string) string {
 	if cache, ok := groupIPCache[gid]; ok && time.Now().Unix()-cache.updatedAt < expiredDuration {
 		return selector.NewIPSelector(pool.Balancer, cache.ips).Select()
 	}
-	resp, err := pool.Etcd.Get(context.Background(), constrant.EtcdPrefix.FmtPeersInfo(gid, ""), clientv3.WithPrefix())
+	resp, err := pool.Etcd.Get(context.Background(), cst.EtcdPrefix.FmtPeersInfo(gid, ""), clientv3.WithPrefix())
 	if err != nil || len(resp.Kvs) == 0 {
 		delete(groupIPCache, gid)
 		return defLoc

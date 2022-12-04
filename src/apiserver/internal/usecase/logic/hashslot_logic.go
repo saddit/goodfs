@@ -2,7 +2,7 @@ package logic
 
 import (
 	"apiserver/internal/usecase/pool"
-	"common/constrant"
+	"common/cst"
 	"common/hashslot"
 	"common/response"
 	"common/util"
@@ -33,7 +33,7 @@ func (HashSlot) FindMetaLocOfName(name string) (string, string, error) {
 	}
 	slotsMap := make(map[string][]string)
 	slotsIdMap := make(map[string]string)
-	prefix := constrant.EtcdPrefix.FmtHashSlot(pool.Config.Registry.Group, pool.Config.Discovery.MetaServName, "")
+	prefix := cst.EtcdPrefix.FmtHashSlot(pool.Config.Registry.Group, pool.Config.Discovery.MetaServName, "")
 	// get slots data from etcd (only master saves into to etcd)
 	res, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {

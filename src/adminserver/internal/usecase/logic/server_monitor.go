@@ -4,7 +4,7 @@ import (
 	"adminserver/internal/entity"
 	"adminserver/internal/usecase/db"
 	"adminserver/internal/usecase/pool"
-	"common/constrant"
+	"common/cst"
 	"common/system"
 	"common/util"
 	"context"
@@ -20,7 +20,7 @@ func NewServerMonitor() *ServerMonitor {
 }
 
 func (ServerMonitor) SysInfo(servName string) (map[string]*system.Info, error) {
-	prefix := constrant.EtcdPrefix.FmtSystemInfo(pool.Config.Discovery.Group, servName, "")
+	prefix := cst.EtcdPrefix.FmtSystemInfo(pool.Config.Discovery.Group, servName, "")
 	resp, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err

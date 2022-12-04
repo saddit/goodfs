@@ -5,7 +5,7 @@ import (
 	"adminserver/internal/usecase/pool"
 	"adminserver/internal/usecase/webapi"
 	"common/collection/set"
-	"common/constrant"
+	"common/cst"
 	"common/hashslot"
 	"common/logs"
 	"common/pb"
@@ -118,7 +118,7 @@ func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {
 }
 
 func (m *Metadata) GetSlotsDetail() (map[string]*hashslot.SlotInfo, error) {
-	prefix := constrant.EtcdPrefix.FmtHashSlot(pool.Config.Discovery.Group, pool.Config.Discovery.MetaServName, "")
+	prefix := cst.EtcdPrefix.FmtHashSlot(pool.Config.Discovery.Group, pool.Config.Discovery.MetaServName, "")
 	resp, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err

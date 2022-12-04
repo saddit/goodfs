@@ -1,7 +1,7 @@
 package db
 
 import (
-	"common/constrant"
+	"common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/util"
@@ -76,14 +76,14 @@ func (s *Storage) checkPath(path string) error {
 	dir := filepath.Dir(path)
 	_, err := os.Stat(dir)
 	if err != nil && os.IsNotExist(err) {
-		return os.Mkdir(dir, constrant.OS.ModeUser)
+		return os.Mkdir(dir, cst.OS.ModeUser)
 	}
 	return err
 }
 
 func (s *Storage) Open(path string) error {
 	s.checkPath(path)
-	cur, err := bolt.Open(path, constrant.OS.ModeUser, &bolt.Options{
+	cur, err := bolt.Open(path, cst.OS.ModeUser, &bolt.Options{
 		Timeout:      12 * time.Second,
 		NoGrowSync:   false,
 		FreelistType: bolt.FreelistMapType,
@@ -101,7 +101,7 @@ func (s *Storage) Replace(replacePath string) (err error) {
 	defer s.rdOnly.Store(false)
 
 	var newDB *bolt.DB
-	if newDB, err = bolt.Open(replacePath, constrant.OS.ModeUser, &bolt.Options{
+	if newDB, err = bolt.Open(replacePath, cst.OS.ModeUser, &bolt.Options{
 		Timeout:    12 * time.Second,
 		NoGrowSync: false,
 	}); err != nil {
