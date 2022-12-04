@@ -89,17 +89,17 @@ type ClusterConfig struct {
 	Nodes            []string      `yaml:"nodes" env:"NODES" env-separator:","`
 }
 
-func ReadConfig() Config {
+func ReadConfig() *Config {
 	var conf Config
 	if err := cleanenv.ReadConfig(ConfFilePath, &conf); err != nil {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", ConfFilePath)
 	conf.initialize(ConfFilePath)
-	return conf
+	return &conf
 }
 
-func ReadConfigFrom(path string) Config {
+func ReadConfigFrom(path string) *Config {
 	var conf Config
 	if err := cleanenv.ReadConfig(path, &conf); err != nil {
 		if os.IsNotExist(err) {
@@ -109,5 +109,5 @@ func ReadConfigFrom(path string) Config {
 	}
 	logs.Std().Infof("read config from %s", path)
 	conf.initialize(path)
-	return conf
+	return &conf
 }

@@ -10,7 +10,7 @@ import (
 
 func init() {
 	cmd.Register("app", func(args []string) {
-		var cfg config.Config
+		var cfg *config.Config
 		if len(args) > 0 {
 			cfg = config.ReadConfigFrom(args[0])
 		} else {
@@ -20,6 +20,6 @@ func init() {
 			}
 			cfg = config.ReadConfigFrom(filepath.Join(wd, "conf/meta-server.yaml"))
 		}
-		app.Run(&cfg)
+		app.Run(cfg)
 	})
 }
