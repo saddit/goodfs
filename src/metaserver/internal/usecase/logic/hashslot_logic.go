@@ -26,6 +26,13 @@ func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
 func (h HashSlot) SaveToEtcd(id string, info *hashslot.SlotInfo) error {
 	info.Location = pool.HttpHostPort
 	info.ServerID = pool.Config.Registry.ServerID
+	go func() {
+		pool.Config.HashSlot.Slots = info.Slots
+		if err := pool.Config.Persist(); err != nil {
+			logs.Std().Errorf("persist config err: %s", err)
+			return
+		}
+	}()
 	return pool.HashSlot.Save(id, info)
 }
 

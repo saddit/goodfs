@@ -1,7 +1,6 @@
 package service
 
 import (
-	"metaserver/internal/usecase/logic"
 	"common/hashslot"
 	"common/logs"
 	"common/pb"
@@ -13,6 +12,7 @@ import (
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
+	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
 	"strings"
 	"time"
@@ -177,7 +177,7 @@ func (h *HashSlotService) FinishReceiveItem(success bool) error {
 	newEdges, _ := hashslot.WrapSlotsToEdges(newSlots, info.Location)
 	info.Slots = hashslot.CombineEdges(curEdges, newEdges).Strings()
 	// save new slot-info
-	if err = h.Store.Save(h.Cfg.StoreID, info); err != nil {
+	if err = logic.NewHashSlot().SaveToEtcd(h.Cfg.StoreID, info); err != nil {
 		return fmt.Errorf("save new slot-info fails after finsih migrateion: %w", err)
 	}
 	logs.Std().Debugf("finish migration from %s success", fromHost)
@@ -325,7 +325,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	curEdges, _ := hashslot.WrapSlotsToEdges(info.Slots, info.Location)
 	info.Slots = hashslot.RemoveEdges(curEdges, delEdges).Strings()
 	// save new slot-info
-	if err = h.Store.Save(h.Cfg.StoreID, info); err != nil {
+	if err = logic.NewHashSlot().SaveToEtcd(h.Cfg.StoreID, info); err != nil {
 		return fmt.Errorf("save new slot-info fails after finsih migrateion: %w", err)
 	}
 	// close stream as success

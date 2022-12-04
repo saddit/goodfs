@@ -150,7 +150,7 @@ func (h *HashSlotDB) FinishMigrateFrom() error {
 	return fmt.Errorf("status is not in migrate-from")
 }
 
-// Get The 'id' is the group id which defined in configuration
+// Get The 'id' is the store id which defined in configuration
 func (h *HashSlotDB) Get(id string) (*hashslot.SlotInfo, bool, error) {
 	key := fmt.Sprint(h.KeyPrefix, id)
 	resp, err := h.kv.Get(context.Background(), key)
