@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -20,20 +21,22 @@ const (
 )
 
 type Config struct {
-	Port     string          `yaml:"port" env:"PORT" env-default:"8090"`
-	RpcPort  string          `yaml:"rpc-port" env:"RPC_PORT" env-default:"4090"`
-	LogLevel logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
-	DataDir  string          `yaml:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
-	Cluster  ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
-	Registry registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
-	Etcd     etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	HashSlot HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
-	Cache    CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
-	filePath string          `yaml:"-" env:"-"`
+	Port        string          `yaml:"port" env:"PORT" env-default:"8090"`
+	RpcPort     string          `yaml:"rpc-port" env:"RPC_PORT" env-default:"4090"`
+	LogLevel    logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
+	DataDir     string          `yaml:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
+	Cluster     ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
+	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
+	HashSlot    HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
+	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+	filePath    string          `yaml:"-" env:"-"`
+	persistLock sync.Mutex      `yaml:"-" env:"-"`
 }
 
 func (c *Config) initialize(filePath string) {
 	c.filePath, _ = filepath.Abs(filePath)
+	c.persistLock = sync.Mutex{}
 	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {
 		c.Cluster.ID = c.Registry.ServerID
@@ -44,6 +47,8 @@ func (c *Config) initialize(filePath string) {
 }
 
 func (c *Config) Persist() error {
+	c.persistLock.Lock()
+	defer c.persistLock.Unlock()
 	fi, err := os.OpenFile(c.filePath, os.O_RDONLY|os.O_CREATE, constrant.OS.ModeUser)
 	if err != nil {
 		return fmt.Errorf("write data to config '%s': %w", c.filePath, err)
