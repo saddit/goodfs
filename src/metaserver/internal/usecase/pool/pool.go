@@ -2,7 +2,7 @@ package pool
 
 import (
 	"common/cache"
-	"common/constrant"
+	"common/cst"
 	"common/etcd"
 	"common/registry"
 	"common/util"
@@ -66,7 +66,7 @@ func initRegistry(cfg *registry.Config, etcd *clientv3.Client) {
 }
 
 func initHashSlot(cfg *registry.Config, etcd *clientv3.Client) {
-	HashSlot = db.NewHashSlotDB(constrant.EtcdPrefix.FmtHashSlot(cfg.Group, cfg.Name, ""), etcd)
+	HashSlot = db.NewHashSlotDB(cst.EtcdPrefix.FmtHashSlot(cfg.Group, cfg.Name, ""), etcd)
 }
 
 func initCache(cfg config.CacheConfig) {

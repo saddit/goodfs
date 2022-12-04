@@ -2,7 +2,7 @@ package logic
 
 import (
 	"apiserver/internal/usecase/pool"
-	"common/constrant"
+	"common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/system"
@@ -57,7 +57,7 @@ func (d SystemStatLogic) Save() error {
 	if err != nil {
 		return err
 	}
-	keyDisk := constrant.EtcdPrefix.FmtSystemInfo(pool.Config.Registry.Group, pool.Config.Registry.Name, pool.Config.Registry.ServerID)
+	keyDisk := cst.EtcdPrefix.FmtSystemInfo(pool.Config.Registry.Group, pool.Config.Registry.Name, pool.Config.Registry.ServerID)
 	_, err = pool.Etcd.Put(context.Background(), keyDisk, string(bt))
 	return err
 }

@@ -1,7 +1,7 @@
 package app
 
 import (
-	"common/constrant"
+	"common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/util"
@@ -16,10 +16,10 @@ import (
 )
 
 func initDir(cfg *config.Config) {
-	if e := os.MkdirAll(cfg.TempPath, constrant.OS.ModeUser); e != nil {
+	if e := os.MkdirAll(cfg.TempPath, cst.OS.ModeUser); e != nil {
 		panic(e)
 	}
-	if e := os.MkdirAll(cfg.StoragePath, constrant.OS.ModeUser); e != nil {
+	if e := os.MkdirAll(cfg.StoragePath, cst.OS.ModeUser); e != nil {
 		panic(e)
 	}
 }

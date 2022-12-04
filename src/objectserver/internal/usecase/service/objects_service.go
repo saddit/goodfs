@@ -1,9 +1,9 @@
 package service
 
 import (
-	"common/constrant"
-	"common/system/disk"
+	"common/cst"
 	"common/graceful"
+	"common/system/disk"
 	"io"
 	global "objectserver/internal/usecase/pool"
 	"os"
@@ -103,7 +103,7 @@ func DeleteFile(path, name string) (int64, error) {
 
 func AppendFile(path, fileName string, fileStream io.Reader) (int64, error) {
 	path = filepath.Join(path, fileName)
-	file, err := disk.OpenFileDirectIO(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, constrant.OS.ModeUser)
+	file, err := disk.OpenFileDirectIO(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
 		return 0, err
 	}

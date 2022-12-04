@@ -1,7 +1,7 @@
 package config
 
 import (
-	"common/constrant"
+	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/logs"
@@ -31,12 +31,12 @@ type Config struct {
 	HashSlot    HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
 	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
 	filePath    string          `yaml:"-" env:"-"`
-	persistLock sync.Mutex      `yaml:"-" env:"-"`
+	persistLock *sync.Mutex     `yaml:"-" env:"-"`
 }
 
 func (c *Config) initialize(filePath string) {
 	c.filePath, _ = filepath.Abs(filePath)
-	c.persistLock = sync.Mutex{}
+	c.persistLock = &sync.Mutex{}
 	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {
 		c.Cluster.ID = c.Registry.ServerID
@@ -49,7 +49,7 @@ func (c *Config) initialize(filePath string) {
 func (c *Config) Persist() error {
 	c.persistLock.Lock()
 	defer c.persistLock.Unlock()
-	fi, err := os.OpenFile(c.filePath, os.O_RDONLY|os.O_CREATE, constrant.OS.ModeUser)
+	fi, err := os.OpenFile(c.filePath, cst.OS.WriteFlag, cst.OS.ModeUser)
 	if err != nil {
 		return fmt.Errorf("write data to config '%s': %w", c.filePath, err)
 	}

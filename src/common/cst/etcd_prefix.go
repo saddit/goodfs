@@ -1,4 +1,4 @@
-package constrant
+package cst
 
 import "fmt"
 

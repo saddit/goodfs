@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"common/constrant"
+	"common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/response"
@@ -295,7 +295,7 @@ func (m *MetadataRepo) ReadDB() (io.ReadCloser, fs.FileInfo, error) {
 func (m *MetadataRepo) ReplaceDB(r io.Reader) (err error) {
 	dbPath := m.MainDB.DB().Path() + "_replace"
 	// open new db file
-	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, constrant.OS.ModeUser)
+	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
 		logs.Std().Error("restore fail on open new file: %v", err)
 		return err

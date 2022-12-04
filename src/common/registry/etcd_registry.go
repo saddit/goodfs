@@ -1,7 +1,7 @@
 package registry
 
 import (
-	. "common/constrant"
+	. "common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/util"

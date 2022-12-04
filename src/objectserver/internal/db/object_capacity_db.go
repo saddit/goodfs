@@ -1,7 +1,7 @@
 package db
 
 import (
-	"common/constrant"
+	"common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/system"
@@ -62,7 +62,7 @@ func (oc *ObjectCapacity) Save() error {
 	dg.Todo()
 	go func() {
 		defer dg.Done()
-		keyCap := constrant.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
+		keyCap := cst.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
 		if _, err := oc.cli.Put(context.Background(), keyCap, oc.CurrentCap.String()); err != nil {
 			dg.Error(err)
 			return
@@ -82,7 +82,7 @@ func (oc *ObjectCapacity) Save() error {
 			dg.Error(err)
 			return
 		}
-		keyDisk := constrant.EtcdPrefix.FmtSystemInfo(oc.groupName, oc.serviceName, oc.CurrentID)
+		keyDisk := cst.EtcdPrefix.FmtSystemInfo(oc.groupName, oc.serviceName, oc.CurrentID)
 		if _, err = oc.cli.Put(context.Background(), keyDisk, string(bt)); err != nil {
 			dg.Error(err)
 			return
@@ -92,7 +92,7 @@ func (oc *ObjectCapacity) Save() error {
 }
 
 func (oc *ObjectCapacity) GetAll() (map[string]uint64, error) {
-	resp, err := oc.cli.Get(context.Background(), constrant.EtcdPrefix.ObjectCap, clientv3.WithPrefix())
+	resp, err := oc.cli.Get(context.Background(), cst.EtcdPrefix.ObjectCap, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (oc *ObjectCapacity) Get(s string) (uint64, error) {
 	if s == oc.CurrentID {
 		return oc.CurrentCap.Load(), nil
 	}
-	key := constrant.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
+	key := cst.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
 	resp, err := oc.cli.Get(context.Background(), key)
 	if err != nil {
 		return 0, err

@@ -1,7 +1,7 @@
 package logic
 
 import (
-	. "common/constrant"
+	. "common/cst"
 	"common/util"
 	"context"
 	"metaserver/internal/entity"

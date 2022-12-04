@@ -2,7 +2,7 @@ package auth
 
 import (
 	"apiserver/internal/usecase/componet/auth/credential"
-	"common/constrant"
+	"common/cst"
 	"common/logs"
 	"common/response"
 	"common/util"
@@ -30,7 +30,7 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 	if !cfg.Enable {
 		return
 	}
-	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredential)
+	resp, err := pv.cli.Get(context.Background(), cst.EtcdPrefix.ApiCredential)
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +45,7 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = pv.cli.Put(context.Background(), constrant.EtcdPrefix.ApiCredential, string(bt))
+	_, err = pv.cli.Put(context.Background(), cst.EtcdPrefix.ApiCredential, string(bt))
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +53,7 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 }
 
 func (pv *PasswordValidator) Verify(token Credential) error {
-	resp, err := pv.cli.Get(context.Background(), constrant.EtcdPrefix.ApiCredential)
+	resp, err := pv.cli.Get(context.Background(), cst.EtcdPrefix.ApiCredential)
 	if err != nil {
 		return err
 	}
