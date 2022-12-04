@@ -9,5 +9,5 @@ func TestGetInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("total=%.1fGB, free=%.1fGB", info.Total.GigaByte(), info.Total.GigaByte())
+	t.Logf("total=%dGB, free=%dGB", info.Total.GigaByte(), info.Total.GigaByte())
 }

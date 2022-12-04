@@ -2,6 +2,7 @@ package datasize
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,37 +12,51 @@ var suffixRegex = regexp.MustCompile(`([.\d]+)(B|KB|MB|GB|TB|PB)`)
 
 type DataSize uint64
 
+const Step = 1024
+
 const (
 	Byte DataSize = 1
-	KB            = 1024 * Byte
-	MB            = 1024 * KB
-	GB            = 1024 * MB
-	TB            = 1024 * GB
-	PB            = 1024 * TB
+	KB            = Byte << 10
+	MB            = KB << 10
+	GB            = MB << 10
+	TB            = GB << 10
+	PB            = TB << 10
 )
 
-func (d *DataSize) Byte() int64 {
-	return int64(*d)
+func (d *DataSize) Byte() uint64 {
+	return uint64(*d)
 }
 
-func (d *DataSize) KiloByte() float32 {
-	return float32(*d * 1.0 / KB)
+func (d *DataSize) KiloByte() uint64 {
+	return d.Byte() >> 10
 }
 
-func (d *DataSize) MegaByte() float32 {
-	return float32(*d * 1.0 / MB)
+func (d *DataSize) MegaByte() uint64 {
+	return d.KiloByte() >> 10
 }
 
-func (d *DataSize) GigaByte() float32 {
-	return float32(*d * 1.0 / GB)
+func (d *DataSize) GigaByte() uint64 {
+	return d.MegaByte() >> 10
 }
 
-func (d *DataSize) TeraByte() float32 {
-	return float32(*d * 1.0 / TB)
+func (d *DataSize) TeraByte() uint64 {
+	return d.GigaByte() >> 10
 }
 
-func (d *DataSize) PetaByte() float32 {
-	return float32(*d * 1.0 / PB)
+func (d *DataSize) PetaByte() uint64 {
+	return d.TeraByte() >> 10
+}
+
+func (d *DataSize) String() string {
+	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
+	i := int(math.Floor(math.Log(float64(*d)) / math.Log(1024)))
+	exceed := 1.0
+	if i >= len(units) {
+		exceed = math.Pow(Step, float64(i-len(units)+1))
+		i = len(units) - 1
+	}
+	num := float64(*d) / math.Pow(Step, float64(i)) * exceed
+	return fmt.Sprintf("%.0f%s", num, units[i])
 }
 
 var unitNameMap = map[string]DataSize{
@@ -53,16 +68,19 @@ func Parse(s string) (DataSize, error) {
 	s = strings.ToUpper(s)
 	res := suffixRegex.FindAllStringSubmatch(s, 1)
 	if len(res) == 0 || len(res[0]) < 3 {
-		return 0, fmt.Errorf("data size %v format doesn't support", s)
+		return 0, fmt.Errorf("data size '%v' format doesn't support", s)
 	}
 	num, e := strconv.Atoi(res[0][1])
 	if e != nil {
 		return 0, e
 	}
 	if unit, ok := unitNameMap[res[0][2]]; ok {
+		if IsExceedLimit(num, unit) {
+			return 0, fmt.Errorf("data size '%dPB' exceed limit 1024PB", num)
+		}
 		return DataSize(num) * unit, nil
 	}
-	return 0, fmt.Errorf("data size doesn't support unit %v", res[0][2])
+	return 0, fmt.Errorf("data size doesn't support unit '%v'", res[0][2])
 }
 
 func MustParse(s string) DataSize {
@@ -71,4 +89,9 @@ func MustParse(s string) DataSize {
 		panic(e)
 	}
 	return r
+}
+
+// IsExceedLimit Max size is 1023PB
+func IsExceedLimit(num int, unit DataSize) bool {
+	return unit == PB && num >= Step
 }
