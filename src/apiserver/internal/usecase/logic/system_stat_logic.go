@@ -37,7 +37,10 @@ func (d SystemStatLogic) StartAutoSave() func() {
 			}
 		}
 	}()
-	return cancel
+	return func() {
+		cancel()
+		util.LogErrWithPre("remove sys-info", d.Delete())
+	}
 }
 
 func (d SystemStatLogic) Save() error {
@@ -59,5 +62,11 @@ func (d SystemStatLogic) Save() error {
 	}
 	keyDisk := cst.EtcdPrefix.FmtSystemInfo(pool.Config.Registry.Group, pool.Config.Registry.Name, pool.Config.Registry.ServerID)
 	_, err = pool.Etcd.Put(context.Background(), keyDisk, string(bt))
+	return err
+}
+
+func (SystemStatLogic) Delete() error {
+	keyDisk := cst.EtcdPrefix.FmtSystemInfo(pool.Config.Registry.Group, pool.Config.Registry.Name, pool.Config.Registry.ServerID)
+	_, err := pool.Etcd.Delete(context.Background(), keyDisk)
 	return err
 }
