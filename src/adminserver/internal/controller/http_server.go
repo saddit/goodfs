@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
+	"strings"
 )
 
 type HttpServer struct {
@@ -33,6 +34,18 @@ func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	http2.NewMetadataController().Register(route)
 	http2.NewServerStateController().Register(route)
 	http2.NewObjectsController().Register(route)
+
+	// redirect to index of console if no route
+	eng.NoRoute(func(c *gin.Context) {
+		url := c.Request.URL.Path
+		if strings.HasPrefix(url, "/api") {
+			return
+		}
+		if url == "/favicon.ico" {
+			return
+		}
+		c.Redirect(http.StatusPermanentRedirect, "/")
+	})
 
 	return &HttpServer{Server: http.Server{Handler: eng, Addr: addr}}
 }
