@@ -7,35 +7,45 @@
   <div v-else class="w-full my-5 text-center text-gray-600 text-lg font-medium">
     {{ $t('no-servers') }}
   </div>
-  <div class="mb-4 mt-8">
+  <div class="mb-4 mt-8 flex flex-wrap space-x-4">
     <!-- capacity card -->
     <CapCard class="w-[32%]" :cap-info="capInfo"/>
+    <div class="bg-white shadow-md rounded-md p-3 w-1/4 gap-y-4 gap-x-2 grid grid-rows-3 grid-cols-3">
+      <span class="font-bold text-xl justify-self-start text-gray-500">{{ t('tool-box') }}</span>
+      <button class="btn-pri" @click="openMigrateDialog = true">{{t('start-migrate')}}</button>
+    </div>
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
   <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.metaServerNo"/>
   <UsageLine :type="$cst.statTypeMem" :server-no="$cst.metaServerNo"/>
+  <!-- Data migration dialog -->
   <ModalTemplate v-model="openMigrateDialog" :title="t('migration')">
     <template #panel>
       <div class="mt-6 grid grid-cols-3 items-center gap-y-4 gap-x-1 rounded-md">
-        <!-- row 1-->
+        <!-- row 1 source -->
         <span class="text-sm text-gray-700">{{ t('src-server') }}</span>
         <SelectBox class="col-span-2" v-model="migrateReq.srcServerId"
                    :value="(v: ServerInfo) => v.serverId"
                    :format="(v: ServerInfo) => `${v.serverId}(${getSlotsString(v.serverId)})`"
                    :options="migrateOptions"></SelectBox>
-        <!-- row 2-->
+        <!-- row 2 target -->
         <span class="text-sm text-gray-700">{{ t('dest-server') }}</span>
         <SelectBox class="col-span-2" v-model="migrateReq.destServerId"
                    :value="(v: ServerInfo) => v.serverId"
                    :format="(v: ServerInfo) => `${v.serverId}(${getSlotsString(v.serverId)})`"
                    :options="migrateOptions"></SelectBox>
-        <!-- row 3-->
+        <!-- row 3 slots -->
         <span class="text-sm text-gray-700">{{ t('which-slots') }}</span>
-        <input id="slots" name="slots" required class="form-select col-span-2"/>
-        <!-- row 4-->
+        <input id="slots" name="slots" required type="text" class="text-input col-span-2"/>
+        <!-- row 4 button -->
         <span></span>
-        <button class="btn-revert max-h-10 mx-1" @click="closeMigrateDialog">Cancel</button>
-        <button class="btn-pri max-h-10 mx-1" @click="startMigrate">Ok</button>
+        <button class="btn-revert max-h-10 mx-1" @click="closeMigrateDialog">{{ $t('btn-cancel') }}</button>
+        <button class="btn-pri max-h-10 mx-1" @click="startMigrate">{{ $t('btn-ok') }}</button>
+        <!-- row 5 error message-->
+        <template v-if="formErrMsg">
+          <span></span>
+          <span class="justify-self-start text-sm text-red-500 col-span-2">{{ formErrMsg }}</span>
+        </template>
       </div>
     </template>
   </ModalTemplate>
@@ -46,8 +56,9 @@ let slots: { [key: string]: SlotsInfo } = {}
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
 const migrateReq = ref<MetaMigrateReq>({srcServerId: "", destServerId: "", slots: []})
-const openMigrateDialog = ref(true)
+const openMigrateDialog = ref(false)
 const store = useStore()
+const formErrMsg = ref("")
 const {t} = useI18n({inheritLocale: true})
 
 const migrateOptions = computed(() => {
@@ -62,6 +73,7 @@ const migrateOptions = computed(() => {
 
 function closeMigrateDialog() {
   openMigrateDialog.value = false
+  formErrMsg.value = ""
   migrateReq.value = {srcServerId: "", destServerId: "", slots: []}
 }
 
@@ -99,7 +111,7 @@ function getSlotsDetail() {
 function startMigrate() {
   api.metadata.startMigrate(migrateReq.value)
       .catch((err: Error) => {
-        useToast().error(err.message)
+        formErrMsg.value = err.message
       })
 }
 
@@ -133,9 +145,13 @@ en:
   src-server: 'Migrate from'
   dest-server: 'Migrate to'
   which-slots: 'Migrate slots'
+  start-migrate: "Migration"
+  tool-box: 'Tool Box'
 zh:
   migration: '数据迁移'
   src-server: '源服务器'
   dest-server: '目标服务器'
   which-slots: '迁移序列'
+  start-migrate: '数据迁移'
+  tool-box: '工具箱'
 </i18n>
