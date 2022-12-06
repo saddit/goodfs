@@ -52,7 +52,10 @@ func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 			}
 		}
 	}()
-	return cancel
+	return func() {
+		cancel()
+		util.LogErrWithPre("remove capacity", oc.RemoveAll())
+	}
 }
 
 func (oc *ObjectCapacity) Save() error {
@@ -118,4 +121,18 @@ func (oc *ObjectCapacity) Get(s string) (uint64, error) {
 		return 0, errors.New("not exist capacity " + s)
 	}
 	return util.ToUint64(string(resp.Kvs[0].Value)), nil
+}
+
+func (oc *ObjectCapacity) RemoveAll() error {
+	keyDisk := cst.EtcdPrefix.FmtSystemInfo(oc.groupName, oc.serviceName, oc.CurrentID)
+	_, err := oc.cli.Delete(context.Background(), keyDisk)
+	if err != nil {
+		return err
+	}
+	keyCap := cst.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
+	_, err = oc.cli.Delete(context.Background(), keyCap)
+	if err != nil {
+		return err
+	}
+	return nil
 }
