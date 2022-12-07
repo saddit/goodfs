@@ -1,9 +1,13 @@
 package grpc
 
 import (
+	"common/graceful"
 	"common/pb"
+	"common/util"
 	"context"
+	"encoding/json"
 	"fmt"
+	"metaserver/config"
 	"metaserver/internal/usecase/pool"
 	"metaserver/internal/usecase/raftimpl"
 	"strings"
@@ -79,7 +83,24 @@ func (rcs *RaftCmdServerImpl) AddVoter(ctx context.Context, req *pb.AddVoterReq)
 	if msg.Len() > 0 {
 		return &pb.Response{Success: false, Message: msg.String()}, nil
 	}
+	// save to config
+	for _, item := range req.GetVoters() {
+		pool.Config.Cluster.Nodes = append(pool.Config.Cluster.Nodes, fmt.Sprint(item.Id, ",", item.Address))
+	}
+	// persist config async
+	go func() {
+		defer graceful.Recover()
+		util.LogErrWithPre("persist config", pool.Config.Persist())
+	}()
 	return okResp, nil
+}
+
+func (rcs *RaftCmdServerImpl) Config(context.Context, *pb.EmptyReq) (*pb.Response, error) {
+	bt, err := json.Marshal(pool.Config.Cluster)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.Response{Success: true, Message: util.BytesToStr(bt)}, nil
 }
 
 func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeaderReq) (*pb.Response, error) {
@@ -90,13 +111,41 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 	}
 	// send rpc request by client
 	client := pb.NewRaftCmdClient(cc)
-	return client.AddVoter(ctx, &pb.AddVoterReq{
-		Voters: []*pb.Voter{{
-			Id:        rcs.rf.ID,
-			Address:   rcs.rf.Address,
-			PrevIndex: rcs.rf.Raft.AppliedIndex(),
-		}},
-	})
+	if rcs.rf.LeaderAddress() != req.Address {
+		resp, err := client.AddVoter(ctx, &pb.AddVoterReq{
+			Voters: []*pb.Voter{{
+				Id:        rcs.rf.ID,
+				Address:   rcs.rf.Address,
+				PrevIndex: rcs.rf.Raft.AppliedIndex(),
+			}},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if !resp.Success {
+			return resp, nil
+		}
+	}
+	// get leader config
+	resp, err := client.Config(context.Background(), new(pb.EmptyReq))
+	if err != nil {
+		return nil, err
+	}
+	if !resp.Success {
+		return resp, nil
+	}
+	var cfg config.ClusterConfig
+	if err := json.Unmarshal(util.StrToBytes(resp.Message), &cfg); err != nil {
+		return nil, err
+	}
+	pool.Config.Cluster.GroupID = cfg.GroupID
+	pool.Config.Cluster.Nodes = cfg.Nodes
+	// persist config async
+	go func() {
+		defer graceful.Recover()
+		util.LogErrWithPre("persist config", pool.Config.Persist())
+	}()
+	return okResp, nil
 }
 
 func (rcs *RaftCmdServerImpl) AppliedIndex(_ context.Context, _ *pb.EmptyReq) (*pb.Response, error) {

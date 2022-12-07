@@ -27,6 +27,7 @@ type RaftCmdClient interface {
 	JoinLeader(ctx context.Context, in *JoinLeaderReq, opts ...grpc.CallOption) (*Response, error)
 	AppliedIndex(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 	Peers(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
+	Config(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 }
 
 type raftCmdClient struct {
@@ -82,6 +83,15 @@ func (c *raftCmdClient) Peers(ctx context.Context, in *EmptyReq, opts ...grpc.Ca
 	return out, nil
 }
 
+func (c *raftCmdClient) Config(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/proto.RaftCmd/Config", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RaftCmdServer is the server API for RaftCmd service.
 // All implementations must embed UnimplementedRaftCmdServer
 // for forward compatibility
@@ -91,6 +101,7 @@ type RaftCmdServer interface {
 	JoinLeader(context.Context, *JoinLeaderReq) (*Response, error)
 	AppliedIndex(context.Context, *EmptyReq) (*Response, error)
 	Peers(context.Context, *EmptyReq) (*Response, error)
+	Config(context.Context, *EmptyReq) (*Response, error)
 	mustEmbedUnimplementedRaftCmdServer()
 }
 
@@ -112,6 +123,9 @@ func (UnimplementedRaftCmdServer) AppliedIndex(context.Context, *EmptyReq) (*Res
 }
 func (UnimplementedRaftCmdServer) Peers(context.Context, *EmptyReq) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Peers not implemented")
+}
+func (UnimplementedRaftCmdServer) Config(context.Context, *EmptyReq) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Config not implemented")
 }
 func (UnimplementedRaftCmdServer) mustEmbedUnimplementedRaftCmdServer() {}
 
@@ -216,6 +230,24 @@ func _RaftCmd_Peers_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RaftCmd_Config_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftCmdServer).Config(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RaftCmd/Config",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftCmdServer).Config(ctx, req.(*EmptyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RaftCmd_ServiceDesc is the grpc.ServiceDesc for RaftCmd service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +274,10 @@ var RaftCmd_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Peers",
 			Handler:    _RaftCmd_Peers_Handler,
+		},
+		{
+			MethodName: "Config",
+			Handler:    _RaftCmd_Config_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
