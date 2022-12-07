@@ -61,3 +61,9 @@ declare interface SlotsInfo {
     checksum: string
     slots: string[]
 }
+
+declare interface SlotRange {
+    start: number
+    end: number
+    identify: string
+}
