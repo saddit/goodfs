@@ -14,6 +14,7 @@
       <span class="font-bold text-xl justify-self-start text-gray-500">{{ t('tool-box') }}</span>
       <button class="btn-pri" @click="openMigrateDialog = true">{{t('start-migrate')}}</button>
     </div>
+    <SlotsCard class="w-1/4 h-28" :value="[{start: 0, end: 5700, identify: 'node-a'},{start: 5700, end: 9000, identify: 'node-b'},{start: 9000, end: 16384, identify: 'node-c'}]"></SlotsCard>
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
   <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.metaServerNo"/>

@@ -27,6 +27,7 @@ declare module '@vue/runtime-core' {
     RouterView: typeof import('vue-router')['RouterView']
     SelectBox: typeof import('./src/components/SelectBox.vue')['default']
     ServerCard: typeof import('./src/components/ServerCard.vue')['default']
+    SlotsCard: typeof import('./src/components/SlotsCard.vue')['default']
     Tab: typeof import('@headlessui/vue')['Tab']
     TabGroup: typeof import('@headlessui/vue')['TabGroup']
     TabList: typeof import('@headlessui/vue')['TabList']
