@@ -5,10 +5,10 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/response"
+	"common/system/disk"
 	"common/util"
 	"fmt"
 	"io"
-	"io/fs"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
@@ -269,33 +269,14 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 	return
 }
 
-func (m *MetadataRepo) ReadDB() (io.ReadCloser, fs.FileInfo, error) {
-	fi, err := m.MainDB.FileInfo()
-	if err != nil {
-		return nil, nil, err
-	}
-	tx, err := m.MainDB.DB().Begin(false)
-	if err != nil {
-		return nil, nil, err
-	}
-	reader, writer := io.Pipe()
-	go func() {
-		defer graceful.Recover()
-		defer writer.Close()
-		defer tx.Rollback()
-		n, err := tx.WriteTo(writer)
-		if err != nil {
-			logs.Std().Error("writer (ReadDB) error: %v, written %d", err, n)
-			return
-		}
-	}()
-	return reader, fi, nil
+func (m *MetadataRepo) Snapshot() (SnapshotTx, error) {
+	return m.MainDB.DB().Begin(false)
 }
 
-func (m *MetadataRepo) ReplaceDB(r io.Reader) (err error) {
+func (m *MetadataRepo) Restore(r io.Reader) (err error) {
 	dbPath := m.MainDB.DB().Path() + "_replace"
 	// open new db file
-	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
+	newFile, err := disk.OpenFileDirectIO(dbPath, os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
 		logs.Std().Error("restore fail on open new file: %v", err)
 		return err

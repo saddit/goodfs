@@ -4,7 +4,6 @@ import (
 	"common/pb"
 	"common/response"
 	"io"
-	"io/fs"
 	"metaserver/internal/entity"
 	"time"
 
@@ -64,19 +63,24 @@ type (
 		Sync() error
 	}
 
-	DBReader interface {
-		ReadDB() (io.ReadCloser, fs.FileInfo, error)
+	SnapshotTx interface {
+		io.WriterTo
+		Rollback() error
+	}
+
+	SnapshotManager interface {
+		Snapshot() (SnapshotTx, error)
+		Restore(io.Reader) error
 	}
 
 	IMetadataRepo interface {
 		WritableRepo
 		ReadableRepo
-		DBReader
+		SnapshotManager
 		AddVersionWithSequence(string, *entity.Version) error
 		RemoveAllVersion(string) error
 		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
 		GetLastVersionNumber(name string) uint64
-		ReplaceDB(io.Reader) error
 		ForeachVersionBytes(string, func([]byte) bool)
 		GetMetadataBytes(string) ([]byte, error)
 	}
