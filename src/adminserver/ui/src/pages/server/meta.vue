@@ -9,11 +9,12 @@
   </div>
   <div class="mb-4 mt-8 flex flex-wrap space-x-4">
     <!-- capacity card -->
-    <CapCard class="w-[32%]" :cap-info="capInfo"/>
+    <CapCard v-if="capInfo.total > 0" class="w-[32%]" :cap-info="capInfo"/>
     <div class="w-1/4">
+      <!-- tool box -->
       <div class="bg-white h-24 mb-2 shadow-md rounded-md p-3 gap-y-1 gap-x-2 grid grid-rows-2 grid-cols-3">
         <span class="font-bold text-xl justify-self-start text-gray-500">{{ t('tool-box') }}</span>
-        <button class="btn-pri" @click="openMigrateDialog = true">{{ t('start-migrate') }}</button>
+        <button class="btn-pri text-sm" @click="openMigrateDialog = true">{{ t('start-migrate') }}</button>
       </div>
       <SlotsCard class="h-28" :value="slotRanges"></SlotsCard>
     </div>

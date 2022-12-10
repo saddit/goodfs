@@ -9,7 +9,7 @@
   </div>
   <div class="mb-4 mt-8">
     <!-- capacity card -->
-    <CapCard class="w-[32%]" :cap-info="capInfo" />
+    <CapCard v-if="capInfo.total > 0" class="w-[32%]" :cap-info="capInfo" />
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
   <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.dataServerNo" />
