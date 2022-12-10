@@ -11,7 +11,7 @@
     <!-- lines -->
     <div class="inline-flex items-center pt-2 mt-2">
       <div v-for="v in value" :style="{width: getWid(v)}" class="h-2 group relative" :class="[getBgColor(v)]">
-        <span class="transition-opacity font-light text-xs opacity-0 group-hover:opacity-100 absolute -top-4 left-0 text-gray-500">
+        <span class="transition-opacity font-light text-xs opacity-0 group-hover:opacity-100 absolute -top-4 left-0 text-gray-600 select-none">
           {{`${v.start}-${v.end}`}}
         </span>
       </div>
@@ -24,12 +24,6 @@ const prop = defineProps<{
   value: SlotRange[]
 }>()
 
-onBeforeMount(() => {
-  for (let rg of prop.value) {
-    colorDict[rg.identify] = allColors.pop() || "bg-gray-500"
-  }
-})
-
 const slotsCardDom = ref()
 const allColors = ['bg-orange-500', 'bg-indigo-500', 'bg-red-500', 'bg-green-500', 'bg-blue-500', 'bg-yellow-500']
 const colorDict: { [key: string]: string } = {}
@@ -40,6 +34,9 @@ function getWid(v: SlotRange): string {
 }
 
 function getBgColor(v: SlotRange): string {
+  if (!(v.identify in colorDict)) {
+    colorDict[v.identify] = allColors.pop() || "bg-gray-500"
+  }
   return colorDict[v.identify]
 }
 
