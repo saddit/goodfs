@@ -89,23 +89,23 @@ func (f *fsm) Apply(lg *raft.Log) any {
 }
 
 func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
-	reader, _, err := f.repo.ReadDB()
+	snap, err := f.repo.Snapshot()
 	if err != nil {
 		return nil, err
 	}
-	return &snapshot{reader}, nil
+	return &snapshot{snap}, nil
 }
 
 func (f *fsm) Restore(snapshot io.ReadCloser) (err error) {
-	return f.repo.ReplaceDB(snapshot)
+	return f.repo.Restore(snapshot)
 }
 
 type snapshot struct {
-	io.ReadCloser
+	SnapshotTx
 }
 
 func (s *snapshot) Persist(sink raft.SnapshotSink) error {
-	if _, err := io.Copy(sink, s); err != nil {
+	if _, err := s.WriteTo(sink); err != nil {
 		log.Error(err)
 		return sink.Cancel()
 	}
@@ -113,5 +113,5 @@ func (s *snapshot) Persist(sink raft.SnapshotSink) error {
 }
 
 func (s *snapshot) Release() {
-	util.LogErr(s.Close())
+	util.LogErr(s.Rollback())
 }
