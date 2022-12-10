@@ -10,11 +10,13 @@
   <div class="mb-4 mt-8 flex flex-wrap space-x-4">
     <!-- capacity card -->
     <CapCard class="w-[32%]" :cap-info="capInfo"/>
-    <div class="bg-white shadow-md rounded-md p-3 w-1/4 gap-y-4 gap-x-2 grid grid-rows-3 grid-cols-3">
-      <span class="font-bold text-xl justify-self-start text-gray-500">{{ t('tool-box') }}</span>
-      <button class="btn-pri" @click="openMigrateDialog = true">{{t('start-migrate')}}</button>
+    <div class="w-1/4">
+      <div class="bg-white h-24 mb-2 shadow-md rounded-md p-3 gap-y-1 gap-x-2 grid grid-rows-2 grid-cols-3">
+        <span class="font-bold text-xl justify-self-start text-gray-500">{{ t('tool-box') }}</span>
+        <button class="btn-pri" @click="openMigrateDialog = true">{{ t('start-migrate') }}</button>
+      </div>
+      <SlotsCard class="h-28" :value="slotRanges"></SlotsCard>
     </div>
-    <SlotsCard class="w-1/4 h-28" :value="[{start: 0, end: 5700, identify: 'node-a'},{start: 5700, end: 9000, identify: 'node-b'},{start: 9000, end: 16384, identify: 'node-c'}]"></SlotsCard>
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
   <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.metaServerNo"/>
@@ -54,6 +56,7 @@
 
 <script setup lang="ts">
 let slots: { [key: string]: SlotsInfo } = {}
+const slotRanges = ref<SlotRange[]>([])
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
 const migrateReq = ref<MetaMigrateReq>({srcServerId: "", destServerId: "", slots: []})
@@ -62,10 +65,27 @@ const store = useStore()
 const formErrMsg = ref("")
 const {t} = useI18n({inheritLocale: true})
 
+function getSlotRanges() {
+  let res: SlotRange[] = []
+  for (let idx in slots) {
+    for (let slot of slots[idx].slots) {
+      let sp = slot.split("-")
+      res.push({
+        identify: slots[idx].serverId,
+        start: parseInt(sp[0]),
+        end: parseInt(sp[1])
+      })
+    }
+  }
+  return res.sort((a, b) => {
+    return a.start - b.start
+  })
+}
+
 const migrateOptions = computed(() => {
   let masters: ServerInfo[] = []
   for (let i in infos.value) {
-    if(infos.value[i].isMaster) {
+    if (infos.value[i].isMaster) {
       masters.push(infos.value[i])
     }
   }
@@ -104,6 +124,7 @@ function updateInfo(state: any) {
 function getSlotsDetail() {
   api.metadata.slotsDetail().then(res => {
     slots = res
+    slotRanges.value = getSlotRanges()
   }).catch((err: Error) => {
     useToast().error(err.message)
   })
