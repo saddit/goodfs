@@ -34,7 +34,7 @@ function loginOut() {
       <!-- head -->
       <div
           class="pl-4 pr-8 py-3 min-h-18 sm:pl-6 sm:pr-9 lg:pr-12 lg:pl-8 text-white flex flex-col relative border-indigo-500 border-b">
-        <span class="text-sm h-4 font-bold px-0.5" v-show="!store.tabClosed">GooDFS</span>
+        <span class="text-sm h-4 font-bold px-0.5" v-show="!store.tabClosed">GoodFS</span>
         <span class="text-2xl font-light" v-show="!store.tabClosed">CONSOLE</span>
         <ChevronLeftIcon
             :class="[store.tabClosed ? 'rotate-180 mx-auto w-10 h-10' : 'absolute bottom-4 right-2 w-6 h-6']"
@@ -63,6 +63,7 @@ function loginOut() {
         <div class="text-xl flex-grow font-bold text-gray-900">
           {{ title($route.meta.title) }}
         </div>
+        <!-- user menu -->
         <div class="inline-flex items-center text-gray-500">
           <UserCircleIcon class="w-9 h-9"/>
           <!-- popover menu  -->
