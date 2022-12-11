@@ -3,7 +3,6 @@
 </template>
 
 <script setup lang="ts">
-import { getBaseUrl } from "@/api/base";
 import { useI18n } from "vue-i18n";
 
 
