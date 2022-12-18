@@ -17,7 +17,7 @@ import (
 
 var (
 	statLog     = logs.New("stat-db")
-	maxTimeStat = 60
+	maxTimeStat = 59
 )
 
 type TimeStat struct {

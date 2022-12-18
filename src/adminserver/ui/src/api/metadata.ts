@@ -23,9 +23,15 @@ async function startMigrate(req: MetaMigrateReq): Promise<any> {
     await axios.post("/metadata/migration", req)
 }
 
+async function getPeers(servId: string): Promise<ServerInfo[]> {
+    let resp = await axios.get(`/metadata/${servId}/peers`)
+    return resp.data
+}
+
 export {
     metadataPage,
     versionPage,
     slotsDetail,
-    startMigrate
+    startMigrate,
+    getPeers
 }

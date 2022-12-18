@@ -139,3 +139,28 @@ func (m *Metadata) GetMasterServerIds() set.Set {
 	masters := set.OfMapKeys(mp)
 	return masters
 }
+
+func (m *Metadata) JoinRaftCluster(masterId, servId string) error {
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	masterAddr, ok := mp[masterId]
+	if !ok {
+		return response.NewError(400, "unknown master id")
+	}
+	servAddr, ok := mp[servId]
+	if !ok {
+		return response.NewError(400, "unknown server id")
+	}
+	cc, err := grpc.Dial(servAddr)
+	if err != nil {
+		return err
+	}
+	client := pb.NewRaftCmdClient(cc)
+	resp, err := client.JoinLeader(context.Background(), &pb.JoinLeaderReq{Address: masterAddr})
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return response.NewError(400, resp.Message)
+	}
+	return nil
+}

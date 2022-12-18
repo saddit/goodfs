@@ -42,8 +42,8 @@ func (Objects) Download(name string, version int) (io.ReadCloser, error) {
 
 func (Objects) JoinCluster(serverId string) error {
 	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.DataServName, true)
-	addr := mp[serverId]
-	if addr == "" {
+	addr, ok := mp[serverId]
+	if !ok {
 		return response.NewError(400, "serverId not exist")
 	}
 	cc, err := grpc.Dial(addr, grpc.WithInsecure())
@@ -63,8 +63,8 @@ func (Objects) JoinCluster(serverId string) error {
 
 func (Objects) LeaveCluster(serverId string) error {
 	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.DataServName, true)
-	addr := mp[serverId]
-	if addr == "" {
+	addr, ok := mp[serverId]
+	if !ok {
 		return response.NewError(400, "serverId not exist")
 	}
 	cc, err := grpc.Dial(addr, grpc.WithInsecure())
