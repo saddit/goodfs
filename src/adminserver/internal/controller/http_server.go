@@ -27,7 +27,7 @@ func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 		AllowAllOrigins: true,
 		// AllowOrigins: []string{"http://localhost", "http://localhost:5173"},
 		AllowMethods: []string{"PUT", "PATCH", "POST", "GET", "OPTION"},
-		AllowHeaders: []string{"Authorization"},
+		AllowHeaders: []string{"Authorization", "Content-Type", "Accept", "Refer"},
 	}))
 
 	route := eng.Group("/api")

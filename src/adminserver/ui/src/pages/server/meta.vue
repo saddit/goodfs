@@ -12,9 +12,10 @@
     <CapCard v-if="capInfo.total > 0" class="w-[32%]" :cap-info="capInfo"/>
     <div class="w-1/4">
       <!-- tool box -->
-      <div class="bg-white h-24 mb-2 shadow-md rounded-md p-3 gap-y-1 gap-x-2 grid grid-rows-2 grid-cols-3">
+      <div class="bg-white h-24 mb-2 shadow-md rounded-md p-3 gap-y-1 gap-x-2 grid grid-rows-2 grid-cols-2">
         <span class="font-bold text-xl justify-self-start text-gray-500">{{ t('tool-box') }}</span>
         <button class="btn-pri text-sm" @click="openMigrateDialog = true">{{ t('start-migrate') }}</button>
+        <button class="btn-pri text-sm" @click="openRaftCmdDialog = true">{{ t('raft-cmd') }}</button>
       </div>
       <SlotsCard class="h-28" :value="slotRanges"></SlotsCard>
     </div>
@@ -23,7 +24,7 @@
   <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.metaServerNo"/>
   <UsageLine :type="$cst.statTypeMem" :server-no="$cst.metaServerNo"/>
   <!-- Data migration dialog -->
-  <ModalTemplate v-model="openMigrateDialog" :title="t('migration')">
+  <ModalTemplate v-model="openMigrateDialog" :title="t('migration')" @close="closeMigrateDialog">
     <template #panel>
       <div class="mt-6 grid grid-cols-3 items-center gap-y-4 gap-x-1 rounded-md">
         <!-- row 1 source -->
@@ -53,18 +54,53 @@
       </div>
     </template>
   </ModalTemplate>
+  <!-- Raft cmd dialog -->
+  <ModalTemplate v-model="openRaftCmdDialog" :title="t('raft-cmd')" @close="closeRaftCmdDialog">
+    <template #panel>
+      <div class="mt-6 grid grid-cols-3 items-center gap-y-4 gap-x-1">
+        <span>{{ t('select-master') }}</span>
+        <SelectBox class="col-span-2" v-model="selectedRaftMaster"
+                   :value="(v: ServerInfo) => v.serverId"
+                   :format="(v: ServerInfo) => v.serverId"
+                   :options="masters"></SelectBox>
+        <template v-if="selectedRaftMaster">
+          <div class="col-span-3 px-2 text-sm inline-flex items-center justify-self-end" v-for="slave in slaves">
+            <span class="text-center mr-3">{{ slave.serverId + `(${slave.httpAddr})` }}</span>
+            <button class="btn-revert py-1 px-2 text-sm" @click="leaveCluster(slave.serverId)" >{{ t('remove') }}</button>
+          </div>
+          <div class="col-span-3 px-2 inline-flex items-center justify-self-end">
+            <input type="text" class="text-input-sm mr-2" :placeholder="t('input-serv-id')" v-model="invitedServId"/>
+            <button class="btn-pri py-1 px-2 text-sm" @click="joinCluster(selectedRaftMaster, invitedServId)">{{ t('invite') }}</button>
+          </div>
+        </template>
+        <!-- row button -->
+        <span></span>
+        <button class="btn-revert max-h-10 mx-1" @click="closeRaftCmdDialog">{{ $t('btn-cancel') }}</button>
+        <button class="btn-pri max-h-10 mx-1">{{ $t('btn-ok') }}</button>
+      </div>
+    </template>
+  </ModalTemplate>
 </template>
 
 <script setup lang="ts">
+
 let slots: { [key: string]: SlotsInfo } = {}
 const slotRanges = ref<SlotRange[]>([])
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
 const migrateReq = ref<MetaMigrateReq>({srcServerId: "", destServerId: "", slots: []})
 const openMigrateDialog = ref(false)
+const selectedRaftMaster = ref("")
+const invitedServId = ref("")
+const slaves = ref<ServerInfo[]>([])
+const openRaftCmdDialog = ref(false)
 const store = useStore()
 const formErrMsg = ref("")
 const {t} = useI18n({inheritLocale: true})
+
+watch(selectedRaftMaster, v => {
+  v ? getSlaves(v) : undefined
+})
 
 function getSlotRanges() {
   let res: SlotRange[] = []
@@ -72,7 +108,7 @@ function getSlotRanges() {
     for (let slot of slots[idx].slots) {
       let sp = slot.split("-")
       res.push({
-        identify: slots[idx].serverId,
+        identify: slots[idx].id,
         start: parseInt(sp[0]),
         end: parseInt(sp[1])
       })
@@ -93,10 +129,33 @@ const masters = computed(() => {
   return masters
 })
 
+function getSlaves(masterId: string) {
+  api.metadata.getPeers(masterId).then(v => {
+    slaves.value = v
+  }).catch((err: Error) => {
+    useToast().error(err.message)
+  })
+}
+
+function leaveCluster(servId: string) {
+
+}
+
+function joinCluster(masterId: string, servId: string) {
+
+}
+
 function closeMigrateDialog() {
   openMigrateDialog.value = false
   formErrMsg.value = ""
   migrateReq.value = {srcServerId: "", destServerId: "", slots: []}
+}
+
+
+function closeRaftCmdDialog() {
+  openRaftCmdDialog.value = false
+  selectedRaftMaster.value = ""
+  slaves.value = []
 }
 
 function getSlotsString(id: string): string {
@@ -152,6 +211,9 @@ onBeforeMount(() => {
 .text-input {
   @apply block appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm
 }
+.text-input-sm {
+  @apply block appearance-none rounded-md border border-gray-300 px-2 py-1 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 text-sm
+}
 </style>
 
 <route lang="json">
@@ -170,6 +232,11 @@ en:
   which-slots: 'Migrate slots'
   start-migrate: "Migration"
   tool-box: 'Tool Box'
+  raft-cmd: 'Cluster Cmd'
+  select-master: 'Select master'
+  remove: 'Leave'
+  invite: 'Invite'
+  input-serv-id: 'Please input server id'
 zh:
   migration: '数据迁移'
   src-server: '源服务器'
@@ -177,4 +244,9 @@ zh:
   which-slots: '迁移序列'
   start-migrate: '数据迁移'
   tool-box: '工具箱'
+  raft-cmd: '集群管理'
+  select-master: '选择集群领导'
+  remove: '脱离'
+  invite: '加入'
+  input-serv-id: '请输入 server id'
 </i18n>

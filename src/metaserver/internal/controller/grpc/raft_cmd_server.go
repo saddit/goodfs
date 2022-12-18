@@ -111,7 +111,9 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 	}
 	// send rpc request by client
 	client := pb.NewRaftCmdClient(cc)
-	if rcs.rf.LeaderAddress() != req.Address {
+	//FIXME: should compare the ip instead of string
+	// should be demoted voter by origin leader
+	if util.ParseIPFromAddr(rcs.rf.LeaderAddress()).Equal(util.ParseIPFromAddr(req.Address)) {
 		resp, err := client.AddVoter(ctx, &pb.AddVoterReq{
 			Voters: []*pb.Voter{{
 				Id:        rcs.rf.ID,

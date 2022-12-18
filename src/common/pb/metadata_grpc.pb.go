@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetadataApiClient interface {
 	GetVersionsByHash(ctx context.Context, in *ApiQryHash, opts ...grpc.CallOption) (*ApiQryResp, error)
+	GetPeers(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*JsonResp, error)
 }
 
 type metadataApiClient struct {
@@ -42,11 +43,21 @@ func (c *metadataApiClient) GetVersionsByHash(ctx context.Context, in *ApiQryHas
 	return out, nil
 }
 
+func (c *metadataApiClient) GetPeers(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*JsonResp, error) {
+	out := new(JsonResp)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getPeers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetadataApiServer is the server API for MetadataApi service.
 // All implementations must embed UnimplementedMetadataApiServer
 // for forward compatibility
 type MetadataApiServer interface {
 	GetVersionsByHash(context.Context, *ApiQryHash) (*ApiQryResp, error)
+	GetPeers(context.Context, *EmptyReq) (*JsonResp, error)
 	mustEmbedUnimplementedMetadataApiServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedMetadataApiServer struct {
 
 func (UnimplementedMetadataApiServer) GetVersionsByHash(context.Context, *ApiQryHash) (*ApiQryResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersionsByHash not implemented")
+}
+func (UnimplementedMetadataApiServer) GetPeers(context.Context, *EmptyReq) (*JsonResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPeers not implemented")
 }
 func (UnimplementedMetadataApiServer) mustEmbedUnimplementedMetadataApiServer() {}
 
@@ -88,6 +102,24 @@ func _MetadataApi_GetVersionsByHash_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetadataApi_GetPeers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataApiServer).GetPeers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.MetadataApi/getPeers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataApiServer).GetPeers(ctx, req.(*EmptyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MetadataApi_ServiceDesc is the grpc.ServiceDesc for MetadataApi service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var MetadataApi_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getVersionsByHash",
 			Handler:    _MetadataApi_GetVersionsByHash_Handler,
+		},
+		{
+			MethodName: "getPeers",
+			Handler:    _MetadataApi_GetPeers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

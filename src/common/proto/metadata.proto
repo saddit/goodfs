@@ -4,6 +4,8 @@ package proto;
 
 option go_package = "../pb";
 
+import "message.proto";
+
 message Version {
   string hash = 1;
   uint64 sequence = 2;
@@ -16,11 +18,16 @@ message ApiQryResp {
   repeated Version data = 1;
 }
 
+message JsonResp {
+  bytes data = 1;
+}
+
 message ApiQryHash {
   string hash = 1;
 }
 
 service MetadataApi {
   rpc getVersionsByHash(ApiQryHash) returns (ApiQryResp);
+  rpc getPeers(EmptyReq) returns (JsonResp);
 }
 

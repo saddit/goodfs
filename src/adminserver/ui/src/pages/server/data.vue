@@ -2,7 +2,8 @@
   <div class="text-2xl text-gray-900 font-bold mb-4">{{ $t('overview') }}</div>
   <div v-if="infos.length > 0"
        class="grid gap-y-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 justify-items-center placeholder:py-2">
-    <ServerCard v-for="info in infos" :info="info" @click="openMigrateDialog(info.serverId)"></ServerCard>
+    <ServerCard class="cursor-pointer" v-for="info in infos" :info="info"
+                @click="openDialog(info.serverId)"></ServerCard>
   </div>
   <div v-else class="w-full my-5 text-center text-gray-600 text-lg font-medium">
     {{ $t('no-servers') }}
@@ -17,9 +18,11 @@
   <!-- Migration dialog -->
   <ModalTemplate title="Join or Leave" v-model="openMigrateDialog">
     <template #panel>
-      <button class="btn-pri" @click="clusterCmd('join')">Join cluster</button>
-      <button class="btn-pri" @click="clusterCmd('leave')">Leave cluster</button>
-      <button class="btn-revert" @click="openMigrateDialog = false">Close</button>
+      <div class="py-6 px-8 grid-cols-1 grid gap-y-2">
+        <button class="btn-pri" @click="clusterCmd('join')">Join cluster</button>
+        <button class="btn-pri" @click="clusterCmd('leave')">Leave cluster</button>
+        <button class="btn-revert" @click="openMigrateDialog = false">Close</button>
+      </div>
     </template>
   </ModalTemplate>
 </template>
@@ -57,8 +60,9 @@ async function clusterCmd(cmd: string) {
     } else if (cmd == 'leave') {
       await api.objects.leave(migrateServId)
     }
+    useToast().success("Success")
   } catch (err: any) {
-    useToast().error(err.Message)
+    useToast().error(err.message)
   }
 }
 
