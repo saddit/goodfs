@@ -19,7 +19,9 @@ func NewObjectsController() *ObjectsController {
 func (oc *ObjectsController) Register(route gin.IRouter) {
 	route.Group("objects").
 		GET("/download/:name").
-		PUT("/upload")
+		PUT("/upload").
+		POST("/join/:serverId").
+		POST("/leave/:serverId")
 }
 
 func (oc *ObjectsController) Upload(c *gin.Context) {
@@ -53,6 +55,22 @@ func (oc *ObjectsController) Download(c *gin.Context) {
 		return
 	}
 	if _, err = io.Copy(c.Writer, reader); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
+}
+
+func (oc *ObjectsController) Join(c *gin.Context) {
+	if err := logic.NewObjects().JoinCluster(c.Param("serverId")); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
+}
+
+func (oc *ObjectsController) Leave(c *gin.Context) {
+	if err := logic.NewObjects().LeaveCluster(c.Param("serverId")); err != nil {
 		response.FailErr(err, c)
 		return
 	}
