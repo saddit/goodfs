@@ -31,13 +31,13 @@
         <SelectBox class="col-span-2" v-model="migrateReq.srcServerId"
                    :value="(v: ServerInfo) => v.serverId"
                    :format="(v: ServerInfo) => `${v.serverId}(${getSlotsString(v.serverId)})`"
-                   :options="migrateOptions"></SelectBox>
+                   :options="masters"></SelectBox>
         <!-- row 2 target -->
         <span class="text-sm text-gray-700">{{ t('dest-server') }}</span>
         <SelectBox class="col-span-2" v-model="migrateReq.destServerId"
                    :value="(v: ServerInfo) => v.serverId"
                    :format="(v: ServerInfo) => `${v.serverId}(${getSlotsString(v.serverId)})`"
-                   :options="migrateOptions"></SelectBox>
+                   :options="masters"></SelectBox>
         <!-- row 3 slots -->
         <span class="text-sm text-gray-700">{{ t('which-slots') }}</span>
         <input id="slots" name="slots" required type="text" class="text-input col-span-2"/>
@@ -83,7 +83,7 @@ function getSlotRanges() {
   })
 }
 
-const migrateOptions = computed(() => {
+const masters = computed(() => {
   let masters: ServerInfo[] = []
   for (let i in infos.value) {
     if (infos.value[i].isMaster) {
@@ -92,6 +92,12 @@ const migrateOptions = computed(() => {
   }
   return masters
 })
+
+function getMaster(sid: string): ServerInfo {
+  for (let v of masters.value) {
+    slots
+  }
+}
 
 function closeMigrateDialog() {
   openMigrateDialog.value = false

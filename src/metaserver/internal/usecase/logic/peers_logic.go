@@ -40,6 +40,7 @@ func (Peers) Register() error {
 		HttpPort: pool.Config.Port,
 		GrpcPort: pool.Config.Cluster.Port,
 		GroupID:  pool.Config.Cluster.GroupID,
+		ServerID: pool.Config.Cluster.ID,
 	}
 	bt, err := util.EncodeMsgp(info)
 	if err != nil {

@@ -71,7 +71,7 @@ type CacheConfig struct {
 }
 
 type HashSlotConfig struct {
-	StoreID        string        `yaml:"-" env:"-"`
+	StoreID        string        `yaml:"-" env:"-"` //StoreID could be HashSlot.GroupID or Cluster.ID
 	Slots          []string      `yaml:"slots" env-separator:"," env-default:"0-16384"`
 	PrepareTimeout time.Duration `yaml:"prepare-timeout" env-default:"10s"`
 }
@@ -79,8 +79,8 @@ type HashSlotConfig struct {
 type ClusterConfig struct {
 	Enable           bool          `yaml:"enable" env:"ENABLE" env-default:"false"`
 	Bootstrap        bool          `yaml:"bootstrap" env:"BOOTSTRAP" env-default:"false"`
-	ID               string        `yaml:"-" env:"-"`
-	Port             string        `yaml:"-" env:"-"`
+	ID               string        `yaml:"-" env:"-"` //ID equals to Registry.ServerId
+	Port             string        `yaml:"-" env:"-"` //Port equals to Config.RpcPort
 	GroupID          string        `yaml:"group-id" env:"GROUP_ID" env-default:"raft"`
 	LogLevel         string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
 	StoreDir         string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
