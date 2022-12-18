@@ -25,6 +25,14 @@ async function download(name: string) {
     URL.revokeObjectURL(href);
 }
 
+async function join(serverId: string) {
+    await axios.post(`/objects/join/${serverId}`, {})
+}
+
+async function leave(serverId: string) {
+    await axios.post(`/objects/leave/${serverId}`, {})
+}
+
 export {
-    upload, download
+    upload, download, join, leave
 }

@@ -93,12 +93,6 @@ const masters = computed(() => {
   return masters
 })
 
-function getMaster(sid: string): ServerInfo {
-  for (let v of masters.value) {
-    slots
-  }
-}
-
 function closeMigrateDialog() {
   openMigrateDialog.value = false
   formErrMsg.value = ""
