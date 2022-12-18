@@ -6,10 +6,15 @@ require (
 	github.com/Jille/raft-grpc-transport v1.1.1
 	github.com/allegro/bigcache v1.2.1
 	github.com/gin-gonic/gin v1.8.1
-	github.com/ilyakaznacheev/cleanenv v1.4.0
+	github.com/ilyakaznacheev/cleanenv v1.4.1
 	github.com/tinylib/msgp v1.1.6
 	go.etcd.io/bbolt v1.3.6
 	go.etcd.io/etcd/client/v3 v3.5.4
+)
+
+require (
+	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/stretchr/testify v1.8.1 // indirect
 )
 
 require (
@@ -38,9 +43,8 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
-	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
 )
 

@@ -48,6 +48,12 @@ func (z *PeerInfo) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "GroupID")
 				return
 			}
+		case "ServerID":
+			z.ServerID, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "ServerID")
+				return
+			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -61,9 +67,9 @@ func (z *PeerInfo) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *PeerInfo) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 4
+	// map header, size 5
 	// write "location"
-	err = en.Append(0x84, 0xa8, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	err = en.Append(0x85, 0xa8, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
 	if err != nil {
 		return
 	}
@@ -102,15 +108,25 @@ func (z *PeerInfo) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "GroupID")
 		return
 	}
+	// write "ServerID"
+	err = en.Append(0xa8, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x49, 0x44)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.ServerID)
+	if err != nil {
+		err = msgp.WrapError(err, "ServerID")
+		return
+	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *PeerInfo) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 4
+	// map header, size 5
 	// string "location"
-	o = append(o, 0x84, 0xa8, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = append(o, 0x85, 0xa8, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
 	o = msgp.AppendString(o, z.Location)
 	// string "http_port"
 	o = append(o, 0xa9, 0x68, 0x74, 0x74, 0x70, 0x5f, 0x70, 0x6f, 0x72, 0x74)
@@ -121,6 +137,9 @@ func (z *PeerInfo) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "group_id"
 	o = append(o, 0xa8, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x69, 0x64)
 	o = msgp.AppendString(o, z.GroupID)
+	// string "ServerID"
+	o = append(o, 0xa8, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x49, 0x44)
+	o = msgp.AppendString(o, z.ServerID)
 	return
 }
 
@@ -166,6 +185,12 @@ func (z *PeerInfo) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "GroupID")
 				return
 			}
+		case "ServerID":
+			z.ServerID, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ServerID")
+				return
+			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -180,6 +205,6 @@ func (z *PeerInfo) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *PeerInfo) Msgsize() (s int) {
-	s = 1 + 9 + msgp.StringPrefixSize + len(z.Location) + 10 + msgp.StringPrefixSize + len(z.HttpPort) + 10 + msgp.StringPrefixSize + len(z.GrpcPort) + 9 + msgp.StringPrefixSize + len(z.GroupID)
+	s = 1 + 9 + msgp.StringPrefixSize + len(z.Location) + 10 + msgp.StringPrefixSize + len(z.HttpPort) + 10 + msgp.StringPrefixSize + len(z.GrpcPort) + 9 + msgp.StringPrefixSize + len(z.GroupID) + 9 + msgp.StringPrefixSize + len(z.ServerID)
 	return
 }

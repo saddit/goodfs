@@ -1,9 +1,14 @@
 package logic
 
 import (
+	"adminserver/internal/usecase/pool"
 	"adminserver/internal/usecase/webapi"
+	"common/pb"
+	"common/response"
 	"common/util"
 	"common/util/crypto"
+	"context"
+	"google.golang.org/grpc"
 	"io"
 	"mime/multipart"
 )
@@ -33,4 +38,46 @@ func (Objects) Upload(file *multipart.FileHeader) error {
 
 func (Objects) Download(name string, version int) (io.ReadCloser, error) {
 	return webapi.GetObjects(SelectApiServer(), name, version)
+}
+
+func (Objects) JoinCluster(serverId string) error {
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.DataServName, true)
+	addr := mp[serverId]
+	if addr == "" {
+		return response.NewError(400, "serverId not exist")
+	}
+	cc, err := grpc.Dial(addr, grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	client := pb.NewObjectMigrationClient(cc)
+	resp, err := client.JoinCommand(context.Background(), new(pb.EmptyReq))
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return response.NewError(400, resp.Message)
+	}
+	return nil
+}
+
+func (Objects) LeaveCluster(serverId string) error {
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.DataServName, true)
+	addr := mp[serverId]
+	if addr == "" {
+		return response.NewError(400, "serverId not exist")
+	}
+	cc, err := grpc.Dial(addr, grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	client := pb.NewObjectMigrationClient(cc)
+	resp, err := client.LeaveCommand(context.Background(), new(pb.EmptyReq))
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return response.NewError(400, resp.Message)
+	}
+	return nil
 }
