@@ -15,10 +15,12 @@ import (
 var checkRaftEnabledMethods = set.OfString([]string{
 	"/proto.RaftCmd/Bootstrap",
 	"/proto.RaftCmd/AddVoter",
+	"/proto.RaftCmd/RemoveFollower",
 })
 
 var checkRaftLeaderMethods = set.OfString([]string{
 	"/proto.RaftCmd/AddVoter",
+	"/proto.RaftCmd/RemoveFollower",
 })
 
 var checkRaftNonLeaderMethods = set.OfString([]string{

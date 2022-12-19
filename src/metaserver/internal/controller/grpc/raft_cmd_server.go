@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"metaserver/config"
+	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
 	"metaserver/internal/usecase/raftimpl"
 	"strings"
@@ -103,17 +104,35 @@ func (rcs *RaftCmdServerImpl) Config(context.Context, *pb.EmptyReq) (*pb.Respons
 	return &pb.Response{Success: true, Message: util.BytesToStr(bt)}, nil
 }
 
+func (rcs *RaftCmdServerImpl) RemoveFollower(_ context.Context, req *pb.RemoveFollowerReq) (*pb.Response, error) {
+	feature := rcs.rf.Raft.DemoteVoter(raft.ServerID(req.FollowerId), req.PrevIndex, time.Second)
+	return nil, feature.Error()
+}
+
 func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeaderReq) (*pb.Response, error) {
 	// dial a connection to leader
-	cc, err := grpc.Dial(req.GetAddress(), grpc.WithInsecure())
+	mp := pool.Registry.GetServiceMapping(pool.Config.Registry.Name, true)
+	addr, ok := mp[req.MasterId]
+	if !ok {
+		return nil, fmt.Errorf("'%s' is not an exist meta-server id", req.MasterId)
+	}
+	cc, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	// send rpc request by client
 	client := pb.NewRaftCmdClient(cc)
-	//FIXME: should compare the ip instead of string
-	// should be demoted voter by origin leader
-	if util.ParseIPFromAddr(rcs.rf.LeaderAddress()).Equal(util.ParseIPFromAddr(req.Address)) {
+	if rcs.rf.LeaderID() != req.MasterId {
+		if rcs.rf.LeaderID() != "" {
+			// demote voter
+			_, err := client.RemoveFollower(ctx, &pb.RemoveFollowerReq{
+				FollowerId: pool.Config.Registry.ServerID,
+				PrevIndex:  rcs.rf.Raft.AppliedIndex(),
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
 		resp, err := client.AddVoter(ctx, &pb.AddVoterReq{
 			Voters: []*pb.Voter{{
 				Id:        rcs.rf.ID,
@@ -140,14 +159,8 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 	if err := json.Unmarshal(util.StrToBytes(resp.Message), &cfg); err != nil {
 		return nil, err
 	}
-	pool.Config.Cluster.GroupID = cfg.GroupID
-	pool.Config.Cluster.Nodes = cfg.Nodes
-	// persist config async
-	go func() {
-		defer graceful.Recover()
-		util.LogErrWithPre("persist config", pool.Config.Persist())
-	}()
-	return okResp, nil
+	err = logic.NewRaftCluster().UpdateConfiguration(&cfg)
+	return okResp, err
 }
 
 func (rcs *RaftCmdServerImpl) AppliedIndex(_ context.Context, _ *pb.EmptyReq) (*pb.Response, error) {

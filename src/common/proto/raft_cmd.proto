@@ -26,13 +26,19 @@ message AddVoterReq {
 }
 
 message JoinLeaderReq {
-    string address = 1;
+    string masterId = 1;
+}
+
+message RemoveFollowerReq {
+    string followerId = 1;
+    uint64 prevIndex = 2;
 }
 
 service RaftCmd {
     rpc Bootstrap(BootstrapReq) returns (Response) {}
     rpc AddVoter(AddVoterReq) returns (Response) {}
     rpc JoinLeader(JoinLeaderReq) returns (Response) {}
+    rpc RemoveFollower(RemoveFollowerReq) returns (Response) {}
     rpc AppliedIndex(EmptyReq) returns (Response) {}
     rpc Peers(EmptyReq) returns (Response) {}
     rpc Config(EmptyReq) returns (Response) {}

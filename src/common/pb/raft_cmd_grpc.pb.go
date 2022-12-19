@@ -25,6 +25,7 @@ type RaftCmdClient interface {
 	Bootstrap(ctx context.Context, in *BootstrapReq, opts ...grpc.CallOption) (*Response, error)
 	AddVoter(ctx context.Context, in *AddVoterReq, opts ...grpc.CallOption) (*Response, error)
 	JoinLeader(ctx context.Context, in *JoinLeaderReq, opts ...grpc.CallOption) (*Response, error)
+	RemoveFollower(ctx context.Context, in *RemoveFollowerReq, opts ...grpc.CallOption) (*Response, error)
 	AppliedIndex(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 	Peers(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 	Config(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
@@ -65,6 +66,15 @@ func (c *raftCmdClient) JoinLeader(ctx context.Context, in *JoinLeaderReq, opts 
 	return out, nil
 }
 
+func (c *raftCmdClient) RemoveFollower(ctx context.Context, in *RemoveFollowerReq, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/proto.RaftCmd/RemoveFollower", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *raftCmdClient) AppliedIndex(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
 	err := c.cc.Invoke(ctx, "/proto.RaftCmd/AppliedIndex", in, out, opts...)
@@ -99,6 +109,7 @@ type RaftCmdServer interface {
 	Bootstrap(context.Context, *BootstrapReq) (*Response, error)
 	AddVoter(context.Context, *AddVoterReq) (*Response, error)
 	JoinLeader(context.Context, *JoinLeaderReq) (*Response, error)
+	RemoveFollower(context.Context, *RemoveFollowerReq) (*Response, error)
 	AppliedIndex(context.Context, *EmptyReq) (*Response, error)
 	Peers(context.Context, *EmptyReq) (*Response, error)
 	Config(context.Context, *EmptyReq) (*Response, error)
@@ -117,6 +128,9 @@ func (UnimplementedRaftCmdServer) AddVoter(context.Context, *AddVoterReq) (*Resp
 }
 func (UnimplementedRaftCmdServer) JoinLeader(context.Context, *JoinLeaderReq) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method JoinLeader not implemented")
+}
+func (UnimplementedRaftCmdServer) RemoveFollower(context.Context, *RemoveFollowerReq) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveFollower not implemented")
 }
 func (UnimplementedRaftCmdServer) AppliedIndex(context.Context, *EmptyReq) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AppliedIndex not implemented")
@@ -194,6 +208,24 @@ func _RaftCmd_JoinLeader_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RaftCmd_RemoveFollower_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveFollowerReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftCmdServer).RemoveFollower(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RaftCmd/RemoveFollower",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftCmdServer).RemoveFollower(ctx, req.(*RemoveFollowerReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RaftCmd_AppliedIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EmptyReq)
 	if err := dec(in); err != nil {
@@ -266,6 +298,10 @@ var RaftCmd_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "JoinLeader",
 			Handler:    _RaftCmd_JoinLeader_Handler,
+		},
+		{
+			MethodName: "RemoveFollower",
+			Handler:    _RaftCmd_RemoveFollower_Handler,
 		},
 		{
 			MethodName: "AppliedIndex",
