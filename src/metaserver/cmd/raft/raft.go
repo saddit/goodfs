@@ -29,7 +29,7 @@ func init() {
 			addVoter(args[2:])
 		case "join_leader":
 			if len(args) < 3 {
-				fmt.Println("join_leader require leader's address")
+				fmt.Println("join_leader require leader's server id")
 				return
 			}
 			joinLeader(args[2])
@@ -93,7 +93,7 @@ func joinLeader(leader string) {
 	if err != nil {
 		return
 	}
-	resp, err := cli.JoinLeader(context.Background(), &pb.JoinLeaderReq{Address: leader})
+	resp, err := cli.JoinLeader(context.Background(), &pb.JoinLeaderReq{MasterId: leader})
 	if err != nil {
 		fmt.Println(err)
 	} else {

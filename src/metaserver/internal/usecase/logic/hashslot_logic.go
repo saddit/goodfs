@@ -3,7 +3,9 @@ package logic
 import (
 	"common/hashslot"
 	"common/logs"
+	"common/util/crypto"
 	"metaserver/internal/usecase/pool"
+	"strings"
 )
 
 type HashSlot struct{}
@@ -24,6 +26,7 @@ func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
 }
 
 func (h HashSlot) SaveToEtcd(id string, info *hashslot.SlotInfo) error {
+	info.GroupID = id
 	info.Location = pool.HttpHostPort
 	info.ServerID = pool.Config.Registry.ServerID
 	go func() {
@@ -38,4 +41,21 @@ func (h HashSlot) SaveToEtcd(id string, info *hashslot.SlotInfo) error {
 
 func (HashSlot) RemoveFromEtcd(id string) error {
 	return pool.HashSlot.Remove(id)
+}
+
+func (HashSlot) GetById(storeId string) (*hashslot.SlotInfo, error) {
+	data, ok, err := pool.HashSlot.Get(storeId)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return &hashslot.SlotInfo{
+			GroupID:  pool.Config.HashSlot.StoreID,
+			ServerID: pool.Config.Registry.ServerID,
+			Location: pool.HttpHostPort,
+			Checksum: crypto.MD5([]byte(strings.Join(pool.Config.HashSlot.Slots, ","))),
+			Slots:    pool.Config.HashSlot.Slots,
+		}, nil
+	}
+	return data, nil
 }

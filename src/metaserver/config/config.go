@@ -71,7 +71,7 @@ type CacheConfig struct {
 }
 
 type HashSlotConfig struct {
-	StoreID        string        `yaml:"-" env:"-"` //StoreID could be HashSlot.GroupID or Cluster.ID
+	StoreID        string        `yaml:"-" env:"-"` //StoreID could be Cluster.GroupID or Registry.ServerId
 	Slots          []string      `yaml:"slots" env-separator:"," env-default:"0-16384"`
 	PrepareTimeout time.Duration `yaml:"prepare-timeout" env-default:"10s"`
 }
