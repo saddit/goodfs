@@ -24,8 +24,21 @@ async function startMigrate(req: MetaMigrateReq): Promise<any> {
 }
 
 async function getPeers(servId: string): Promise<ServerInfo[]> {
-    let resp = await axios.get(`/metadata/${servId}/peers`)
+    let resp = await axios.get(`/metadata/peers?serverId=${servId}`)
     return resp.data
+}
+
+async function joinLeader(leaderId: string, servId: string) {
+    await axios.post("/metadata/join_leader", {
+        masterId: leaderId,
+        serverId: servId
+    })
+}
+
+async function leaveCluster(servId: string) {
+    await axios.post("/metadata/leave_cluster", {
+        serverId: servId
+    })
 }
 
 export {
@@ -33,5 +46,7 @@ export {
     versionPage,
     slotsDetail,
     startMigrate,
-    getPeers
+    getPeers,
+    joinLeader,
+    leaveCluster
 }

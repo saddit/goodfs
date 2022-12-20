@@ -42,4 +42,5 @@ service RaftCmd {
     rpc AppliedIndex(EmptyReq) returns (Response) {}
     rpc Peers(EmptyReq) returns (Response) {}
     rpc Config(EmptyReq) returns (Response) {}
+    rpc LeaveCluster(EmptyReq) returns (Response) {}
 }

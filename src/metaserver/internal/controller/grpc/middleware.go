@@ -16,6 +16,7 @@ var checkRaftEnabledMethods = set.OfString([]string{
 	"/proto.RaftCmd/Bootstrap",
 	"/proto.RaftCmd/AddVoter",
 	"/proto.RaftCmd/RemoveFollower",
+	"/proto.RaftCmd/LeaveCluster",
 })
 
 var checkRaftLeaderMethods = set.OfString([]string{

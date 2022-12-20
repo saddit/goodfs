@@ -104,6 +104,23 @@ func (rcs *RaftCmdServerImpl) Config(context.Context, *pb.EmptyReq) (*pb.Respons
 	return &pb.Response{Success: true, Message: util.BytesToStr(bt)}, nil
 }
 
+func (rcs *RaftCmdServerImpl) LeaveCluster(ctx context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
+	if rcs.rf.IsLeader() {
+		if err := rcs.rf.Raft.LeadershipTransfer().Error(); err != nil {
+			return nil, fmt.Errorf("transfer leader error: %w", err)
+		}
+	}
+	leaderAddr := rcs.rf.LeaderAddress()
+	cc, err := grpc.Dial(leaderAddr, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	return pb.NewRaftCmdClient(cc).RemoveFollower(ctx, &pb.RemoveFollowerReq{
+		FollowerId: rcs.rf.ID,
+		PrevIndex:  rcs.rf.Raft.AppliedIndex(),
+	})
+}
+
 func (rcs *RaftCmdServerImpl) RemoveFollower(_ context.Context, req *pb.RemoveFollowerReq) (*pb.Response, error) {
 	feature := rcs.rf.Raft.DemoteVoter(raft.ServerID(req.FollowerId), req.PrevIndex, time.Second)
 	return nil, feature.Error()
@@ -126,7 +143,7 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 		if rcs.rf.LeaderID() != "" {
 			// demote voter
 			_, err := client.RemoveFollower(ctx, &pb.RemoveFollowerReq{
-				FollowerId: pool.Config.Registry.ServerID,
+				FollowerId: rcs.rf.ID,
 				PrevIndex:  rcs.rf.Raft.AppliedIndex(),
 			})
 			if err != nil {
