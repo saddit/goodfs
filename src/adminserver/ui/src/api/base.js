@@ -27,7 +27,7 @@ axios.interceptors.response.use(function (response) {
         if (!error.response) {
             return Promise.reject(new ApiError(error.status, "Network Error"))
         }
-        return Promise.reject(new ApiError(error.status, error.response.data))
+        return Promise.reject(new ApiError(error.status, error.response.data.message))
     }
     return Promise.reject(error);
 });

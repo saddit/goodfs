@@ -29,6 +29,7 @@ type RaftCmdClient interface {
 	AppliedIndex(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 	Peers(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 	Config(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
+	LeaveCluster(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 }
 
 type raftCmdClient struct {
@@ -102,6 +103,15 @@ func (c *raftCmdClient) Config(ctx context.Context, in *EmptyReq, opts ...grpc.C
 	return out, nil
 }
 
+func (c *raftCmdClient) LeaveCluster(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/proto.RaftCmd/LeaveCluster", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RaftCmdServer is the server API for RaftCmd service.
 // All implementations must embed UnimplementedRaftCmdServer
 // for forward compatibility
@@ -113,6 +123,7 @@ type RaftCmdServer interface {
 	AppliedIndex(context.Context, *EmptyReq) (*Response, error)
 	Peers(context.Context, *EmptyReq) (*Response, error)
 	Config(context.Context, *EmptyReq) (*Response, error)
+	LeaveCluster(context.Context, *EmptyReq) (*Response, error)
 	mustEmbedUnimplementedRaftCmdServer()
 }
 
@@ -140,6 +151,9 @@ func (UnimplementedRaftCmdServer) Peers(context.Context, *EmptyReq) (*Response, 
 }
 func (UnimplementedRaftCmdServer) Config(context.Context, *EmptyReq) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Config not implemented")
+}
+func (UnimplementedRaftCmdServer) LeaveCluster(context.Context, *EmptyReq) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaveCluster not implemented")
 }
 func (UnimplementedRaftCmdServer) mustEmbedUnimplementedRaftCmdServer() {}
 
@@ -280,6 +294,24 @@ func _RaftCmd_Config_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RaftCmd_LeaveCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftCmdServer).LeaveCluster(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.RaftCmd/LeaveCluster",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftCmdServer).LeaveCluster(ctx, req.(*EmptyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RaftCmd_ServiceDesc is the grpc.ServiceDesc for RaftCmd service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -314,6 +346,10 @@ var RaftCmd_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Config",
 			Handler:    _RaftCmd_Config_Handler,
+		},
+		{
+			MethodName: "LeaveCluster",
+			Handler:    _RaftCmd_LeaveCluster_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

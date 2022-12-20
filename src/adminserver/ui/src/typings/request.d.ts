@@ -16,4 +16,5 @@ declare interface MetaMigrateReq {
     srcServerId: string
     destServerId: string
     slots: string[]
+    slotsStr: string
 }

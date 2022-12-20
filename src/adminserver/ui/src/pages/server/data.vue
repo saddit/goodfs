@@ -33,6 +33,7 @@ const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
 const store = useStore()
 const openMigrateDialog = ref(false)
 let migrateServId = ""
+const {t} = useI18n({inheritLocale: true})
 
 function updateInfo(state: any) {
   if (infos.value.length > 0) {
@@ -60,7 +61,7 @@ async function clusterCmd(cmd: string) {
     } else if (cmd == 'leave') {
       await api.objects.leave(migrateServId)
     }
-    useToast().success("Success")
+    useToast().success(t('req-success'))
   } catch (err: any) {
     useToast().error(err.message)
   }

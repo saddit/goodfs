@@ -11,6 +11,7 @@ import (
 	"common/pb"
 	"common/response"
 	"common/util"
+	"encoding/json"
 	"net"
 	"sort"
 	"sync"
@@ -140,22 +141,32 @@ func (m *Metadata) GetMasterServerIds() set.Set {
 	return masters
 }
 
-func (m *Metadata) JoinRaftCluster(masterId, servId string) error {
+func (m *Metadata) LeaveRaftCluster(servId string) error {
 	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
-	masterAddr, ok := mp[masterId]
-	if !ok {
-		return response.NewError(400, "unknown master id")
-	}
 	servAddr, ok := mp[servId]
 	if !ok {
 		return response.NewError(400, "unknown server id")
 	}
-	cc, err := grpc.Dial(servAddr)
+	cc, err := grpc.Dial(servAddr, grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	_, err = pb.NewRaftCmdClient(cc).LeaveCluster(context.Background(), new(pb.EmptyReq))
+	return err
+}
+
+func (m *Metadata) JoinRaftCluster(masterId, servId string) error {
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	servAddr, ok := mp[servId]
+	if !ok {
+		return response.NewError(400, "unknown server id")
+	}
+	cc, err := grpc.Dial(servAddr, grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
 	client := pb.NewRaftCmdClient(cc)
-	resp, err := client.JoinLeader(context.Background(), &pb.JoinLeaderReq{Address: masterAddr})
+	resp, err := client.JoinLeader(context.Background(), &pb.JoinLeaderReq{MasterId: masterId})
 	if err != nil {
 		return err
 	}
@@ -163,4 +174,33 @@ func (m *Metadata) JoinRaftCluster(masterId, servId string) error {
 		return response.NewError(400, resp.Message)
 	}
 	return nil
+}
+
+func (m *Metadata) GetPeers(servId string) ([]*entity.ServerInfo, error) {
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	servAddr, ok := mp[servId]
+	if !ok {
+		return nil, response.NewError(400, "unknown server id")
+	}
+	cc, err := grpc.Dial(servAddr, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	resp, err := pb.NewMetadataApiClient(cc).GetPeers(context.Background(), new(pb.EmptyReq))
+	if err != nil {
+		return nil, err
+	}
+	var res []map[string]string
+	if err = json.Unmarshal(resp.Data, &res); err != nil {
+		return nil, err
+	}
+	infoList := make([]*entity.ServerInfo, 0, len(res))
+	for _, mp := range res {
+		infoList = append(infoList, &entity.ServerInfo{
+			ServerID: mp["serverId"],
+			HttpAddr: net.JoinHostPort(mp["location"], mp["httpPort"]),
+			RpcAddr:  net.JoinHostPort(mp["location"], mp["grpcPort"]),
+		})
+	}
+	return infoList, nil
 }

@@ -18,7 +18,10 @@ func (mc *MetadataController) Register(r gin.IRouter) {
 		GET("/page", mc.Page).
 		GET("/versions", mc.Versions).
 		POST("/migration", mc.Migration).
-		GET("/slots_detail", mc.SlotsDetail)
+		GET("/slots_detail", mc.SlotsDetail).
+		GET("/peers", mc.Peers).
+		POST("/leave_cluster", mc.LeaveCluster).
+		POST("/join_leader", mc.JoinLeader)
 }
 
 func (mc *MetadataController) Page(c *gin.Context) {
@@ -58,6 +61,10 @@ func (mc *MetadataController) Migration(c *gin.Context) {
 		DestServerId string   `json:"destServerId" binding:"required"`
 		Slots        []string `json:"slots" binding:"required"`
 	}{}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.FailErr(err, c)
+		return
+	}
 	if err := logic.NewMetadata().StartMigration(body.SrcServerId, body.DestServerId, body.Slots); err != nil {
 		response.FailErr(err, c)
 		return
@@ -72,4 +79,51 @@ func (mc *MetadataController) SlotsDetail(c *gin.Context) {
 		return
 	}
 	response.OkJson(detail, c)
+}
+
+func (mc *MetadataController) JoinLeader(c *gin.Context) {
+	req := struct {
+		ServerId string `json:"serverId" binding:"required"`
+		MasterId string `json:"masterId" binding:"required"`
+	}{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	if err := logic.NewMetadata().JoinRaftCluster(req.MasterId, req.ServerId); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
+}
+
+func (mc *MetadataController) LeaveCluster(c *gin.Context) {
+	req := struct {
+		ServerId string `json:"serverId" binding:"required"`
+	}{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	if err := logic.NewMetadata().LeaveRaftCluster(req.ServerId); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
+}
+
+func (mc *MetadataController) Peers(c *gin.Context) {
+	req := struct {
+		ServerId string `form:"serverId" binding:"required"`
+	}{}
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	res, err := logic.NewMetadata().GetPeers(req.ServerId)
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.OkJson(res, c)
 }

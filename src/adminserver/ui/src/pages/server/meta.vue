@@ -41,7 +41,7 @@
                    :options="masters"></SelectBox>
         <!-- row 3 slots -->
         <span class="text-sm text-gray-700">{{ t('which-slots') }}</span>
-        <input id="slots" name="slots" required type="text" class="text-input col-span-2"/>
+        <input v-model="migrateReq.slotsStr" id="slots" name="slots" required type="text" placeholder="0-1000,2000-2500" class="text-input col-span-2"/>
         <!-- row 4 button -->
         <span></span>
         <button class="btn-revert max-h-10 mx-1" @click="closeMigrateDialog">{{ $t('btn-cancel') }}</button>
@@ -66,17 +66,21 @@
         <template v-if="selectedRaftMaster">
           <div class="col-span-3 px-2 text-sm inline-flex items-center justify-self-end" v-for="slave in slaves">
             <span class="text-center mr-3">{{ slave.serverId + `(${slave.httpAddr})` }}</span>
-            <button class="btn-revert py-1 px-2 text-sm" @click="leaveCluster(slave.serverId)" >{{ t('remove') }}</button>
+            <button class="btn-revert py-1 px-2 text-sm" @click="leaveCluster(slave.serverId)">{{
+                t('remove')
+              }}
+            </button>
           </div>
           <div class="col-span-3 px-2 inline-flex items-center justify-self-end">
             <input type="text" class="text-input-sm mr-2" :placeholder="t('input-serv-id')" v-model="invitedServId"/>
-            <button class="btn-pri py-1 px-2 text-sm" @click="joinCluster(selectedRaftMaster, invitedServId)">{{ t('invite') }}</button>
+            <button class="btn-pri py-1 px-2 text-sm" @click="joinCluster(selectedRaftMaster, invitedServId)">
+              {{ t('invite') }}
+            </button>
           </div>
         </template>
         <!-- row button -->
-        <span></span>
-        <button class="btn-revert max-h-10 mx-1" @click="closeRaftCmdDialog">{{ $t('btn-cancel') }}</button>
-        <button class="btn-pri max-h-10 mx-1">{{ $t('btn-ok') }}</button>
+        <span class="col-span-2"></span>
+        <button class="btn-revert max-h-10 mx-1" @click="closeRaftCmdDialog">{{ $t('btn-close') }}</button>
       </div>
     </template>
   </ModalTemplate>
@@ -88,7 +92,7 @@ let slots: { [key: string]: SlotsInfo } = {}
 const slotRanges = ref<SlotRange[]>([])
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
-const migrateReq = ref<MetaMigrateReq>({srcServerId: "", destServerId: "", slots: []})
+const migrateReq = ref<MetaMigrateReq>({srcServerId: "", destServerId: "", slots: [], slotsStr:""})
 const openMigrateDialog = ref(false)
 const selectedRaftMaster = ref("")
 const invitedServId = ref("")
@@ -138,11 +142,19 @@ function getSlaves(masterId: string) {
 }
 
 function leaveCluster(servId: string) {
-
+  api.metadata.leaveCluster(servId).then(() => {
+    useToast().success(t('req-success'))
+  }).catch((e: Error) => {
+    useToast().error(e.message)
+  })
 }
 
 function joinCluster(masterId: string, servId: string) {
-
+  api.metadata.joinLeader(masterId, servId).then(() => {
+    useToast().success(t('req-success'))
+  }).catch((e: Error) => {
+    useToast().error(e.message)
+  })
 }
 
 function closeMigrateDialog() {
@@ -191,6 +203,15 @@ function getSlotsDetail() {
 }
 
 function startMigrate() {
+  if (migrateReq.value.srcServerId == migrateReq.value.destServerId) {
+    formErrMsg.value = t('do-not-choose-same-id')
+    return
+  }
+  if (!/^(\d+-\d+,?)+$/.test(migrateReq.value.slotsStr)) {
+    formErrMsg.value = t('err-format-of-slots')
+    return;
+  }
+  migrateReq.value.slots = migrateReq.value.slotsStr.split(",")
   api.metadata.startMigrate(migrateReq.value)
       .catch((err: Error) => {
         formErrMsg.value = err.message
@@ -211,6 +232,7 @@ onBeforeMount(() => {
 .text-input {
   @apply block appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm
 }
+
 .text-input-sm {
   @apply block appearance-none rounded-md border border-gray-300 px-2 py-1 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 text-sm
 }
@@ -233,10 +255,12 @@ en:
   start-migrate: "Migration"
   tool-box: 'Tool Box'
   raft-cmd: 'Cluster Cmd'
-  select-master: 'Select master'
+  select-master: 'Select leader'
   remove: 'Leave'
   invite: 'Invite'
   input-serv-id: 'Please input server id'
+  do-not-choose-same-id: 'Do not choose same server id'
+  err-format-of-slots: 'Err format of slots'
 zh:
   migration: '数据迁移'
   src-server: '源服务器'
@@ -249,4 +273,6 @@ zh:
   remove: '脱离'
   invite: '加入'
   input-serv-id: '请输入 server id'
+  do-not-choose-same-id: '请勿选择相同的 server id'
+  err-format-of-slots: 'slots 格式有误'
 </i18n>
