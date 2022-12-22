@@ -43,6 +43,14 @@ func init() {
 			}
 		case "peers":
 			peers()
+		case "leave":
+			leaveCluster()
+		case "demote_voter":
+			if len(args) < 4 {
+				fmt.Println("demote_voter [server_id] [prev_index]")
+				return
+			}
+			demoteVoter(args[2:])
 		default:
 			fmt.Printf("no such command %s\n", args[1])
 		}
@@ -55,10 +63,6 @@ func getClient() (pb.RaftCmdClient, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-	// if cc.GetState() != connectivity.Ready {
-	// 	fmt.Println("connect to port " + port + " fail")
-	// 	return nil, errors.New("connect fail")
-	// }
 	return pb.NewRaftCmdClient(cc), nil
 }
 
@@ -145,6 +149,35 @@ func peers() {
 		return
 	}
 	resp, err := cli.Peers(context.Background(), &pb.EmptyReq{})
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("success: %v, message: %s\n", resp.Success, resp.Message)
+	}
+}
+
+func leaveCluster() {
+	cli, err := getClient()
+	if err != nil {
+		return
+	}
+	resp, err := cli.LeaveCluster(context.Background(), &pb.EmptyReq{})
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("success: %v, message: %s\n", resp.Success, resp.Message)
+	}
+}
+
+func demoteVoter(args []string) {
+	cli, err := getClient()
+	if err != nil {
+		return
+	}
+	resp, err := cli.RemoveFollower(context.Background(), &pb.RemoveFollowerReq{
+		FollowerId: args[0],
+		PrevIndex:  util.ToUint64(args[1]),
+	})
 	if err != nil {
 		fmt.Println(err)
 	} else {
