@@ -4,6 +4,7 @@ import (
 	"common/logs"
 	"common/response"
 	"common/util"
+	"compress/gzip"
 	"io"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
@@ -97,7 +98,13 @@ func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
 }
 
 func (f *fsm) Restore(snapshot io.ReadCloser) (err error) {
-	return f.repo.Restore(snapshot)
+	defer snapshot.Close()
+	gzipRd, err := gzip.NewReader(snapshot)
+	if err != nil {
+		return err
+	}
+	defer gzipRd.Close()
+	return f.repo.Restore(gzipRd)
 }
 
 type snapshot struct {
@@ -105,10 +112,12 @@ type snapshot struct {
 }
 
 func (s *snapshot) Persist(sink raft.SnapshotSink) error {
-	if _, err := s.WriteTo(sink); err != nil {
+	gzipWt := gzip.NewWriter(sink)
+	if _, err := s.WriteTo(gzipWt); err != nil {
 		log.Error(err)
 		return sink.Cancel()
 	}
+	util.LogErr(gzipWt.Close())
 	return sink.Close()
 }
 
