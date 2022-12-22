@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	RootBucketName = "goodfs.metadata"
+	RootBucketName = "go.dfs.metadata.root"
 	NestPrefix     = "nest_"
 	Sep            = "."
 )
