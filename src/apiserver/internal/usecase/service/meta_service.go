@@ -22,7 +22,7 @@ func setAlgoInfo(ver *entity.Version) {
 	ver.DataShards = pool.Config.Rs.DataShards
 	ver.ParityShards = pool.Config.Rs.ParityShards
 	ver.ShardSize = pool.Config.Rs.BlockPerShard
-	ver.EcAlgo = entity.ECReedSolomon
+	ver.StoreStrategy = entity.ECReedSolomon
 }
 
 func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"apiserver/config"
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/componet/selector"
 	"apiserver/internal/usecase/logic"
@@ -16,6 +17,7 @@ import (
 
 type RSGetStream struct {
 	*rsDecoder
+	rsCfg config.RsConfig
 }
 
 type provideStream struct {
@@ -48,10 +50,10 @@ func provideGetStream(hash string, locates []string) <-chan *provideStream {
 	return respChan
 }
 
-func NewRSGetStream(size int64, hash string, locates []string) (*RSGetStream, error) {
-	readers := make([]io.Reader, global.Config.Rs.AllShards())
-	writers := make([]io.Writer, global.Config.Rs.AllShards())
-	dsNum := int64(global.Config.Rs.DataShards)
+func NewRSGetStream(size int64, hash string, locates []string, rsCfg *config.RsConfig) (*RSGetStream, error) {
+	readers := make([]io.Reader, rsCfg.AllShards())
+	writers := make([]io.Writer, rsCfg.AllShards())
+	dsNum := int64(rsCfg.DataShards)
 	perSize := (size + dsNum - 1) / dsNum
 	lb := selector.IPSelector{Selector: global.Balancer, IPs: logic.NewDiscovery().GetDataServers()}
 	var e error
@@ -70,8 +72,8 @@ func NewRSGetStream(size int64, hash string, locates []string) (*RSGetStream, er
 			readers[r.index] = r.stream
 		}
 	}
-	dec := NewDecoder(readers, writers, size)
-	return &RSGetStream{dec}, e
+	dec := NewDecoder(readers, writers, size, rsCfg)
+	return &RSGetStream{dec, *rsCfg}, e
 }
 
 func (g *RSGetStream) Seek(offset int64, whence int) (int64, error) {
@@ -83,7 +85,7 @@ func (g *RSGetStream) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	//读取offset长度的数据，丢弃于内存
-	length := int64(global.Config.Rs.BlockSize())
+	length := int64(g.rsCfg.BlockSize())
 	buf := bytes.NewBuffer(make([]byte, length))
 	for offset > 0 {
 		if length > offset {
@@ -103,15 +105,15 @@ func (g *RSGetStream) Close() error {
 	wg := util.NewDoneGroup()
 	defer wg.Close()
 	for _, w := range g.writers {
-		if util.InstanceOf[Commiter](w) {
+		if util.InstanceOf[Committer](w) {
 			wg.Todo()
-			go func(cm Commiter) {
+			go func(cm Committer) {
 				defer graceful.Recover()
 				defer wg.Done()
 				if e := cm.Commit(true); e != nil {
 					wg.Error(e)
 				}
-			}(w.(Commiter))
+			}(w.(Committer))
 		}
 	}
 	return wg.WaitUntilError()

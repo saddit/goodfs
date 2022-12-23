@@ -1,7 +1,7 @@
 package service
 
 import (
-	global "apiserver/internal/usecase/pool"
+	"apiserver/config"
 	"io"
 
 	"github.com/klauspost/reedsolomon"
@@ -15,15 +15,17 @@ type rsDecoder struct {
 	cache     []byte
 	cacheSize int
 	total     int64
+	rsCfg     config.RsConfig
 }
 
-func NewDecoder(readers []io.Reader, writes []io.Writer, size int64) *rsDecoder {
-	enc, _ := reedsolomon.New(global.Config.Rs.DataShards, global.Config.Rs.ParityShards)
+func NewDecoder(readers []io.Reader, writes []io.Writer, size int64, rsCfg *config.RsConfig) *rsDecoder {
+	enc, _ := reedsolomon.New(rsCfg.DataShards, rsCfg.ParityShards)
 	return &rsDecoder{
 		readers: readers,
 		writers: writes,
 		enc:     enc,
 		size:    size,
+		rsCfg:   *rsCfg,
 	}
 }
 
@@ -47,14 +49,14 @@ func (d *rsDecoder) getData() error {
 	if d.total == d.size {
 		return io.EOF
 	}
-	shards := make([][]byte, global.Config.Rs.AllShards())
+	shards := make([][]byte, d.rsCfg.AllShards())
 	for i := range shards {
 		if d.readers[i] != nil {
-			shards[i] = make([]byte, global.Config.Rs.BlockPerShard)
+			shards[i] = make([]byte, d.rsCfg.BlockPerShard)
 			n, e := io.ReadFull(d.readers[i], shards[i])
 			if e != nil && e != io.EOF && e != io.ErrUnexpectedEOF {
 				shards[i] = nil
-			} else if n != global.Config.Rs.BlockPerShard {
+			} else if n != d.rsCfg.BlockPerShard {
 				shards[i] = shards[i][:n]
 			}
 		}
@@ -71,7 +73,7 @@ func (d *rsDecoder) getData() error {
 		}
 	}
 	//合并shard
-	for i := 0; i < global.Config.Rs.DataShards; i++ {
+	for i := 0; i < d.rsCfg.DataShards; i++ {
 		shardSize := int64(len(shards[i]))
 		if d.total+shardSize > d.size {
 			shardSize -= d.total + shardSize - d.size

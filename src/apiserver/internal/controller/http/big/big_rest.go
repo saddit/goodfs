@@ -41,7 +41,8 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		response.ServiceUnavailableMsg("no available servers", g)
 		return
 	}
-	stream, e := service.NewRSResumablePutStream(ips, req.Name, req.Hash, req.Size)
+	// TODO 生成元数据 记录对象配置
+	stream, e := service.NewRSResumablePutStream(ips, req.Name, req.Hash, req.Size, &pool.Config.Rs)
 	if e != nil {
 		response.FailErr(e, g)
 		return
@@ -55,7 +56,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 //Head 大文件已上传大小
 func (bc *BigObjectsController) Head(g *gin.Context) {
 	token, _ := url.PathUnescape(g.Param("token"))
-	stream, e := service.NewRSResumablePutStreamFromToken(token)
+	stream, e := service.NewRSResumablePutStreamFromToken(token, &pool.Config.Rs)
 	if e != nil {
 		response.BadRequestErr(e, g)
 		return
@@ -78,7 +79,10 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		response.BadRequestErr(err, g)
 		return
 	}
-	stream, err := service.NewRSResumablePutStreamFromToken(req.Token)
+	//FIXME: rs config 应从元数据中获取，若服务器配置发送改变，则断点续传发生异常
+	// Perf: 借助缓存可避免多次查询元数据集群
+	rsConfig := &pool.Config.Rs
+	stream, err := service.NewRSResumablePutStreamFromToken(req.Token, rsConfig)
 	if err != nil {
 		response.BadRequestErr(err, g)
 		return
@@ -89,7 +93,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		response.Exec(g).Status(http.StatusRequestedRangeNotSatisfiable).Abort()
 		return
 	}
-	bufSize := int64(pool.Config.Rs.BlockSize())
+	bufSize := int64(rsConfig.BlockSize())
 	for {
 		n, err := io.CopyN(stream, g.Request.Body, bufSize)
 		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
@@ -113,8 +117,10 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		if curSize != stream.Size {
 			continue
 		}
+		// 上传完成 校验签名
 		if pool.Config.Checksum {
-			getStream, err := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates)
+			//FIXME: rs config 应从元数据中获取
+			getStream, err := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates, &pool.Config.Rs)
 			if err != nil {
 				response.FailErr(err, g)
 				return
@@ -128,10 +134,12 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 				return
 			}
 		}
+		// 成功上传
 		if err = stream.Commit(true); err != nil {
 			response.FailErr(err, g)
 			return
 		}
+		// 更新元数据
 		verNum, err := bc.metaService.SaveMetadata(&entity.Metadata{
 			Name: stream.Name,
 			Versions: []*entity.Version{{

@@ -201,10 +201,10 @@ func (z *Version) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "Ts")
 				return
 			}
-		case "ec_algo":
-			z.EcAlgo, err = dc.ReadInt8()
+		case "store_strategy":
+			z.StoreStrategy, err = dc.ReadInt8()
 			if err != nil {
-				err = msgp.WrapError(err, "EcAlgo")
+				err = msgp.WrapError(err, "StoreStrategy")
 				return
 			}
 		case "data_shards":
@@ -298,14 +298,14 @@ func (z *Version) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Ts")
 		return
 	}
-	// write "ec_algo"
-	err = en.Append(0xa7, 0x65, 0x63, 0x5f, 0x61, 0x6c, 0x67, 0x6f)
+	// write "store_strategy"
+	err = en.Append(0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
 	if err != nil {
 		return
 	}
-	err = en.WriteInt8(z.EcAlgo)
+	err = en.WriteInt8(z.StoreStrategy)
 	if err != nil {
-		err = msgp.WrapError(err, "EcAlgo")
+		err = msgp.WrapError(err, "StoreStrategy")
 		return
 	}
 	// write "data_shards"
@@ -374,9 +374,9 @@ func (z *Version) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "ts"
 	o = append(o, 0xa2, 0x74, 0x73)
 	o = msgp.AppendInt64(o, z.Ts)
-	// string "ec_algo"
-	o = append(o, 0xa7, 0x65, 0x63, 0x5f, 0x61, 0x6c, 0x67, 0x6f)
-	o = msgp.AppendInt8(o, z.EcAlgo)
+	// string "store_strategy"
+	o = append(o, 0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
+	o = msgp.AppendInt8(o, z.StoreStrategy)
 	// string "data_shards"
 	o = append(o, 0xab, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x73, 0x68, 0x61, 0x72, 0x64, 0x73)
 	o = msgp.AppendInt32(o, z.DataShards)
@@ -437,10 +437,10 @@ func (z *Version) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "Ts")
 				return
 			}
-		case "ec_algo":
-			z.EcAlgo, bts, err = msgp.ReadInt8Bytes(bts)
+		case "store_strategy":
+			z.StoreStrategy, bts, err = msgp.ReadInt8Bytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "EcAlgo")
+				err = msgp.WrapError(err, "StoreStrategy")
 				return
 			}
 		case "data_shards":
@@ -494,7 +494,7 @@ func (z *Version) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Version) Msgsize() (s int) {
-	s = 1 + 9 + msgp.Uint64Size + 5 + msgp.StringPrefixSize + len(z.Hash) + 5 + msgp.Int64Size + 3 + msgp.Int64Size + 8 + msgp.Int8Size + 12 + msgp.Int32Size + 14 + msgp.Int32Size + 11 + msgp.Int64Size + 7 + msgp.ArrayHeaderSize
+	s = 1 + 9 + msgp.Uint64Size + 5 + msgp.StringPrefixSize + len(z.Hash) + 5 + msgp.Int64Size + 3 + msgp.Int64Size + 15 + msgp.Int8Size + 12 + msgp.Int32Size + 14 + msgp.Int32Size + 11 + msgp.Int64Size + 7 + msgp.ArrayHeaderSize
 	for za0001 := range z.Locate {
 		s += msgp.StringPrefixSize + len(z.Locate[za0001])
 	}

@@ -2,16 +2,16 @@ package service
 
 import "io"
 
-type Commiter interface {
+type Committer interface {
 	Commit(bool) error
 }
 
-type WriteCloseCommiter interface {
+type WriteCloseCommitter interface {
 	io.WriteCloser
-	Commiter
+	Committer
 }
 
-type WriteCommiter interface {
+type WriteCommitter interface {
 	io.Writer
-	Commiter
+	Committer
 }

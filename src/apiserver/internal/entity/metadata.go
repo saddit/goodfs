@@ -11,10 +11,11 @@ const (
 	VerModeNot VerMode = -1
 )
 
-type ErasureCodeAlgo int8
+type ObjectStrategy int8
 
 const (
-	ECReedSolomon ErasureCodeAlgo = 1 << iota
+	ECReedSolomon ObjectStrategy = 1 << iota
+	MultiReplication
 )
 
 type Metadata struct {
@@ -32,13 +33,13 @@ func (m *Metadata) LastVersion() *Version {
 }
 
 type Version struct {
-	Sequence     int32           `json:"sequence"`
-	Hash         string          `json:"hash"`
-	Size         int64           `json:"size"`
-	Ts           int64           `json:"ts"`
-	EcAlgo       ErasureCodeAlgo `json:"ecAlgo"`
-	DataShards   int             `json:"dataShards"`
-	ParityShards int             `json:"parityShards"`
-	ShardSize    int             `json:"shardSize"`
-	Locate       []string        `json:"locate"`
+	Sequence      int32          `json:"sequence"`
+	Hash          string         `json:"hash"`
+	Size          int64          `json:"size"`
+	Ts            int64          `json:"ts"`
+	StoreStrategy ObjectStrategy `json:"storeStrategy"`
+	DataShards    int            `json:"dataShards"`
+	ParityShards  int            `json:"parityShards"`
+	ShardSize     int            `json:"shardSize"`
+	Locate        []string       `json:"locate"`
 }

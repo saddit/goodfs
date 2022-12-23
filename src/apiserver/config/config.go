@@ -22,6 +22,7 @@ type Config struct {
 	LogLevel       logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	Etcd           etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	Rs             RsConfig        `yaml:"rs" env-prefix:"RS"`
+	Object         ObjectConfig    `yaml:"object" env-prefix:"OBJECT"`
 	Discovery      DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 	Registry       registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 	Auth           auth.Config     `yaml:"auth" env-prefix:"AUTH"`
@@ -30,6 +31,17 @@ type Config struct {
 type DiscoveryConfig struct {
 	DataServName string `yaml:"data-serv-name" env:"DATA_SERV_NAME" env-default:"objectserver"`
 	MetaServName string `yaml:"meta-serv-name" env:"META_SERV_NAME" env-default:"metaserver"`
+}
+
+type ObjectConfig struct {
+	ReedSolomon RsConfig          `yaml:"reed-solomon" env-prefix:"REED_SOLOMON"`
+	Replication ReplicationConfig `yaml:"replication" env-prefix:"REPLICATION"`
+}
+
+type ReplicationConfig struct {
+	CopiesCount       int     `yaml:"copies-count" env:"COPIES_COUNT" env-default:"3"`
+	LossToleranceRate float32 `yaml:"loss-tolerance-rate" env:"LOSS_TOLERANCE_RATE" env-default:"2"`
+	CopyAsync         bool    `yaml:"copy-async" env:"COPY_ASYNC" env-default:"false"`
 }
 
 type RsConfig struct {

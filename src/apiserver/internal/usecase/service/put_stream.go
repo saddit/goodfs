@@ -80,7 +80,10 @@ func (p *PutStream) Commit(ok bool) error {
 	}
 
 	if !ok {
-		go DeleteTmpObject(p.Locate, p.tmpId)
+		go func() {
+			defer graceful.Recover()
+			DeleteTmpObject(p.Locate, p.tmpId)
+		}()
 		return nil
 	}
 
