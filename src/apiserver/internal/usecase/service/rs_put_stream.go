@@ -1,7 +1,7 @@
 package service
 
 import (
-	"apiserver/internal/usecase/pool"
+	"apiserver/config"
 	"common/graceful"
 	"common/util"
 	"fmt"
@@ -13,14 +13,13 @@ type RSPutStream struct {
 	Locates []string
 }
 
-func NewRSPutStream(ips []string, hash string, size int64) (*RSPutStream, error) {
-	rs := pool.Config.Rs
-	if len(ips) < rs.AllShards() {
-		return nil, fmt.Errorf("dataServers ip number mismatch %v", rs.AllShards())
+func NewRSPutStream(ips []string, hash string, size int64, rsCfg *config.RsConfig) (*RSPutStream, error) {
+	if len(ips) < rsCfg.AllShards() {
+		return nil, fmt.Errorf("dataServers ip number mismatch %v", rsCfg.AllShards())
 	}
-	ds := int64(rs.DataShards)
+	ds := int64(rsCfg.DataShards)
 	perShard := (size + ds - 1) / ds
-	writers := make([]io.WriteCloser, rs.AllShards())
+	writers := make([]io.WriteCloser, rsCfg.AllShards())
 	wg := util.NewDoneGroup()
 	for i := range writers {
 		wg.Todo()
@@ -38,16 +37,16 @@ func NewRSPutStream(ips []string, hash string, size int64) (*RSPutStream, error)
 	if e := wg.WaitUntilError(); e != nil {
 		return nil, e
 	}
-	enc := NewEncoder(writers)
+	enc := NewEncoder(writers, rsCfg)
 	return &RSPutStream{enc, ips}, nil
 }
 
-func newExistedRSPutStream(ips, ids []string, hash string) *RSPutStream {
+func newExistedRSPutStream(ips, ids []string, hash string, rsCfg *config.RsConfig) *RSPutStream {
 	writers := make([]io.WriteCloser, len(ids))
 	for i := range writers {
 		writers[i] = newExistedPutStream(ips[i], fmt.Sprintf("%s.%d", hash, i), ids[i])
 	}
-	return &RSPutStream{NewEncoder(writers), ips}
+	return &RSPutStream{NewEncoder(writers, rsCfg), ips}
 }
 
 func (p *RSPutStream) Commit(ok bool) error {
@@ -58,15 +57,15 @@ func (p *RSPutStream) Commit(ok bool) error {
 	wg := util.NewDoneGroup()
 	defer wg.Close()
 	for _, w := range p.writers {
-		if util.InstanceOf[Commiter](w) {
+		if util.InstanceOf[Committer](w) {
 			wg.Todo()
-			go func(cm Commiter) {
+			go func(cm Committer) {
 				defer graceful.Recover()
 				defer wg.Done()
 				if e := cm.Commit(ok); e != nil {
 					wg.Error(e)
 				}
-			}(w.(Commiter))
+			}(w.(Committer))
 		}
 	}
 	return wg.WaitUntilError()

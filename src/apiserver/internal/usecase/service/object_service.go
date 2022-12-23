@@ -108,10 +108,11 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (in
 
 func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 	//stream to store
-	stream, e := dataServerStream(req.FileName, size)
+	stream, locates, e := dataServerStream(req.FileName, size)
 	if e != nil {
 		return nil, e
 	}
+	defer stream.Close()
 
 	//digest validation
 	if pool.Config.Checksum {
@@ -137,11 +138,12 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 		logs.Std().Errorln(e)
 		return nil, ErrServiceUnavailable
 	}
-	return stream.Locates, e
+	return locates, e
 }
 
 func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
-	r, e := NewRSGetStream(ver.Size, ver.Hash, ver.Locate)
+	//TODO 兼容不同对象保存策略
+	r, e := NewRSGetStream(ver.Size, ver.Hash, ver.Locate, &pool.Config.Rs)
 	if e == ErrNeedUpdateMeta {
 		logs.Std().Debugf("data fix: need update meta %s verison %d", meta.Name, ver.Sequence)
 		e = o.metaService.UpdateVersion(meta.Name, ver)
@@ -149,10 +151,12 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 	return r, e
 }
 
-func dataServerStream(name string, size int64) (*RSPutStream, error) {
+func dataServerStream(name string, size int64) (WriteCloseCommitter, []string, error) {
 	ds := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
 	if len(ds) == 0 {
-		return nil, ErrServiceUnavailable
+		return nil, nil, ErrServiceUnavailable
 	}
-	return NewRSPutStream(ds, name, size)
+	//TODO 兼容不同对象保存策略
+	rsPut, err := NewRSPutStream(ds, name, size, &pool.Config.Rs)
+	return rsPut, ds, err
 }

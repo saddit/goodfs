@@ -9,13 +9,13 @@ type Metadata struct {
 }
 
 type Version struct {
-	Sequence     uint64   `json:"sequence" msg:"sequence"` //Sequence version number auto generated on saving
-	Hash         string   `json:"hash" msg:"hash" binding:"required"`
-	Size         int64    `json:"size" msg:"size" binding:"required"`
-	Ts           int64    `json:"ts" msg:"ts"`
-	EcAlgo       int8     `json:"ecAlgo" msg:"ec_algo" binding:"required"`
-	DataShards   int32    `json:"dataShards" msg:"data_shards" binding:"required"`
-	ParityShards int32    `json:"parityShards" msg:"parity_shards" binding:"required"`
-	ShardSize    int64    `json:"shardSize" msg:"shard_size" binding:"required"`
-	Locate       []string `json:"locate" msg:"locate" binding:"min=1"`
+	Sequence      uint64   `json:"sequence" msg:"sequence"` //Sequence version number auto generated on saving
+	Hash          string   `json:"hash" msg:"hash" binding:"required"`
+	Size          int64    `json:"size" msg:"size" binding:"required"`
+	Ts            int64    `json:"ts" msg:"ts"`
+	StoreStrategy int8     `json:"storeStrategy" msg:"store_strategy" binding:"required"`
+	DataShards    int32    `json:"dataShards" msg:"data_shards" binding:"required"`
+	ParityShards  int32    `json:"parityShards" msg:"parity_shards" binding:"required"`
+	ShardSize     int64    `json:"shardSize" msg:"shard_size" binding:"required"`
+	Locate        []string `json:"locate" msg:"locate" binding:"min=1"`
 }

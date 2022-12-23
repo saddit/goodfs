@@ -1,21 +1,33 @@
-port: 8090
-rpc-port: 4090
+port: "8090"
+rpc-port: "4090"
+log-level: ""
 data-dir: e:/file/temp/meta_server_0
-hash-slot:
-  slots: [ "0-16384" ]
-  prepare-timeout: 1m
 cluster:
   enable: false
   bootstrap: false
   group-id: raft-0
+  log-level: INFO
   store-dir: e:/file/temp/meta_server_raft_0
-  nodes: [ "meta-0,localhost:4090" ]
+  election-timeout: 900ms
+  heartbeat-timeout: 800ms
+  nodes:
+    - meta-0,localhost:4090
 registry:
   server-id: meta-0
-  group: "goodfs"
-  name: "metaserver"
+  group: goodfs
+  name: metaserver
+  interval: 5s
+  timeout: 3s
 etcd:
   endpoint:
     - pressed.top:2379
   username: root
   password: xianka
+hash-slot:
+  slots:
+    - 0-16384
+  prepare-timeout: 1m0s
+cache:
+  ttl: 1h0m0s
+  clean-interval: 1h0m0s
+  max-size: 128MB

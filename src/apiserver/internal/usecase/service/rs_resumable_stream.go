@@ -1,7 +1,7 @@
 package service
 
 import (
-	global "apiserver/internal/usecase/pool"
+	"apiserver/config"
 	"apiserver/internal/usecase/webapi"
 	"common/util"
 	"encoding/base64"
@@ -24,25 +24,25 @@ type RSResumablePutStream struct {
 }
 
 //NewRSResumablePutStreamFromToken 恢复一个断点续传
-func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, error) {
+func NewRSResumablePutStreamFromToken(token string, rsCfg *config.RsConfig) (*RSResumablePutStream, error) {
 	bt, e := base64.StdEncoding.DecodeString(token)
 	if e != nil {
 		return nil, e
 	}
 	var tk resumeToken
 	if ok := util.GobDecodeGen2(bt, &tk); ok {
-		return &RSResumablePutStream{newExistedRSPutStream(tk.Servers, tk.Ids, tk.Hash), &tk}, nil
+		return &RSResumablePutStream{newExistedRSPutStream(tk.Servers, tk.Ids, tk.Hash, rsCfg), &tk}, nil
 	}
 	return nil, fmt.Errorf("invalid token")
 }
 
 //NewRSResumablePutStream 开启新的断点续传
-func NewRSResumablePutStream(ips []string, name, hash string, size int64) (*RSResumablePutStream, error) {
-	putStream, e := NewRSPutStream(ips, hash, size)
+func NewRSResumablePutStream(ips []string, name, hash string, size int64, rsCfg *config.RsConfig) (*RSResumablePutStream, error) {
+	putStream, e := NewRSPutStream(ips, hash, size, rsCfg)
 	if e != nil {
 		return nil, e
 	}
-	ids := make([]string, global.Config.Rs.AllShards())
+	ids := make([]string, rsCfg.AllShards())
 	for i := range ids {
 		ids[i] = putStream.writers[i].(*PutStream).tmpId
 	}
@@ -65,7 +65,7 @@ func (p *RSResumablePutStream) CurrentSize() int64 {
 		return -1
 	}
 	//求乘积得到当前大小
-	size *= int64(global.Config.Rs.DataShards)
+	size *= int64(p.rsConfig.DataShards)
 	if size > p.Size {
 		return p.Size
 	}
