@@ -16,7 +16,7 @@ type Server struct {
 func NewHttpServer(addr string) *Server {
 	r := gin.Default()
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get, objects.SaveToCache)
-	//Deprecated
+	r.HEAD("/objects/:name", objects.Head)
 	r.PUT("/objects/:name", objects.SaveToCache, objects.Put, objects.RemoveCache)
 	r.DELETE("/objects/:name", objects.Delete, objects.RemoveCache)
 

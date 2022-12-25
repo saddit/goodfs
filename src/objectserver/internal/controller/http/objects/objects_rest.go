@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//Put Deprecated
 func Put(c *gin.Context) {
 	fileName := c.Param("name")
 	if err := service.Put(fileName, c.Request.Body); err != nil {
@@ -41,4 +40,13 @@ func Get(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+}
+
+func Head(c *gin.Context) {
+	fileName := c.Param("name")
+	if ok := service.Exist(fileName); ok {
+		c.Status(http.StatusOK)
+		return
+	}
+	c.Status(http.StatusNotFound)
 }

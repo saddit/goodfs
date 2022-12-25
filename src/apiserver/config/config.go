@@ -45,8 +45,12 @@ type ReplicationConfig struct {
 }
 
 func (rp *ReplicationConfig) AtLeastCopiesNum() int {
+	return rp.CopiesCount - rp.ToleranceLossNum()
+}
+
+func (rp *ReplicationConfig) ToleranceLossNum() int {
 	toleranceNum := rp.LossToleranceRate * float32(rp.CopiesCount)
-	return rp.CopiesCount - int(toleranceNum)
+	return int(toleranceNum)
 }
 
 type RsConfig struct {

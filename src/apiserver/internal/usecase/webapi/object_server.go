@@ -2,6 +2,9 @@ package webapi
 
 import (
 	"apiserver/internal/usecase/pool"
+	"common/logs"
+	"common/response"
+	"common/util"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,21 +12,19 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func DeleteTmpObject(locate, id string) {
 	req, _ := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
-	resp, e := pool.Http.Do(req)
-	if resp.StatusCode == http.StatusBadRequest {
-		if content, e := io.ReadAll(resp.Body); e == nil {
-			log.Errorf("patch temp object id=%v, return code=%v\n", id, string(content))
-		}
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		logs.Std().Error(err)
 	}
-	if e != nil || resp.StatusCode != http.StatusOK {
-		log.Println(e, resp.StatusCode)
+	content, err := io.ReadAll(resp.Body)
+	if err != nil {
+		content = util.StrToBytes(resp.Status)
 	}
+	logs.Std().Errorf("delete temp object id=%v, return: %v", id, string(content))
 }
 
 func PostTmpObject(ip, name string, size int64) (string, error) {
@@ -51,9 +52,11 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 		return e
 	}
 	if resp.StatusCode == http.StatusBadRequest {
-		if content, e := io.ReadAll(resp.Body); e == nil {
-			return fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			content = util.StrToBytes(resp.Status)
 		}
+		return fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("patch temp object id=%v, return code=%v", id, resp.Status)
@@ -71,9 +74,11 @@ func PutTmpObject(ip, id, name string) error {
 		return e
 	}
 	if resp.StatusCode == http.StatusBadRequest {
-		if content, e := io.ReadAll(resp.Body); e == nil {
-			return fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			content = util.StrToBytes(resp.Status)
 		}
+		return fmt.Errorf("put temp object id=%v, return content=%v", id, string(content))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("put temp object id=%v, return code=%v", id, resp.Status)
@@ -109,6 +114,39 @@ func HeadTmpObject(ip, id string) (int64, error) {
 
 func GetObject(ip, name string) (*http.Response, error) {
 	return pool.Http.Get(objectRest(ip, name))
+}
+
+func HeadObject(ip, id string) error {
+	resp, err := http.Head(objectRest(ip, id))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return response.NewError(http.StatusNotFound, "object not found")
+	}
+	return fmt.Errorf("requset %s: %s", resp.Request.URL, resp.Status)
+}
+
+func PutObject(ip, id string, body io.Reader) error {
+	req, _ := http.NewRequest(http.MethodPut, objectRest(ip, id), body)
+	resp, e := pool.Http.Do(req)
+	if e != nil {
+		return e
+	}
+	if resp.StatusCode == http.StatusBadRequest {
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			content = util.StrToBytes(resp.Status)
+		}
+		return fmt.Errorf("put object id=%v, return content=%v", id, string(content))
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("put object id=%v, return code=%v", id, resp.Status)
+	}
+	return nil
 }
 
 func objectRest(ip, id string) string {
