@@ -65,3 +65,11 @@ func (d Discovery) SelectDataServer(sel selector.Selector, size int) []string {
 	}
 	return serv
 }
+
+func (Discovery) NewIPSelector(ips []string) selector.IPSelector {
+	return selector.IPSelector{Selector: pool.Balancer, IPs: ips}
+}
+
+func (d Discovery) NewDataServSelector() selector.IPSelector {
+	return d.NewIPSelector(d.GetDataServers())
+}

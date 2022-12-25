@@ -3,9 +3,7 @@ package service
 import (
 	"apiserver/config"
 	"apiserver/internal/usecase"
-	"apiserver/internal/usecase/componet/selector"
 	"apiserver/internal/usecase/logic"
-	global "apiserver/internal/usecase/pool"
 	"bytes"
 	"common/graceful"
 	"common/logs"
@@ -55,7 +53,7 @@ func NewRSGetStream(size int64, hash string, locates []string, rsCfg *config.RsC
 	writers := make([]io.Writer, rsCfg.AllShards())
 	dsNum := int64(rsCfg.DataShards)
 	perSize := (size + dsNum - 1) / dsNum
-	lb := selector.IPSelector{Selector: global.Balancer, IPs: logic.NewDiscovery().GetDataServers()}
+	lb := logic.NewDiscovery().NewDataServSelector()
 	var e error
 	for r := range provideGetStream(hash, locates) {
 		if r.err != nil {
