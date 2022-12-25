@@ -45,6 +45,7 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 
 func PatchTmpObject(ip, id string, body io.Reader) error {
 	req, _ := http.NewRequest(http.MethodPatch, tempRest(ip, id), body)
+	keepAlive(req)
 	resp, e := pool.Http.Do(req)
 	if e != nil {
 		return e
@@ -64,6 +65,7 @@ func PutTmpObject(ip, id, name string) error {
 	form := make(url.Values)
 	form.Set("name", name)
 	req, _ := http.NewRequest(http.MethodPut, tempRest(ip, id), strings.NewReader(form.Encode()))
+	keepAlive(req)
 	resp, e := pool.Http.Do(req)
 	if e != nil {
 		return e
@@ -115,4 +117,8 @@ func objectRest(ip, id string) string {
 
 func tempRest(ip, id string) string {
 	return fmt.Sprintf("http://%s/temp/%s", ip, id)
+}
+
+func keepAlive(req *http.Request) {
+	req.Header.Set("Keep-Alive", "timeout=10, max=10000")
 }

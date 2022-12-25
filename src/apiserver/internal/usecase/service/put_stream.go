@@ -14,9 +14,9 @@ type PutStream struct {
 	Locate    string
 	name      string
 	tmpId     string
-	writer    *io.PipeWriter
 	errorChan chan error
-	closed    atomic.Value
+	writer    *io.PipeWriter
+	closed    *atomic.Value
 }
 
 //NewPutStream IO: 发送Post请求到数据服务器
@@ -26,7 +26,7 @@ func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 	if e != nil {
 		return nil, e
 	}
-	flag := atomic.Value{}
+	flag := &atomic.Value{}
 	flag.Store(false)
 	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id, closed: flag}
 	return res, nil
@@ -35,7 +35,7 @@ func NewPutStream(ip, name string, size int64) (*PutStream, error) {
 //newExistedPutStream 不发送Post请求
 func newExistedPutStream(ip, name, id string) *PutStream {
 	c := make(chan error, 1)
-	flag := atomic.Value{}
+	flag := &atomic.Value{}
 	flag.Store(false)
 	res := &PutStream{errorChan: c, Locate: ip, name: name, tmpId: id, closed: flag}
 	return res
