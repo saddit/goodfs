@@ -19,7 +19,7 @@ func NewEncoder(wrs []io.WriteCloser, rsCfg *config.RsConfig) *rsEncoder {
 	return &rsEncoder{
 		writers:  wrs,
 		enc:      enc,
-		cache:    nil,
+		cache:    make([]byte, 0, rsCfg.BlockSize()),
 		rsConfig: *rsCfg,
 	}
 }
@@ -37,7 +37,7 @@ func (e *rsEncoder) Close() error {
 func (e *rsEncoder) Write(bt []byte) (int, error) {
 	length := len(bt)
 	cur := 0
-	for length != 0 {
+	for length > 0 {
 		next := e.rsConfig.BlockSize() - len(e.cache)
 		if next > length {
 			next = length
@@ -58,7 +58,7 @@ func (e *rsEncoder) Flush() error {
 	if len(e.cache) == 0 {
 		return nil
 	}
-	defer func() { e.cache = make([]byte, 0, e.rsConfig.BlockSize()) }()
+	defer func() { e.cache = e.cache[:0] }()
 
 	shards, err := e.enc.Split(e.cache)
 	if err != nil {
