@@ -40,8 +40,13 @@ type ObjectConfig struct {
 
 type ReplicationConfig struct {
 	CopiesCount       int     `yaml:"copies-count" env:"COPIES_COUNT" env-default:"3"`
-	LossToleranceRate float32 `yaml:"loss-tolerance-rate" env:"LOSS_TOLERANCE_RATE" env-default:"2"`
+	LossToleranceRate float32 `yaml:"loss-tolerance-rate" env:"LOSS_TOLERANCE_RATE" env-default:"0"`
 	CopyAsync         bool    `yaml:"copy-async" env:"COPY_ASYNC" env-default:"false"`
+}
+
+func (rp *ReplicationConfig) AtLeastCopiesNum() int {
+	toleranceNum := rp.LossToleranceRate * float32(rp.CopiesCount)
+	return rp.CopiesCount - int(toleranceNum)
 }
 
 type RsConfig struct {
