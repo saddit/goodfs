@@ -55,8 +55,8 @@ func Put(fileName string, fileStream io.Reader) error {
 	return nil
 }
 
-func Get(name string, writer io.Writer) error {
-	if err := GetFile(filepath.Join(global.Config.StoragePath, name), writer); err != nil {
+func Get(name string, offset int64, writer io.Writer) error {
+	if err := GetFile(filepath.Join(global.Config.StoragePath, name), offset, writer); err != nil {
 		return err
 	}
 	MarkExist(name)
@@ -64,15 +64,20 @@ func Get(name string, writer io.Writer) error {
 }
 
 func GetTemp(name string, writer io.Writer) error {
-	return GetFile(filepath.Join(global.Config.TempPath, name), writer)
+	return GetFile(filepath.Join(global.Config.TempPath, name), 0, writer)
 }
 
-func GetFile(fullPath string, writer io.Writer) error {
+func GetFile(fullPath string, offset int64, writer io.Writer) error {
 	f, e := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, 0)
 	if e != nil {
 		return e
 	}
 	defer f.Close()
+	if offset > 0 {
+		if _, err := f.Seek(offset, io.SeekCurrent); err != nil {
+			return err
+		}
+	}
 	if _, e = io.Copy(writer, f); e != nil {
 		return e
 	}

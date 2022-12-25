@@ -89,7 +89,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 	}
 	defer stream.Close()
 	curSize := stream.CurrentSize()
-	if curSize != req.Range.Value().First {
+	if curSize != req.Range.FirstBytes().First {
 		response.Exec(g).Status(http.StatusRequestedRangeNotSatisfiable).Abort()
 		return
 	}

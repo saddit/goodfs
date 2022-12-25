@@ -9,12 +9,12 @@ import (
 )
 
 type CopyGetStream struct {
-	reader io.ReadCloser
+	reader io.ReadSeekCloser
 	writer io.WriteCloser
 }
 
 func NewCopyGetStream(hash string, locates []string, rpCfg config.ReplicationConfig) (*CopyGetStream, error) {
-	var getStream io.ReadCloser
+	var getStream io.ReadSeekCloser
 	var err error
 	var failIds []string
 	for idx, loc := range locates {
@@ -51,7 +51,7 @@ func (c *CopyGetStream) Read(p []byte) (n int, err error) {
 }
 
 func (c *CopyGetStream) Seek(offset int64, whence int) (int64, error) {
-	panic("not support yet")
+	return c.reader.Seek(offset, whence)
 }
 
 func (c *CopyGetStream) Close() (err error) {

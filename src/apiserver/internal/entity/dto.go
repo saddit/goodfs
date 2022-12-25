@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"common/request"
 	"common/response"
 	"fmt"
 
@@ -29,7 +30,7 @@ type PutReq struct {
 type GetReq struct {
 	Name    string `uri:"name" binding:"required"`
 	Version int32  `form:"version" binding:"min=0"`
-	Range   Range
+	Range   request.Range
 }
 
 type BigPostReq struct {
@@ -41,7 +42,7 @@ type BigPostReq struct {
 
 type BigPutReq struct {
 	Token string `uri:"token" binding:"required"`
-	Range Range
+	Range request.Range
 }
 
 func (b *BigPostReq) Bind(c *gin.Context) error {
@@ -60,9 +61,7 @@ func (bigPut *BigPutReq) Bind(c *gin.Context) error {
 		return err
 	}
 	if rangeStr := c.GetHeader("Range"); len(rangeStr) > 0 {
-		var r Range
-		if ok := r.convertFrom(rangeStr); ok {
-			bigPut.Range = r
+		if ok := bigPut.Range.ConvertFrom(rangeStr); ok {
 			return nil
 		}
 	}
@@ -82,11 +81,8 @@ func (g *GetReq) Bind(c *gin.Context) error {
 		return err
 	}
 	if rangeStr := c.GetHeader("Range"); len(rangeStr) > 0 {
-		var r Range
-		if ok := r.convertFrom(rangeStr); ok {
-			g.Range = r
-		} else {
-			return response.NewError(400, "Range format error")
+		if ok := g.Range.ConvertFrom(rangeStr); !ok {
+			return response.NewError(400, "header 'Range' format error")
 		}
 	}
 	return nil

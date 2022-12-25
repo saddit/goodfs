@@ -263,6 +263,9 @@ func GetServerIP() string {
 }
 
 func ToInt(str string) int {
+	if str == "" {
+		return 0
+	}
 	i, err := strconv.Atoi(str)
 	if err != nil {
 		logs.Std().Error(err)
@@ -270,7 +273,21 @@ func ToInt(str string) int {
 	return i
 }
 
+func ToInt64(str string) int64 {
+	if str == "" {
+		return 0
+	}
+	i, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		logs.Std().Error(err)
+	}
+	return i
+}
+
 func ToUint64(str string) uint64 {
+	if str == "" {
+		return 0
+	}
 	i, err := strconv.ParseUint(str, 10, 64)
 	if err != nil {
 		logs.Std().Error(err)

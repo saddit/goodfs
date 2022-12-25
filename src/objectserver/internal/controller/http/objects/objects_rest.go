@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"common/request"
 	"log"
 	"net/http"
 	"objectserver/internal/usecase/service"
@@ -33,7 +34,12 @@ func Delete(c *gin.Context) {
 
 func Get(c *gin.Context) {
 	fileName := c.Param("name")
-	e := service.Get(fileName, c.Writer)
+	var rg request.Range
+	var offset int64
+	if ok := rg.ConvertFrom(c.GetHeader("Range")); ok {
+		offset = rg.FirstBytes().First
+	}
+	e := service.Get(fileName, offset, c.Writer)
 	if e != nil {
 		log.Println(e)
 		c.AbortWithStatus(http.StatusNotFound)

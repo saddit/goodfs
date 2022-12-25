@@ -11,11 +11,16 @@ type GetStream struct {
 	reader io.ReadCloser
 	Locate string
 	name   string
+	offset int
 }
 
 //NewGetStream IO: Head object
 func NewGetStream(ip, name string) (*GetStream, error) {
-	stream := &GetStream{nil, ip, name}
+	stream := &GetStream{
+		reader: nil,
+		Locate: ip,
+		name:   name,
+	}
 	return stream, stream.CheckStat()
 }
 
@@ -24,7 +29,7 @@ func (g *GetStream) CheckStat() error {
 }
 
 func (g *GetStream) request() error {
-	resp, err := webapi.GetObject(g.Locate, g.name)
+	resp, err := webapi.GetObject(g.Locate, g.name, g.offset)
 	if err != nil {
 		return err
 	}
@@ -33,6 +38,11 @@ func (g *GetStream) request() error {
 	}
 	g.reader = resp.Body
 	return nil
+}
+
+func (g *GetStream) Seek(offset int64, whence int) (int64, error) {
+	g.offset = int(offset)
+	return int64(whence) + offset, nil
 }
 
 func (g *GetStream) Read(bt []byte) (int, error) {
