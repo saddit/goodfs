@@ -2,6 +2,7 @@ package service
 
 import (
 	"apiserver/config"
+	"common/util"
 	"github.com/klauspost/reedsolomon"
 	"io"
 )
@@ -43,9 +44,8 @@ func (e *rsEncoder) Write(bt []byte) (int, error) {
 		}
 		e.cache = append(e.cache, bt[cur:cur+next]...)
 		if len(e.cache) == e.rsConfig.BlockSize() {
-			i, err := e.Flush()
-			if err != nil {
-				return i, err
+			if err := e.Flush(); err != nil {
+				return cur, err
 			}
 		}
 		cur += next
@@ -54,28 +54,32 @@ func (e *rsEncoder) Write(bt []byte) (int, error) {
 	return len(bt), nil
 }
 
-func (e *rsEncoder) Flush() (int, error) {
+func (e *rsEncoder) Flush() error {
 	if len(e.cache) == 0 {
-		return 0, nil
+		return nil
 	}
 	defer func() { e.cache = make([]byte, 0, e.rsConfig.BlockSize()) }()
 
 	shards, err := e.enc.Split(e.cache)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	err = e.enc.Encode(shards)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	l := 0
+	dg := util.NewDoneGroup()
+	defer dg.Close()
 	for i, v := range shards {
-		j, err := e.writers[i].Write(v)
-		l += j
-		if err != nil {
-			return l, err
-		}
+		dg.Todo()
+		go func() {
+			defer dg.Done()
+			if _, err := e.writers[i].Write(v); err != nil {
+				dg.Error(err)
+				return
+			}
+		}()
 	}
-	return l, nil
+	return dg.WaitUntilError()
 }

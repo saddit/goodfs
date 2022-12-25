@@ -79,7 +79,7 @@ func (d *DoneGroup) WaitDone() <-chan struct{} {
 	return ch
 }
 
-// Close close the error receive channel. Safe to call multi goroutine and times
+// Close closing the error receive channel. Safe to call multi goroutine and times
 func (d *DoneGroup) Close() {
 	if d.closed.CAS(false, true) && d.ec != nil {
 		close(d.ec)
