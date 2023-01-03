@@ -45,7 +45,7 @@ func (p *PutStream) Close() error {
 
 func (p *PutStream) Write(b []byte) (n int, err error) {
 	if err := PatchTmpObject(p.Locate, p.tmpId, bytes.NewBuffer(b)); err != nil {
-		return 0, nil
+		return 0, err
 	}
 	return len(b), nil
 }

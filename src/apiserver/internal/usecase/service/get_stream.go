@@ -12,14 +12,16 @@ type GetStream struct {
 	Locate string
 	name   string
 	offset int
+	size   int64
 }
 
-//NewGetStream IO: Head object
-func NewGetStream(ip, name string) (*GetStream, error) {
+// NewGetStream IO: Head object
+func NewGetStream(ip, name string, size int64) (*GetStream, error) {
 	stream := &GetStream{
 		reader: nil,
 		Locate: ip,
 		name:   name,
+		size:   size,
 	}
 	return stream, stream.CheckStat()
 }
@@ -29,7 +31,7 @@ func (g *GetStream) CheckStat() error {
 }
 
 func (g *GetStream) request() error {
-	resp, err := webapi.GetObject(g.Locate, g.name, g.offset)
+	resp, err := webapi.GetObject(g.Locate, g.name, g.offset, g.size)
 	if err != nil {
 		return err
 	}

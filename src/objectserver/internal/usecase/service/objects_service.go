@@ -55,20 +55,20 @@ func Put(fileName string, fileStream io.Reader) error {
 	return nil
 }
 
-func Get(name string, offset int64, writer io.Writer) error {
-	if err := GetFile(filepath.Join(global.Config.StoragePath, name), offset, writer); err != nil {
+func Get(name string, offset, size int64, writer io.Writer) error {
+	if err := GetFile(filepath.Join(global.Config.StoragePath, name), offset, size, writer); err != nil {
 		return err
 	}
 	MarkExist(name)
 	return nil
 }
 
-func GetTemp(name string, writer io.Writer) error {
-	return GetFile(filepath.Join(global.Config.TempPath, name), 0, writer)
+func GetTemp(name string, size int64, writer io.Writer) error {
+	return GetFile(filepath.Join(global.Config.TempPath, name), 0, size, writer)
 }
 
-func GetFile(fullPath string, offset int64, writer io.Writer) error {
-	f, e := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, 0)
+func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
+	f, e := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, cst.OS.ModeUser)
 	if e != nil {
 		return e
 	}
@@ -78,7 +78,7 @@ func GetFile(fullPath string, offset int64, writer io.Writer) error {
 			return err
 		}
 	}
-	if _, e = io.Copy(writer, f); e != nil {
+	if _, e = io.CopyBuffer(disk.LimitWriter(writer, size), f, disk.AlignedBlock(8 * 4096)); e != nil {
 		return e
 	}
 	return nil
@@ -113,7 +113,7 @@ func AppendFile(path, fileName string, fileStream io.Reader) (int64, error) {
 		return 0, err
 	}
 	defer file.Close()
-	return io.Copy(file, fileStream)
+	return disk.AligendWriteTo(file, fileStream, 8 * 4096)
 }
 
 func MvTmpToStorage(tmpName, fileName string) error {

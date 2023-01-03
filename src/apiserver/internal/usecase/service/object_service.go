@@ -153,7 +153,7 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 	case entity.ECReedSolomon:
 		stream, err = NewRSGetStream(ver.Size, ver.Hash, ver.Locate, &pool.Config.Rs)
 	case entity.MultiReplication:
-		stream, err = NewCopyGetStream(ver.Hash, ver.Locate, &pool.Config.Object.Replication)
+		stream, err = NewCopyGetStream(ver.Hash, ver.Locate, ver.Size, &pool.Config.Object.Replication)
 	}
 	
 	if err == ErrNeedUpdateMeta {

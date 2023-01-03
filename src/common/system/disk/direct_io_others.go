@@ -21,6 +21,7 @@ package disk
 
 import (
 	"os"
+	"io"
 )
 
 // OpenBSD, Windows, and illumos do not support O_DIRECT.
@@ -62,4 +63,9 @@ func DisableDirectIO(f *os.File) error {
 // for systems that do not support DirectIO.
 func AlignedBlock(BlockSize int) []byte {
 	return make([]byte, BlockSize)
+}
+
+// AligendWriteTo wrapper around io.CopyBuffer nothing special
+func AligendWriteTo(dst io.Writer, src io.Reader, bufSize int) (n int64, err error) {
+	return io.CopyBuffer(dst, src, AlignedBlock(bufSize))
 }

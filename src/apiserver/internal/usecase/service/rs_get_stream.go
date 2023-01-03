@@ -24,7 +24,7 @@ type provideStream struct {
 	err    error
 }
 
-func provideGetStream(hash string, locates []string) <-chan *provideStream {
+func provideGetStream(hash string, locates []string, shardSize int64) <-chan *provideStream {
 	respChan := make(chan *provideStream, 1)
 	go func() {
 		defer graceful.Recover()
@@ -36,7 +36,7 @@ func provideGetStream(hash string, locates []string) <-chan *provideStream {
 				defer graceful.Recover()
 				defer wg.Done()
 				if len(ip) > 0 {
-					reader, e := NewGetStream(ip, fmt.Sprintf("%s.%d", hash, idx))
+					reader, e := NewGetStream(ip, fmt.Sprintf("%s.%d", hash, idx), shardSize)
 					respChan <- &provideStream{reader, idx, e}
 				} else {
 					respChan <- &provideStream{nil, idx, fmt.Errorf("shard %s.%d lost", hash, idx)}
@@ -55,7 +55,7 @@ func NewRSGetStream(size int64, hash string, locates []string, rsCfg *config.RsC
 	perSize := (size + dsNum - 1) / dsNum
 	lb := logic.NewDiscovery().NewDataServSelector()
 	var e error
-	for r := range provideGetStream(hash, locates) {
+	for r := range provideGetStream(hash, locates, int64(rsCfg.BlockPerShard)) {
 		if r.err != nil {
 			logs.Std().Error(r.err)
 			ip := lb.Select()

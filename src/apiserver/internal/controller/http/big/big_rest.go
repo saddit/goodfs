@@ -89,8 +89,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		response.Exec(g).Status(http.StatusRequestedRangeNotSatisfiable).Abort()
 		return
 	}
-	rsConfig := stream.Config
-	bufSize := int64(rsConfig.BlockSize())
+	bufSize := int64(stream.Config.BlockSize())
 	for {
 		n, err := io.CopyN(stream, g.Request.Body, bufSize)
 		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
@@ -116,8 +115,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		}
 		// 上传完成 校验签名
 		if pool.Config.Checksum {
-			//FIXME: rs config 应从元数据中获取
-			getStream, err := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates, &pool.Config.Rs)
+			getStream, err := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates, stream.Config)
 			if err != nil {
 				response.FailErr(err, g)
 				return

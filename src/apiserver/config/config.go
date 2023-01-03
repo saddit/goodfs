@@ -60,7 +60,7 @@ func (rp *ReplicationConfig) ToleranceLossNum() int {
 type RsConfig struct {
 	DataShards    int `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`
 	ParityShards  int `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`
-	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8000"`
+	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"`
 }
 
 func (r *RsConfig) AllShards() int {

@@ -73,13 +73,13 @@ func (e *rsEncoder) Flush() error {
 	defer dg.Close()
 	for i, v := range shards {
 		dg.Todo()
-		go func() {
+		go func(idx int,val []byte) {
 			defer dg.Done()
-			if _, err := e.writers[i].Write(v); err != nil {
+			if _, err := e.writers[idx].Write(val); err != nil {
 				dg.Error(err)
 				return
 			}
-		}()
+		}(i,v)
 	}
 	return dg.WaitUntilError()
 }

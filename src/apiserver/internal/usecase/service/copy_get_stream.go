@@ -15,14 +15,14 @@ type CopyGetStream struct {
 	writer io.WriteCloser
 }
 
-func NewCopyGetStream(hash string, locates []string, rpCfg *config.ReplicationConfig) (*CopyGetStream, error) {
+func NewCopyGetStream(hash string, locates []string, size int64, rpCfg *config.ReplicationConfig) (*CopyGetStream, error) {
 	var getStream io.ReadSeekCloser
 	var err error
 	var failIds,newLocates []string
 	lb := logic.NewDiscovery().NewDataServSelector()
 	for idx, loc := range locates {
 		id := fmt.Sprint(hash, ".", idx)
-		getStream, err = NewGetStream(loc, id)
+		getStream, err = NewGetStream(loc, id, size)
 		if err == nil {
 			break
 		}

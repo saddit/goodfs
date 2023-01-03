@@ -112,12 +112,13 @@ func HeadTmpObject(ip, id string) (int64, error) {
 	return 0, fmt.Errorf("response doesn't contains size")
 }
 
-func GetObject(ip, name string, offset int) (*http.Response, error) {
+func GetObject(ip, name string, offset int, size int64) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, objectRest(ip, name), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
+	req.Header.Set("Size", util.ToString(size))
 	return pool.Http.Do(req)
 }
 
