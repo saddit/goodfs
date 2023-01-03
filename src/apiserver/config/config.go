@@ -21,11 +21,15 @@ type Config struct {
 	LocateTimeout  time.Duration   `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"5s"`
 	LogLevel       logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	Etcd           etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	Rs             RsConfig        `yaml:"rs" env-prefix:"RS"`
+	Rs             RsConfig        `yaml:"-"`
 	Object         ObjectConfig    `yaml:"object" env-prefix:"OBJECT"`
 	Discovery      DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 	Registry       registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 	Auth           auth.Config     `yaml:"auth" env-prefix:"AUTH"`
+}
+
+func (c *Config) initialize() {
+	c.Rs = c.Object.ReedSolomon
 }
 
 type DiscoveryConfig struct {
@@ -73,6 +77,7 @@ func ReadConfig() Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", ConfFilePath)
+	conf.initialize()
 	return conf
 }
 
@@ -85,5 +90,6 @@ func ReadConfigFrom(path string) Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", path)
+	conf.initialize()
 	return conf
 }

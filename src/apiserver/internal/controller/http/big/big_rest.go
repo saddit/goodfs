@@ -41,7 +41,6 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		response.ServiceUnavailableMsg("no available servers", g)
 		return
 	}
-	// TODO 生成元数据 记录对象配置
 	stream, e := service.NewRSResumablePutStream(ips, req.Name, req.Hash, req.Size, &pool.Config.Rs)
 	if e != nil {
 		response.FailErr(e, g)

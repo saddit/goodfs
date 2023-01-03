@@ -14,10 +14,15 @@ etcd:
 discovery:
   meta-server-name: "metaserver"
   data-server-name: "objectserver"
-rs:
-  data-shards: 4
-  parity-shards: 2
-  block-per-shard: 8000
+object:
+  reed-solomon:
+    data-shards: 4
+    parity-shards: 2
+    block-per-shard: 8000
+  replication:
+    copies-count: 3
+    loss-tolerance-rate: 0.9
+    copy-async: true
 auth:
   enable: true
   password:
