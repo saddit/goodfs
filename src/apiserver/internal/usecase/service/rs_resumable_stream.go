@@ -15,6 +15,7 @@ type resumeToken struct {
 	Size    int64    `json:"size"`
 	Servers []string `json:"servers"`
 	Ids     []string `json:"ids"`
+	Config  *config.RsConfig `json:"config"`
 }
 
 //RSResumablePutStream 断点续传
@@ -24,14 +25,14 @@ type RSResumablePutStream struct {
 }
 
 //NewRSResumablePutStreamFromToken 恢复一个断点续传
-func NewRSResumablePutStreamFromToken(token string, rsCfg *config.RsConfig) (*RSResumablePutStream, error) {
+func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, error) {
 	bt, e := base64.StdEncoding.DecodeString(token)
 	if e != nil {
 		return nil, e
 	}
 	var tk resumeToken
 	if ok := util.GobDecodeGen2(bt, &tk); ok {
-		return &RSResumablePutStream{newExistedRSPutStream(tk.Servers, tk.Ids, tk.Hash, rsCfg), &tk}, nil
+		return &RSResumablePutStream{newExistedRSPutStream(tk.Servers, tk.Ids, tk.Hash, tk.Config), &tk}, nil
 	}
 	return nil, fmt.Errorf("invalid token")
 }
@@ -80,6 +81,7 @@ func (p *RSResumablePutStream) Token() string {
 		Size:    p.Size,
 		Servers: p.Servers,
 		Ids:     p.Ids,
+		Config:  p.Config,
 	}
 	return base64.StdEncoding.EncodeToString(util.GobEncode(tk))
 }

@@ -56,7 +56,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 //Head 大文件已上传大小
 func (bc *BigObjectsController) Head(g *gin.Context) {
 	token, _ := url.PathUnescape(g.Param("token"))
-	stream, e := service.NewRSResumablePutStreamFromToken(token, &pool.Config.Rs)
+	stream, e := service.NewRSResumablePutStreamFromToken(token)
 	if e != nil {
 		response.BadRequestErr(e, g)
 		return
@@ -79,10 +79,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		response.BadRequestErr(err, g)
 		return
 	}
-	//FIXME: rs config 应从元数据中获取，若服务器配置发送改变，则断点续传发生异常
-	// Perf: 借助缓存可避免多次查询元数据集群
-	rsConfig := &pool.Config.Rs
-	stream, err := service.NewRSResumablePutStreamFromToken(req.Token, rsConfig)
+	stream, err := service.NewRSResumablePutStreamFromToken(req.Token)
 	if err != nil {
 		response.BadRequestErr(err, g)
 		return
@@ -93,6 +90,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		response.Exec(g).Status(http.StatusRequestedRangeNotSatisfiable).Abort()
 		return
 	}
+	rsConfig := stream.Config
 	bufSize := int64(rsConfig.BlockSize())
 	for {
 		n, err := io.CopyN(stream, g.Request.Body, bufSize)
