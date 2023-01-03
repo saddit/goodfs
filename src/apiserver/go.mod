@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/google/uuid v1.3.0
 	github.com/tinylib/msgp v1.1.6
+	go.uber.org/atomic v1.7.0
 )
 
 require (
@@ -32,7 +33,6 @@ require (
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.4 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.4 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
@@ -49,7 +49,6 @@ require (
 	github.com/gin-gonic/gin v1.8.1
 	github.com/ilyakaznacheev/cleanenv v1.4.1
 	github.com/klauspost/reedsolomon v1.10.0
-	github.com/sirupsen/logrus v1.8.1
 	go.etcd.io/etcd/client/v3 v3.5.4
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -2,6 +2,8 @@ package service
 
 import (
 	"apiserver/config"
+	"apiserver/internal/usecase"
+	"apiserver/internal/usecase/logic"
 	"common/graceful"
 	"common/util"
 	"fmt"
@@ -13,10 +15,11 @@ type CopyGetStream struct {
 	writer io.WriteCloser
 }
 
-func NewCopyGetStream(hash string, locates []string, rpCfg config.ReplicationConfig) (*CopyGetStream, error) {
+func NewCopyGetStream(hash string, locates []string, rpCfg *config.ReplicationConfig) (*CopyGetStream, error) {
 	var getStream io.ReadSeekCloser
 	var err error
-	var failIds []string
+	var failIds,newLocates []string
+	lb := logic.NewDiscovery().NewDataServSelector()
 	for idx, loc := range locates {
 		id := fmt.Sprint(hash, ".", idx)
 		getStream, err = NewGetStream(loc, id)
@@ -24,19 +27,22 @@ func NewCopyGetStream(hash string, locates []string, rpCfg config.ReplicationCon
 			break
 		}
 		failIds = append(failIds, id)
+		locates[idx] = lb.Select()
+		newLocates = append(newLocates, locates[idx])
 	}
 	if len(failIds) == len(locates) {
 		return nil, fmt.Errorf("not found any copies of %s", hash)
 	}
 	var fixStream io.WriteCloser
 	if len(failIds) > rpCfg.ToleranceLossNum() {
-		fixStream, err = NewCopyFixStream(failIds, rpCfg)
+		fixStream, err = NewCopyFixStream(failIds, newLocates, rpCfg)
 		util.LogErrWithPre("fix copies err", err)
+		err = usecase.ErrNeedUpdateMeta
 	}
 	return &CopyGetStream{
 		reader: getStream,
 		writer: fixStream,
-	}, nil
+	}, err
 }
 
 func (c *CopyGetStream) Read(p []byte) (n int, err error) {

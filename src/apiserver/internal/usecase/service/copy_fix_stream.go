@@ -2,7 +2,6 @@ package service
 
 import (
 	"apiserver/config"
-	"apiserver/internal/usecase/logic"
 	"apiserver/internal/usecase/webapi"
 	"bufio"
 	"common/system/disk"
@@ -16,21 +15,22 @@ import (
 )
 
 type CopyFixStream struct {
-	cache     []byte
 	fileNames []string
+	locates   []string
 	writer    *bufio.Writer
 	fixFile   *os.File
 	rpConfig  *config.ReplicationConfig
 }
 
-func NewCopyFixStream(lostNames []string, cfg config.ReplicationConfig) (*CopyFixStream, error) {
+func NewCopyFixStream(lostNames []string, newLocates []string, cfg *config.ReplicationConfig) (*CopyFixStream, error) {
 	tmp, err := disk.OpenFileDirectIO(filepath.Join(os.TempDir(), lostNames[0]), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return nil, err
 	}
 	return &CopyFixStream{
 		fileNames: lostNames,
-		rpConfig:  &cfg,
+		locates:   newLocates,
+		rpConfig:  cfg,
 		writer:    bufio.NewWriter(tmp),
 		fixFile:   tmp,
 	}, nil
@@ -59,13 +59,12 @@ func (c *CopyFixStream) startFix() func() error {
 		defer c.fixFile.Close()
 		defer dg.Done()
 		var errs []string
-		lb := logic.NewDiscovery().NewDataServSelector()
-		for _, name := range c.fileNames {
+		for idx, name := range c.fileNames {
 			if _, err := c.fixFile.Seek(0, io.SeekStart); err != nil {
 				errs = append(errs, fmt.Sprintf("fix %s seek err: %s", name, err))
 				continue
 			}
-			if err := webapi.PutObject(lb.Select(), name, c.fixFile); err != nil {
+			if err := webapi.PutObject(c.locates[idx], name, c.fixFile); err != nil {
 				errs = append(errs, fmt.Sprintf("fix %s put-api err: %s", name, err))
 			}
 		}

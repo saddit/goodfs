@@ -96,7 +96,7 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (in
 	//文件数据保存
 	if len(req.Locate) == 0 {
 		var e error
-		if ver.Locate, e = streamToDataServer(req, ver.Size); e != nil {
+		if ver.Locate, e = streamToDataServer(req, ver); e != nil {
 			return -1, e
 		}
 	} else {
@@ -106,9 +106,9 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (in
 	return o.metaService.SaveMetadata(md)
 }
 
-func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
+func streamToDataServer(req *entity.PutReq, meta *entity.Version) ([]string, error) {
 	//stream to store
-	stream, locates, e := dataServerStream(req.FileName, size)
+	stream, locates, e := dataServerStream(meta)
 	if e != nil {
 		return nil, e
 	}
@@ -116,7 +116,7 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 
 	//digest validation
 	if pool.Config.Checksum {
-		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 2048), stream)
+		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 32 * 1024), stream)
 		hash := crypto.SHA256IO(reader)
 		if hash != req.Hash {
 			logs.Std().Infof("Digest of %v validation failure\n", req.Name)
@@ -126,7 +126,7 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 			return nil, ErrInvalidFile
 		}
 	} else {
-		if _, e = io.CopyBuffer(stream, req.Body, make([]byte, 2048)); e != nil {
+		if _, e = io.CopyBuffer(stream, req.Body, make([]byte, 32 * 1024)); e != nil {
 			if e = stream.Commit(false); e != nil {
 				logs.Std().Errorln(e)
 			}
@@ -142,21 +142,62 @@ func streamToDataServer(req *entity.PutReq, size int64) ([]string, error) {
 }
 
 func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
-	//TODO 兼容不同对象保存策略
-	r, e := NewRSGetStream(ver.Size, ver.Hash, ver.Locate, &pool.Config.Rs)
-	if e == ErrNeedUpdateMeta {
-		logs.Std().Debugf("data fix: need update meta %s verison %d", meta.Name, ver.Sequence)
-		e = o.metaService.UpdateVersion(meta.Name, ver)
+	var (
+		stream io.ReadSeekCloser
+		err error
+	)
+
+	switch ver.StoreStrategy {
+	default:
+		fallthrough
+	case entity.ECReedSolomon:
+		stream, err = NewRSGetStream(ver.Size, ver.Hash, ver.Locate, &pool.Config.Rs)
+	case entity.MultiReplication:
+		stream, err = NewCopyGetStream(ver.Hash, ver.Locate, &pool.Config.Object.Replication)
 	}
-	return r, e
+	
+	if err == ErrNeedUpdateMeta {
+		logs.Std().Debugf("data fix: need update meta %s verison %d", meta.Name, ver.Sequence)
+		err = o.metaService.UpdateVersion(meta.Name, ver)
+	}
+	return stream, err
 }
 
-func dataServerStream(name string, size int64) (WriteCloseCommitter, []string, error) {
-	ds := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
+func dataServerStream(meta *entity.Version) (WriteCloseCommitter, []string, error) {
+	var dsNum int
+	switch meta.StoreStrategy {
+	default:
+		fallthrough
+	case entity.ECReedSolomon:
+		dsNum = pool.Config.Object.ReedSolomon.DataShards + pool.Config.Object.ReedSolomon.ParityShards
+	case entity.MultiReplication:
+		dsNum = pool.Config.Object.Replication.CopiesCount
+	}
+
+	ds := logic.NewDiscovery().SelectDataServer(pool.Balancer, dsNum)
 	if len(ds) == 0 {
 		return nil, nil, ErrServiceUnavailable
 	}
-	//TODO 兼容不同对象保存策略
-	rsPut, err := NewRSPutStream(ds, name, size, &pool.Config.Rs)
-	return rsPut, ds, err
+	
+	var (
+		stream WriteCloseCommitter
+		err error
+	)
+	//兼容不同对象保存策略
+	switch meta.StoreStrategy {
+	default:
+		fallthrough
+	case entity.ECReedSolomon:
+		cfg := &pool.Config.Object.ReedSolomon
+		meta.DataShards = cfg.DataShards
+		meta.ParityShards = cfg.ParityShards
+		meta.ShardSize = cfg.BlockPerShard
+		stream, err = NewRSPutStream(ds, meta.Hash, meta.Size, cfg)
+	case entity.MultiReplication:
+		cfg := &pool.Config.Object.Replication
+		meta.DataShards = cfg.CopiesCount
+		meta.ShardSize = int(meta.Size)
+		stream, err = NewCopyPutStream(meta.Hash, meta.Size, ds, cfg)
+	}
+	return stream, ds, err
 }

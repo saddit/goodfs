@@ -31,6 +31,7 @@ func (oc *ObjectsController) Put(c *gin.Context) {
 		Versions: []*entity.Version{{
 			Size: c.Request.ContentLength,
 			Hash: req.Hash,
+			StoreStrategy: req.Store,
 		}},
 	})
 
