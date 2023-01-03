@@ -44,14 +44,14 @@ func (c *CopyPutStream) Write(p []byte) (n int, err error) {
 	sucNum := atomic.NewInt32(0)
 	for _, wt := range c.writers {
 		dg.Todo()
-		go func() {
+		go func(writer io.Writer) {
 			defer dg.Done()
-			if _, err := wt.Write(p); err != nil {
+			if _, err := writer.Write(p); err != nil {
 				dg.Error(err)
 				return
 			}
 			sucNum.Inc()
-		}()
+		}(wt)
 	}
 	if err := dg.WaitUntilError(); err != nil && c.rpConfig.AtLeastCopiesNum() > int(sucNum.Load()) {
 		return 0, err
