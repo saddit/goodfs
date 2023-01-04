@@ -4,7 +4,6 @@ import (
 	"apiserver/config"
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/logic"
-	"common/graceful"
 	"common/util"
 	"fmt"
 	"io"
@@ -18,7 +17,7 @@ type CopyGetStream struct {
 func NewCopyGetStream(hash string, locates []string, size int64, rpCfg *config.ReplicationConfig) (*CopyGetStream, error) {
 	var getStream io.ReadSeekCloser
 	var err error
-	var failIds,newLocates []string
+	var failIds, newLocates []string
 	lb := logic.NewDiscovery().NewDataServSelector()
 	for idx, loc := range locates {
 		id := fmt.Sprint(hash, ".", idx)
@@ -46,14 +45,13 @@ func NewCopyGetStream(hash string, locates []string, size int64, rpCfg *config.R
 }
 
 func (c *CopyGetStream) Read(p []byte) (n int, err error) {
-	if c.writer != nil {
-		go func(bt []byte) {
-			defer graceful.Recover()
-			_, err := c.writer.Write(bt)
-			util.LogErrWithPre("copy-get-stream read", err)
-		}(p)
+	n, err = c.reader.Read(p)
+	if c.writer != nil && n > 0 {
+		if n, err = c.writer.Write(p[:n]); err != nil {
+			return
+		}
 	}
-	return c.reader.Read(p)
+	return
 }
 
 func (c *CopyGetStream) Seek(offset int64, whence int) (int64, error) {

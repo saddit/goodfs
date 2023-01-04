@@ -11,8 +11,13 @@ type BufferTeeWriter struct {
 }
 
 func (r *BufferTeeWriter) Write(b []byte) (int, error) {
-	r.Body.Write(b)
-	return r.Writer.Write(b)
+	n, err := r.Writer.Write(b)
+	if n > 0 {
+		if n, err = r.Body.Write(b[:n]); err != nil {
+			return n, err
+		}
+	}
+	return n, err
 }
 
 type BufferTeeReader struct {
@@ -21,6 +26,11 @@ type BufferTeeReader struct {
 }
 
 func (r *BufferTeeReader) Read(b []byte) (int, error) {
-	r.Body.Write(b)
-	return r.Reader.Read(b)
+	n, err := r.Reader.Read(b)
+	if n > 0 {
+		if n, err = r.Body.Write(b[:n]); err != nil {
+			return n, err
+		}
+	}
+	return n, err
 }
