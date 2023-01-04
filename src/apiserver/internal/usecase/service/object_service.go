@@ -1,7 +1,6 @@
 package service
 
 import (
-	"apiserver/config"
 	"apiserver/internal/entity"
 	. "apiserver/internal/usecase"
 	"apiserver/internal/usecase/logic"
@@ -93,11 +92,11 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 
 func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
-	proivder := saveObjectStoreStrategy(ver)
+	provider := saveObjectStoreStrategy(ver)
 	//文件数据保存
 	if len(req.Locate) == 0 {
 		var e error
-		if ver.Locate, e = streamToDataServer(req, ver, proivder); e != nil {
+		if ver.Locate, e = streamToDataServer(req, ver, provider); e != nil {
 			return -1, fmt.Errorf("stream to data server err: %w", e)
 		}
 	} else {
@@ -143,16 +142,21 @@ func streamToDataServer(req *entity.PutReq, meta *entity.Version, provider Strea
 }
 
 func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
-	var proivder StreamProvider
+	var provider StreamProvider
 	switch ver.StoreStrategy {
 	default:
 		fallthrough
 	case entity.ECReedSolomon:
-		proivder = RsStreamProivder(ver, &pool.Config.Object.ReedSolomon)
+		cfg := pool.Config.Object.ReedSolomon
+		cfg.DataShards = ver.DataShards
+		cfg.ParityShards = ver.ParityShards
+		provider = RsStreamProivder(ver, &cfg)
 	case entity.MultiReplication:
-		proivder = CpStreamProvider(ver, &pool.Config.Object.Replication)
+		cfg := pool.Config.Object.Replication
+		cfg.CopiesCount = ver.DataShards
+		provider = CpStreamProvider(ver, &cfg)
 	}
-	stream, err := proivder.GetStream(ver.Locate)
+	stream, err := provider.GetStream(ver.Locate)
 
 	if err == ErrNeedUpdateMeta {
 		logs.Std().Debugf("data fix: need update meta %s verison %d", meta.Name, ver.Sequence)

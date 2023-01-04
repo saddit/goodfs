@@ -22,7 +22,7 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/cpuid/v2 v2.0.14 // indirect
+	github.com/klauspost/cpuid/v2 v2.1.1 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -48,7 +48,7 @@ require (
 require (
 	github.com/gin-gonic/gin v1.8.1
 	github.com/ilyakaznacheev/cleanenv v1.4.1
-	github.com/klauspost/reedsolomon v1.10.0
+	github.com/klauspost/reedsolomon v1.11.3
 	go.etcd.io/etcd/client/v3 v3.5.4
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

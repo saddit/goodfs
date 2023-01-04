@@ -55,7 +55,7 @@ func NewRSGetStream(size int64, hash string, locates []string, rsCfg *config.RsC
 	perSize := (size + dsNum - 1) / dsNum
 	lb := logic.NewDiscovery().NewDataServSelector()
 	var e error
-	for r := range provideGetStream(hash, locates, int64(rsCfg.BlockPerShard)) {
+	for r := range provideGetStream(hash, locates, perSize) {
 		if r.err != nil {
 			logs.Std().Error(r.err)
 			ip := lb.Select()
