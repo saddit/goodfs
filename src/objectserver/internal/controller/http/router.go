@@ -15,9 +15,9 @@ type Server struct {
 
 func NewHttpServer(addr string) *Server {
 	r := gin.Default()
-	r.GET("/objects/:name", objects.GetFromCache, objects.Get, objects.SaveToCache)
+	r.GET("/objects/:name", objects.GetFromCache, objects.Get)
 	r.HEAD("/objects/:name", objects.Head)
-	r.PUT("/objects/:name", objects.SaveToCache, objects.Put, objects.RemoveCache)
+	r.PUT("/objects/:name", objects.Put, objects.RemoveCache)
 	r.DELETE("/objects/:name", objects.Delete, objects.RemoveCache)
 
 	r.POST("/temp/:name", temp.Post)

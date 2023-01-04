@@ -57,5 +57,8 @@ func (g *GetStream) Read(bt []byte) (int, error) {
 }
 
 func (g *GetStream) Close() error {
+	if g.reader == nil {
+		return nil
+	}
 	return g.reader.Close()
 }

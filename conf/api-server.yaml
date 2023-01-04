@@ -20,8 +20,8 @@ object:
     parity-shards: 2
     block-per-shard: 8000
   replication:
-    copies-count: 3
-    loss-tolerance-rate: 0.9
+    copies-count: 4
+    loss-tolerance-rate: 0.1
     copy-async: true
 auth:
   enable: true

@@ -138,6 +138,7 @@ func HeadObject(ip, id string) error {
 
 func PutObject(ip, id string, body io.Reader) error {
 	req, _ := http.NewRequest(http.MethodPut, objectRest(ip, id), body)
+	keepAlive(req)
 	resp, e := pool.Http.Do(req)
 	if e != nil {
 		return e

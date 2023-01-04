@@ -4,13 +4,11 @@ import (
 	"apiserver/config"
 	"apiserver/internal/usecase/webapi"
 	"bufio"
-	"common/system/disk"
+	"common/graceful"
 	"common/util"
 	"errors"
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -23,7 +21,7 @@ type CopyFixStream struct {
 }
 
 func NewCopyFixStream(lostNames []string, newLocates []string, cfg *config.ReplicationConfig) (*CopyFixStream, error) {
-	tmp, err := disk.OpenFileDirectIO(filepath.Join(os.TempDir(), lostNames[0]), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+	tmp, err := os.CreateTemp("", lostNames[0])
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +42,16 @@ func (c *CopyFixStream) Close() error {
 	if err := c.writer.Flush(); err != nil {
 		return err
 	}
+	if err := c.fixFile.Close(); err != nil {
+		return err
+	}
+	//FIXME: 写入的文件比原始文件大
 	wait := c.startFix()
 	if c.rpConfig.CopyAsync {
+		go func() {
+			defer graceful.Recover()
+			util.LogErrWithPre("copy-fix-stream", wait())
+		}()
 		return nil
 	}
 	return wait()
@@ -56,17 +62,18 @@ func (c *CopyFixStream) startFix() func() error {
 	dg.Todo()
 	go func() {
 		defer func() { util.LogErr(os.Remove(c.fixFile.Name())) }()
-		defer c.fixFile.Close()
 		defer dg.Done()
 		var errs []string
 		for idx, name := range c.fileNames {
-			if _, err := c.fixFile.Seek(0, io.SeekStart); err != nil {
-				errs = append(errs, fmt.Sprintf("fix %s seek err: %s", name, err))
+			file, err := os.Open(c.fixFile.Name())
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("open file err: %s", err))
 				continue
 			}
-			if err := webapi.PutObject(c.locates[idx], name, c.fixFile); err != nil {
+			if err = webapi.PutObject(c.locates[idx], name, file); err != nil {
 				errs = append(errs, fmt.Sprintf("fix %s put-api err: %s", name, err))
 			}
+			_ = file.Close()
 		}
 		if len(errs) > 0 {
 			dg.Error(errors.New(strings.Join(errs, ";")))

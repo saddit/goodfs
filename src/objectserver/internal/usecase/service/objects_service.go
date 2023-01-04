@@ -68,9 +68,9 @@ func GetTemp(name string, size int64, writer io.Writer) error {
 }
 
 func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
-	f, e := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, cst.OS.ModeUser)
-	if e != nil {
-		return e
+	f, err := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, cst.OS.ModeUser)
+	if err != nil {
+		return err
 	}
 	defer f.Close()
 	if offset > 0 {
@@ -78,8 +78,8 @@ func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 			return err
 		}
 	}
-	if _, e = io.CopyBuffer(disk.LimitWriter(writer, size), f, disk.AlignedBlock(8 * 4096)); e != nil {
-		return e
+	if _, err = io.CopyBuffer(disk.LimitWriter(writer, size), f, disk.AlignedBlock(8*4096)); err != nil {
+		return err
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func AppendFile(path, fileName string, fileStream io.Reader) (int64, error) {
 		return 0, err
 	}
 	defer file.Close()
-	return disk.AligendWriteTo(file, fileStream, 8 * 4096)
+	return disk.AligendWriteTo(file, fileStream, 8*4096)
 }
 
 func MvTmpToStorage(tmpName, fileName string) error {

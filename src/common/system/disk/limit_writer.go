@@ -6,12 +6,12 @@ func LimitWriter(r io.Writer, n int64) io.Writer { return &LimitedWriter{r, n} }
 
 type LimitedWriter struct {
 	R io.Writer // underlying reader
-	N int64  // max bytes remaining
+	N int64     // max bytes remaining
 }
 
 func (l *LimitedWriter) Write(p []byte) (n int, err error) {
 	if l.N <= 0 {
-		return 0, io.EOF
+		return len(p), nil
 	}
 	ln := int64(len(p))
 	if ln > l.N {
