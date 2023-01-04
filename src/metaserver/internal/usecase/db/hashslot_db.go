@@ -54,12 +54,10 @@ type HashSlotDB struct {
 }
 
 func NewHashSlotDB(keyPrefix string, kv clientv3.KV) *HashSlotDB {
-	at := new(atomic.Value)
-	at.Store("")
 	return &HashSlotDB{
 		KeyPrefix: keyPrefix,
 		kv:        kv,
-		provider:  at,
+		provider:  new(atomic.Value),
 		status:    atomic.NewInt32(StatusNormal),
 	}
 }

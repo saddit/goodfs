@@ -1,6 +1,7 @@
 package service
 
 import (
+	"apiserver/config"
 	"apiserver/internal/entity"
 	. "apiserver/internal/usecase"
 	"apiserver/internal/usecase/logic"
@@ -71,7 +72,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 		select {
 		case resp, ok := <-wt:
 			if !ok {
-				logs.Std().Error("etcd watching key err, channel closed")
+				logs.Std().Error("etcd watching locate-key err, channel closed")
 				return nil, false
 			}
 			for _, event := range resp.Events {
@@ -92,12 +93,12 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 
 func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
-
+	proivder := saveObjectStoreStrategy(ver)
 	//文件数据保存
 	if len(req.Locate) == 0 {
 		var e error
-		if ver.Locate, e = streamToDataServer(req, ver); e != nil {
-			return -1, e
+		if ver.Locate, e = streamToDataServer(req, ver, proivder); e != nil {
+			return -1, fmt.Errorf("stream to data server err: %w", e)
 		}
 	} else {
 		ver.Locate = req.Locate
@@ -106,9 +107,9 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (in
 	return o.metaService.SaveMetadata(md)
 }
 
-func streamToDataServer(req *entity.PutReq, meta *entity.Version) ([]string, error) {
+func streamToDataServer(req *entity.PutReq, meta *entity.Version, provider StreamProvider) ([]string, error) {
 	//stream to store
-	stream, locates, e := dataServerStream(meta)
+	stream, locates, e := dataServerStream(meta, provider)
 	if e != nil {
 		return nil, e
 	}
@@ -116,7 +117,7 @@ func streamToDataServer(req *entity.PutReq, meta *entity.Version) ([]string, err
 
 	//digest validation
 	if pool.Config.Checksum {
-		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 32 * 1024), stream)
+		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 32*1024), stream)
 		hash := crypto.SHA256IO(reader)
 		if hash != req.Hash {
 			logs.Std().Infof("Digest of %v validation failure\n", req.Name)
@@ -126,7 +127,7 @@ func streamToDataServer(req *entity.PutReq, meta *entity.Version) ([]string, err
 			return nil, ErrInvalidFile
 		}
 	} else {
-		if _, e = io.CopyBuffer(stream, req.Body, make([]byte, 32 * 1024)); e != nil {
+		if _, e = io.CopyBuffer(stream, req.Body, make([]byte, 32*1024)); e != nil {
 			if e = stream.Commit(false); e != nil {
 				logs.Std().Errorln(e)
 			}
@@ -142,20 +143,17 @@ func streamToDataServer(req *entity.PutReq, meta *entity.Version) ([]string, err
 }
 
 func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
-	var (
-		stream io.ReadSeekCloser
-		err error
-	)
-
+	var proivder StreamProvider
 	switch ver.StoreStrategy {
 	default:
 		fallthrough
 	case entity.ECReedSolomon:
-		stream, err = NewRSGetStream(ver.Size, ver.Hash, ver.Locate, &pool.Config.Rs)
+		proivder = RsStreamProivder(ver, &pool.Config.Object.ReedSolomon)
 	case entity.MultiReplication:
-		stream, err = NewCopyGetStream(ver.Hash, ver.Locate, ver.Size, &pool.Config.Object.Replication)
+		proivder = CpStreamProvider(ver, &pool.Config.Object.Replication)
 	}
-	
+	stream, err := proivder.GetStream(ver.Locate)
+
 	if err == ErrNeedUpdateMeta {
 		logs.Std().Debugf("data fix: need update meta %s verison %d", meta.Name, ver.Sequence)
 		err = o.metaService.UpdateVersion(meta.Name, ver)
@@ -163,26 +161,7 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 	return stream, err
 }
 
-func dataServerStream(meta *entity.Version) (WriteCloseCommitter, []string, error) {
-	var dsNum int
-	switch meta.StoreStrategy {
-	default:
-		fallthrough
-	case entity.ECReedSolomon:
-		dsNum = pool.Config.Object.ReedSolomon.DataShards + pool.Config.Object.ReedSolomon.ParityShards
-	case entity.MultiReplication:
-		dsNum = pool.Config.Object.Replication.CopiesCount
-	}
-
-	ds := logic.NewDiscovery().SelectDataServer(pool.Balancer, dsNum)
-	if len(ds) == 0 {
-		return nil, nil, ErrServiceUnavailable
-	}
-	
-	var (
-		stream WriteCloseCommitter
-		err error
-	)
+func saveObjectStoreStrategy(meta *entity.Version) StreamProvider {
 	//兼容不同对象保存策略
 	switch meta.StoreStrategy {
 	default:
@@ -192,12 +171,21 @@ func dataServerStream(meta *entity.Version) (WriteCloseCommitter, []string, erro
 		meta.DataShards = cfg.DataShards
 		meta.ParityShards = cfg.ParityShards
 		meta.ShardSize = cfg.BlockPerShard
-		stream, err = NewRSPutStream(ds, meta.Hash, meta.Size, cfg)
+		return RsStreamProivder(meta, cfg)
 	case entity.MultiReplication:
 		cfg := &pool.Config.Object.Replication
 		meta.DataShards = cfg.CopiesCount
 		meta.ShardSize = int(meta.Size)
-		stream, err = NewCopyPutStream(meta.Hash, meta.Size, ds, cfg)
+		return CpStreamProvider(meta, cfg)
 	}
+}
+
+func dataServerStream(meta *entity.Version, proivder StreamProvider) (WriteCloseCommitter, []string, error) {
+	ds := logic.NewDiscovery().SelectDataServer(pool.Balancer, meta.DataShards+meta.ParityShards)
+	if len(ds) == 0 {
+		return nil, nil, ErrServiceUnavailable
+	}
+
+	stream, err := proivder.PutStream(ds)
 	return stream, ds, err
 }
