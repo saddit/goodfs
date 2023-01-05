@@ -27,6 +27,7 @@ func PreAuthenticate(cfg *Config) gin.HandlerFunc {
 		}
 		// not within white list
 		c.Set(MiddleKey, false)
+		c.Set(MiddleErr, response.NewError(403, "white list deny"))
 	}
 }
 

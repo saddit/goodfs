@@ -3,7 +3,6 @@ package service
 import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
-	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
 	"common/response"
 	"net/http"
@@ -18,16 +17,8 @@ func NewMetaService(repo repo.IMetadataRepo, versionRepo repo.IVersionRepo) *Met
 	return &MetaService{repo: repo, versionRepo: versionRepo}
 }
 
-func setAlgoInfo(ver *entity.Version) {
-	ver.DataShards = pool.Config.Rs.DataShards
-	ver.ParityShards = pool.Config.Rs.ParityShards
-	ver.ShardSize = pool.Config.Rs.BlockPerShard
-	ver.StoreStrategy = entity.ECReedSolomon
-}
-
 func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
-	setAlgoInfo(ver)
 	metaD, err := m.repo.FindByNameWithVersion(md.Name, entity.VerModeNot)
 
 	switch err := err.(type) {

@@ -76,7 +76,7 @@ func (d *rsDecoder) getData() error {
 	for i := 0; i < d.rsCfg.DataShards; i++ {
 		shardSize := int64(len(shards[i]))
 		if d.total+shardSize > d.size {
-			shardSize -= d.total + shardSize - d.size
+			shardSize = d.size - d.total
 		}
 		d.cache = append(d.cache, shards[i][:shardSize]...)
 		d.cacheSize += int(shardSize)

@@ -46,7 +46,7 @@ func StatusDesc(status int32) (string, error) {
 type HashSlotDB struct {
 	kv             clientv3.KV
 	status         *atomic.Int32
-	provider       atomic.Value
+	provider       *atomic.Value
 	updatedAt      int64
 	migratingSlots []string
 	migratingHost  string
@@ -57,6 +57,7 @@ func NewHashSlotDB(keyPrefix string, kv clientv3.KV) *HashSlotDB {
 	return &HashSlotDB{
 		KeyPrefix: keyPrefix,
 		kv:        kv,
+		provider:  new(atomic.Value),
 		status:    atomic.NewInt32(StatusNormal),
 	}
 }

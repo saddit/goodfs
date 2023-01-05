@@ -34,7 +34,15 @@ func NewDoneGroup() DoneGroup {
 
 // Done equals to WaitGroup Done() but recover and call Error() on panic
 func (d *DoneGroup) Done() {
+	// recover panic of d.WaitGroup.Done()
+	defer func() {
+		if err := recover(); err != nil {
+			graceful.PrintStacks(err)
+			d.Error(errors.New(fmt.Sprint(err)))
+		}
+	}()
 	d.WaitGroup.Done()
+	// recover panic of calling goroutine
 	if err := recover(); err != nil {
 		graceful.PrintStacks(err)
 		d.Error(errors.New(fmt.Sprint(err)))
@@ -71,7 +79,7 @@ func (d *DoneGroup) WaitDone() <-chan struct{} {
 	return ch
 }
 
-// Close close the error receive channel. Safe to call multi goroutine and times
+// Close closing the error receive channel. Safe to call multi goroutine and times
 func (d *DoneGroup) Close() {
 	if d.closed.CAS(false, true) && d.ec != nil {
 		close(d.ec)
