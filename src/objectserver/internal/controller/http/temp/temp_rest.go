@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
 )
 
@@ -73,7 +74,14 @@ func Head(g *gin.Context) {
 
 //Get 获取临时对象分片
 func Get(g *gin.Context) {
-	if e := service.GetTemp(g.Param("name"), g.Writer); e != nil {
+	req := struct {
+		Name string `uri:"name" binding:"required"`
+		Size int64 `form:"size" binding:"min=1"`
+	}{}
+	if err := entity.BindAll(g, &req, binding.Uri, binding.Query); err != nil {
+		g.Status(http.StatusBadRequest)
+	}
+	if e := service.GetTemp(req.Name, req.Size, g.Writer); e != nil {
 		log.Println(e)
 		g.Status(http.StatusNotFound)
 	}

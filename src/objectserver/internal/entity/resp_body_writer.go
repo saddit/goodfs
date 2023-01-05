@@ -2,24 +2,35 @@ package entity
 
 import (
 	"bytes"
-
-	"github.com/gin-gonic/gin"
+	"io"
 )
 
-type RespBodyWriter struct {
-	gin.ResponseWriter
+type BufferTeeWriter struct {
+	io.Writer
 	Body *bytes.Buffer
 }
 
-func (r RespBodyWriter) Write(b []byte) (int, error) {
-	r.Body.Write(b)
-	return r.ResponseWriter.Write(b)
+func (r *BufferTeeWriter) Write(b []byte) (int, error) {
+	n, err := r.Writer.Write(b)
+	if n > 0 {
+		if n, err = r.Body.Write(b[:n]); err != nil {
+			return n, err
+		}
+	}
+	return n, err
 }
 
-func (r RespBodyWriter) Read(p []byte) (int, error) {
-	return r.Body.Read(p)
+type BufferTeeReader struct {
+	io.Reader
+	Body *bytes.Buffer
 }
 
-func (r RespBodyWriter) Close() error {
-	return nil
+func (r *BufferTeeReader) Read(b []byte) (int, error) {
+	n, err := r.Reader.Read(b)
+	if n > 0 {
+		if n, err = r.Body.Write(b[:n]); err != nil {
+			return n, err
+		}
+	}
+	return n, err
 }

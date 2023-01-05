@@ -1,23 +1,38 @@
 package objects
 
 import (
+	"bytes"
+	"common/logs"
+	"common/request"
+	"common/util"
+	"io"
 	"log"
 	"net/http"
+	"objectserver/internal/entity"
+	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-//Put Deprecated
 func Put(c *gin.Context) {
 	fileName := c.Param("name")
-	if err := service.Put(fileName, c.Request.Body); err != nil {
+	var reader io.Reader = c.Request.Body
+	var buf []byte
+	if uint64(c.Request.ContentLength) <= pool.Config.Cache.MaxItemSize.Byte() {
+		buf = make([]byte, 0, c.Request.ContentLength)
+		reader = &entity.BufferTeeReader{Reader: c.Request.Body, Body: bytes.NewBuffer(buf)}
+	}
+	if err := service.Put(fileName, reader); err != nil {
 		log.Println(err)
 		c.Set("Evict", true)
 		c.Status(http.StatusInternalServerError)
-	} else {
-		c.Status(http.StatusOK)
+		return
 	}
+	if len(buf) > 0 {
+		pool.Cache.Set(fileName, buf)
+	}
+	c.Status(http.StatusOK)
 }
 
 func Delete(c *gin.Context) {
@@ -33,12 +48,35 @@ func Delete(c *gin.Context) {
 }
 
 func Get(c *gin.Context) {
+	size := util.ToInt64(c.GetHeader("Size"))
 	fileName := c.Param("name")
-	e := service.Get(fileName, c.Writer)
-	if e != nil {
-		log.Println(e)
+	var rg request.Range
+	var offset int64
+	if ok := rg.ConvertFrom(c.GetHeader("Range")); ok {
+		offset = rg.FirstBytes().First
+	}
+	var writer io.Writer = c.Writer
+	var buf []byte
+	if uint64(size) <= pool.Config.Cache.MaxItemSize.Byte() {
+		buf = make([]byte, 0, size)
+		writer = &entity.BufferTeeWriter{Writer: c.Writer, Body: bytes.NewBuffer(buf)}
+	}
+	if err := service.Get(fileName, offset, size, writer); err != nil {
+		logs.Std().Error(err)
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
+	if len(buf) > 0 {
+		pool.Cache.Set(fileName, buf)
+	}
 	c.Status(http.StatusOK)
+}
+
+func Head(c *gin.Context) {
+	fileName := c.Param("name")
+	if ok := service.Exist(fileName); ok {
+		c.Status(http.StatusOK)
+		return
+	}
+	c.Status(http.StatusNotFound)
 }

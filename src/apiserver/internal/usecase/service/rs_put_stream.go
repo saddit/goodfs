@@ -2,7 +2,6 @@ package service
 
 import (
 	"apiserver/config"
-	"common/graceful"
 	"common/util"
 	"fmt"
 	"io"
@@ -21,10 +20,10 @@ func NewRSPutStream(ips []string, hash string, size int64, rsCfg *config.RsConfi
 	perShard := (size + ds - 1) / ds
 	writers := make([]io.WriteCloser, rsCfg.AllShards())
 	wg := util.NewDoneGroup()
+	defer wg.Close()
 	for i := range writers {
 		wg.Todo()
 		go func(idx int) {
-			defer graceful.Recover()
 			defer wg.Done()
 			stream, e := NewPutStream(ips[idx], fmt.Sprintf("%s.%d", hash, idx), perShard)
 			if e != nil {
@@ -50,7 +49,7 @@ func newExistedRSPutStream(ips, ids []string, hash string, rsCfg *config.RsConfi
 }
 
 func (p *RSPutStream) Commit(ok bool) error {
-	if _, e := p.Flush(); e != nil {
+	if e := p.Flush(); e != nil {
 		return nil
 	}
 
@@ -60,7 +59,6 @@ func (p *RSPutStream) Commit(ok bool) error {
 		if util.InstanceOf[Committer](w) {
 			wg.Todo()
 			go func(cm Committer) {
-				defer graceful.Recover()
 				defer wg.Done()
 				if e := cm.Commit(ok); e != nil {
 					wg.Error(e)

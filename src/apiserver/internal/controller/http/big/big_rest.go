@@ -33,7 +33,7 @@ func (bc *BigObjectsController) Register(r gin.IRoutes) {
 	r.PATCH("/big/:token", bc.Patch)
 }
 
-//Post 生成大文件上传的Token
+// Post 生成大文件上传的Token
 func (bc *BigObjectsController) Post(g *gin.Context) {
 	req := g.Value("BigPostReq").(*entity.BigPostReq)
 	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
@@ -41,7 +41,6 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		response.ServiceUnavailableMsg("no available servers", g)
 		return
 	}
-	// TODO 生成元数据 记录对象配置
 	stream, e := service.NewRSResumablePutStream(ips, req.Name, req.Hash, req.Size, &pool.Config.Rs)
 	if e != nil {
 		response.FailErr(e, g)
@@ -53,10 +52,10 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 	}, g)
 }
 
-//Head 大文件已上传大小
+// Head 大文件已上传大小
 func (bc *BigObjectsController) Head(g *gin.Context) {
 	token, _ := url.PathUnescape(g.Param("token"))
-	stream, e := service.NewRSResumablePutStreamFromToken(token, &pool.Config.Rs)
+	stream, e := service.NewRSResumablePutStreamFromToken(token)
 	if e != nil {
 		response.BadRequestErr(e, g)
 		return
@@ -72,28 +71,25 @@ func (bc *BigObjectsController) Head(g *gin.Context) {
 	}, g)
 }
 
-//Patch 上传大文件
+// Patch 上传大文件
 func (bc *BigObjectsController) Patch(g *gin.Context) {
 	var req entity.BigPutReq
 	if err := req.Bind(g); err != nil {
 		response.BadRequestErr(err, g)
 		return
 	}
-	//FIXME: rs config 应从元数据中获取，若服务器配置发送改变，则断点续传发生异常
-	// Perf: 借助缓存可避免多次查询元数据集群
-	rsConfig := &pool.Config.Rs
-	stream, err := service.NewRSResumablePutStreamFromToken(req.Token, rsConfig)
+	stream, err := service.NewRSResumablePutStreamFromToken(req.Token)
 	if err != nil {
 		response.BadRequestErr(err, g)
 		return
 	}
 	defer stream.Close()
 	curSize := stream.CurrentSize()
-	if curSize != req.Range.Value().First {
+	if curSize != req.Range.FirstBytes().First {
 		response.Exec(g).Status(http.StatusRequestedRangeNotSatisfiable).Abort()
 		return
 	}
-	bufSize := int64(rsConfig.BlockSize())
+	bufSize := int64(stream.Config.BlockSize())
 	for {
 		n, err := io.CopyN(stream, g.Request.Body, bufSize)
 		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
@@ -119,8 +115,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		}
 		// 上传完成 校验签名
 		if pool.Config.Checksum {
-			//FIXME: rs config 应从元数据中获取
-			getStream, err := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates, &pool.Config.Rs)
+			getStream, err := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates, stream.Config)
 			if err != nil {
 				response.FailErr(err, g)
 				return
@@ -143,9 +138,10 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		verNum, err := bc.metaService.SaveMetadata(&entity.Metadata{
 			Name: stream.Name,
 			Versions: []*entity.Version{{
-				Hash:   stream.Hash,
-				Size:   stream.Size,
-				Locate: stream.Locates,
+				Hash:          stream.Hash,
+				Size:          stream.Size,
+				Locate:        stream.Locates,
+				StoreStrategy: entity.ECReedSolomon,
 			}},
 		})
 		if err != nil {

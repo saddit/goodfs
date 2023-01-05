@@ -2,6 +2,9 @@ package webapi
 
 import (
 	"apiserver/internal/usecase/pool"
+	"common/logs"
+	"common/response"
+	"common/util"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,21 +12,19 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func DeleteTmpObject(locate, id string) {
 	req, _ := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
-	resp, e := pool.Http.Do(req)
-	if resp.StatusCode == http.StatusBadRequest {
-		if content, e := io.ReadAll(resp.Body); e == nil {
-			log.Errorf("patch temp object id=%v, return code=%v\n", id, string(content))
-		}
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		logs.Std().Error(err)
 	}
-	if e != nil || resp.StatusCode != http.StatusOK {
-		log.Println(e, resp.StatusCode)
+	content, err := io.ReadAll(resp.Body)
+	if err != nil {
+		content = util.StrToBytes(resp.Status)
 	}
+	logs.Std().Errorf("delete temp object id=%v, return: %v", id, string(content))
 }
 
 func PostTmpObject(ip, name string, size int64) (string, error) {
@@ -45,14 +46,17 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 
 func PatchTmpObject(ip, id string, body io.Reader) error {
 	req, _ := http.NewRequest(http.MethodPatch, tempRest(ip, id), body)
+	keepAlive(req)
 	resp, e := pool.Http.Do(req)
 	if e != nil {
 		return e
 	}
 	if resp.StatusCode == http.StatusBadRequest {
-		if content, e := io.ReadAll(resp.Body); e == nil {
-			return fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			content = util.StrToBytes(resp.Status)
 		}
+		return fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("patch temp object id=%v, return code=%v", id, resp.Status)
@@ -64,14 +68,17 @@ func PutTmpObject(ip, id, name string) error {
 	form := make(url.Values)
 	form.Set("name", name)
 	req, _ := http.NewRequest(http.MethodPut, tempRest(ip, id), strings.NewReader(form.Encode()))
+	keepAlive(req)
 	resp, e := pool.Http.Do(req)
 	if e != nil {
 		return e
 	}
 	if resp.StatusCode == http.StatusBadRequest {
-		if content, e := io.ReadAll(resp.Body); e == nil {
-			return fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			content = util.StrToBytes(resp.Status)
 		}
+		return fmt.Errorf("put temp object id=%v, return content=%v", id, string(content))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("put temp object id=%v, return code=%v", id, resp.Status)
@@ -105,8 +112,48 @@ func HeadTmpObject(ip, id string) (int64, error) {
 	return 0, fmt.Errorf("response doesn't contains size")
 }
 
-func GetObject(ip, name string) (*http.Response, error) {
-	return pool.Http.Get(objectRest(ip, name))
+func GetObject(ip, name string, offset int, size int64) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, objectRest(ip, name), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
+	req.Header.Set("Size", util.ToString(size))
+	return pool.Http.Do(req)
+}
+
+func HeadObject(ip, id string) error {
+	resp, err := http.Head(objectRest(ip, id))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return response.NewError(http.StatusNotFound, "object not found")
+	}
+	return fmt.Errorf("requset %s: %s", resp.Request.URL, resp.Status)
+}
+
+func PutObject(ip, id string, body io.Reader) error {
+	req, _ := http.NewRequest(http.MethodPut, objectRest(ip, id), body)
+	keepAlive(req)
+	resp, e := pool.Http.Do(req)
+	if e != nil {
+		return e
+	}
+	if resp.StatusCode == http.StatusBadRequest {
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			content = util.StrToBytes(resp.Status)
+		}
+		return fmt.Errorf("put object id=%v, return content=%v", id, string(content))
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("put object id=%v, return code=%v", id, resp.Status)
+	}
+	return nil
 }
 
 func objectRest(ip, id string) string {
@@ -115,4 +162,8 @@ func objectRest(ip, id string) string {
 
 func tempRest(ip, id string) string {
 	return fmt.Sprintf("http://%s/temp/%s", ip, id)
+}
+
+func keepAlive(req *http.Request) {
+	req.Header.Set("Keep-Alive", "timeout=10, max=10000")
 }

@@ -160,7 +160,7 @@ function joinCluster(masterId: string, servId: string) {
 function closeMigrateDialog() {
   openMigrateDialog.value = false
   formErrMsg.value = ""
-  migrateReq.value = {srcServerId: "", destServerId: "", slots: []}
+  migrateReq.value = {srcServerId: "", destServerId: "", slots: [], slotsStr: ""}
 }
 
 

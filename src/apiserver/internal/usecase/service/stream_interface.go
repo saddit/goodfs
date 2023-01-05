@@ -15,3 +15,8 @@ type WriteCommitter interface {
 	io.Writer
 	Committer
 }
+
+type StreamProvider interface {
+	GetStream(ip []string) (io.ReadSeekCloser, error)
+	PutStream(ip []string) (WriteCloseCommitter, error)
+}

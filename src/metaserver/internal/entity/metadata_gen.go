@@ -177,30 +177,6 @@ func (z *Version) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
-		case "sequence":
-			z.Sequence, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "Sequence")
-				return
-			}
-		case "hash":
-			z.Hash, err = dc.ReadString()
-			if err != nil {
-				err = msgp.WrapError(err, "Hash")
-				return
-			}
-		case "size":
-			z.Size, err = dc.ReadInt64()
-			if err != nil {
-				err = msgp.WrapError(err, "Size")
-				return
-			}
-		case "ts":
-			z.Ts, err = dc.ReadInt64()
-			if err != nil {
-				err = msgp.WrapError(err, "Ts")
-				return
-			}
 		case "store_strategy":
 			z.StoreStrategy, err = dc.ReadInt8()
 			if err != nil {
@@ -223,6 +199,30 @@ func (z *Version) DecodeMsg(dc *msgp.Reader) (err error) {
 			z.ShardSize, err = dc.ReadInt64()
 			if err != nil {
 				err = msgp.WrapError(err, "ShardSize")
+				return
+			}
+		case "size":
+			z.Size, err = dc.ReadInt64()
+			if err != nil {
+				err = msgp.WrapError(err, "Size")
+				return
+			}
+		case "ts":
+			z.Ts, err = dc.ReadInt64()
+			if err != nil {
+				err = msgp.WrapError(err, "Ts")
+				return
+			}
+		case "sequence":
+			z.Sequence, err = dc.ReadUint64()
+			if err != nil {
+				err = msgp.WrapError(err, "Sequence")
+				return
+			}
+		case "hash":
+			z.Hash, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "Hash")
 				return
 			}
 		case "locate":
@@ -258,48 +258,8 @@ func (z *Version) DecodeMsg(dc *msgp.Reader) (err error) {
 // EncodeMsg implements msgp.Encodable
 func (z *Version) EncodeMsg(en *msgp.Writer) (err error) {
 	// map header, size 9
-	// write "sequence"
-	err = en.Append(0x89, 0xa8, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.Sequence)
-	if err != nil {
-		err = msgp.WrapError(err, "Sequence")
-		return
-	}
-	// write "hash"
-	err = en.Append(0xa4, 0x68, 0x61, 0x73, 0x68)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.Hash)
-	if err != nil {
-		err = msgp.WrapError(err, "Hash")
-		return
-	}
-	// write "size"
-	err = en.Append(0xa4, 0x73, 0x69, 0x7a, 0x65)
-	if err != nil {
-		return
-	}
-	err = en.WriteInt64(z.Size)
-	if err != nil {
-		err = msgp.WrapError(err, "Size")
-		return
-	}
-	// write "ts"
-	err = en.Append(0xa2, 0x74, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteInt64(z.Ts)
-	if err != nil {
-		err = msgp.WrapError(err, "Ts")
-		return
-	}
 	// write "store_strategy"
-	err = en.Append(0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
+	err = en.Append(0x89, 0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
 	if err != nil {
 		return
 	}
@@ -338,6 +298,46 @@ func (z *Version) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "ShardSize")
 		return
 	}
+	// write "size"
+	err = en.Append(0xa4, 0x73, 0x69, 0x7a, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt64(z.Size)
+	if err != nil {
+		err = msgp.WrapError(err, "Size")
+		return
+	}
+	// write "ts"
+	err = en.Append(0xa2, 0x74, 0x73)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt64(z.Ts)
+	if err != nil {
+		err = msgp.WrapError(err, "Ts")
+		return
+	}
+	// write "sequence"
+	err = en.Append(0xa8, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.Sequence)
+	if err != nil {
+		err = msgp.WrapError(err, "Sequence")
+		return
+	}
+	// write "hash"
+	err = en.Append(0xa4, 0x68, 0x61, 0x73, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.Hash)
+	if err != nil {
+		err = msgp.WrapError(err, "Hash")
+		return
+	}
 	// write "locate"
 	err = en.Append(0xa6, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x65)
 	if err != nil {
@@ -362,20 +362,8 @@ func (z *Version) EncodeMsg(en *msgp.Writer) (err error) {
 func (z *Version) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	// map header, size 9
-	// string "sequence"
-	o = append(o, 0x89, 0xa8, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65)
-	o = msgp.AppendUint64(o, z.Sequence)
-	// string "hash"
-	o = append(o, 0xa4, 0x68, 0x61, 0x73, 0x68)
-	o = msgp.AppendString(o, z.Hash)
-	// string "size"
-	o = append(o, 0xa4, 0x73, 0x69, 0x7a, 0x65)
-	o = msgp.AppendInt64(o, z.Size)
-	// string "ts"
-	o = append(o, 0xa2, 0x74, 0x73)
-	o = msgp.AppendInt64(o, z.Ts)
 	// string "store_strategy"
-	o = append(o, 0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
+	o = append(o, 0x89, 0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
 	o = msgp.AppendInt8(o, z.StoreStrategy)
 	// string "data_shards"
 	o = append(o, 0xab, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x73, 0x68, 0x61, 0x72, 0x64, 0x73)
@@ -386,6 +374,18 @@ func (z *Version) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "shard_size"
 	o = append(o, 0xaa, 0x73, 0x68, 0x61, 0x72, 0x64, 0x5f, 0x73, 0x69, 0x7a, 0x65)
 	o = msgp.AppendInt64(o, z.ShardSize)
+	// string "size"
+	o = append(o, 0xa4, 0x73, 0x69, 0x7a, 0x65)
+	o = msgp.AppendInt64(o, z.Size)
+	// string "ts"
+	o = append(o, 0xa2, 0x74, 0x73)
+	o = msgp.AppendInt64(o, z.Ts)
+	// string "sequence"
+	o = append(o, 0xa8, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65)
+	o = msgp.AppendUint64(o, z.Sequence)
+	// string "hash"
+	o = append(o, 0xa4, 0x68, 0x61, 0x73, 0x68)
+	o = msgp.AppendString(o, z.Hash)
 	// string "locate"
 	o = append(o, 0xa6, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x65)
 	o = msgp.AppendArrayHeader(o, uint32(len(z.Locate)))
@@ -413,30 +413,6 @@ func (z *Version) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
-		case "sequence":
-			z.Sequence, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Sequence")
-				return
-			}
-		case "hash":
-			z.Hash, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Hash")
-				return
-			}
-		case "size":
-			z.Size, bts, err = msgp.ReadInt64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Size")
-				return
-			}
-		case "ts":
-			z.Ts, bts, err = msgp.ReadInt64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Ts")
-				return
-			}
 		case "store_strategy":
 			z.StoreStrategy, bts, err = msgp.ReadInt8Bytes(bts)
 			if err != nil {
@@ -459,6 +435,30 @@ func (z *Version) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			z.ShardSize, bts, err = msgp.ReadInt64Bytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "ShardSize")
+				return
+			}
+		case "size":
+			z.Size, bts, err = msgp.ReadInt64Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Size")
+				return
+			}
+		case "ts":
+			z.Ts, bts, err = msgp.ReadInt64Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Ts")
+				return
+			}
+		case "sequence":
+			z.Sequence, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Sequence")
+				return
+			}
+		case "hash":
+			z.Hash, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Hash")
 				return
 			}
 		case "locate":
@@ -494,7 +494,7 @@ func (z *Version) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Version) Msgsize() (s int) {
-	s = 1 + 9 + msgp.Uint64Size + 5 + msgp.StringPrefixSize + len(z.Hash) + 5 + msgp.Int64Size + 3 + msgp.Int64Size + 15 + msgp.Int8Size + 12 + msgp.Int32Size + 14 + msgp.Int32Size + 11 + msgp.Int64Size + 7 + msgp.ArrayHeaderSize
+	s = 1 + 15 + msgp.Int8Size + 12 + msgp.Int32Size + 14 + msgp.Int32Size + 11 + msgp.Int64Size + 5 + msgp.Int64Size + 3 + msgp.Int64Size + 9 + msgp.Uint64Size + 5 + msgp.StringPrefixSize + len(z.Hash) + 7 + msgp.ArrayHeaderSize
 	for za0001 := range z.Locate {
 		s += msgp.StringPrefixSize + len(z.Locate[za0001])
 	}

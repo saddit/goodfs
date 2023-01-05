@@ -31,6 +31,7 @@ func (oc *ObjectsController) Put(c *gin.Context) {
 		Versions: []*entity.Version{{
 			Size: c.Request.ContentLength,
 			Hash: req.Hash,
+			StoreStrategy: req.Store,
 		}},
 	})
 
@@ -65,7 +66,7 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 		return
 	}
 	// try seek
-	if tp, ok := req.Range.Get(); ok {
+	if tp, ok := req.Range.GetFirstBytes(); ok {
 		if _, err = stream.Seek(tp.First, io.SeekCurrent); err != nil {
 			response.FailErr(err, c)
 			return
