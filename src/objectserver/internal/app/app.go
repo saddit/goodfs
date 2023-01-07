@@ -40,6 +40,8 @@ func Run(cfg *config.Config) {
 	defer service.StartTempRemovalBackground(pool.Cache)()
 	// auto save server capacity info
 	defer pool.ObjectCap.StartAutoSave(cfg.State.SyncInterval)()
+	// driver manger
+	defer pool.DriverManager.StartAutoUpdate()()
 	// warmup serv
 	service.WarmUpLocateCache()
 	// startup server
