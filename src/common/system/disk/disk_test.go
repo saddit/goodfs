@@ -17,8 +17,8 @@ func TestGetInfo(t *testing.T) {
 	t.Logf("total=%dGB, free=%dGB", info.Total.GigaByte(), info.Total.GigaByte())
 }
 
-func TestAllPartitionPath(t *testing.T) {
-	paths, err := AllPartitionPath()
+func TestAllMountPoints(t *testing.T) {
+	paths, err := AllMountPoints()
 	if err != nil {
 		t.Fatal(err)
 	}

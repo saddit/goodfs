@@ -2,10 +2,11 @@ package disk
 
 import (
 	"common/logs"
+
 	"github.com/shirou/gopsutil/v3/disk"
 )
 
-func AllPartitionPath() ([]string, error) {
+func AllMountPoints() ([]string, error) {
 	parts, err := disk.Partitions(false)
 	if err != nil {
 		return nil, err
