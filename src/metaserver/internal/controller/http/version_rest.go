@@ -3,10 +3,9 @@ package http
 import (
 	"common/request"
 	"common/response"
+	"github.com/gin-gonic/gin"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
-
-	"github.com/gin-gonic/gin"
 )
 
 type VersionController struct {
@@ -98,12 +97,14 @@ func (v *VersionController) List(g *gin.Context) {
 		response.BadRequestErr(err, g)
 		return
 	}
-	res, err := v.service.ListVersions(g.Param("name"), body.Page, body.PageSize)
+	res, total, err := v.service.ListVersions(g.Param("name"), body.Page, body.PageSize)
 	if err != nil {
 		response.FailErr(err, g)
 		return
 	}
-	response.OkJson(res, g)
+	response.Exec(g).
+		Header(gin.H{"Total": total}).
+		JSON(res)
 }
 
 func (v *VersionController) Delete(g *gin.Context) {

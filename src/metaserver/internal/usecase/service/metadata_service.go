@@ -167,7 +167,7 @@ func (m *MetadataService) GetVersion(name string, ver int) (*entity.Version, err
 	return m.repo.GetVersion(name, uint64(ver))
 }
 
-func (m *MetadataService) ListVersions(name string, page int, size int) ([]*entity.Version, error) {
+func (m *MetadataService) ListVersions(name string, page int, size int) ([]*entity.Version, int, error) {
 	if page == 0 {
 		page = 1
 	}

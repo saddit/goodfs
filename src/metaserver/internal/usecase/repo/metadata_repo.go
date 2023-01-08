@@ -214,13 +214,14 @@ func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, err
 	return data, nil
 }
 
-func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, err error) {
+func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, total int, err error) {
 	size := end - start + 1
-	lst, err = m.Cache.ListVersions(name, start, end)
-	if err == nil {
-		return lst, nil
+	lst, _, err = m.Cache.ListVersions(name, start, end)
+	if util.InstanceOf[PartlyMatchedErr](err) {
+		start = err.(PartlyMatchedErr).Last()
+	} else if err != nil {
+		return
 	}
-	start = util.ToInt(err.Error())
 	err = m.MainDB.View(func(tx *bolt.Tx) error {
 		buk := logic.GetRootNest(tx, name)
 		if buk == nil {
@@ -237,7 +238,8 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 			}
 			lst = append(lst, data)
 		}
-
+		// record total
+		total = buk.Stats().KeyN
 		return nil
 	})
 	return
