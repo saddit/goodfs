@@ -18,6 +18,7 @@ declare module '@vue/runtime-core' {
     ListboxOptions: typeof import('@headlessui/vue')['ListboxOptions']
     LoginDialog: typeof import('./src/components/LoginDialog.vue')['default']
     ModalTemplate: typeof import('./src/components/ModalTemplate.vue')['default']
+    Pagination: typeof import('./src/components/Pagination.vue')['default']
     Popover: typeof import('@headlessui/vue')['Popover']
     PopoverButton: typeof import('@headlessui/vue')['PopoverButton']
     PopoverPanel: typeof import('@headlessui/vue')['PopoverPanel']

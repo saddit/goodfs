@@ -1,4 +1,4 @@
-import type {PluginOptions } from "vue-toastification/dist/types/types";
+import type {PluginOptions} from "vue-toastification/dist/types/types";
 import {POSITION} from "vue-toastification";
 
 export const notify: PluginOptions = {
@@ -22,3 +22,8 @@ export const statTypeCpu = "cpu"
 export const apiServerNo = 0
 export const metaServerNo = 1
 export const dataServerNo = 2
+export const storeStrategy = [
+    'Unknown',
+    'ReedSolomon',
+    'MultiReplication'
+]

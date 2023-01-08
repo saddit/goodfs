@@ -2,6 +2,7 @@ portal: 'Portal'
 home: 'Home'
 about: 'About'
 setting: 'Setting'
+metadata: 'Metadata'
 not-found: "Not Found"
 server: 'Server'
 api-server: 'API Server'

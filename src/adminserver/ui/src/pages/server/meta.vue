@@ -10,7 +10,7 @@
   <div class="mb-4 mt-8 flex flex-wrap space-x-4">
     <!-- capacity card -->
     <CapCard v-if="capInfo.total > 0" class="w-[32%]" :cap-info="capInfo"/>
-    <div class="w-1/4">
+    <div class="w-1/4" v-if="infos.length > 0">
       <!-- tool box -->
       <div class="bg-white h-24 mb-2 shadow-md rounded-md p-3 gap-y-1 gap-x-2 grid grid-rows-2 grid-cols-2">
         <span class="font-bold text-xl justify-self-start text-gray-500">{{ t('tool-box') }}</span>
