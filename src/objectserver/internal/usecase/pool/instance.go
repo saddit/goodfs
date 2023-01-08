@@ -44,7 +44,10 @@ func initCache(cfg *config.CacheConfig) {
 	cacheConf := bigcache.DefaultConfig(cfg.TTL)
 	cacheConf.CleanWindow = cfg.CleanInterval
 	cacheConf.HardMaxCacheSize = int(cfg.MaxSize.MegaByte())
-	cacheConf.Shards = int(cfg.MaxSize / cfg.MaxItemSize)
+	cacheConf.MaxEntrySize = int(cfg.MaxItemSize.Byte())
+	cacheConf.Shards = 2048
+	cacheConf.Verbose = false
+	cacheConf.MaxEntriesInWindow = 1024 * cacheConf.Shards
 	Cache = cache.NewCache(cacheConf)
 }
 
