@@ -3,6 +3,7 @@ package http
 import (
 	"adminserver/internal/usecase/logic"
 	"common/response"
+	"common/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,12 +31,14 @@ func (mc *MetadataController) Page(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	res, err := logic.NewMetadata().MetadataPaging(cond)
+	res, total, err := logic.NewMetadata().MetadataPaging(cond)
 	if err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	response.OkJson(res, c)
+	response.Exec(c).
+		Header(gin.H{"X-Total-Count": total}).
+		JSON(res)
 }
 
 func (mc *MetadataController) Versions(c *gin.Context) {
@@ -44,11 +47,12 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	res, err := logic.NewMetadata().VersionPaging(cond)
+	res, total, err := logic.NewMetadata().VersionPaging(cond)
 	if err != nil {
 		response.FailErr(err, c)
 		return
 	}
+	c.Header("X-Total-Count", util.ToString(total))
 	if _, err := c.Writer.Write(res); err != nil {
 		response.FailErr(err, c)
 		return

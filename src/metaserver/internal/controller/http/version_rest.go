@@ -103,7 +103,7 @@ func (v *VersionController) List(g *gin.Context) {
 		return
 	}
 	response.Exec(g).
-		Header(gin.H{"Total": total}).
+		Header(gin.H{"X-Total-Count": total}).
 		JSON(res)
 }
 

@@ -3,20 +3,23 @@ package webapi
 import (
 	"adminserver/internal/usecase/pool"
 	"common/response"
+	"common/util"
 	"fmt"
 	"io"
 	"net/http"
 )
 
-func ListVersion(ip, name string, page, pageSize int) ([]byte, error) {
+func ListVersion(ip, name string, page, pageSize int) ([]byte, int, error) {
 	resp, err := pool.Http.Get(fmt.Sprintf("%s://%s/metadata/%s/versions?page=%d&page_size=%d", GetSchema(), ip, name, page, pageSize))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+		return nil, 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
-	return io.ReadAll(resp.Body)
+	total := util.ToInt(resp.Header.Get("X-Total-Count"))
+	bt, err := io.ReadAll(resp.Body)
+	return bt, total, err
 }
 
 func PutObjects(ip, name, sha256 string, fileIO io.Reader) error {

@@ -124,6 +124,6 @@ func (m *MetadataController) List(c *gin.Context) {
 		return util.IfElse(req.Desc, !b, b)
 	})
 	response.Exec(c).
-		Header(gin.H{"Total": total}).
+		Header(gin.H{"X-Total-Count": total}).
 		JSON(res)
 }

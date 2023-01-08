@@ -10,7 +10,7 @@ import (
 	"net/url"
 )
 
-func ListMetadata(ip, prefix string, pageSize int, orderBy string, desc bool) ([]*entity.Metadata, error) {
+func ListMetadata(ip, prefix string, pageSize int, orderBy string, desc bool) ([]*entity.Metadata, int, error) {
 	resp, err := pool.Http.Get(metadataListRest(ip, map[string][]string{
 		"prefix":    {prefix},
 		"page_size": {util.ToString(pageSize)},
@@ -18,12 +18,14 @@ func ListMetadata(ip, prefix string, pageSize int, orderBy string, desc bool) ([
 		"desc":      {util.ToString(desc)},
 	}))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+		return nil, 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
-	return util.UnmarshalFromIO[[]*entity.Metadata](resp.Body)
+	total := util.ToInt(resp.Header.Get("X-Total-Count"))
+	lst, err := util.UnmarshalFromIO[[]*entity.Metadata](resp.Body)
+	return lst, total, err
 }
 
 func metadataListRest(ip string, param map[string][]string) string {

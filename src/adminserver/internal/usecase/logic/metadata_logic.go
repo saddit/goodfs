@@ -36,32 +36,34 @@ func NewMetadata() *Metadata {
 	return new(Metadata)
 }
 
-func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, error) {
+func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, error) {
 	servers := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
 	lst := make([]*entity.Metadata, 0, len(servers)*cond.Page*cond.PageSize)
 	if len(servers) == 0 {
 		logs.Std().Warn("not found any metadata server")
-		return lst, nil
+		return lst, 0, nil
 	}
 	mux := sync.Mutex{}
+	var totals int
 	dg := util.NewDoneGroup()
 	defer dg.Close()
 	for _, ip := range servers {
 		dg.Add(1)
 		go func(loc string) {
 			defer dg.Done()
-			data, err := webapi.ListMetadata(loc, cond.Name, cond.Page*cond.PageSize, cond.OrderBy, cond.Desc)
+			data, total, err := webapi.ListMetadata(loc, cond.Name, cond.Page*cond.PageSize, cond.OrderBy, cond.Desc)
 			if err != nil {
 				dg.Error(err)
 				return
 			}
 			mux.Lock()
 			defer mux.Unlock()
+			totals += total
 			lst = append(lst, data...)
 		}(ip)
 	}
 	if err := dg.WaitUntilError(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if st, ed, ok := util.PagingOffset(cond.Page, cond.PageSize, len(lst)); ok {
 		sort.Slice(lst, func(i, j int) bool {
@@ -78,12 +80,12 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, error)
 			}
 			return util.IfElse(cond.Desc, !res, res)
 		})
-		return lst[st:ed], nil
+		return lst[st:ed], totals, nil
 	}
-	return []*entity.Metadata{}, nil
+	return []*entity.Metadata{}, 0, nil
 }
 
-func (m *Metadata) VersionPaging(cond MetadataCond) ([]byte, error) {
+func (m *Metadata) VersionPaging(cond MetadataCond) ([]byte, int, error) {
 	return webapi.ListVersion(SelectApiServer(), cond.Name, cond.Page, cond.PageSize)
 }
 
