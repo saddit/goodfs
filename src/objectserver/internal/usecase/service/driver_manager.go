@@ -6,6 +6,8 @@ import (
 	"common/logs"
 	"common/system/disk"
 	"context"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -64,4 +66,22 @@ func (dm *DriverManager) StartAutoUpdate() (stop func()) {
 
 func (dm *DriverManager) SelectDriver() (*Driver, error) {
 	return dm.balancer.Select(dm.drivers)
+}
+
+func (dm *DriverManager) IsPathExist(path string) bool {
+	for _, d := range dm.drivers {
+		if ExistPath(filepath.Join(d.MountPoint, path)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (dm *DriverManager) FindMountPath(path string) (string, error) {
+	for _, d := range dm.drivers {
+		if ExistPath(filepath.Join(d.MountPoint, path)) {
+			return filepath.Join(d.MountPoint, path), nil
+		}
+	}
+	return "", os.ErrNotExist
 }
