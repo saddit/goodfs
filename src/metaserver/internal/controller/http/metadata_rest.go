@@ -100,7 +100,7 @@ func (m *MetadataController) List(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	res, err := m.service.ListMetadata(req.Prefix, req.PageSize)
+	res, total, err := m.service.ListMetadata(req.Prefix, req.PageSize)
 	if usecase.IsNotFound(err) {
 		response.OkJson([]struct{}{}, c)
 		return
@@ -123,5 +123,7 @@ func (m *MetadataController) List(c *gin.Context) {
 		}
 		return util.IfElse(req.Desc, !b, b)
 	})
-	response.OkJson(res, c)
+	response.Exec(c).
+		Header(gin.H{"Total": total}).
+		JSON(res)
 }

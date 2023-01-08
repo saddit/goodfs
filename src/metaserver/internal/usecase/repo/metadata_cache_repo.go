@@ -38,7 +38,7 @@ func NewMetadataCacheRepo(c cache.ICache) *MetadataCacheRepo {
 	return &MetadataCacheRepo{c}
 }
 
-func (m *MetadataCacheRepo) ListMetadata(string, int) ([]*entity.Metadata, error) {
+func (m *MetadataCacheRepo) ListMetadata(string, int) ([]*entity.Metadata, int, error) {
 	panic("unsupported method")
 }
 
