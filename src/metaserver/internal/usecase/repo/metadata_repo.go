@@ -245,7 +245,7 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 	return
 }
 
-func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Metadata, err error) {
+func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Metadata, total int, err error) {
 	err = m.MainDB.View(func(tx *bolt.Tx) error {
 		root := logic.GetRoot(tx)
 		if root == nil {
@@ -255,8 +255,10 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 		var k, v []byte
 		if prefix != "" {
 			k, v = cur.Seek(util.StrToBytes(prefix))
+			defer func() { total = len(lst) }()
 		} else {
 			k, v = cur.Next()
+			total = root.Stats().KeyN
 		}
 		for k != nil && len(lst) < size {
 			var data entity.Metadata

@@ -176,9 +176,9 @@ func (m *MetadataService) ListVersions(name string, page int, size int) ([]*enti
 	return m.repo.ListVersions(name, start, start+size)
 }
 
-func (m *MetadataService) ListMetadata(prefix string, size int) ([]*entity.Metadata, error) {
+func (m *MetadataService) ListMetadata(prefix string, size int) ([]*entity.Metadata, int, error) {
 	if size == 0 {
-		return []*entity.Metadata{}, nil
+		return []*entity.Metadata{}, 0, nil
 	}
 	return m.repo.ListMetadata(prefix, size)
 }
