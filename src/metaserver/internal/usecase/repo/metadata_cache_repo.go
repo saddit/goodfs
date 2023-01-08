@@ -3,12 +3,32 @@ package repo
 import (
 	"common/cache"
 	"common/util"
-	"errors"
 	"fmt"
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
 )
+
+type PartlyMatchedErr interface {
+	error
+	Last() int
+}
+
+type partlyErr struct {
+	lastIndex int
+}
+
+func newPartlyErr(last int) *partlyErr {
+	return &partlyErr{lastIndex: last}
+}
+
+func (pe *partlyErr) Last() int {
+	return pe.lastIndex
+}
+
+func (pe *partlyErr) Error() string {
+	return "partly matched"
+}
 
 type MetadataCacheRepo struct {
 	cache cache.ICache
@@ -46,18 +66,18 @@ func (m *MetadataCacheRepo) GetVersion(s string, u uint64) (*entity.Version, err
 }
 
 // ListVersions return successfully matched cache until failure.
-// if error is not nil, error string is the started version should be fetched from db
-func (m *MetadataCacheRepo) ListVersions(s string, start int, end int) ([]*entity.Version, error) {
+// returning PartlyMatchedErr if not fully matched all
+func (m *MetadataCacheRepo) ListVersions(s string, start int, end int) ([]*entity.Version, int, error) {
 	size := end - start + 1
 	res := make([]*entity.Version, 0, size)
 	for i := start; i <= end; i++ {
 		v, err := m.GetVersion(s, uint64(i))
 		if err != nil {
-			return res, errors.New(fmt.Sprint(i))
+			return res, 0, newPartlyErr(i)
 		}
 		res = append(res, v)
 	}
-	return res, nil
+	return res, 0, nil
 }
 
 func (m *MetadataCacheRepo) AddMetadata(metadata *entity.Metadata) error {
