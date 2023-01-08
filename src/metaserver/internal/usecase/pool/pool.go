@@ -3,6 +3,7 @@ package pool
 import (
 	"common/cache"
 	"common/cst"
+	"common/datasize"
 	"common/etcd"
 	"common/registry"
 	"common/util"
@@ -73,6 +74,10 @@ func initCache(cfg config.CacheConfig) {
 	conf := bigcache.DefaultConfig(cfg.TTL)
 	conf.HardMaxCacheSize = int(cfg.MaxSize.MegaByte())
 	conf.CleanWindow = cfg.CleanInterval
+	conf.Verbose = false
+	conf.Shards = 2048
+	conf.MaxEntrySize = int(datasize.MB * 5)
+	conf.MaxEntriesInWindow = conf.Shards * 1024
 	Cache = cache.NewCache(conf)
 }
 

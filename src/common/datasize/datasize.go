@@ -23,39 +23,39 @@ const (
 	PB            = TB << 10
 )
 
-func (d *DataSize) Byte() uint64 {
-	return uint64(*d)
+func (d DataSize) Byte() uint64 {
+	return uint64(d)
 }
 
-func (d *DataSize) KiloByte() uint64 {
+func (d DataSize) KiloByte() uint64 {
 	return d.Byte() >> 10
 }
 
-func (d *DataSize) MegaByte() uint64 {
+func (d DataSize) MegaByte() uint64 {
 	return d.KiloByte() >> 10
 }
 
-func (d *DataSize) GigaByte() uint64 {
+func (d DataSize) GigaByte() uint64 {
 	return d.MegaByte() >> 10
 }
 
-func (d *DataSize) TeraByte() uint64 {
+func (d DataSize) TeraByte() uint64 {
 	return d.GigaByte() >> 10
 }
 
-func (d *DataSize) PetaByte() uint64 {
+func (d DataSize) PetaByte() uint64 {
 	return d.TeraByte() >> 10
 }
 
-func (d *DataSize) String() string {
+func (d DataSize) String() string {
 	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
-	i := int(math.Floor(math.Log(float64(*d)) / math.Log(1024)))
+	i := int(math.Floor(math.Log(float64(d)) / math.Log(1024)))
 	exceed := 1.0
 	if i >= len(units) {
 		exceed = math.Pow(Step, float64(i-len(units)+1))
 		i = len(units) - 1
 	}
-	num := float64(*d) / math.Pow(Step, float64(i)) * exceed
+	num := float64(d) / math.Pow(Step, float64(i)) * exceed
 	return fmt.Sprintf("%.0f%s", num, units[i])
 }
 
