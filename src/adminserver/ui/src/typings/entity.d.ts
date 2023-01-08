@@ -1,9 +1,14 @@
+declare interface PageResult<T> {
+    list: T[]
+    total: number
+}
+
 declare interface Version {
     hash: string
     size: number
     sequence: number
     ts: number
-    ecAlgo: number
+    storeStrategy: number
     dataShards: number
     parityShards: number
     shardSize: number

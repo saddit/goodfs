@@ -3,6 +3,7 @@ declare type OrderType = "create_time" | "updated_time" | "name"
 declare interface Pageable {
     page: number
     pageSize: number
+    total?: number
     OrderBy?: OrderType
     Desc?: boolean
 }

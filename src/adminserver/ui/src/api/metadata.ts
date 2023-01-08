@@ -1,17 +1,25 @@
 import axios from "axios";
 
-async function metadataPage(req: MetadataReq): Promise<Version[]> {
+async function metadataPage(req: MetadataReq): Promise<PageResult<Metadata>> {
     let resp = await axios.get("/metadata/page", {
         params: req
     })
-    return resp.data
+    let total = resp.headers["X-Total-Count"] || "0"
+    return {
+        total: parseInt(total),
+        list: resp.data
+    }
 }
 
-async function versionPage(req: MetadataReq): Promise<Metadata[]> {
+async function versionPage(req: MetadataReq): Promise<PageResult<Version>> {
     let resp = await axios.get("/metadata/versions", {
         params: req
     })
-    return resp.data
+    let total = resp.headers["X-Total-Count"] || "0"
+    return {
+        total: parseInt(total),
+        list: resp.data
+    }
 }
 
 async function slotsDetail(): Promise<{ [key: string]: SlotsInfo }> {
