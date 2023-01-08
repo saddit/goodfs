@@ -48,7 +48,6 @@ func (d DataSize) PetaByte() uint64 {
 }
 
 func (d DataSize) String() string {
-	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
 	i := int(math.Floor(math.Log(float64(d)) / math.Log(1024)))
 	exceed := 1.0
 	if i >= len(units) {
@@ -59,9 +58,17 @@ func (d DataSize) String() string {
 	return fmt.Sprintf("%.0f%s", num, units[i])
 }
 
+var units []string
+
 var unitNameMap = map[string]DataSize{
 	"B": Byte, "KB": KB, "MB": MB,
 	"GB": GB, "TB": TB, "PB": PB,
+}
+
+func init() {
+	for k, _ := range unitNameMap {
+		units = append(units, k)
+	}
 }
 
 func Parse(s string) (DataSize, error) {
