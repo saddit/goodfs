@@ -170,7 +170,7 @@ thead tr {
 }
 
 thead th {
-    @apply py-2 px-4
+    @apply py-2 px-6
 }
 
 tbody td {
