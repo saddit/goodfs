@@ -30,4 +30,4 @@ hash-slot:
 cache:
   ttl: 1h0m0s
   clean-interval: 1h0m0s
-  max-size: 128MB
+  max-size: 1GB

@@ -41,7 +41,8 @@ func Run(cfg *config.Config) {
 	// auto save server capacity info
 	defer pool.ObjectCap.StartAutoSave(cfg.State.SyncInterval)()
 	// driver manger
-	defer pool.DriverManager.StartAutoUpdate()()
+	driverManager := service.NewDriverManager(service.NewFreeFirstDriver())
+	defer driverManager.StartAutoUpdate()()
 	// warmup serv
 	service.WarmUpLocateCache()
 	// startup server

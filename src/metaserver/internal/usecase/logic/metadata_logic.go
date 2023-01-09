@@ -43,13 +43,13 @@ func AddMeta(data *entity.Metadata) TxFunc {
 		if root.Get(key) != nil {
 			return ErrExists
 		}
+		data.CreateTime = time.Now().UnixMilli()
+		data.UpdateTime = data.CreateTime
 		// encode data
 		bt, err := util.EncodeMsgp(data)
 		if err != nil {
 			return err
 		}
-		data.CreateTime = time.Now().UnixMilli()
-		data.UpdateTime = data.CreateTime
 		// create version bucket
 		if _, err := root.CreateBucket(util.StrToBytes(NestPrefix + data.Name)); err != nil {
 			return fmt.Errorf("create bucket: %w", err)
@@ -88,12 +88,12 @@ func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 		if data.UpdateTime < origin.UpdateTime {
 			return ErrOldData
 		}
+		// update data
+		data.UpdateTime = time.Now().UnixMilli()
 		bt, err := util.EncodeMsgp(data)
 		if err != nil {
 			return err
 		}
-		// update data
-		data.UpdateTime = time.Now().UnixMilli()
 		return root.Put(util.StrToBytes(name), bt)
 	}
 }

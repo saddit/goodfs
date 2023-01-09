@@ -257,15 +257,17 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 			k, v = cur.Seek(util.StrToBytes(prefix))
 			defer func() { total = len(lst) }()
 		} else {
-			k, v = cur.Next()
+			k, v = cur.First()
 			total = root.Stats().KeyN
 		}
 		for k != nil && len(lst) < size {
-			var data entity.Metadata
-			if err := util.DecodeMsgp(&data, v); err != nil {
-				return err
+			if len(v) > 0 {
+				var data entity.Metadata
+				if err := util.DecodeMsgp(&data, v); err != nil {
+					return err
+				}
+				lst = append(lst, &data)
 			}
-			lst = append(lst, &data)
 			k, v = cur.Next()
 		}
 		return nil

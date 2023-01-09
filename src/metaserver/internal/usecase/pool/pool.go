@@ -76,8 +76,8 @@ func initCache(cfg config.CacheConfig) {
 	conf.CleanWindow = cfg.CleanInterval
 	conf.Verbose = false
 	conf.Shards = 2048
-	conf.MaxEntrySize = int(datasize.MB * 5)
-	conf.MaxEntriesInWindow = conf.Shards * 1024
+	conf.MaxEntrySize = int(datasize.KB * 4)
+	conf.MaxEntriesInWindow = int(cfg.MaxSize / (8 * datasize.KB))
 	Cache = cache.NewCache(conf)
 }
 

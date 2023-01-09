@@ -55,19 +55,28 @@ func (d DataSize) String() string {
 		i = len(units) - 1
 	}
 	num := float64(d) / math.Pow(Step, float64(i)) * exceed
-	return fmt.Sprintf("%.0f%s", num, units[i])
+	return fmt.Sprintf("%.0f%s", num, units[i].name)
 }
 
-var units []string
-
-var unitNameMap = map[string]DataSize{
-	"B": Byte, "KB": KB, "MB": MB,
-	"GB": GB, "TB": TB, "PB": PB,
+type unit struct {
+	name  string
+	value DataSize
 }
+
+var units = []unit{
+	{"B", Byte},
+	{"KB", KB},
+	{"MB", MB},
+	{"GB", GB},
+	{"TB", TB},
+	{"PB", PB},
+}
+
+var unitNameMap = map[string]DataSize{}
 
 func init() {
-	for k, _ := range unitNameMap {
-		units = append(units, k)
+	for _, v := range units {
+		unitNameMap[v.name] = v.value
 	}
 }
 
