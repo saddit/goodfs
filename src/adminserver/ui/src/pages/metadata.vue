@@ -36,7 +36,9 @@
             </td>
           </tr>
         </template>
-        <tr v-else><td colspan="4" class="text-center">{{t('no-data')}}</td></tr>
+        <tr v-else>
+          <td colspan="4" class="text-center">{{ t('no-data') }}</td>
+        </tr>
         </tbody>
       </table>
       <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
@@ -49,10 +51,12 @@
 import {createColumnHelper, FlexRender, getCoreRowModel, useVueTable} from '@tanstack/vue-table'
 import {MagnifyingGlassIcon} from '@heroicons/vue/20/solid'
 
+const defPage: Pageable = {page: 1, total: 0, pageSize: 10, orderBy: 'create_time', desc: false}
+
 const dataList = ref<Metadata[]>([])
 const versionList = ref<Version[]>([])
-const dataReq = reactive<MetadataReq>({name: '', page: 1, total: 0, pageSize: 10})
-const versionReq = reactive<MetadataReq>({name: '', page: 1, total: 0, pageSize: 10})
+const dataReq = reactive<MetadataReq>({name: '', ...defPage})
+const versionReq = reactive<MetadataReq>({name: '', ...defPage})
 
 const {t} = useI18n({inheritLocale: true})
 
@@ -81,6 +85,20 @@ function queryVersion(name: string) {
         })
 }
 
+function changeDataSort(name: OrderType) {
+    if (dataReq.orderBy == name) {
+        if (dataReq.desc) {
+            dataReq.orderBy = defPage.orderBy
+            dataReq.desc = defPage.desc
+            return
+        }
+        dataReq.desc = true
+        return
+    }
+    dataReq.orderBy = name
+    dataReq.desc = false
+}
+
 watch(dataReq, () => {
     queryMetadata()
 })
@@ -99,17 +117,21 @@ const versionColumnHelper = createColumnHelper<Version>()
 const dataColumns = [
     dataColumnHelper.accessor('name', {
         id: 'metadata-id',
-        header: () => 'Name',
+        header: () => h('p', {
+            onClick: () => changeDataSort('name')
+        }, 'Name'),
         cell: props => props.getValue()
     }),
     dataColumnHelper.accessor('createTime', {
         header: () => h('p', {
-
+            onClick: () => changeDataSort('create_time')
         }, 'Created At'),
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
     dataColumnHelper.accessor('updateTime', {
-        header: () => 'Updated At',
+        header: () => h('p', {
+            onClick: () => changeDataSort('update_time')
+        }, 'Updated At'),
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
     dataColumnHelper.display({
@@ -172,7 +194,7 @@ thead tr {
 }
 
 thead th {
-    @apply py-2 px-6
+    @apply py-2 px-6 cursor-pointer select-none
 }
 
 tbody td {
