@@ -5,7 +5,6 @@ async function metadataPage(req: MetadataReq): Promise<PageResult<Metadata>> {
         params: req
     })
     let total = resp.headers["x-total-count"] || "0"
-    console.log("total", total)
     return {
         total: parseInt(total),
         list: resp.data

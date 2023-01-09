@@ -1,11 +1,11 @@
-declare type OrderType = "create_time" | "updated_time" | "name"
+declare type OrderType = "create_time" | "update_time" | "name" | ""
 
 declare interface Pageable {
     page: number
     pageSize: number
     total?: number
-    OrderBy?: OrderType
-    Desc?: boolean
+    orderBy?: OrderType
+    desc?: boolean
 }
 
 declare interface MetadataReq extends Pageable {

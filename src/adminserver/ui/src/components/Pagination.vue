@@ -8,18 +8,16 @@
       <font-awesome-icon icon="chevron-left"/>
     </button>
     <div class="grid grid-flow-col grid-rows-1 gap-x-3 mx-4">
-      <transition-group name="list-complete">
-        <template v-for="i in totalPage" :key="i">
-          <div
-              class="page-item text-sm"
-              :class="[ curPage === i ? 'page-item-selected' : 'page-item-normal']"
-              v-if="i >= start && i < start + maxNum"
-              @click="setCurrentPage(i)"
-          >
-            {{ i }}
-          </div>
-        </template>
-      </transition-group>
+      <template v-for="i in totalPage" :key="i">
+        <div
+            class="page-item text-sm"
+            :class="[ curPage === i ? 'page-item-selected' : 'page-item-normal']"
+            v-if="i >= start && i < start + maxNum"
+            @click="setCurrentPage(i)"
+        >
+          {{ i }}
+        </div>
+      </template>
     </div>
     <button
         @click="switchPage(1)"
@@ -94,21 +92,5 @@ export default {
 
 .page-item-selected {
     @apply text-white bg-indigo-600 font-bold;
-}
-
-.list-complete-item {
-    transition: all 0.8s ease;
-    display: inline-block;
-    /* margin-right: 10px; */
-}
-
-.list-complete-enter-from,
-.list-complete-leave-to {
-    opacity: 0;
-    transform: translateY(30px);
-}
-
-.list-complete-leave-active {
-    position: absolute;
 }
 </style>
