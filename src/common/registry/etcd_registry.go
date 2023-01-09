@@ -117,6 +117,7 @@ func (e *EtcdRegistry) Register() error {
 }
 
 func (e *EtcdRegistry) Unregister() error {
+	log.Tracef("manual unregister %s", e.Key())
 	e.stopFn()
 	if e.leaseId != -1 {
 		ctx, cancel := context.WithTimeout(context.Background(), e.cfg.Timeout)
