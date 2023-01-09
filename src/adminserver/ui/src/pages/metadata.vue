@@ -49,7 +49,7 @@
 
 <script setup lang="ts">
 import {createColumnHelper, FlexRender, getCoreRowModel, useVueTable} from '@tanstack/vue-table'
-import {MagnifyingGlassIcon} from '@heroicons/vue/20/solid'
+import {ArrowLongDownIcon, ArrowLongUpIcon, MagnifyingGlassIcon} from '@heroicons/vue/20/solid'
 
 const defPage: Pageable = {page: 1, total: 0, pageSize: 10, orderBy: 'create_time', desc: false}
 
@@ -85,18 +85,18 @@ function queryVersion(name: string) {
         })
 }
 
-function changeDataSort(name: OrderType) {
-    if (dataReq.orderBy == name) {
-        if (dataReq.desc) {
-            dataReq.orderBy = defPage.orderBy
-            dataReq.desc = defPage.desc
+function changeDataSort(req: MetadataReq, name: OrderType) {
+    if (req.orderBy == name) {
+        if (req.desc) {
+            req.orderBy = defPage.orderBy
+            req.desc = defPage.desc
             return
         }
-        dataReq.desc = true
+        req.desc = true
         return
     }
-    dataReq.orderBy = name
-    dataReq.desc = false
+    req.orderBy = name
+    req.desc = false
 }
 
 watch(dataReq, () => {
@@ -114,24 +114,32 @@ onBeforeMount(() => {
 const dataColumnHelper = createColumnHelper<Metadata>()
 const versionColumnHelper = createColumnHelper<Version>()
 
+function orderByVNode(req: MetadataReq, expect: OrderType) {
+    if (req.orderBy == expect) {
+        return req.desc ? h(ArrowLongDownIcon, {class: 'w-4 h-4'}) : h(ArrowLongUpIcon, {class: 'w-4 h-4'})
+    }
+    return h('span', '')
+}
+
+function makeTableHeader(title: string, order: OrderType, req: MetadataReq) {
+    return h('p', {
+        class: 'cursor-pointer select-none flex items-center',
+        onClick: () => changeDataSort(req, order)
+    }, [h('span', title), orderByVNode(req, order)])
+}
+
 const dataColumns = [
     dataColumnHelper.accessor('name', {
         id: 'metadata-id',
-        header: () => h('p', {
-            onClick: () => changeDataSort('name')
-        }, 'Name'),
+        header: () => makeTableHeader('Name', 'name', dataReq),
         cell: props => props.getValue()
     }),
     dataColumnHelper.accessor('createTime', {
-        header: () => h('p', {
-            onClick: () => changeDataSort('create_time')
-        }, 'Created At'),
+        header: () => makeTableHeader('Created At', 'create_time', dataReq),
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
     dataColumnHelper.accessor('updateTime', {
-        header: () => h('p', {
-            onClick: () => changeDataSort('update_time')
-        }, 'Updated At'),
+        header: () => makeTableHeader('Updated At', 'update_time', dataReq),
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
     dataColumnHelper.display({
@@ -194,7 +202,7 @@ thead tr {
 }
 
 thead th {
-    @apply py-2 px-6 cursor-pointer select-none
+    @apply py-2 px-6
 }
 
 tbody td {
