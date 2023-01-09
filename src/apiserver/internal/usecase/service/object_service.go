@@ -61,7 +61,11 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	wt := o.etcd.Watch(ctx, tempId)
 	locates := make([]string, pool.Config.Rs.AllShards())
 	for i := 0; i < pool.Config.Rs.AllShards(); i++ {
-		o.etcd.Put(ctx, LocationSubKey, fmt.Sprintf("%s.%d#%s", hash, i, tempId))
+		val := fmt.Sprintf("%s.%d#%s", hash, i, tempId)
+		_, err := o.etcd.Put(ctx, LocationSubKey, val)
+		if err != nil {
+			logs.Std().Errorf("put '%s' to location-sub-key err: %s", val, err)
+		}
 	}
 	//开始监听变化
 	tt := time.NewTicker(pool.Config.LocateTimeout)
