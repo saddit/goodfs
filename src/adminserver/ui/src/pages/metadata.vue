@@ -103,7 +103,9 @@ const dataColumns = [
         cell: props => props.getValue()
     }),
     dataColumnHelper.accessor('createTime', {
-        header: () => 'Created At',
+        header: () => h('p', {
+
+        }, 'Created At'),
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
     dataColumnHelper.accessor('updateTime', {

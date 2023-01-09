@@ -2,38 +2,31 @@ package pool
 
 import (
 	"common/cache"
+	"common/datasize"
 	"common/etcd"
 	"common/registry"
 	"common/util"
-	"objectserver/config"
-	"objectserver/internal/db"
-	"objectserver/internal/usecase/service"
-
 	"github.com/allegro/bigcache"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"objectserver/config"
+	"objectserver/internal/db"
 )
 
 var (
-	Config        *config.Config
-	Cache         cache.ICache
-	Etcd          *clientv3.Client
-	Registry      registry.Registry
-	Discovery     registry.Discovery
-	ObjectCap     *db.ObjectCapacity
-	DriverManager *service.DriverManager
+	Config    *config.Config
+	Cache     cache.ICache
+	Etcd      *clientv3.Client
+	Registry  registry.Registry
+	Discovery registry.Discovery
+	ObjectCap *db.ObjectCapacity
 )
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
-	initDm()
 	initCache(&cfg.Cache)
 	initEtcd(&cfg.Etcd)
 	initRegister(Etcd, cfg)
 	initObjectCap(Etcd, cfg)
-}
-
-func initDm() {
-	DriverManager = service.NewDriverManager(service.NewFreeFirstDriver())
 }
 
 func initObjectCap(et *clientv3.Client, cfg *config.Config) {
@@ -44,10 +37,10 @@ func initCache(cfg *config.CacheConfig) {
 	cacheConf := bigcache.DefaultConfig(cfg.TTL)
 	cacheConf.CleanWindow = cfg.CleanInterval
 	cacheConf.HardMaxCacheSize = int(cfg.MaxSize.MegaByte())
-	cacheConf.MaxEntrySize = int(cfg.MaxItemSize.Byte())
+	cacheConf.MaxEntrySize = int(datasize.KB * 4)
 	cacheConf.Shards = 2048
 	cacheConf.Verbose = false
-	cacheConf.MaxEntriesInWindow = 1024 * cacheConf.Shards
+	cacheConf.MaxEntriesInWindow = int(cfg.MaxSize / cfg.MaxItemSize)
 	Cache = cache.NewCache(cacheConf)
 }
 
