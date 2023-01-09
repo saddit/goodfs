@@ -96,7 +96,7 @@ Admin Server 是独立的控制台应用，内嵌Vue前端，可直接部署Gola
 
 ## 局限性
 
- 1. 不支持 Amazon S8 协议
+ 1. 不支持 Amazon S3 协议
  
  2. 不支持 Bucket 管理
  
