@@ -38,6 +38,12 @@
 
 ```
 
+## 安全
+
+ 1. Basic Auth
+ 
+ 2. Callback Auth
+
 ## 部署
 
 ### 单体部署
@@ -81,8 +87,18 @@ Admin Server 是独立的控制台应用，内嵌Vue前端，可直接部署Gola
 ## 编译构建
 
  - Linux 环境
- 直接执行 `make build-all` 后生成可执行文件至 `bin` 文件夹
+ 
+ 输入指令 `make build-all` 后生成可执行文件至 `bin` 文件夹
+ 
  - Windows 环境
+ 
  输入指令 `.\sbin\build.cmd` 后生成可执行文件至 `bin` 文件夹
 
 ## 局限性
+
+ 1. 不支持 Amazon S8 协议
+ 
+ 2. 不支持 Bucket 管理
+ 
+ 3. 不支持 IAM 身份认证
+
