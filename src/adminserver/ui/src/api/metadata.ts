@@ -4,7 +4,8 @@ async function metadataPage(req: MetadataReq): Promise<PageResult<Metadata>> {
     let resp = await axios.get("/metadata/page", {
         params: req
     })
-    let total = resp.headers["X-Total-Count"] || "0"
+    let total = resp.headers["x-total-count"] || "0"
+    console.log("total", total)
     return {
         total: parseInt(total),
         list: resp.data
@@ -15,7 +16,7 @@ async function versionPage(req: MetadataReq): Promise<PageResult<Version>> {
     let resp = await axios.get("/metadata/versions", {
         params: req
     })
-    let total = resp.headers["X-Total-Count"] || "0"
+    let total = resp.headers["x-total-count"] || "0"
     return {
         total: parseInt(total),
         list: resp.data

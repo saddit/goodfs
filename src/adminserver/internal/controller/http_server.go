@@ -26,8 +26,9 @@ func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	eng.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
 		// AllowOrigins: []string{"http://localhost", "http://localhost:5173"},
-		AllowMethods: []string{"PUT", "PATCH", "POST", "GET", "OPTION"},
-		AllowHeaders: []string{"Authorization", "Content-Type", "Accept", "Refer"},
+		AllowMethods:  []string{"PUT", "PATCH", "POST", "GET", "OPTION"},
+		AllowHeaders:  []string{"Authorization", "Content-Type", "Accept", "Refer"},
+		ExposeHeaders: []string{"X-Total-Count"},
 	}))
 
 	route := eng.Group("/api")

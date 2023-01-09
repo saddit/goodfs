@@ -9,6 +9,7 @@ import (
 	"common/util"
 	"context"
 	"math"
+	"sync"
 	"time"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -84,6 +85,7 @@ func (sdb *ServerStatDB) GetTimeline(servName string) map[string]*statTimeline {
 func (sdb *ServerStatDB) init() {
 	ctx, cancel := context.WithCancel(context.Background())
 	sdb.closeFn = cancel
+	var mux sync.Mutex
 	for _, name := range sdb.Services {
 		go func(v string) {
 			defer graceful.Recover()
@@ -94,9 +96,11 @@ func (sdb *ServerStatDB) init() {
 				statLog.Errorf("init stat of %s fail, %s", v, err)
 			}
 			for _, kv := range res.Kvs {
+				mux.Lock()
 				if err := sdb.addStat(v, kv.Key, kv.Value); err != nil {
 					statLog.Error(err)
 				}
+				mux.Unlock()
 			}
 			// watch channel
 			ch := sdb.Cli.Watch(ctx, prefix, clientv3.WithPrefix())
