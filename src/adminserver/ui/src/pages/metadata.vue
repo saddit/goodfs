@@ -305,6 +305,6 @@ en:
   see-version: 'See Versions'
 zh:
   no-data: '暂无数据'
-  search-by-name: '根据文件名前缀查询'
+  search-by-name: '根据文件名前缀查找'
   see-version: '查询版本'
 </i18n>
