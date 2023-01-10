@@ -15,6 +15,7 @@ import (
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
 	"os"
+	"strings"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -255,12 +256,18 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 		var k, v []byte
 		if prefix != "" {
 			k, v = cur.Seek(util.StrToBytes(prefix))
+			if !strings.HasPrefix(util.BytesToStr(k), prefix) {
+				return nil
+			}
 			defer func() { total = len(lst) }()
 		} else {
 			k, v = cur.First()
 			total = root.Stats().KeyN
 		}
 		for k != nil && len(lst) < size {
+			if prefix != "" && !strings.HasPrefix(util.BytesToStr(k), prefix) {
+				break
+			}
 			if len(v) > 0 {
 				var data entity.Metadata
 				if err := util.DecodeMsgp(&data, v); err != nil {

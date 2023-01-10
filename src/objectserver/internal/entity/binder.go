@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
-func BindAll(c *gin.Context, obj interface{}, bindings ...interface{}) error {
+func BindAll(c *gin.Context, obj any, bindings ...any) error {
 	var e error
 	for _, b := range bindings {
 		if _, ok := b.(binding.BindingUri); ok {

@@ -1,48 +1,93 @@
 <template>
   <div class="w-full h-full overflow-y-auto">
-    <div class="p-2 w-fit mx-auto mt-10">
-      <div class="flex items-center">
-        <MagnifyingGlassIcon class="w-6 h-6 mr-2 text-indigo-600"/>
-        <input type="text" class="text-input-pri" :placeholder="t('search-by-name')"/>
-      </div>
+    <div class="p-2 w-fit mx-auto mt-10 flex flex-col items-center">
       <!-- metadata table -->
-      <table class="mt-4">
-        <thead>
-        <tr
-            v-for="headerGroup in dataTable.getHeaderGroups()"
-            :key="headerGroup.id"
-        >
-          <th
-              v-for="header in headerGroup.headers"
-              :key="header.id"
-              :colSpan="header.colSpan"
+      <div>
+        <div class="flex items-center">
+          <MagnifyingGlassIcon class="w-6 h-6 mr-2 text-indigo-600"/>
+          <input type="text"
+                 @change="e => searchData(e.target.value)"
+                 class="text-input-pri"
+                 :placeholder="t('search-by-name')"/>
+        </div>
+        <table class="mt-4">
+          <thead>
+          <tr
+              v-for="headerGroup in dataTable.getHeaderGroups()"
+              :key="headerGroup.id"
           >
-            <FlexRender
-                v-if="!header.isPlaceholder"
-                :render="header.column.columnDef.header"
-                :props="header.getContext()"
-            />
-          </th>
-        </tr>
-        </thead>
-        <tbody>
-        <template v-if="dataList.length > 0">
-          <tr v-for="row in dataTable.getRowModel().rows" :key="row.id">
-            <td v-for="cell in row.getVisibleCells()" :key="cell.id">
+            <th
+                v-for="header in headerGroup.headers"
+                :key="header.id"
+                :colSpan="header.colSpan"
+            >
               <FlexRender
-                  :render="cell.column.columnDef.cell"
-                  :props="cell.getContext()"
+                  v-if="!header.isPlaceholder"
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
               />
-            </td>
+            </th>
           </tr>
-        </template>
-        <tr v-else>
-          <td colspan="4" class="text-center">{{ t('no-data') }}</td>
-        </tr>
-        </tbody>
-      </table>
-      <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
-                  :model-value="dataReq.page"/>
+          </thead>
+          <tbody>
+          <template v-if="dataList.length > 0">
+            <tr v-for="row in dataTable.getRowModel().rows" :key="row.id">
+              <td v-for="cell in row.getVisibleCells()" :key="cell.id">
+                <FlexRender
+                    :render="cell.column.columnDef.cell"
+                    :props="cell.getContext()"
+                />
+              </td>
+            </tr>
+          </template>
+          <tr v-else>
+            <td colspan="4" class="text-center">{{ t('no-data') }}</td>
+          </tr>
+          </tbody>
+        </table>
+        <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
+                    :model-value="dataReq.page"/>
+      </div>
+      <!-- version table -->
+      <div>
+        <table v-if="showVersionTb" class="mt-8">
+          <thead>
+          <tr
+              v-for="headerGroup in versionTable.getHeaderGroups()"
+              :key="headerGroup.id"
+          >
+            <th
+                v-for="header in headerGroup.headers"
+                :key="header.id"
+                :colSpan="header.colSpan"
+            >
+              <FlexRender
+                  v-if="!header.isPlaceholder"
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
+              />
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          <template v-if="versionList.length > 0">
+            <tr v-for="row in versionTable.getRowModel().rows" :key="row.id">
+              <td v-for="cell in row.getVisibleCells()" :key="cell.id">
+                <FlexRender
+                    :render="cell.column.columnDef.cell"
+                    :props="cell.getContext()"
+                />
+              </td>
+            </tr>
+          </template>
+          <tr v-else>
+            <td colspan="7" class="text-center">{{ t('no-data') }}</td>
+          </tr>
+          </tbody>
+        </table>
+        <Pagination class="my-4" :max-num="5" :total="versionReq.total" :page-size="versionReq.pageSize"
+                    :model-value="versionReq.page"/>
+      </div>
     </div>
   </div>
 </template>
@@ -57,15 +102,20 @@ const dataList = ref<Metadata[]>([])
 const versionList = ref<Version[]>([])
 const dataReq = reactive<MetadataReq>({name: '', ...defPage})
 const versionReq = reactive<MetadataReq>({name: '', ...defPage})
+const showVersionTb = ref(false)
 
 const {t} = useI18n({inheritLocale: true})
 
+function searchData(prefix: string) {
+    dataReq.name = prefix
+    queryMetadata()
+}
+
 function queryMetadata() {
-    let req = unref(dataReq)
-    api.metadata.metadataPage(req)
+    api.metadata.metadataPage(dataReq)
         .then(res => {
             dataList.value = res.list
-            req.total = res.total
+            dataReq.total = res.total
         })
         .catch((err: Error) => {
             useToast().error(err.message)
@@ -73,12 +123,12 @@ function queryMetadata() {
 }
 
 function queryVersion(name: string) {
-    let req = unref(versionReq)
-    req.name = name
-    api.metadata.versionPage(req)
+    versionReq.name = name
+    api.metadata.versionPage(versionReq)
         .then(res => {
             versionList.value = res.list
             versionReq.total = res.total
+            showVersionTb.value = true
         })
         .catch((err: Error) => {
             useToast().error(err.message)
@@ -99,12 +149,25 @@ function changeDataSort(req: MetadataReq, name: OrderType) {
     req.desc = false
 }
 
-watch(dataReq, () => {
+watch(() => dataReq.page, () => {
+    queryMetadata()
+})
+watch(() => dataReq.pageSize, () => {
+    queryMetadata()
+})
+watch(() => dataReq.orderBy, () => {
+    queryMetadata()
+})
+watch(() => dataReq.desc, () => {
     queryMetadata()
 })
 
-watch(versionReq, v => {
-    queryVersion(v.name)
+watch(() => versionReq.page, () => {
+    queryVersion(versionReq.name)
+})
+
+watch(() => versionReq.pageSize, () => {
+    queryVersion(versionReq.name)
 })
 
 onBeforeMount(() => {
@@ -163,7 +226,7 @@ const versionColumns = [
     }),
     versionColumnHelper.accessor('ts', {
         header: () => 'Timestamp',
-        cell: props => props.getValue()
+        cell: props => new Date(props.getValue()).toLocaleString()
     }),
     versionColumnHelper.accessor('hash', {
         header: () => 'Digest',
@@ -190,6 +253,14 @@ const dataTable = useVueTable({
     columns: dataColumns,
     getCoreRowModel: getCoreRowModel(),
 })
+
+const versionTable = useVueTable({
+    get data() {
+        return versionList.value
+    },
+    columns: versionColumns,
+    getCoreRowModel: getCoreRowModel(),
+})
 </script>
 
 <style scoped>
@@ -206,7 +277,7 @@ thead th {
 }
 
 tbody td {
-    @apply px-6 py-4 text-sm text-gray-900
+    @apply px-4 py-6 text-sm text-gray-900 text-center
 }
 
 /*noinspection CssUnusedSymbol*/

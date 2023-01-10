@@ -23,6 +23,7 @@ func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	randSec := uuid.New()
 	eng.Use(static.Serve("/", webFs))
 	eng.Use(sessions.Sessions("dfs-admin", cookie.NewStore(randSec[:])))
+	eng.Use(http2.SaveToken)
 	eng.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
 		// AllowOrigins: []string{"http://localhost", "http://localhost:5173"},

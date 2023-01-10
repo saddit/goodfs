@@ -6,6 +6,7 @@ import (
 	"apiserver/internal/usecase/logic"
 	"apiserver/internal/usecase/webapi"
 	"common/response"
+	"common/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,11 +26,10 @@ func (mc *MetadataController) Register(route gin.IRouter) {
 
 func (mc *MetadataController) Get(c *gin.Context) {
 	body := struct {
-		entity.Binder
 		Name    string `uri:"name"`
-		Version int32  `form:"json"`
+		Version int32  `form:"version"`
 	}{}
-	if err := body.Bind(c, false); err != nil {
+	if err := entity.Bind(c, &body, false); err != nil {
 		response.FailErr(err, c)
 		return
 	}
@@ -43,12 +43,11 @@ func (mc *MetadataController) Get(c *gin.Context) {
 
 func (mc *MetadataController) Versions(c *gin.Context) {
 	body := struct {
-		entity.Binder
 		Page     int    `form:"page" binding:"required"`
 		PageSize int    `form:"page_size" binding:"required"`
-		Name     string `uri:"name"`
+		Name     string `uri:"name" binding:"min=1"`
 	}{}
-	if err := body.Bind(c, false); err != nil {
+	if err := entity.Bind(c, &body, false); err != nil {
 		response.FailErr(err, c)
 		return
 	}
@@ -58,8 +57,13 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 		return
 	}
 	loc = logic.NewDiscovery().SelectMetaByGroupID(gid, loc)
-	version, err := webapi.ListVersion(loc, body.Name, body.Page, body.PageSize)
-	if _, err := c.Writer.Write(version); err != nil {
+	version, total, err := webapi.ListVersion(loc, body.Name, body.Page, body.PageSize)
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	c.Header("X-Total-Count", util.ToString(total))
+	if _, err = c.Writer.Write(version); err != nil {
 		response.FailErr(err, c)
 		return
 	}

@@ -65,6 +65,7 @@ func (pv *PasswordValidator) Verify(token Credential) error {
 		return err
 	}
 	if token.GetUsername() != admin.Username || token.GetPassword() != admin.Password {
+		logs.Std().Tracef("%s:%s not match %s:%s", token.GetUsername(), token.GetPassword(), admin.Username, admin.Password)
 		return response.NewError(http.StatusUnauthorized, "username or password wrong")
 	}
 	return nil

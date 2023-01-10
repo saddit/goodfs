@@ -5,9 +5,9 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
-var FullBindings = []interface{}{binding.Uri, binding.JSON, binding.Query}
+var FullBindings = []any{binding.Uri, binding.JSON, binding.Query}
 
-func BindAll(c *gin.Context, obj interface{}, bindings ...interface{}) error {
+func BindAll(c *gin.Context, obj any, bindings ...any) error {
 	var e error
 	for _, b := range bindings {
 		if _, ok := b.(binding.BindingUri); ok {

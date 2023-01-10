@@ -41,11 +41,10 @@ func (oc *ObjectsController) Upload(c *gin.Context) {
 
 func (oc *ObjectsController) Download(c *gin.Context) {
 	body := struct {
-		entity.Binder
 		Name    string `uri:"name"`
 		Version int    `form:"version"`
 	}{}
-	if err := body.Bind(c, false); err != nil {
+	if err := entity.Bind(c, &body, false); err != nil {
 		response.FailErr(err, c)
 		return
 	}

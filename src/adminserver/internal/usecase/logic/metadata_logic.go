@@ -85,8 +85,8 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, e
 	return []*entity.Metadata{}, 0, nil
 }
 
-func (m *Metadata) VersionPaging(cond MetadataCond) ([]byte, int, error) {
-	return webapi.ListVersion(SelectApiServer(), cond.Name, cond.Page, cond.PageSize)
+func (m *Metadata) VersionPaging(cond MetadataCond, token string) ([]byte, int, error) {
+	return webapi.ListVersion(SelectApiServer(), cond.Name, cond.Page, cond.PageSize, token)
 }
 
 func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {
