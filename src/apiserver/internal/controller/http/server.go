@@ -22,13 +22,14 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService) *Server {
 	)
 
 	eng := gin.Default()
-	r := eng.Group("/v1", authMid...)
+	authRoute := eng.Group("/v1", authMid...)
 
 	//rest api
-	objects.NewObjectsController(o, m).Register(r)
-	big.NewBigObjectsController(o, m).Register(r)
-	NewLocateController(o).Register(r)
-	NewMetadataController(m).Register(r)
+	objects.NewObjectsController(o, m).Register(authRoute)
+	big.NewBigObjectsController(o, m).Register(authRoute)
+	NewLocateController(o).Register(authRoute)
+	NewMetadataController(m).Register(authRoute)
+	NewSecurityController().Register(authRoute)
 
 	return &Server{netHttp.Server{Addr: addr, Handler: eng}}
 }

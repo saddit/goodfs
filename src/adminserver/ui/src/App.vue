@@ -10,19 +10,22 @@ const needLogin = ref(store.basicAuth == "")
 const {t} = useI18n({inheritLocale: true})
 
 function title(metaTitle: string): string {
-  if (!metaTitle) {
-    return ''
-  }
-  let res = t(metaTitle)
-  useHead({
-    title: res
-  })
-  return res
+    if (!metaTitle) {
+        return ''
+    }
+    let res = t(metaTitle)
+    useHead({
+        title: res
+    })
+    return res
 }
 
 function loginOut() {
-  store.setAuth("","")
-  needLogin.value = true
+    store.clearAuth()
+    api.auth.logout().catch(err => {
+        console.error(err)
+    })
+    needLogin.value = true
 }
 </script>
 
@@ -91,19 +94,19 @@ function loginOut() {
 
 <style scoped>
 .pri-bg-gradient {
-  @apply bg-gradient-to-r from-indigo-600 to-indigo-800
+    @apply bg-gradient-to-r from-indigo-600 to-indigo-800
 }
 
 .pop-btn {
-  @apply underline mx-1 outline-none hover:text-indigo-500 select-none transition-colors focus:outline-none
+    @apply underline mx-1 outline-none hover:text-indigo-500 select-none transition-colors focus:outline-none
 }
 
 .pop-panel {
-  @apply absolute overflow-hidden rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 left-1/2 z-10 mt-3 w-screen max-w-[10rem] -translate-x-full transform px-1 sm:px-0
+    @apply absolute overflow-hidden rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 left-1/2 z-10 mt-3 w-screen max-w-[10rem] -translate-x-full transform px-1 sm:px-0
 }
 
 .pop-panel-item {
-  @apply inline-flex select-none justify-center items-center rounded-lg p-2 transition duration-150 ease-in-out hover:text-indigo-600 hover:bg-indigo-50
+    @apply inline-flex select-none justify-center items-center rounded-lg p-2 transition duration-150 ease-in-out hover:text-indigo-600 hover:bg-indigo-50
 }
 </style>
 

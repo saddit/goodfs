@@ -32,7 +32,7 @@ func (oc *ObjectsController) Upload(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	if err := logic.NewObjects().Upload(body.File); err != nil {
+	if err := logic.NewObjects().Upload(body.File, GetAuthToken(c)); err != nil {
 		response.FailErr(err, c)
 		return
 	}
@@ -48,7 +48,7 @@ func (oc *ObjectsController) Download(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	reader, err := logic.NewObjects().Download(body.Name, body.Version)
+	reader, err := logic.NewObjects().Download(body.Name, body.Version, GetAuthToken(c))
 	if err != nil {
 		response.FailErr(err, c)
 		return

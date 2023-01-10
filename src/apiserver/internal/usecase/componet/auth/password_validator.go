@@ -38,7 +38,7 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 		logs.Std().Info("exist credential, skip init admin credential")
 		return
 	}
-	bt, err := util.EncodeMsgp(&credential.AdminCredentail{
+	bt, err := util.EncodeMsgp(&credential.AdminCredential{
 		Username: cfg.Username,
 		Password: cfg.Password,
 	})
@@ -58,9 +58,9 @@ func (pv *PasswordValidator) Verify(token Credential) error {
 		return err
 	}
 	if len(resp.Kvs) == 0 {
-		return errors.New("no api-credentail provided from etcd")
+		return errors.New("no api-credential provided from etcd")
 	}
-	var admin credential.AdminCredentail
+	var admin credential.AdminCredential
 	if err := util.DecodeMsgp(&admin, resp.Kvs[0].Value); err != nil {
 		return err
 	}

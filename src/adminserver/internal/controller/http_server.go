@@ -33,6 +33,8 @@ func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 	}))
 
 	route := eng.Group("/api")
+	http2.CheckCredential(route)
+	http2.ClearCredential(route)
 	http2.NewMetadataController().Register(route)
 	http2.NewServerStateController().Register(route)
 	http2.NewObjectsController().Register(route)

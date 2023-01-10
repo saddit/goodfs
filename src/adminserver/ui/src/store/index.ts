@@ -12,6 +12,10 @@ export const useStore = defineStore('default', () => {
         localStorage.setItem("locale", lang)
     })
 
+    function clearAuth() {
+        basicAuth.value = ""
+    }
+
     function setAuth(username: string, password: string) {
         user.value = username
         if (username == "" && password == "") {
@@ -33,7 +37,7 @@ export const useStore = defineStore('default', () => {
         tabClosed.value = !tabClosed.value
     }
 
-    return {basicAuth, locale, tabClosed, serverStat: serverInfo, user, setServerInfo, setAuth, setLocale, closeTab}
+    return {basicAuth, locale, tabClosed, serverStat: serverInfo, user, setServerInfo, setAuth, setLocale, closeTab, clearAuth}
 }, {
     persist: {
         storage: localStorage,

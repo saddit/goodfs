@@ -2,7 +2,7 @@ package credential
 
 //go:generate msgp -tests=false
 
-type AdminCredentail struct {
+type AdminCredential struct {
 	Username string `msg:"username"`
 	Password string `msg:"password"`
 }
