@@ -20,7 +20,7 @@ func NewObjects() *Objects {
 	return &Objects{}
 }
 
-func (Objects) Upload(file *multipart.FileHeader) error {
+func (Objects) Upload(file *multipart.FileHeader, token string) error {
 	// open and checksum
 	temp, err := file.Open()
 	if err != nil {
@@ -33,11 +33,11 @@ func (Objects) Upload(file *multipart.FileHeader) error {
 	if err != nil {
 		return err
 	}
-	return webapi.PutObjects(SelectApiServer(), file.Filename, hash, fileBody)
+	return webapi.PutObjects(SelectApiServer(), file.Filename, hash, fileBody, token)
 }
 
-func (Objects) Download(name string, version int) (io.ReadCloser, error) {
-	return webapi.GetObjects(SelectApiServer(), name, version)
+func (Objects) Download(name string, version int, token string) (io.ReadCloser, error) {
+	return webapi.GetObjects(SelectApiServer(), name, version, token)
 }
 
 func (Objects) JoinCluster(serverId string) error {
