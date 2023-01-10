@@ -7,7 +7,6 @@ import (
 	"common/util"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"net/http"
-	"time"
 )
 
 var (
@@ -33,7 +32,7 @@ func Close() {
 }
 
 func initHttpClient() {
-	Http = &http.Client{Timeout: 5 * time.Second}
+	Http = &http.Client{Timeout: 0}
 }
 
 func initEtcd(cfg *config.Config) {

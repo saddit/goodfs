@@ -1,5 +1,5 @@
 port: 8080
-log-level: trace
+log-level: info
 checksum: false
 select-strategy: random
 registry:

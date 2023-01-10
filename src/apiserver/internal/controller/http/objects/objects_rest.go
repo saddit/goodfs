@@ -26,11 +26,15 @@ func (oc *ObjectsController) Register(r gin.IRoutes) {
 func (oc *ObjectsController) Put(c *gin.Context) {
 	req := c.Value("PutReq").(*entity.PutReq)
 	req.Body = c.Request.Body
+	if c.Request.ContentLength <= 0 {
+		response.BadRequestMsg("content-length invalid", c)
+		return
+	}
 	verNum, err := oc.objectService.StoreObject(req, &entity.Metadata{
 		Name: req.Name,
 		Versions: []*entity.Version{{
-			Size: c.Request.ContentLength,
-			Hash: req.Hash,
+			Size:          c.Request.ContentLength,
+			Hash:          req.Hash,
 			StoreStrategy: req.Store,
 		}},
 	})

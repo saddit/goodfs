@@ -9,6 +9,8 @@
                  @change="e => searchData(e.target.value)"
                  class="text-input-pri"
                  :placeholder="t('search-by-name')"/>
+          <!-- TODO: beautify -->
+          <input type="file" class="ml-8" @change="uploadObject" />
         </div>
         <table class="mt-4">
           <thead>
@@ -46,7 +48,7 @@
           </tbody>
         </table>
         <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
-                    :model-value="dataReq.page"/>
+                    v-model="dataReq.page"/>
       </div>
       <!-- version table -->
       <div>
@@ -86,7 +88,7 @@
           </tbody>
         </table>
         <Pagination class="my-4" :max-num="5" :total="versionReq.total" :page-size="versionReq.pageSize"
-                    :model-value="versionReq.page"/>
+                    v-model="versionReq.page"/>
       </div>
     </div>
   </div>
@@ -191,6 +193,25 @@ function makeTableHeader(title: string, order: OrderType, req: MetadataReq) {
     }, [h('span', title), orderByVNode(req, order)])
 }
 
+function downloadObject(name: string, version: number) {
+    api.objects.download(name, version).catch((err: Error) => {
+        useToast().error(err.message)
+    })
+}
+
+function uploadObject(event: any) {
+    if (event.target.files?.length == 0) {
+        return
+    }
+    let file: File = event.target.files[0]
+    api.objects.upload(file).then(() => {
+        useToast().success("Upload Success!")
+        queryMetadata()
+    }).catch((err: Error) => {
+        useToast().error("Upload Fail: " + err.message)
+    })
+}
+
 const dataColumns = [
     dataColumnHelper.accessor('name', {
         header: () => makeTableHeader('Name', 'name', dataReq),
@@ -242,10 +263,16 @@ const versionColumns = [
     versionColumnHelper.display({
         id: 'action',
         header: 'Actions',
-        cell: ({row}) => h('button', {
-            class: 'btn-action',
-            onClick: () => useToast().info(`Digest: ${row.original.hash}`)
-        }, 'Checksum')
+        cell: ({row}) => h('p', [
+            h('button', {
+                class: 'underline text-indigo-500 hover:text-indigo-400 text-sm',
+                onClick: () => useToast().info(`Digest: ${row.original.hash}`)
+            }, 'Checksum'),
+            h('button', {
+                class: 'underline text-indigo-500 hover:text-indigo-400 text-sm ml-1',
+                onClick: () => downloadObject(versionReq.name, row.original.sequence)
+            }, 'Download')
+        ])
     }),
 ]
 

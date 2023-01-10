@@ -18,10 +18,10 @@ func NewObjectsController() *ObjectsController {
 
 func (oc *ObjectsController) Register(route gin.IRouter) {
 	route.Group("objects").
-		GET("/download/:name").
-		PUT("/upload").
-		POST("/join/:serverId").
-		POST("/leave/:serverId")
+		GET("/download/:name", oc.Download).
+		PUT("/upload", oc.Upload).
+		POST("/join/:serverId", oc.Join).
+		POST("/leave/:serverId", oc.Leave)
 }
 
 func (oc *ObjectsController) Upload(c *gin.Context) {

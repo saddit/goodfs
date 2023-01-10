@@ -33,7 +33,7 @@ func (Objects) Upload(file *multipart.FileHeader, token string) error {
 	if err != nil {
 		return err
 	}
-	return webapi.PutObjects(SelectApiServer(), file.Filename, hash, fileBody, token)
+	return webapi.PutObjects(SelectApiServer(), file.Filename, hash, fileBody, file.Size, token)
 }
 
 func (Objects) Download(name string, version int, token string) (io.ReadCloser, error) {

@@ -2,13 +2,16 @@ import axios from "axios";
 
 async function upload(file: File) {
     let form = new FormData()
-    form.append("file", file)
-    await axios.post("/objects/upload", form)
+    form.append("file", file, file.name)
+    await axios.put("/objects/upload", form, {
+        timeout: 0
+    })
 }
 
-async function download(name: string) {
-    let response = await axios.get(`/objects/download/${name}`, {
+async function download(name: string, version: number) {
+    let response = await axios.get(`/objects/download/${name}?version=${version}`, {
         responseType: 'blob', // important
+        timeout: 0
     })
     // create file link in browser's memory
     const href = URL.createObjectURL(response.data);
