@@ -9,8 +9,14 @@ import (
 	"net/http"
 )
 
-func ListVersion(ip, name string, page, pageSize int) ([]byte, int, error) {
-	resp, err := pool.Http.Get(fmt.Sprintf("%s://%s/metadata/%s/versions?page=%d&page_size=%d", GetSchema(), ip, name, page, pageSize))
+func ListVersion(ip, name string, page, pageSize int, token string) ([]byte, int, error) {
+	url := fmt.Sprintf("%s://%s/v1/metadata/%s/versions?page=%d&page_size=%d", GetSchema(), ip, name, page, pageSize)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("Authorization", token)
+	resp, err := pool.Http.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}

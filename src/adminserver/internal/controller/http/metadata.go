@@ -47,7 +47,7 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	res, total, err := logic.NewMetadata().VersionPaging(cond)
+	res, total, err := logic.NewMetadata().VersionPaging(cond, GetAuthToken(c))
 	if err != nil {
 		response.FailErr(err, c)
 		return

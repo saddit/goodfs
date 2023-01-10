@@ -97,16 +97,18 @@ func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
 	return util.UnmarshalPtrFromIO[entity.Version](resp.Body)
 }
 
-func ListVersion(ip, name string, page, pageSize int) ([]byte, error) {
+func ListVersion(ip, name string, page, pageSize int) ([]byte, int, error) {
 	resp, err := pool.Http.Get(versionListRest(ip, name, page, pageSize))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+		return nil, 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
 	defer resp.Body.Close()
-	return io.ReadAll(resp.Body)
+	total := util.ToInt(resp.Header.Get("X-Total-Count"))
+	bt, err := io.ReadAll(resp.Body)
+	return bt, total, err
 }
 
 func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
