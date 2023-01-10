@@ -18,7 +18,7 @@ type Config struct {
 	Port           string          `yaml:"port" env:"PORT" env-default:"8080"`
 	SelectStrategy string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
 	Checksum       bool            `yaml:"checksum" env:"CHECKSUM" env-default:"false"`
-	LocateTimeout  time.Duration   `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"5s"`
+	LocateTimeout  time.Duration   `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"1s"`
 	LogLevel       logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
 	Etcd           etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	Rs             RsConfig        `yaml:"-"`

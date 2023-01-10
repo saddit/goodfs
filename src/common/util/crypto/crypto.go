@@ -3,7 +3,7 @@ package crypto
 import (
 	"crypto/md5"
 	"crypto/sha256"
-	"encoding/base64"
+	"encoding/hex"
 	"hash"
 	"io"
 )
@@ -13,7 +13,7 @@ func SHA256IO(reader io.Reader) string {
 	crypto := sha256.New()
 	if _, e := io.CopyBuffer(crypto, reader, make([]byte, 4096)); e == nil {
 		b := crypto.Sum(make([]byte, 0, crypto.Size()))
-		return base64.StdEncoding.EncodeToString(b)
+		return hex.EncodeToString(b)
 	}
 	return ""
 }
@@ -29,5 +29,5 @@ func MD5(bt []byte) string {
 func Hash(bt []byte, exec hash.Hash) string {
 	_, _ = exec.Write(bt)
 	res := exec.Sum(make([]byte, 0, exec.Size()))
-	return base64.StdEncoding.EncodeToString(res)
+	return hex.EncodeToString(res)
 }
