@@ -216,27 +216,27 @@ const dataColumns = [
 
 const versionColumns = [
     versionColumnHelper.accessor('sequence', {
-        header: () => 'Version',
+        header: 'Version',
         cell: props => props.getValue()
     }),
     versionColumnHelper.accessor('size', {
-        header: () => 'Size',
+        header: 'Size',
         cell: props => pkg.utils.formatBytes(props.getValue(), 1)
     }),
     versionColumnHelper.accessor('ts', {
-        header: () => 'Timestamp',
+        header: 'Timestamp',
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
     versionColumnHelper.accessor('storeStrategy', {
-        header: () => 'Strategy',
+        header: 'Strategy',
         cell: props => pkg.cst.storeStrategy[props.getValue()]
     }),
     versionColumnHelper.accessor('dataShards', {
-        header: () => 'Data Shards',
+        header: 'Data Shards',
         cell: props => props.getValue()
     }),
     versionColumnHelper.accessor('parityShards', {
-        header: () => 'Parity Shards',
+        header: 'Parity Shards',
         cell: props => props.getValue()
     }),
     versionColumnHelper.display({
