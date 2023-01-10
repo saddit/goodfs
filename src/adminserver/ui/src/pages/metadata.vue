@@ -193,7 +193,6 @@ function makeTableHeader(title: string, order: OrderType, req: MetadataReq) {
 
 const dataColumns = [
     dataColumnHelper.accessor('name', {
-        id: 'metadata-id',
         header: () => makeTableHeader('Name', 'name', dataReq),
         cell: props => props.getValue()
     }),
@@ -210,14 +209,14 @@ const dataColumns = [
         header: 'Actions',
         cell: ({row}) => h('button', {
             class: 'btn-action',
-            onClick: () => queryVersion(row.getValue('metadata-id'))
+            onClick: () => queryVersion(row.original.name)
         }, t('see-version'))
     }),
 ]
 
 const versionColumns = [
     versionColumnHelper.accessor('sequence', {
-        header: () => 'Number',
+        header: () => 'Version',
         cell: props => props.getValue()
     }),
     versionColumnHelper.accessor('size', {
@@ -227,10 +226,6 @@ const versionColumns = [
     versionColumnHelper.accessor('ts', {
         header: () => 'Timestamp',
         cell: props => new Date(props.getValue()).toLocaleString()
-    }),
-    versionColumnHelper.accessor('hash', {
-        header: () => 'Digest',
-        cell: props => props.getValue()
     }),
     versionColumnHelper.accessor('storeStrategy', {
         header: () => 'Strategy',
@@ -243,7 +238,15 @@ const versionColumns = [
     versionColumnHelper.accessor('parityShards', {
         header: () => 'Parity Shards',
         cell: props => props.getValue()
-    })
+    }),
+    versionColumnHelper.display({
+        id: 'action',
+        header: 'Actions',
+        cell: ({row}) => h('button', {
+            class: 'btn-action',
+            onClick: () => useToast().info(`Digest: ${row.original.hash}`)
+        }, 'Checksum')
+    }),
 ]
 
 const dataTable = useVueTable({
