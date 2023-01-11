@@ -2,12 +2,14 @@ package config
 
 import (
 	"apiserver/internal/usecase/componet/auth"
+	"common/cst"
 	"common/etcd"
 	"common/logs"
 	"common/registry"
-	"github.com/ilyakaznacheev/cleanenv"
 	"os"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 const (
@@ -30,6 +32,10 @@ type Config struct {
 
 func (c *Config) initialize() {
 	c.Rs = c.Object.ReedSolomon
+	// aligend to 4KB
+	if i := c.Rs.BlockPerShard % cst.OS.PageSize; i > 0 {
+		c.Rs.BlockPerShard = c.Rs.BlockPerShard - i + cst.OS.PageSize
+	}
 }
 
 type DiscoveryConfig struct {
@@ -60,7 +66,7 @@ func (rp *ReplicationConfig) ToleranceLossNum() int {
 type RsConfig struct {
 	DataShards    int `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`
 	ParityShards  int `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`
-	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"`
+	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"` 	// Auto aligen to power of 4KB
 }
 
 func (r *RsConfig) AllShards() int {

@@ -22,6 +22,8 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService) *Server {
 	)
 
 	eng := gin.Default()
+	eng.UseRawPath = true
+	eng.UnescapePathValues = false
 	authRoute := eng.Group("/v1", authMid...)
 
 	//rest api

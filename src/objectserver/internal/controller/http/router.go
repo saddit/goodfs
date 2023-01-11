@@ -17,11 +17,11 @@ func NewHttpServer(addr string) *Server {
 	r := gin.Default()
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get)
 	r.HEAD("/objects/:name", objects.Head)
-	r.PUT("/objects/:name", objects.Put, objects.RemoveCache)
+	r.PUT("/objects/:name", temp.FilterEmptyRequest, objects.Put, objects.RemoveCache)
 	r.DELETE("/objects/:name", objects.Delete, objects.RemoveCache)
 
 	r.POST("/temp/:name", temp.Post)
-	r.PATCH("/temp/:name", temp.FilterExpired, temp.Patch)
+	r.PATCH("/temp/:name", temp.FilterExpired, temp.FilterEmptyRequest, temp.Patch)
 	r.DELETE("/temp/:name", temp.FilterExpired, temp.Delete)
 	r.HEAD("/temp/:name", temp.FilterExpired, temp.Head)
 	r.GET("/temp/:name", temp.FilterExpired, temp.Get)

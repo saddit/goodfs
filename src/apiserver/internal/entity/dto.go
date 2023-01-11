@@ -3,12 +3,13 @@ package entity
 import (
 	"common/request"
 	"common/response"
-	"fmt"
+
+	"io"
+	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"io"
-	"net/url"
 )
 
 type SyncTyping string
@@ -55,7 +56,7 @@ func (b *BigPostReq) Bind(c *gin.Context) error {
 
 func (bigPut *BigPutReq) Bind(c *gin.Context) error {
 	var err error
-	if err = BindAll(c, bigPut, binding.Header, binding.Uri); err != nil {
+	if err = BindAll(c, bigPut, binding.Uri); err != nil {
 		return err
 	}
 	if bigPut.Token, err = url.PathUnescape(bigPut.Token); err != nil {
@@ -66,7 +67,7 @@ func (bigPut *BigPutReq) Bind(c *gin.Context) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("require header 'Range'")
+	return response.NewError(http.StatusBadRequest, "require header 'Range'")
 }
 
 func (p *PutReq) Bind(c *gin.Context) error {

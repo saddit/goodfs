@@ -6,29 +6,28 @@ import (
 	"common/util"
 	"encoding/base64"
 	"fmt"
-	"log"
 )
 
 type resumeToken struct {
-	Name    string   `json:"name"`
-	Hash    string   `json:"hash"`
-	Size    int64    `json:"size"`
-	Servers []string `json:"servers"`
-	Ids     []string `json:"ids"`
+	Name    string           `json:"name"`
+	Hash    string           `json:"hash"`
+	Size    int64            `json:"size"`
+	Servers []string         `json:"servers"`
+	Ids     []string         `json:"ids"`
 	Config  *config.RsConfig `json:"config"`
 }
 
-//RSResumablePutStream 断点续传
+// RSResumablePutStream 断点续传
 type RSResumablePutStream struct {
 	*RSPutStream
 	*resumeToken
 }
 
-//NewRSResumablePutStreamFromToken 恢复一个断点续传
+// NewRSResumablePutStreamFromToken 恢复一个断点续传
 func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, error) {
-	bt, e := base64.StdEncoding.DecodeString(token)
-	if e != nil {
-		return nil, e
+	bt, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return nil, err
 	}
 	var tk resumeToken
 	if ok := util.GobDecodeGen2(bt, &tk); ok {
@@ -37,7 +36,7 @@ func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, erro
 	return nil, fmt.Errorf("invalid token")
 }
 
-//NewRSResumablePutStream 开启新的断点续传
+// NewRSResumablePutStream 开启新的断点续传
 func NewRSResumablePutStream(ips []string, name, hash string, size int64, rsCfg *config.RsConfig) (*RSResumablePutStream, error) {
 	putStream, e := NewRSPutStream(ips, hash, size, rsCfg)
 	if e != nil {
@@ -53,27 +52,27 @@ func NewRSResumablePutStream(ips []string, name, hash string, size int64, rsCfg 
 		Servers: ips,
 		Size:    size,
 		Ids:     ids,
+		Config:  rsCfg,
 	}
 	return &RSResumablePutStream{putStream, token}, nil
 }
 
-//CurrentSize IO: 请求数据服务器获取分片大小
-func (p *RSResumablePutStream) CurrentSize() int64 {
-	//只请求一个服务器，以为断点续传保证每次上传每个服务器的大小一致
-	size, e := webapi.HeadTmpObject(p.Servers[0], p.Ids[0])
-	if e != nil {
-		log.Println(e)
-		return -1
+// CurrentSize IO: 请求数据服务器获取分片大小
+func (p *RSResumablePutStream) CurrentSize() (int64, error) {
+	//只请求一个服务器，因为Rs算法保证每次上传到每个服务器的大小一致
+	size, err := webapi.HeadTmpObject(p.Servers[0], p.Ids[0])
+	if err != nil {
+		return 0, err
 	}
 	//求乘积得到当前大小
 	size *= int64(p.rsConfig.DataShards)
 	if size > p.Size {
-		return p.Size
+		return p.Size, nil
 	}
-	return size
+	return size, nil
 }
 
-//Token 上传记录
+// Token 上传记录
 func (p *RSResumablePutStream) Token() string {
 	tk := resumeToken{
 		Name:    p.Name,

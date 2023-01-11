@@ -6,7 +6,7 @@
         <div class="flex items-center">
           <MagnifyingGlassIcon class="w-6 h-6 mr-2 text-indigo-600"/>
           <input type="text"
-                 @change="e => searchData(e.target.value)"
+                 @change="e => searchData((e.target as HTMLTextAreaElement).value)"
                  class="text-input-pri"
                  :placeholder="t('search-by-name')"/>
           <!-- TODO: beautify -->
@@ -200,7 +200,7 @@ function downloadObject(name: string, version: number) {
 }
 
 function uploadObject(event: any) {
-    if (event.target.files?.length == 0) {
+    if (event.target?.files?.length == 0) {
         return
     }
     let file: File = event.target.files[0]
