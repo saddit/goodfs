@@ -6,7 +6,6 @@ import (
 	"common/logs"
 	"common/util"
 	"context"
-	"github.com/sirupsen/logrus"
 	"io/fs"
 	"objectserver/internal/entity"
 	"objectserver/internal/usecase/pool"
@@ -51,10 +50,12 @@ func StartTempRemovalBackground(cache cache.ICache) func() {
 					var ti entity.TempInfo
 					if ok := util.GobDecodeGen2(entry.Value, &ti); ok {
 						if _, e := DeleteFile(pool.Config.TempPath, ti.Id); e != nil {
-							logrus.Infof("Remove temp %v(name=%v) error, %v", ti.Id, ti.Name, e)
+							log.Errorf("Remove temp %v(name=%v) error, %v", ti.Id, ti.Name, e)
+							break
 						}
+						log.Debugf("Remove temp file %s", ti.Id)
 					} else {
-						logrus.Infof("Handle evicted key=%v error, value cannot cast to TempInfo", entry.Key)
+						log.Errorf("Handle evicted key=%v error, value cannot cast to TempInfo", entry.Key)
 					}
 				}
 			case <-ctx.Done():

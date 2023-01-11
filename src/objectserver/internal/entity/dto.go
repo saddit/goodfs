@@ -27,9 +27,9 @@ func (tp *TempPostReq) Bind(c *gin.Context) error {
 }
 
 type TempInfo struct {
-	Name string
-	Id   string
-	Size int64
+	Name    string
+	Id      string
+	Size    int64
 }
 
 func (t *TempInfo) ShardIndex() int {

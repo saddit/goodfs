@@ -6,7 +6,6 @@ import (
 	"common/request"
 	"common/util"
 	"io"
-	"log"
 	"net/http"
 	"objectserver/internal/entity"
 	"objectserver/internal/usecase/pool"
@@ -18,19 +17,19 @@ import (
 func Put(c *gin.Context) {
 	fileName := c.Param("name")
 	var reader io.Reader = c.Request.Body
-	var buf []byte
+	var cache []byte
 	if uint64(c.Request.ContentLength) <= pool.Config.Cache.MaxItemSize.Byte() {
-		buf = make([]byte, 0, c.Request.ContentLength)
-		reader = &entity.BufferTeeReader{Reader: c.Request.Body, Body: bytes.NewBuffer(buf)}
+		cache = make([]byte, 0, c.Request.ContentLength)
+		reader = &entity.BufferTeeReader{Reader: c.Request.Body, Body: bytes.NewBuffer(cache)}
 	}
 	if err := service.Put(fileName, reader); err != nil {
-		log.Println(err)
+		util.LogErr(err)
 		c.Set("Evict", true)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	if len(buf) > 0 {
-		pool.Cache.Set(fileName, buf)
+	if len(cache) > 0 {
+		pool.Cache.Set(fileName, cache)
 	}
 	c.Status(http.StatusOK)
 }
@@ -39,7 +38,7 @@ func Delete(c *gin.Context) {
 	name := c.Param("name")
 	e := service.Delete(name)
 	if e != nil {
-		log.Println(e)
+		util.LogErr(e)
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}

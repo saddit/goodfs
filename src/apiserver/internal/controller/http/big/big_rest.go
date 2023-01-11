@@ -7,7 +7,6 @@ import (
 	"apiserver/internal/usecase/service"
 	"common/logs"
 	"common/response"
-	"common/util"
 	"common/util/crypto"
 
 	"apiserver/internal/usecase/logic"
@@ -48,7 +47,9 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 	}
 	defer stream.Close()
 	response.CreatedHeader(gin.H{
-		"Location": "/big/" + url.PathEscape(stream.Token()),
+		"Accept-Ranges": "bytes",
+		"Min-Part-Size": stream.Config.BlockSize(),
+		"Location":      "/v1/big/" + url.PathEscape(stream.Token()),
 	}, g)
 }
 
@@ -61,13 +62,15 @@ func (bc *BigObjectsController) Head(g *gin.Context) {
 		return
 	}
 	defer stream.Close()
-	size := stream.CurrentSize()
-	if size == -1 {
-		response.NotFound(g)
+	size, err := stream.CurrentSize()
+	if err != nil {
+		response.FailErr(err, g)
 		return
 	}
 	response.OkHeader(gin.H{
-		"Content-Length": util.ToString(size),
+		"Accept-Ranges":  "bytes",
+		"Min-Part-Size":  stream.Config.BlockSize(),
+		"Content-Length": size,
 	}, g)
 }
 
@@ -84,7 +87,11 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		return
 	}
 	defer stream.Close()
-	curSize := stream.CurrentSize()
+	curSize, err := stream.CurrentSize()
+	if err != nil {
+		response.FailErr(err, g)
+		return
+	}
 	if curSize != req.Range.FirstBytes().First {
 		response.Exec(g).Status(http.StatusRequestedRangeNotSatisfiable).Abort()
 		return

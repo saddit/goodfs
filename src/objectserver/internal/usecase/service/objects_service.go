@@ -43,7 +43,7 @@ func Put(fileName string, fileStream io.Reader) error {
 	if Exist(fileName) {
 		return nil
 	}
-	size, err := AppendFile(global.Config.StoragePath, fileName, fileStream)
+	size, err := WriteFile(filepath.Join(global.Config.StoragePath, fileName), fileStream)
 	if err != nil {
 		return err
 	}
@@ -73,12 +73,13 @@ func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 		return err
 	}
 	defer f.Close()
+	// FIXME: offset must be power of 4KB if direct_io enabled
 	if offset > 0 {
 		if _, err := f.Seek(offset, io.SeekCurrent); err != nil {
 			return err
 		}
 	}
-	if _, err = io.CopyBuffer(disk.LimitWriter(writer, size), f, disk.AlignedBlock(8*4096)); err != nil {
+	if _, err = io.CopyBuffer(disk.LimitWriter(writer, size), f, disk.AlignedBlock(8*cst.OS.PageSize)); err != nil {
 		return err
 	}
 	return nil
@@ -106,14 +107,15 @@ func DeleteFile(path, name string) (int64, error) {
 	return info.Size(), os.Remove(pt)
 }
 
-func AppendFile(path, fileName string, fileStream io.Reader) (int64, error) {
-	path = filepath.Join(path, fileName)
-	file, err := disk.OpenFileDirectIO(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
+// WriteFile 如果连续写入1次以上不满足4KB倍数的数据，中间将会产生无效padding，读取时无法去除文件中间的padding
+func WriteFile(fullPath string, fileStream io.Reader) (int64, error) {
+	file, err := disk.OpenFileDirectIO(fullPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
 		return 0, err
 	}
 	defer file.Close()
-	return disk.AligendWriteTo(file, fileStream, 8*4096)
+	// write file and aligen to power of 4KB
+	return disk.AligendWriteTo(file, fileStream, 8*cst.OS.PageSize)
 }
 
 func MvTmpToStorage(tmpName, fileName string) error {

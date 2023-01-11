@@ -59,13 +59,11 @@ func DisableDirectIO(f *os.File) error {
 	return nil
 }
 
-// AlignedBlock simply returns an unaligned buffer
+// AlignedBlock simply returns an unaligned buffer (if less than 4KB it will be 4KB)
 // for systems that do not support DirectIO.
 func AlignedBlock(BlockSize int) []byte {
+	if BlockSize < 4096 {
+		BlockSize = 4096
+	}
 	return make([]byte, BlockSize)
-}
-
-// AligendWriteTo wrapper around io.CopyBuffer nothing special
-func AligendWriteTo(dst io.Writer, src io.Reader, bufSize int) (n int64, err error) {
-	return io.CopyBuffer(dst, src, AlignedBlock(bufSize))
 }

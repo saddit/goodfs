@@ -97,7 +97,7 @@ func HeadTmpObject(ip, id string) (int64, error) {
 		}
 	}
 	if resp.StatusCode == http.StatusNotFound {
-		return 0, nil
+		return 0, response.NewError(http.StatusNotFound, "object not found")
 	}
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("head temp object id=%v, return code=%v", id, resp.Status)

@@ -82,5 +82,7 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	response.Ok(c)
+	response.OkHeader(gin.H{
+		"Accept-Ranges": "bytes",
+	}, c)
 }
