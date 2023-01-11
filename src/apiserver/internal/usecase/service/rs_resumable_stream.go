@@ -37,8 +37,8 @@ func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, erro
 }
 
 // NewRSResumablePutStream 开启新的断点续传
-func NewRSResumablePutStream(ips []string, name, hash string, size int64, rsCfg *config.RsConfig) (*RSResumablePutStream, error) {
-	putStream, e := NewRSPutStream(ips, hash, size, rsCfg)
+func NewRSResumablePutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSResumablePutStream, error) {
+	putStream, e := NewRSPutStream(opt, rsCfg)
 	if e != nil {
 		return nil, e
 	}
@@ -47,10 +47,10 @@ func NewRSResumablePutStream(ips []string, name, hash string, size int64, rsCfg 
 		ids[i] = putStream.writers[i].(*PutStream).tmpId
 	}
 	token := &resumeToken{
-		Name:    name,
-		Hash:    hash,
-		Servers: ips,
-		Size:    size,
+		Name:    opt.Name,
+		Hash:    opt.Hash,
+		Servers: opt.Locates,
+		Size:    opt.Size,
 		Ids:     ids,
 		Config:  rsCfg,
 	}

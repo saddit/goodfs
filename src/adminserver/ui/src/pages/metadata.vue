@@ -6,7 +6,7 @@
         <div class="flex items-center">
           <MagnifyingGlassIcon class="w-6 h-6 mr-2 text-indigo-600"/>
           <input type="text"
-                 @change="e => searchData((e.target as HTMLTextAreaElement).value)"
+                 @change="e => searchData(e.target)"
                  class="text-input-pri"
                  :placeholder="t('search-by-name')"/>
           <!-- TODO: beautify -->
@@ -47,6 +47,7 @@
           </tr>
           </tbody>
         </table>
+        <!-- FIXME: bug when click next page -->
         <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
                     v-model="dataReq.page"/>
       </div>
@@ -108,8 +109,8 @@ const showVersionTb = ref(false)
 
 const {t} = useI18n({inheritLocale: true})
 
-function searchData(prefix: string) {
-    dataReq.name = prefix
+function searchData(elem: any) {
+    dataReq.name = (elem as HTMLTextAreaElement).value
     queryMetadata()
 }
 

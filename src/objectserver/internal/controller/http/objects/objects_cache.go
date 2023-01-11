@@ -20,11 +20,3 @@ func GetFromCache(g *gin.Context) {
 		}
 	}
 }
-
-func RemoveCache(g *gin.Context) {
-	name := g.Param("name")
-	if evict, ok := g.Get("Evict"); ok && evict.(bool) {
-		pool.Cache.Delete(name)
-		logs.Std().Debug("Success evict cache %v\n", name)
-	}
-}

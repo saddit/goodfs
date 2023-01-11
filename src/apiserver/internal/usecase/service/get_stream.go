@@ -2,6 +2,7 @@ package service
 
 import (
 	"apiserver/internal/usecase/webapi"
+	"common/logs"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,8 +44,11 @@ func (g *GetStream) request() error {
 }
 
 func (g *GetStream) Seek(offset int64, whence int) (int64, error) {
+	if whence != io.SeekStart {
+		logs.Std().Warn("get stream only supports seek whence io.SeekStart")
+	}
 	g.offset = int(offset)
-	return int64(whence) + offset, nil
+	return offset, nil
 }
 
 func (g *GetStream) Read(bt []byte) (int, error) {

@@ -2,12 +2,12 @@ package service
 
 import (
 	"apiserver/config"
-	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/logic"
 	"bytes"
 	"common/graceful"
 	"common/logs"
 	"common/util"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -15,7 +15,7 @@ import (
 
 type RSGetStream struct {
 	*rsDecoder
-	rsCfg config.RsConfig
+	*StreamOption
 }
 
 type provideStream struct {
@@ -24,7 +24,7 @@ type provideStream struct {
 	err    error
 }
 
-func provideGetStream(hash string, locates []string, shardSize int64) <-chan *provideStream {
+func provideGetStream(hash string, locates []string, shardSize int) <-chan *provideStream {
 	respChan := make(chan *provideStream, 1)
 	go func() {
 		defer graceful.Recover()
@@ -36,7 +36,7 @@ func provideGetStream(hash string, locates []string, shardSize int64) <-chan *pr
 				defer graceful.Recover()
 				defer wg.Done()
 				if len(ip) > 0 {
-					reader, e := NewGetStream(ip, fmt.Sprintf("%s.%d", hash, idx), shardSize)
+					reader, e := NewGetStream(ip, fmt.Sprintf("%s.%d", hash, idx), int64(shardSize))
 					respChan <- &provideStream{reader, idx, e}
 				} else {
 					respChan <- &provideStream{nil, idx, fmt.Errorf("shard %s.%d lost", hash, idx)}
@@ -48,30 +48,39 @@ func provideGetStream(hash string, locates []string, shardSize int64) <-chan *pr
 	return respChan
 }
 
-func NewRSGetStream(size int64, hash string, locates []string, rsCfg *config.RsConfig) (*RSGetStream, error) {
+func NewRSGetStream(option *StreamOption, rsCfg *config.RsConfig) (*RSGetStream, error) {
 	readers := make([]io.Reader, rsCfg.AllShards())
 	writers := make([]io.Writer, rsCfg.AllShards())
-	dsNum := int64(rsCfg.DataShards)
-	perSize := (size + dsNum - 1) / dsNum
+	perSize := rsCfg.ShardSize(option.Size)
 	lb := logic.NewDiscovery().NewDataServSelector()
-	var e error
-	for r := range provideGetStream(hash, locates, perSize) {
+	for r := range provideGetStream(option.Hash, option.Locates, perSize) {
 		if r.err != nil {
 			logs.Std().Error(r.err)
 			ip := lb.Select()
-			writers[r.index], r.err = NewPutStream(ip, fmt.Sprintf("%s.%d", hash, r.index), perSize)
+			writers[r.index], r.err = NewPutStream(ip, fmt.Sprintf("%s.%d", option.Hash, r.index), int64(perSize))
 			if r.err != nil {
 				return nil, r.err
 			}
-			//需更新元数据
-			locates[r.index] = ip
-			e = usecase.ErrNeedUpdateMeta
+			// metadata update required
+			option.Locates[r.index] = ip
 		} else {
 			readers[r.index] = r.stream
 		}
 	}
-	dec := NewDecoder(readers, writers, size, rsCfg)
-	return &RSGetStream{dec, *rsCfg}, e
+	dec := NewDecoder(readers, writers, option.Size, rsCfg)
+	return &RSGetStream{dec, option}, nil
+}
+
+func NewRSTempStream(option *StreamOption, rsCfg *config.RsConfig) *RSGetStream {
+	readers := make([]io.Reader, rsCfg.AllShards())
+	writers := make([]io.Writer, rsCfg.AllShards())
+	dsNum := int64(rsCfg.DataShards)
+	perSize := (option.Size + dsNum - 1) / dsNum
+	for idx, loc := range option.Locates {
+		readers[idx] = NewTempStream(loc, fmt.Sprintf("%s.%d", option.Hash, idx), perSize)
+	}
+	dec := NewDecoder(readers, writers, option.Size, rsCfg)
+	return &RSGetStream{dec, option}
 }
 
 func (g *RSGetStream) Seek(offset int64, whence int) (int64, error) {
@@ -102,11 +111,12 @@ func (g *RSGetStream) Seek(offset int64, whence int) (int64, error) {
 func (g *RSGetStream) Close() error {
 	wg := util.NewDoneGroup()
 	defer wg.Close()
+	var needUpdate bool
 	for _, w := range g.writers {
 		if util.InstanceOf[Committer](w) {
+			needUpdate = true
 			wg.Todo()
 			go func(cm Committer) {
-				defer graceful.Recover()
 				defer wg.Done()
 				if e := cm.Commit(true); e != nil {
 					wg.Error(e)
@@ -114,5 +124,14 @@ func (g *RSGetStream) Close() error {
 			}(w.(Committer))
 		}
 	}
-	return wg.WaitUntilError()
+	if err := wg.WaitUntilError(); err != nil {
+		return err
+	}
+	if needUpdate {
+		if g.Updater == nil {
+			return errors.New("locates updater required but nil")
+		}
+		return g.Updater(g.Locates)
+	}
+	return nil
 }

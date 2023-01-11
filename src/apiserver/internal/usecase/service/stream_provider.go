@@ -3,40 +3,65 @@ package service
 import (
 	"apiserver/config"
 	"apiserver/internal/entity"
-	"io"
 )
 
-func RsStreamProivder(meta *entity.Version, cfg *config.RsConfig) StreamProvider {
+type StreamOption struct {
+	Locates []string
+	Hash    string
+	Name    string
+	Size    int64
+	Updater LocatesUpdater
+}
+
+func RsStreamProvider(meta *entity.Version, updater LocatesUpdater, cfg *config.RsConfig) StreamProvider {
 	return &streamProvider{
-		getStream: func(s []string) (io.ReadSeekCloser, error) {
-			return NewRSGetStream(meta.Size, meta.Hash, s, cfg)
+		getStream: func(s []string) (ReadSeekCloser, error) {
+			return NewRSGetStream(&StreamOption{
+				Locates: s,
+				Hash:    meta.Hash,
+				Size:    meta.Size,
+				Updater: updater,
+			}, cfg)
 		},
-		puStream: func(s []string) (WriteCloseCommitter, error) {
-			return NewRSPutStream(s, meta.Hash, meta.Size, cfg)
+		puStream: func(s []string) (WriteCommitCloser, error) {
+			return NewRSPutStream(&StreamOption{
+				Locates: s,
+				Hash:    meta.Hash,
+				Size:    meta.Size,
+			}, cfg)
 		},
 	}
 }
 
-func CpStreamProvider(meta *entity.Version, cfg *config.ReplicationConfig) StreamProvider {
+func CpStreamProvider(meta *entity.Version, updater LocatesUpdater, cfg *config.ReplicationConfig) StreamProvider {
 	return &streamProvider{
-		getStream: func(s []string) (io.ReadSeekCloser, error) {
-			return NewCopyGetStream(meta.Hash, s, meta.Size, cfg)
+		getStream: func(s []string) (ReadSeekCloser, error) {
+			return NewCopyGetStream(&StreamOption{
+				Locates: s,
+				Hash:    meta.Hash,
+				Size:    meta.Size,
+				Updater: updater,
+			}, cfg)
 		},
-		puStream: func(s []string) (WriteCloseCommitter, error) {
-			return NewCopyPutStream(meta.Hash, meta.Size, s, cfg)
+		puStream: func(s []string) (WriteCommitCloser, error) {
+			return NewCopyPutStream(&StreamOption{
+				Locates: s,
+				Hash:    meta.Hash,
+				Size:    meta.Size,
+			}, cfg)
 		},
 	}
 }
 
 type streamProvider struct {
-	getStream func([]string) (io.ReadSeekCloser, error)
-	puStream  func([]string) (WriteCloseCommitter, error)
+	getStream func([]string) (ReadSeekCloser, error)
+	puStream  func([]string) (WriteCommitCloser, error)
 }
 
-func (sp *streamProvider) GetStream(ips []string) (io.ReadSeekCloser, error) {
+func (sp *streamProvider) GetStream(ips []string) (ReadSeekCloser, error) {
 	return sp.getStream(ips)
 }
 
-func (sp *streamProvider) PutStream(ips []string) (WriteCloseCommitter, error) {
+func (sp *streamProvider) PutStream(ips []string) (WriteCommitCloser, error) {
 	return sp.puStream(ips)
 }

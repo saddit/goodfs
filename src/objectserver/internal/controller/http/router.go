@@ -17,8 +17,8 @@ func NewHttpServer(addr string) *Server {
 	r := gin.Default()
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get)
 	r.HEAD("/objects/:name", objects.Head)
-	r.PUT("/objects/:name", temp.FilterEmptyRequest, objects.Put, objects.RemoveCache)
-	r.DELETE("/objects/:name", objects.Delete, objects.RemoveCache)
+	r.PUT("/objects/:name", temp.FilterEmptyRequest, objects.Put)
+	r.DELETE("/objects/:name", objects.Delete)
 
 	r.POST("/temp/:name", temp.Post)
 	r.PATCH("/temp/:name", temp.FilterExpired, temp.FilterEmptyRequest, temp.Patch)

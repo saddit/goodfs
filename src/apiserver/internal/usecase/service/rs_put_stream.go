@@ -12,12 +12,11 @@ type RSPutStream struct {
 	Locates []string
 }
 
-func NewRSPutStream(ips []string, hash string, size int64, rsCfg *config.RsConfig) (*RSPutStream, error) {
-	if len(ips) < rsCfg.AllShards() {
+func NewRSPutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSPutStream, error) {
+	if len(opt.Locates) < rsCfg.AllShards() {
 		return nil, fmt.Errorf("dataServers ip number mismatch %v", rsCfg.AllShards())
 	}
-	ds := int64(rsCfg.DataShards)
-	perShard := (size + ds - 1) / ds
+	perShard := rsCfg.ShardSize(opt.Size)
 	writers := make([]io.WriteCloser, rsCfg.AllShards())
 	wg := util.NewDoneGroup()
 	defer wg.Close()
@@ -25,7 +24,7 @@ func NewRSPutStream(ips []string, hash string, size int64, rsCfg *config.RsConfi
 		wg.Todo()
 		go func(idx int) {
 			defer wg.Done()
-			stream, e := NewPutStream(ips[idx], fmt.Sprintf("%s.%d", hash, idx), perShard)
+			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), int64(perShard))
 			if e != nil {
 				wg.Error(e)
 			} else {
@@ -37,7 +36,7 @@ func NewRSPutStream(ips []string, hash string, size int64, rsCfg *config.RsConfi
 		return nil, e
 	}
 	enc := NewEncoder(writers, rsCfg)
-	return &RSPutStream{enc, ips}, nil
+	return &RSPutStream{enc, opt.Locates}, nil
 }
 
 func newExistedRSPutStream(ips, ids []string, hash string, rsCfg *config.RsConfig) *RSPutStream {
