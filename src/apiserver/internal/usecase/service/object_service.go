@@ -49,7 +49,7 @@ func NewObjectService(s IMetaService, etcd *clientv3.Client) *ObjectService {
 
 // LocateObject locate object shards by hash. send "hash.idx#key" expect "ip#idx"
 func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	//生成一个唯一key 并在结束后删除
 	tempId := uuid.NewString()
@@ -147,6 +147,10 @@ func streamToDataServer(req *entity.PutReq, meta *entity.Version, provider Strea
 
 func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
 	var provider StreamProvider
+	up := func(locates []string) error {
+		ver.Locate = locates
+		return o.metaService.UpdateVersion(meta.Name, ver)
+	}
 	switch ver.StoreStrategy {
 	default:
 		fallthrough
@@ -154,19 +158,13 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 		cfg := pool.Config.Object.ReedSolomon
 		cfg.DataShards = ver.DataShards
 		cfg.ParityShards = ver.ParityShards
-		provider = RsStreamProivder(ver, &cfg)
+		provider = RsStreamProvider(ver, up, &cfg)
 	case entity.MultiReplication:
 		cfg := pool.Config.Object.Replication
 		cfg.CopiesCount = ver.DataShards
-		provider = CpStreamProvider(ver, &cfg)
+		provider = CpStreamProvider(ver, up, &cfg)
 	}
-	stream, err := provider.GetStream(ver.Locate)
-
-	if err == ErrNeedUpdateMeta {
-		logs.Std().Debugf("data fix: need update meta %s verison %d", meta.Name, ver.Sequence)
-		err = o.metaService.UpdateVersion(meta.Name, ver)
-	}
-	return stream, err
+	return provider.GetStream(ver.Locate)
 }
 
 func saveObjectStoreStrategy(meta *entity.Version) StreamProvider {
@@ -178,22 +176,22 @@ func saveObjectStoreStrategy(meta *entity.Version) StreamProvider {
 		cfg := &pool.Config.Object.ReedSolomon
 		meta.DataShards = cfg.DataShards
 		meta.ParityShards = cfg.ParityShards
-		meta.ShardSize = cfg.BlockPerShard
-		return RsStreamProivder(meta, cfg)
+		meta.ShardSize = cfg.ShardSize(meta.Size)
+		return RsStreamProvider(meta, nil, cfg)
 	case entity.MultiReplication:
 		cfg := &pool.Config.Object.Replication
 		meta.DataShards = cfg.CopiesCount
 		meta.ShardSize = int(meta.Size)
-		return CpStreamProvider(meta, cfg)
+		return CpStreamProvider(meta, nil, cfg)
 	}
 }
 
-func dataServerStream(meta *entity.Version, proivder StreamProvider) (WriteCloseCommitter, []string, error) {
+func dataServerStream(meta *entity.Version, provider StreamProvider) (WriteCommitCloser, []string, error) {
 	ds := logic.NewDiscovery().SelectDataServer(pool.Balancer, meta.DataShards+meta.ParityShards)
 	if len(ds) == 0 {
 		return nil, nil, ErrServiceUnavailable
 	}
 
-	stream, err := proivder.PutStream(ds)
+	stream, err := provider.PutStream(ds)
 	return stream, ds, err
 }

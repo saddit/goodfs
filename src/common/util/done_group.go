@@ -34,7 +34,7 @@ func NewDoneGroup() DoneGroup {
 
 // Done equals to WaitGroup Done() but recover and call Error() on panic
 func (d *DoneGroup) Done() {
-	// recover panic of d.WaitGroup.Done()
+	// recover panic from d.WaitGroup.Done()
 	defer func() {
 		if err := recover(); err != nil {
 			graceful.PrintStacks(err)

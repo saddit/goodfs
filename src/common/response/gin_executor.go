@@ -24,6 +24,13 @@ func (ge *GinExecutor) Status(code int) *GinExecutor {
 	return ge
 }
 
+func (ge *GinExecutor) Fail(code int, msg string) {
+	ge.ctx.JSON(code, &FailureResp{
+		Success: false,
+		Message: msg,
+	})
+}
+
 func (ge *GinExecutor) JSON(body any) *GinExecutor {
 	ge.ctx.JSON(http.StatusOK, body)
 	return ge

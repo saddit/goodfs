@@ -2,8 +2,8 @@ package objects
 
 import (
 	"bytes"
-	"common/logs"
 	"common/request"
+	"common/response"
 	"common/util"
 	"io"
 	"net/http"
@@ -23,26 +23,22 @@ func Put(c *gin.Context) {
 		reader = &entity.BufferTeeReader{Reader: c.Request.Body, Body: bytes.NewBuffer(cache)}
 	}
 	if err := service.Put(fileName, reader); err != nil {
-		util.LogErr(err)
-		c.Set("Evict", true)
-		c.Status(http.StatusInternalServerError)
+		response.FailErr(err, c)
 		return
 	}
 	if len(cache) > 0 {
 		pool.Cache.Set(fileName, cache)
 	}
-	c.Status(http.StatusOK)
+	response.Ok(c)
 }
 
 func Delete(c *gin.Context) {
 	name := c.Param("name")
-	e := service.Delete(name)
-	if e != nil {
-		util.LogErr(e)
-		c.AbortWithStatus(http.StatusNotFound)
+	pool.Cache.Delete(name)
+	if err := service.Delete(name); err != nil {
+		response.FailErr(err, c)
 		return
 	}
-	c.Set("Evict", true)
 	c.Status(http.StatusNoContent)
 }
 
@@ -61,8 +57,7 @@ func Get(c *gin.Context) {
 		writer = &entity.BufferTeeWriter{Writer: c.Writer, Body: bytes.NewBuffer(buf)}
 	}
 	if err := service.Get(fileName, offset, size, writer); err != nil {
-		logs.Std().Error(err)
-		c.AbortWithStatus(http.StatusNotFound)
+		response.FailErr(err, c)
 		return
 	}
 	if len(buf) > 0 {

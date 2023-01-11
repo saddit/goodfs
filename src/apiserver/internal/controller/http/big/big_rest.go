@@ -7,6 +7,7 @@ import (
 	"apiserver/internal/usecase/service"
 	"common/logs"
 	"common/response"
+	"common/util"
 	"common/util/crypto"
 
 	"apiserver/internal/usecase/logic"
@@ -40,7 +41,12 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		response.ServiceUnavailableMsg("no available servers", g)
 		return
 	}
-	stream, e := service.NewRSResumablePutStream(ips, req.Name, req.Hash, req.Size, &pool.Config.Rs)
+	stream, e := service.NewRSResumablePutStream(&service.StreamOption{
+		Hash:    req.Hash,
+		Name:    req.Name,
+		Size:    req.Size,
+		Locates: ips,
+	}, &pool.Config.Rs)
 	if e != nil {
 		response.FailErr(e, g)
 		return
@@ -122,24 +128,17 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		}
 		// 上传完成 校验签名
 		if pool.Config.Checksum {
-			getStream, err := service.NewRSGetStream(stream.Size, stream.Hash, stream.Locates, stream.Config)
-			if err != nil {
-				response.FailErr(err, g)
-				return
-			}
+			getStream := service.NewRSTempStream(&service.StreamOption{
+				Hash:    stream.Hash,
+				Size:    stream.Size,
+				Locates: stream.Locates,
+			}, stream.Config)
 			hash := crypto.SHA256IO(getStream)
 			if hash != stream.Hash {
-				if err = stream.Commit(false); err != nil {
-					logs.Std().Error(err)
-				}
-				response.Exec(g).Status(http.StatusForbidden).Abort()
+				util.LogErr(stream.Commit(false))
+				response.Exec(g).Fail(http.StatusForbidden, "signature authentication failure")
 				return
 			}
-		}
-		// 成功上传
-		if err = stream.Commit(true); err != nil {
-			response.FailErr(err, g)
-			return
 		}
 		// 更新元数据
 		verNum, err := bc.metaService.SaveMetadata(&entity.Metadata{
@@ -148,10 +147,18 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 				Hash:          stream.Hash,
 				Size:          stream.Size,
 				Locate:        stream.Locates,
+				DataShards:    stream.Config.DataShards,
+				ParityShards:  stream.Config.ParityShards,
+				ShardSize:     stream.Config.ShardSize(stream.Size),
 				StoreStrategy: entity.ECReedSolomon,
 			}},
 		})
 		if err != nil {
+			response.FailErr(err, g)
+			return
+		}
+		// 成功上传
+		if err = stream.Commit(true); err != nil {
 			response.FailErr(err, g)
 			return
 		}

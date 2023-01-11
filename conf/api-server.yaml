@@ -18,7 +18,7 @@ object:
   reed-solomon:
     data-shards: 4
     parity-shards: 2
-    block-per-shard: 8000
+    block-per-shard: 8192
   replication:
     copies-count: 4
     loss-tolerance-rate: 0.1

@@ -365,3 +365,7 @@ func StrToBytes(s string) []byte {
 	h := [3]uintptr{x[0], x[1], x[1]}
 	return *(*[]byte)(unsafe.Pointer(&h))
 }
+
+func IsOSNotExist(err error) bool {
+	return err != nil && os.IsNotExist(err)
+}

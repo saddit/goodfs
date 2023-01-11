@@ -13,7 +13,7 @@ type CopyPutStream struct {
 	writers  []io.WriteCloser
 }
 
-func NewCopyPutStream(hash string, size int64, ips []string, rpCfg *config.ReplicationConfig) (*CopyPutStream, error) {
+func NewCopyPutStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*CopyPutStream, error) {
 	writers := make([]io.WriteCloser, rpCfg.CopiesCount)
 	wg := util.NewDoneGroup()
 	defer wg.Close()
@@ -21,7 +21,7 @@ func NewCopyPutStream(hash string, size int64, ips []string, rpCfg *config.Repli
 		wg.Todo()
 		go func(idx int) {
 			defer wg.Done()
-			stream, e := NewPutStream(ips[idx], fmt.Sprintf("%s.%d", hash, idx), size)
+			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), opt.Size)
 			if e != nil {
 				wg.Error(e)
 			} else {

@@ -16,14 +16,16 @@ type CopyFixStream struct {
 	locates   []string
 	buffer    *bytes.Buffer
 	rpConfig  *config.ReplicationConfig
+	Updater   LocatesUpdater
 }
 
-func NewCopyFixStream(lostNames []string, newLocates []string, cfg *config.ReplicationConfig) (*CopyFixStream, error) {
+func NewCopyFixStream(lostNames []string, newLocates []string, up LocatesUpdater, cfg *config.ReplicationConfig) (*CopyFixStream, error) {
 	return &CopyFixStream{
 		fileNames: lostNames,
 		locates:   newLocates,
 		rpConfig:  cfg,
 		buffer:    bytes.NewBuffer(make([]byte, 0, 4096)),
+		Updater:   up,
 	}, nil
 }
 
@@ -57,6 +59,15 @@ func (c *CopyFixStream) startFix() func() error {
 		}
 		if len(errs) > 0 {
 			dg.Error(errors.New(strings.Join(errs, ";")))
+			return
+		}
+		if c.Updater == nil {
+			dg.Error(errors.New("locates updater required but nil"))
+			return
+		}
+		if err := c.Updater(c.locates); err != nil {
+			dg.Error(err)
+			return
 		}
 	}()
 	return dg.WaitUntilError

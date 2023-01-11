@@ -2,6 +2,7 @@ package temp
 
 import (
 	"common/cache"
+	"common/response"
 	"common/util"
 	xmath "common/util/math"
 	"net/http"
@@ -19,7 +20,7 @@ import (
 func Patch(g *gin.Context) {
 	id := g.Param("name")
 	fullPath := filepath.Join(pool.Config.TempPath, id)
-	// only allow last chunck can not be power of 4KB
+	// only allow last chuck may not be power of 4KB
 	if _, err := service.WriteFile(fullPath, g.Request.Body); err != nil {
 		util.LogErr(g.AbortWithError(http.StatusInternalServerError, err))
 		return
@@ -36,13 +37,13 @@ func Delete(g *gin.Context) {
 func Post(g *gin.Context) {
 	var req entity.TempPostReq
 	if err := entity.BindAll(g, &req, binding.Header, binding.Uri); err != nil {
-		g.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+		response.FailErr(err, g)
 		return
 	}
 	tmpInfo := &entity.TempInfo{
-		Name: req.Name, 
+		Name: req.Name,
 		Size: req.Size,
-		Id: entity.TempKeyPrefix + uuid.NewString(),
+		Id:   entity.TempKeyPrefix + uuid.NewString(),
 	}
 	if !pool.Cache.SetGob(tmpInfo.Id, tmpInfo) {
 		g.AbortWithStatus(http.StatusInternalServerError)
@@ -58,16 +59,15 @@ func Put(g *gin.Context) {
 	var ok bool
 	if ti, ok = cache.GetGob[entity.TempInfo](pool.Cache, id); ok {
 		if err := service.MvTmpToStorage(id, ti.Name); err != nil {
-			status := util.IfElse(os.IsNotExist(err), http.StatusNotFound, http.StatusInternalServerError)
-			util.LogErr(g.AbortWithError(status, err))
+			response.FailErr(err, g)
 			return
 		}
 	} else {
-		g.JSON(http.StatusNotFound, gin.H{"msg": "Temp file has been removed"})
+		response.BadRequestMsg("file has been removed", g)
 		return
 	}
 	pool.Cache.Delete(id)
-	g.Status(http.StatusOK)
+	response.Ok(g)
 }
 
 // Head 获取分片临时对象的大小
@@ -84,34 +84,33 @@ func Head(g *gin.Context) {
 		return
 	}
 	fi, err := os.Stat(filepath.Join(pool.Config.TempPath, id))
+	if util.IsOSNotExist(err) {
+		response.OkHeader(gin.H{"Size": 0}, g)
+		return
+	}
 	if err != nil {
-		if os.IsNotExist(err) {
-			g.Status(http.StatusNotFound)
-			return
-		}
-		util.LogErr(err)
-		g.Status(http.StatusInternalServerError)
+		response.FailErr(err, g)
 		return
 	}
 	// fi may have aligned padding if upload has finished
-	g.Header("Size", util.ToString(xmath.MinNumber(fi.Size(), ti.Size)))
-	g.Status(http.StatusOK)
+	response.OkHeader(gin.H{
+		"Size": xmath.MinNumber(fi.Size(), ti.Size),
+	}, g)
 }
 
 // Get 获取临时对象分片
 func Get(g *gin.Context) {
 	req := struct {
 		Name string `uri:"name" binding:"required"`
-		Size int64  `form:"size" binding:"gte=1"`
+		Size int64  `header:"size" binding:"gte=1"`
 	}{}
-	if err := entity.BindAll(g, &req, binding.Uri, binding.Query); err != nil {
-		g.Status(http.StatusBadRequest)
+	if err := entity.BindAll(g, &req, binding.Uri, binding.Header); err != nil {
+		response.BadRequestErr(err, g)
 		return
 	}
 	if err := service.GetTemp(req.Name, req.Size, g.Writer); err != nil {
-		util.LogErr(err)
-		g.Status(http.StatusNotFound)
+		response.FailErr(err, g)
 		return
 	}
-	g.Status(http.StatusOK)
+	response.Ok(g)
 }

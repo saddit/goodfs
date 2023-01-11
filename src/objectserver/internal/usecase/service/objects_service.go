@@ -3,7 +3,9 @@ package service
 import (
 	"common/cst"
 	"common/graceful"
+	"common/response"
 	"common/system/disk"
+	"common/util"
 	"io"
 	global "objectserver/internal/usecase/pool"
 	"os"
@@ -69,13 +71,18 @@ func GetTemp(name string, size int64, writer io.Writer) error {
 
 func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 	f, err := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, cst.OS.ModeUser)
+	if util.IsOSNotExist(err) {
+		return response.NewError(404, "object not found")
+	}
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	// FIXME: offset must be power of 4KB if direct_io enabled
 	if offset > 0 {
-		if _, err := f.Seek(offset, io.SeekCurrent); err != nil {
+		if int(offset)%cst.OS.PageSize > 0 {
+			return response.NewError(400, "offset must be power of 4KB")
+		}
+		if _, err = f.Seek(offset, io.SeekCurrent); err != nil {
 			return err
 		}
 	}
@@ -101,10 +108,16 @@ func Delete(name string) error {
 func DeleteFile(path, name string) (int64, error) {
 	pt := filepath.Join(path, name)
 	info, err := os.Stat(path)
+	if util.IsOSNotExist(err) {
+		return 0, nil
+	}
 	if err != nil {
 		return 0, err
 	}
-	return info.Size(), os.Remove(pt)
+	if err = os.Remove(pt); err != nil && !util.IsOSNotExist(err) {
+		return 0, err
+	}
+	return info.Size(), nil
 }
 
 // WriteFile 如果连续写入1次以上不满足4KB倍数的数据，中间将会产生无效padding，读取时无法去除文件中间的padding
@@ -125,6 +138,9 @@ func MvTmpToStorage(tmpName, fileName string) error {
 		return nil
 	}
 	if err := os.Rename(tempPath, filePath); err != nil {
+		if os.IsNotExist(err) {
+			return response.NewError(404, "object not found")
+		}
 		return err
 	}
 	go func() {

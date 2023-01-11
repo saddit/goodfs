@@ -4,6 +4,7 @@ import (
 	. "apiserver/internal/usecase/webapi"
 	"bytes"
 	"common/graceful"
+	"common/logs"
 	"sync/atomic"
 )
 
@@ -56,7 +57,9 @@ func (p *PutStream) Commit(ok bool) error {
 		if !ok {
 			go func() {
 				defer graceful.Recover()
-				DeleteTmpObject(p.Locate, p.tmpId)
+				if err := DeleteTmpObject(p.Locate, p.tmpId); err != nil {
+					logs.Std().Error(err)
+				}
 			}()
 			return nil
 		}

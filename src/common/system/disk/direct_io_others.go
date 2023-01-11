@@ -21,7 +21,6 @@ package disk
 
 import (
 	"os"
-	"io"
 )
 
 // OpenBSD, Windows, and illumos do not support O_DIRECT.

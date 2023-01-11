@@ -2,7 +2,6 @@ package webapi
 
 import (
 	"apiserver/internal/usecase/pool"
-	"common/logs"
 	"common/response"
 	"common/util"
 	"fmt"
@@ -14,17 +13,19 @@ import (
 	"strings"
 )
 
-func DeleteTmpObject(locate, id string) {
-	req, _ := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
+func DeleteTmpObject(locate, id string) error {
+	req, err := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
+	if err != nil {
+		return err
+	}
 	resp, err := pool.Http.Do(req)
 	if err != nil {
-		logs.Std().Error(err)
+		return err
 	}
-	content, err := io.ReadAll(resp.Body)
-	if err != nil {
-		content = util.StrToBytes(resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
-	logs.Std().Errorf("delete temp object id=%v, return: %v", id, string(content))
+	return nil
 }
 
 func PostTmpObject(ip, name string, size int64) (string, error) {
@@ -110,6 +111,15 @@ func HeadTmpObject(ip, id string) (int64, error) {
 		return size, nil
 	}
 	return 0, fmt.Errorf("response doesn't contains size")
+}
+
+func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, tempRest(ip, name), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Size", util.ToString(size))
+	return pool.Http.Do(req)
 }
 
 func GetObject(ip, name string, offset int, size int64) (*http.Response, error) {

@@ -66,7 +66,7 @@ func (rp *ReplicationConfig) ToleranceLossNum() int {
 type RsConfig struct {
 	DataShards    int `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`
 	ParityShards  int `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`
-	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"` 	// Auto aligen to power of 4KB
+	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"` // Auto aligen to power of 4KB
 }
 
 func (r *RsConfig) AllShards() int {
@@ -75,6 +75,11 @@ func (r *RsConfig) AllShards() int {
 
 func (r *RsConfig) BlockSize() int {
 	return r.BlockPerShard * r.DataShards
+}
+
+func (r *RsConfig) ShardSize(totalSize int64) int {
+	dsNum := int64(r.DataShards)
+	return int((totalSize + dsNum - 1) / dsNum)
 }
 
 func ReadConfig() Config {
