@@ -1,6 +1,9 @@
 package service
 
-import "io"
+import (
+	"apiserver/internal/entity"
+	"io"
+)
 
 type Committer interface {
 	Commit(bool) error
@@ -25,4 +28,5 @@ type ReadSeekCloser interface {
 type StreamProvider interface {
 	GetStream(ip []string) (ReadSeekCloser, error)
 	PutStream(ip []string) (WriteCommitCloser, error)
+	FillMetadata(*entity.Version)
 }
