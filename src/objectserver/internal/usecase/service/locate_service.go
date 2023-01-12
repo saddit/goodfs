@@ -15,6 +15,7 @@ import (
 
 var log = logs.New("locate-service")
 
+// WarmUpLocateCache walk all objects under the storage path and save marks to cache
 func WarmUpLocateCache() {
 	err := filepath.Walk(pool.Config.StoragePath, func(_ string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -36,7 +37,8 @@ func WarmUpLocateCache() {
 	}
 }
 
-// StartTempRemovalBackground 临时文件清除线程, 调用返回方法以停止
+// StartTempRemovalBackground start a temp file removal thread. watching the eviction of cache.
+// return cancel function.
 func StartTempRemovalBackground(cache cache.ICache) func() {
 	ch := cache.NotifyEvicted()
 	ctx, cancel := context.WithCancel(context.Background())

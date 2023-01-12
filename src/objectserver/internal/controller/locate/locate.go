@@ -1,6 +1,7 @@
 package locate
 
 import (
+	"common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/util"
@@ -13,10 +14,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-const (
-	LocationSubKey = "goodfs.location"
-)
-
 var log = logs.New("object-locator")
 
 type Locator struct {
@@ -26,18 +23,19 @@ type Locator struct {
 func New(etcd *clientv3.Client) *Locator {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if res, _ := etcd.Get(ctx, LocationSubKey, clientv3.WithCountOnly()); res.Count == 0 {
-		_, err := etcd.Put(ctx, LocationSubKey, "")
+	if res, _ := etcd.Get(ctx, cst.EtcdPrefix.LocationSubKey, clientv3.WithCountOnly()); res.Count == 0 {
+		_, err := etcd.Put(ctx, cst.EtcdPrefix.LocationSubKey, "")
 		util.LogErr(err)
 	}
 	return &Locator{etcd}
 }
 
-//StartLocate 监听 etcd key 实现定位消息接收, 执行返回的方法以终止
+// StartLocate start a thread to subscribe a special key on ETCD.
+// reply object position to publisher
 func (l *Locator) StartLocate(ip string) (cancel func()) {
 	ctx := context.Background()
 	ctx, cancel = context.WithCancel(ctx)
-	ch := l.etcd.Watch(ctx, LocationSubKey)
+	ch := l.etcd.Watch(ctx, cst.EtcdPrefix.LocationSubKey)
 	go func() {
 		defer graceful.Recover()
 		log.Info("Start listening locating message...")
@@ -49,7 +47,7 @@ func (l *Locator) StartLocate(ip string) (cancel func()) {
 			case resp, ok := <-ch:
 				if !ok {
 					log.Warn("Locate watching stop! Try watching again...")
-					ch = l.etcd.Watch(ctx, LocationSubKey)
+					ch = l.etcd.Watch(ctx, cst.EtcdPrefix.LocationSubKey)
 					break
 				}
 				if resp.Err() != nil {
