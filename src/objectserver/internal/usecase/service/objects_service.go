@@ -88,7 +88,7 @@ func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 				return fmt.Errorf("diable direct-io: %w", err)
 			}
 		}
-		if _, err = f.Seek(offset, io.SeekCurrent); err != nil {
+		if _, err = f.Seek(offset, io.SeekStart); err != nil {
 			return err
 		}
 	}
@@ -139,29 +139,30 @@ func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (in
 		return 0, err
 	}
 	// paddingLen always gte 0 and lt 4096
+	pageSize := int64(cst.OS.PageSize)
 	paddingLen := fi.Size() - curSize
-	if paddingLen >= 4096 {
+	if paddingLen >= pageSize {
 		return 0, fmt.Errorf("err padding length %d", paddingLen)
 	}
 	if paddingLen > 0 {
 		// read the last 4KB of data
-		if _, err = file.Seek(-4096, io.SeekEnd); err != nil {
+		if _, err = file.Seek(-pageSize, io.SeekEnd); err != nil {
 			return 0, err
 		}
-		bt := make([]byte, 4096)
+		bt := make([]byte, pageSize)
 		n, err := io.ReadFull(file, bt)
 		if err != nil {
 			return 0, err
 		}
-		if n < 4096 {
-			return 0, fmt.Errorf("read tail except 4096 but %d", n)
+		if int64(n) < pageSize {
+			return 0, fmt.Errorf("read tail except %d but %d", pageSize, n)
 		}
 		// remove padding
 		bt = bt[:len(bt) - int(paddingLen)]
 		// concatenation with fileStream
 		fileStream = disk.MultiReader(bytes.NewBuffer(bt), fileStream)
 		// seek back
-		if _, err = file.Seek(-4096, io.SeekEnd); err != nil {
+		if _, err = file.Seek(-pageSize, io.SeekEnd); err != nil {
 			return 0, err
 		}
 	}
@@ -169,7 +170,7 @@ func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (in
 	return disk.NewAligendWriter(file).ReadFrom(fileStream)
 }
 
-// WriteFile 如果连续写入1次以上不满足4KB倍数的数据，中间将会产生无效padding，读取时无法去除文件中间的padding
+// WriteFile should make sure size of each write is a multiple of 4096 (except last) 
 func WriteFile(fullPath string, fileStream io.Reader) (int64, error) {
 	file, err := disk.OpenFileDirectIO(fullPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
