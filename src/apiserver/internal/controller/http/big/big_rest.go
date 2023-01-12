@@ -5,7 +5,6 @@ import (
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/service"
-	"common/logs"
 	"common/response"
 	"common/util"
 	"common/util/crypto"
@@ -33,7 +32,7 @@ func (bc *BigObjectsController) Register(r gin.IRoutes) {
 	r.PATCH("/big/:token", bc.Patch)
 }
 
-// Post 生成大文件上传的Token
+// Post prepare a resumable uploading
 func (bc *BigObjectsController) Post(g *gin.Context) {
 	req := g.Value("BigPostReq").(*entity.BigPostReq)
 	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
@@ -59,7 +58,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 	}, g)
 }
 
-// Head 大文件已上传大小
+// Head uploaded information
 func (bc *BigObjectsController) Head(g *gin.Context) {
 	token, _ := url.PathUnescape(g.Param("token"))
 	stream, e := service.NewRSResumablePutStreamFromToken(token)
@@ -80,7 +79,7 @@ func (bc *BigObjectsController) Head(g *gin.Context) {
 	}, g)
 }
 
-// Patch 上传大文件
+// Patch upload partial fo file
 func (bc *BigObjectsController) Patch(g *gin.Context) {
 	var req entity.BigPutReq
 	if err := req.Bind(g); err != nil {
@@ -99,7 +98,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		return
 	}
 	if curSize != req.Range.FirstBytes().First {
-		response.Exec(g).Status(http.StatusRequestedRangeNotSatisfiable).Abort()
+		g.Status(http.StatusRequestedRangeNotSatisfiable)
 		return
 	}
 	bufSize := int64(stream.Config.BlockSize())
@@ -110,23 +109,21 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 			return
 		}
 		curSize += n
-		//大于预先确定的大小 则属于异常访问
 		if curSize > stream.Size {
-			_ = stream.Commit(false)
-			logs.Std().Infoln("resumable put exceed size")
-			response.Exec(g).Status(http.StatusForbidden).Abort()
+			// over the intended size, its invalid
+			util.LogErr(stream.Commit(false))
+			response.Exec(g).Fail(http.StatusForbidden, "file exceed the intended size")
 			return
-		}
-		//上传未完成 中断
-		if n != bufSize && curSize != stream.Size {
-			response.Exec(g).Status(http.StatusPartialContent)
-			return
-		}
-		//上传未完成 继续
-		if curSize != stream.Size {
+		} else if curSize < stream.Size {
+			if n != bufSize {
+				// not read enough, see as interrupted
+				response.Exec(g).Status(http.StatusPartialContent)
+				return
+			}
+			// not finish yet, continue read from request body
 			continue
 		}
-		// 上传完成 校验签名
+		// validate digest
 		if pool.Config.Checksum {
 			getStream := service.NewRSTempStream(&service.StreamOption{
 				Hash:    stream.Hash,
@@ -140,7 +137,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 				return
 			}
 		}
-		// 更新元数据
+		// update metadata
 		verNum, err := bc.metaService.SaveMetadata(&entity.Metadata{
 			Name: stream.Name,
 			Versions: []*entity.Version{{
@@ -157,7 +154,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 			response.FailErr(err, g)
 			return
 		}
-		// 成功上传
+		// commit upload
 		if err = stream.Commit(true); err != nil {
 			response.FailErr(err, g)
 			return

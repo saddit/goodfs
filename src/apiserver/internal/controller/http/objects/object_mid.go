@@ -36,7 +36,6 @@ func ValidatePut(obj usecase.IObjectService) gin.HandlerFunc {
 		} else {
 			req.Ext = "bytes"
 		}
-		//FIXME: 此处直接使用没有验证过的Hash去重文件
 		if loc, ok := obj.LocateObject(req.Hash); ok {
 			logs.Std().Debugf("find locates for %s: %s", req.Hash, loc)
 			req.Locate = loc
