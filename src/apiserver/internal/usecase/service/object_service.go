@@ -6,6 +6,7 @@ import (
 	"apiserver/internal/usecase/logic"
 	"apiserver/internal/usecase/pool"
 	"bufio"
+	"common/cst"
 	"common/logs"
 	"common/util/crypto"
 	"context"
@@ -19,11 +20,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-const (
-	LocationSubKey = "goodfs.location"
-)
-
-// getLocateResp must like "ip#idx"
+// getLocateResp raw must like "ip#idx"
 func getLocateResp(raw string) (ip string, idx int) {
 	var err error
 	strs := strings.Split(raw, "#")
@@ -51,23 +48,24 @@ func NewObjectService(s IMetaService, etcd *clientv3.Client) *ObjectService {
 func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	//生成一个唯一key 并在结束后删除
+	// generate a unique id as key for receive locates
 	tempId := uuid.NewString()
 	if _, err := o.etcd.Put(ctx, tempId, ""); err != nil {
 		logs.Std().Error(err)
 		return nil, false
 	}
+	// remove this key after all
 	defer o.etcd.Delete(ctx, tempId)
 	wt := o.etcd.Watch(ctx, tempId)
 	locates := make([]string, pool.Config.Rs.AllShards())
 	for i := 0; i < pool.Config.Rs.AllShards(); i++ {
 		val := fmt.Sprintf("%s.%d#%s", hash, i, tempId)
-		_, err := o.etcd.Put(ctx, LocationSubKey, val)
+		_, err := o.etcd.Put(ctx, cst.EtcdPrefix.LocationSubKey, val)
 		if err != nil {
 			logs.Std().Errorf("put '%s' to location-sub-key err: %s", val, err)
 		}
 	}
-	//开始监听变化
+	// to receive locates
 	tt := time.NewTicker(pool.Config.LocateTimeout)
 	defer tt.Stop()
 	var cnt int
@@ -94,55 +92,60 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	}
 }
 
+// StoreObject store object to data server
 func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (int32, error) {
 	ver := md.Versions[0]
-	provider := saveObjectStoreStrategy(ver)
-	//文件数据保存
+	provider := newStreamProvider(ver)
+	provider.FillMetadata(ver)
+	// if object not exists, upload to data server
 	if len(req.Locate) == 0 {
 		var e error
 		if ver.Locate, e = streamToDataServer(req, ver, provider); e != nil {
 			return -1, fmt.Errorf("stream to data server err: %w", e)
 		}
 	} else {
+		// otherwise save locates
 		ver.Locate = req.Locate
 	}
-	//元数据保存
+	// save metadata
 	return o.metaService.SaveMetadata(md)
 }
 
 func streamToDataServer(req *entity.PutReq, meta *entity.Version, provider StreamProvider) ([]string, error) {
 	//stream to store
-	stream, locates, e := dataServerStream(meta, provider)
-	if e != nil {
-		return nil, e
+	stream, locates, err := dataServerStream(meta, provider)
+	if err != nil {
+		return nil, err
 	}
 	defer stream.Close()
 
 	//digest validation
 	if pool.Config.Checksum {
-		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 32*1024), stream)
+		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 8*cst.OS.PageSize), stream)
 		hash := crypto.SHA256IO(reader)
 		if hash != req.Hash {
 			logs.Std().Infof("Digest of %v validation failure\n", req.Name)
-			if e = stream.Commit(false); e != nil {
-				logs.Std().Errorln(e)
+			if err = stream.Commit(false); err != nil {
+				logs.Std().Errorln(err)
 			}
 			return nil, ErrInvalidFile
 		}
 	} else {
-		if _, e = io.CopyBuffer(stream, req.Body, make([]byte, 32*1024)); e != nil {
-			if e = stream.Commit(false); e != nil {
-				logs.Std().Errorln(e)
+		// copy request body to stream
+		if _, err = io.CopyBuffer(stream, req.Body, make([]byte, 8*cst.OS.PageSize)); err != nil {
+			logs.Std().Error(err)
+			if err = stream.Commit(false); err != nil {
+				logs.Std().Errorln(err)
 			}
 			return nil, ErrInternalServer
 		}
 	}
-
-	if e = stream.Commit(true); e != nil {
-		logs.Std().Errorln(e)
+	// upload success
+	if err = stream.Commit(true); err != nil {
+		logs.Std().Errorln(err)
 		return nil, ErrServiceUnavailable
 	}
-	return locates, e
+	return locates, nil
 }
 
 func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
@@ -151,6 +154,12 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 		ver.Locate = locates
 		return o.metaService.UpdateVersion(meta.Name, ver)
 	}
+	opt := &StreamOption{
+		Hash:    ver.Hash,
+		Size:    ver.Size,
+		Name:    meta.Name,
+		Updater: up,
+	}
 	switch ver.StoreStrategy {
 	default:
 		fallthrough
@@ -158,31 +167,29 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 		cfg := pool.Config.Object.ReedSolomon
 		cfg.DataShards = ver.DataShards
 		cfg.ParityShards = ver.ParityShards
-		provider = RsStreamProvider(ver, up, &cfg)
+		provider = RsStreamProvider(opt, &cfg)
 	case entity.MultiReplication:
 		cfg := pool.Config.Object.Replication
 		cfg.CopiesCount = ver.DataShards
-		provider = CpStreamProvider(ver, up, &cfg)
+		provider = CpStreamProvider(opt, &cfg)
 	}
 	return provider.GetStream(ver.Locate)
 }
 
-func saveObjectStoreStrategy(meta *entity.Version) StreamProvider {
-	//兼容不同对象保存策略
+func newStreamProvider(meta *entity.Version) StreamProvider {
+	opt := &StreamOption{
+		Hash: meta.Hash,
+		Size: meta.Size,
+	}
 	switch meta.StoreStrategy {
 	default:
 		fallthrough
 	case entity.ECReedSolomon:
-		cfg := &pool.Config.Object.ReedSolomon
-		meta.DataShards = cfg.DataShards
-		meta.ParityShards = cfg.ParityShards
-		meta.ShardSize = cfg.ShardSize(meta.Size)
-		return RsStreamProvider(meta, nil, cfg)
+		cfg := pool.Config.Object.ReedSolomon
+		return RsStreamProvider(opt, &cfg)
 	case entity.MultiReplication:
-		cfg := &pool.Config.Object.Replication
-		meta.DataShards = cfg.CopiesCount
-		meta.ShardSize = int(meta.Size)
-		return CpStreamProvider(meta, nil, cfg)
+		cfg := pool.Config.Object.Replication
+		return CpStreamProvider(opt, &cfg)
 	}
 }
 

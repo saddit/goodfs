@@ -3,25 +3,27 @@ package cst
 import "fmt"
 
 type etcdPrefix struct {
-	Sep           []byte
-	PeersInfo     string
-	HashSlot      string
-	Registry      string
-	ObjectCap     string
-	ApiCredential string
-	SystemInfo    string
-	Configure     string
+	Sep            []byte
+	PeersInfo      string
+	HashSlot       string
+	Registry       string
+	ObjectCap      string
+	ApiCredential  string
+	SystemInfo     string
+	Configure      string
+	LocationSubKey string
 }
 
 var EtcdPrefix = etcdPrefix{
-	Sep:           []byte("/"),
-	PeersInfo:     "peers_info",
-	HashSlot:      "hash_slot",
-	Registry:      "registry",
-	ObjectCap:     "object_cap",
-	ApiCredential: "api_credential",
-	SystemInfo:    "sys_info",
-	Configure:     "configure",
+	Sep:            []byte("/"),
+	PeersInfo:      "peers_info",
+	HashSlot:       "hash_slot",
+	Registry:       "registry",
+	ObjectCap:      "object_cap",
+	ApiCredential:  "api_credential",
+	SystemInfo:     "sys_info",
+	Configure:      "configure",
+	LocationSubKey: "good.fs.location",
 }
 
 func (e *etcdPrefix) FmtPeersInfo(groupId, id string) string {
