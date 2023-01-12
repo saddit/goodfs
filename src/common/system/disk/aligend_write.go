@@ -13,7 +13,7 @@ type AligendWriter struct {
 	io.Writer
 }
 
-func NewAligendWriter(wt io.Writer) io.Writer {
+func NewAligendWriter(wt io.Writer) *AligendWriter {
 	return &AligendWriter{wt}
 }
 
