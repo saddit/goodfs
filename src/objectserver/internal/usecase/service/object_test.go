@@ -13,10 +13,10 @@ import (
 
 func TestWriteReadDeleteFile(t *testing.T) {
 	defer func() {
-		_ , err := DeleteFile(".", "new_file")
+		_, err := DeleteFile(".", "new_file")
 		if err != nil {
 			t.Error(err)
-			return	
+			return
 		}
 	}()
 	bt := make([]byte, 4096)
@@ -27,7 +27,7 @@ func TestWriteReadDeleteFile(t *testing.T) {
 	_, err := WriteFile(filepath.Join(".", "new_file"), buf)
 	if err != nil {
 		t.Error(err)
-		return	
+		return
 	}
 	bt = make([]byte, 13)
 	for i := range bt {
@@ -37,10 +37,10 @@ func TestWriteReadDeleteFile(t *testing.T) {
 	_, err = WriteFile(filepath.Join(".", "new_file"), buf)
 	if err != nil {
 		t.Error(err)
-		return	
+		return
 	}
 	buf = bytes.NewBuffer(make([]byte, 0, 32*4096))
-	err = GetFile("./new_file", 0, 4096 + 13, buf)
+	err = GetFile("./new_file", 0, 4096+13, buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,10 +50,10 @@ func TestWriteReadDeleteFile(t *testing.T) {
 
 func TestWriteWithSize(t *testing.T) {
 	defer func() {
-		_ , err := DeleteFile(".", "new_file")
+		_, err := DeleteFile(".", "new_file")
 		if err != nil {
 			t.Error(err)
-			return	
+			return
 		}
 	}()
 	var bt []byte
@@ -86,7 +86,7 @@ func TestWriteWithSize(t *testing.T) {
 	t.Logf("second write %d bytes", n)
 	assert.New(t).GreaterOrEqual(n, int64(secSize))
 	// read file
-	exceptSize := ((fstSize + secSize) - ((fstSize + secSize) % 4096)) + 4096
+	exceptSize := fstSize + secSize - (fstSize+secSize)%4096 + 4096
 	fi, err := os.Open("./new_file")
 	if err != nil {
 		t.Error(err)
