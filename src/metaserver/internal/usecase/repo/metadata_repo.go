@@ -163,17 +163,14 @@ func (m *MetadataRepo) RemoveVersion(name string, ver uint64) error {
 }
 
 func (m *MetadataRepo) RemoveAllVersion(name string) error {
-	buk := fmt.Sprint(logic.NestPrefix, name)
 	last := m.GetLastVersionNumber(name)
 	if err := m.MainDB.Update(func(tx *bolt.Tx) error {
-		root := logic.GetRoot(tx)
 		// delete bucket
-		if err := root.DeleteBucket(util.StrToBytes(buk)); err != nil {
+		if err := logic.RemoveVersionBucket(tx, name); err != nil {
 			return err
 		}
 		// create an empty bucket
-		_, err := root.CreateBucket(util.StrToBytes(buk))
-		return err
+		return logic.CreateVersionBucket(tx, name)
 	}); err != nil {
 		return err
 	}
@@ -190,7 +187,7 @@ func (m *MetadataRepo) RemoveAllVersion(name string) error {
 func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 	var max uint64 = 1
 	if err := m.MainDB.View(func(tx *bolt.Tx) error {
-		if buk := logic.GetRootNest(tx, name); buk != nil {
+		if buk := logic.GetVersionBucket(tx, name); buk != nil {
 			max = buk.Sequence()
 		}
 		return ErrNotFound
@@ -224,7 +221,7 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 		return
 	}
 	err = m.MainDB.View(func(tx *bolt.Tx) error {
-		buk := logic.GetRootNest(tx, name)
+		buk := logic.GetVersionBucket(tx, name)
 		if buk == nil {
 			return ErrNotFound
 		}
@@ -248,7 +245,7 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 
 func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Metadata, total int, err error) {
 	err = m.MainDB.View(func(tx *bolt.Tx) error {
-		root := logic.GetRoot(tx)
+		root := logic.GetMetadataBucket(tx)
 		if root == nil {
 			return ErrNotFound
 		}
@@ -310,7 +307,7 @@ func (m *MetadataRepo) Restore(r io.Reader) (err error) {
 
 func (m *MetadataRepo) ForeachVersionBytes(name string, fn func([]byte) bool) {
 	_ = m.MainDB.View(func(tx *bolt.Tx) error {
-		_ = logic.GetRootNest(tx, name).ForEach(func(k, v []byte) error {
+		_ = logic.GetVersionBucket(tx, name).ForEach(func(k, v []byte) error {
 			if !fn(v) {
 				return ErrNotFound
 			}
@@ -323,7 +320,7 @@ func (m *MetadataRepo) ForeachVersionBytes(name string, fn func([]byte) bool) {
 func (m *MetadataRepo) GetMetadataBytes(key string) ([]byte, error) {
 	var res []byte
 	err := m.MainDB.View(func(tx *bolt.Tx) error {
-		res = logic.GetRoot(tx).Get(util.StrToBytes(key))
+		res = logic.GetMetadataBucket(tx).Get(util.StrToBytes(key))
 		return nil
 	})
 	return res, err

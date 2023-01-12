@@ -1,11 +1,11 @@
 package logic
 
 import (
+	"common/logs"
 	"errors"
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
-	"strings"
 	"time"
 
 	"common/util"
@@ -14,19 +14,15 @@ import (
 )
 
 const (
-	RootBucketName = "go.dfs.metadata.root"
-	NestPrefix     = "nest_"
-	Sep            = "."
+	MetadataBucketRoot = "go.dfs.metadata.root"
+	VersionBucketRoot  = "go.dfs.version.root"
+	Sep                = "."
 )
 
 func ForeachKeys(fn func(string) bool) TxFunc {
 	return func(tx *bolt.Tx) error {
-		root := GetRoot(tx)
+		root := GetMetadataBucket(tx)
 		return root.ForEach(func(k, v []byte) error {
-			// skip nest bucket keys
-			if strings.HasPrefix(string(k), NestPrefix) {
-				return nil
-			}
 			if !fn(string(k)) {
 				return ErrNotFound
 			}
@@ -37,7 +33,7 @@ func ForeachKeys(fn func(string) bool) TxFunc {
 
 func AddMeta(data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
-		root := GetRoot(tx)
+		root := GetMetadataBucket(tx)
 		key := util.StrToBytes(data.Name)
 		// check duplicate
 		if root.Get(key) != nil {
@@ -51,8 +47,8 @@ func AddMeta(data *entity.Metadata) TxFunc {
 			return err
 		}
 		// create version bucket
-		if _, err := root.CreateBucket(util.StrToBytes(NestPrefix + data.Name)); err != nil {
-			return fmt.Errorf("create bucket: %w", err)
+		if err = CreateVersionBucket(tx, data.Name); err != nil {
+			return err
 		}
 		// put metadata
 		return root.Put(key, bt)
@@ -62,14 +58,14 @@ func AddMeta(data *entity.Metadata) TxFunc {
 func RemoveMeta(name string) TxFunc {
 	return func(tx *bolt.Tx) error {
 		key := util.StrToBytes(name)
-		root := GetRoot(tx)
+		root := GetMetadataBucket(tx)
 		if root.Get(key) == nil {
 			return ErrNotFound
 		}
 		if err := root.Delete(key); err != nil {
 			return err
 		}
-		err := root.DeleteBucket(util.StrToBytes(fmt.Sprint(NestPrefix, key)))
+		err := RemoveVersionBucket(tx, name)
 		// ignore err of bucket not found
 		if err != nil && !errors.Is(err, bolt.ErrBucketNotFound) {
 			return err
@@ -80,7 +76,7 @@ func RemoveMeta(name string) TxFunc {
 
 func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
-		root := GetRoot(tx)
+		root := GetMetadataBucket(tx)
 		var origin entity.Metadata
 		if err := getMeta(root, name, &origin); err != nil {
 			return err
@@ -100,13 +96,13 @@ func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 
 func GetMeta(name string, data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
-		return getMeta(GetRoot(tx), name, data)
+		return getMeta(GetMetadataBucket(tx), name, data)
 	}
 }
 
 func AddVerWithSequence(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if bucket := GetRootNest(tx, name); bucket != nil {
+		if bucket := GetVersionBucket(tx, name); bucket != nil {
 			// only if data is migrated from others will do sequence updating
 			if data.Sequence > bucket.Sequence() {
 				if err := bucket.SetSequence(data.Sequence); err != nil {
@@ -133,7 +129,7 @@ func AddVerWithSequence(name string, data *entity.Version) TxFunc {
 
 func AddVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if bucket := GetRootNest(tx, name); bucket != nil {
+		if bucket := GetVersionBucket(tx, name); bucket != nil {
 			data.Sequence, _ = bucket.NextSequence()
 			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
 			if bucket.Get(key) != nil {
@@ -156,7 +152,7 @@ func AddVer(name string, data *entity.Version) TxFunc {
 func RemoveVer(name string, ver uint64) TxFunc {
 	return func(tx *bolt.Tx) error {
 		key := util.StrToBytes(fmt.Sprint(name, Sep, ver))
-		b := GetRootNest(tx, name)
+		b := GetVersionBucket(tx, name)
 		if b == nil {
 			return ErrNotFound
 		}
@@ -174,7 +170,7 @@ func RemoveVer(name string, ver uint64) TxFunc {
 
 func UpdateVer(name string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if b := GetRootNest(tx, name); b != nil {
+		if b := GetVersionBucket(tx, name); b != nil {
 			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
 			// get old one
 			var origin entity.Version
@@ -202,28 +198,60 @@ func UpdateVer(name string, data *entity.Version) TxFunc {
 
 func GetVer(name string, ver uint64, dest *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if bucket := GetRootNest(tx, name); bucket != nil {
+		if bucket := GetVersionBucket(tx, name); bucket != nil {
 			return getVer(bucket, name, ver, dest)
 		}
 		return ErrNotFound
 	}
 }
 
-func GetRoot(tx *bolt.Tx) *bolt.Bucket {
+// GetMetadataBucket get or create metadata root bucket
+func GetMetadataBucket(tx *bolt.Tx) *bolt.Bucket {
 	if tx.Writable() {
-		root, err := tx.CreateBucketIfNotExists(util.StrToBytes(RootBucketName))
+		root, err := tx.CreateBucketIfNotExists(util.StrToBytes(MetadataBucketRoot))
 		if err != nil {
-			panic(err)
+			logs.Std().Error(err)
+			return nil
 		}
 		return root
 	} else {
-		return tx.Bucket(util.StrToBytes(RootBucketName))
+		return tx.Bucket(util.StrToBytes(MetadataBucketRoot))
 	}
 }
 
-func GetRootNest(tx *bolt.Tx, name string) *bolt.Bucket {
-	if root := GetRoot(tx); root != nil {
-		return root.Bucket(util.StrToBytes(NestPrefix + name))
+func CreateVersionBucket(tx *bolt.Tx, name string) error {
+	root := getVersionRoot(tx)
+	if root == nil {
+		return errors.New("version root is nil")
+	}
+	if _, err := root.CreateBucket(util.StrToBytes(name)); err != nil {
+		return fmt.Errorf("create version bucket: %w", err)
+	}
+	return nil
+}
+
+func RemoveVersionBucket(tx *bolt.Tx, name string) error {
+	return getVersionRoot(tx).DeleteBucket(util.StrToBytes(name))
+}
+
+// getVersionRoot get or create version root bucket
+func getVersionRoot(tx *bolt.Tx) *bolt.Bucket {
+	if tx.Writable() {
+		root, err := tx.CreateBucketIfNotExists(util.StrToBytes(VersionBucketRoot))
+		if err != nil {
+			logs.Std().Error(err)
+			return nil
+		}
+		return root
+	} else {
+		return tx.Bucket(util.StrToBytes(VersionBucketRoot))
+	}
+}
+
+// GetVersionBucket get version bucket for given name
+func GetVersionBucket(tx *bolt.Tx, name string) *bolt.Bucket {
+	if root := getVersionRoot(tx); root != nil {
+		return root.Bucket(util.StrToBytes(name))
 	}
 	return nil
 }
