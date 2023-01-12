@@ -7,6 +7,20 @@ import (
 	"github.com/ncw/directio"
 )
 
+// AligendWriter impl io.ReaderFrom interface
+// Write data aligen to multiple of 4KB 
+type AligendWriter struct {
+	io.Writer
+}
+
+func NewAligendWriter(wt io.Writer) io.Writer {
+	return &AligendWriter{wt}
+}
+
+func (aw *AligendWriter) ReadFrom(rd io.Reader) (int64, error) {
+	return AligendWriteTo(aw, rd, 8 * directio.BlockSize)
+}
+
 // AligendWriteTo fill zero padding to multiple of 4KB if not enough
 func AligendWriteTo(dst io.Writer, src io.Reader, bufSize int) (written int64, err error) {
 	buf := AlignedBlock(bufSize)

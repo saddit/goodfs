@@ -3,9 +3,11 @@ package service
 import (
 	"common/cst"
 	"common/graceful"
+	"common/logs"
 	"common/response"
 	"common/system/disk"
 	"common/util"
+	"fmt"
 	"io"
 	global "objectserver/internal/usecase/pool"
 	"os"
@@ -80,7 +82,10 @@ func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 	defer f.Close()
 	if offset > 0 {
 		if int(offset)%cst.OS.PageSize > 0 {
-			return response.NewError(400, "offset must be power of 4KB")
+			logs.Std().Warn("offset must be power of 4KB, direct-io will disabled")
+			if err = disk.DisableDirectIO(f); err != nil {
+				return fmt.Errorf("diable direct-io: %w", err)
+			}
 		}
 		if _, err = f.Seek(offset, io.SeekCurrent); err != nil {
 			return err
@@ -128,7 +133,7 @@ func WriteFile(fullPath string, fileStream io.Reader) (int64, error) {
 	}
 	defer file.Close()
 	// write file and aligen to power of 4KB
-	return disk.AligendWriteTo(file, fileStream, 8*cst.OS.PageSize)
+	return io.Copy(disk.NewAligendWriter(file), fileStream)
 }
 
 func MvTmpToStorage(tmpName, fileName string) error {
