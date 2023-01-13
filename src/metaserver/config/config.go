@@ -24,19 +24,24 @@ type Config struct {
 	Port        string          `yaml:"port" env:"PORT" env-default:"8090"`
 	RpcPort     string          `yaml:"rpc-port" env:"RPC_PORT" env-default:"4090"`
 	LogLevel    logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
-	DataDir     string          `yaml:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
+	DataDir     string          `yaml:"data-dir" env:"DATA_DIR"`
 	Cluster     ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
 	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	HashSlot    HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
 	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
 	filePath    string          `yaml:"-" env:"-"`
-	persistLock *sync.Mutex     `yaml:"-" env:"-"`
+	persistLock sync.Locker     `yaml:"-" env:"-"`
 }
 
 func (c *Config) initialize(filePath string) {
+	if c.DataDir == "" {
+		c.DataDir = os.TempDir()
+	}
 	c.filePath, _ = filepath.Abs(filePath)
 	c.persistLock = &sync.Mutex{}
+	c.Cluster.LogLevel = string(c.LogLevel)
+	c.Cluster.StoreDir = c.DataDir
 	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {
 		c.Cluster.ID = c.Registry.ServerID
@@ -82,8 +87,8 @@ type ClusterConfig struct {
 	ID               string        `yaml:"-" env:"-"` //ID equals to Registry.ServerId
 	Port             string        `yaml:"-" env:"-"` //Port equals to Config.RpcPort
 	GroupID          string        `yaml:"group-id" env:"GROUP_ID" env-default:"raft"`
-	LogLevel         string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
-	StoreDir         string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
+	LogLevel         string        `yaml:"-" env:"-"`
+	StoreDir         string        `yaml:"-" env:"-"`
 	ElectionTimeout  time.Duration `yaml:"election-timeout" env:"ELECTION_TIMEOUT" env-default:"900ms"`
 	HeartbeatTimeout time.Duration `yaml:"heartbeat-timeout" env:"HEARTBEAT_TIMEOUT" env-default:"800ms"`
 	Nodes            []string      `yaml:"nodes" env:"NODES" env-separator:","`

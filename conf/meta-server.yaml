@@ -1,13 +1,12 @@
 port: "8090"
 rpc-port: "4090"
 log-level: ""
-data-dir: e:/file/temp/meta_server_0
+data-dir: e:/file/temp
 cluster:
-  enable: false
+  enable: true
   bootstrap: false
   group-id: raft-0
   log-level: INFO
-  store-dir: e:/file/temp/meta_server_raft_0
   election-timeout: 900ms
   heartbeat-timeout: 800ms
   nodes:
