@@ -49,7 +49,7 @@ func NewCollector(cfg *Config) *Collector {
 	return &Collector{
 		conf:         cfg,
 		store:        getStore(cfg.Store),
-		memData:      make([]*Perform, 0, cfg.MaxInMemeory),
+		memData:      make([]*Perform, 0, cfg.MaxInMemory),
 		lastSaveTime: time.Time{},
 		mux:          &sync.Mutex{},
 	}

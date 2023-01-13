@@ -99,7 +99,7 @@ func (ls *LocalStore) Put(data []*Perform) error {
 	})
 }
 
-func (ls *LocalStore) keyPrefx(key string) string {
+func (ls *LocalStore) keyPrefix(key string) string {
 	sp := strings.Split(key, ".")
 	if len(sp) == 2 {
 		return sp[0]
@@ -126,7 +126,7 @@ func (ls *LocalStore) Get(kind, action string) ([]*Perform, error) {
 				k, v = cur.First()
 			}
 			for k != nil {
-				act := ls.keyPrefx(util.BytesToStr(k))
+				act := ls.keyPrefix(util.BytesToStr(k))
 				if action != "" && act != action {
 					break
 				}
@@ -137,18 +137,19 @@ func (ls *LocalStore) Get(kind, action string) ([]*Perform, error) {
 				})
 				k, v = cur.Next()
 			}
+			return nil
 		} else {
-			// if action is emtpy returns action root bucket
+			// if action is empty returns action root bucket
 			actBuk, err := ls.getBucket(tx, actionBucketRoot, action)
 			if err != nil {
 				return err
 			}
-			actBuk.ForEach(func(k, v []byte) error {
+			return actBuk.ForEach(func(k, v []byte) error {
 				if v == nil {
 					// if k is a nest bucket (when action is emtpy, action root bucket has nest buckets)
 					actBuk.Bucket(k).ForEach(func(k, v []byte) error {
 						res = append(res, &Perform{
-							KindOf: ls.keyPrefx(util.BytesToStr(k)),
+							KindOf: ls.keyPrefix(util.BytesToStr(k)),
 							Action: util.BytesToStr(k),
 							Cost:   time.Duration(util.BytesToInt(v)),
 						})
@@ -157,14 +158,13 @@ func (ls *LocalStore) Get(kind, action string) ([]*Perform, error) {
 					return nil
 				}
 				res = append(res, &Perform{
-					KindOf: ls.keyPrefx(util.BytesToStr(k)),
+					KindOf: ls.keyPrefix(util.BytesToStr(k)),
 					Action: action,
 					Cost:   time.Duration(util.BytesToInt(v)),
 				})
 				return nil
 			})
 		}
-		return nil
 	})
 	return res, err
 }
@@ -172,6 +172,9 @@ func (ls *LocalStore) Get(kind, action string) ([]*Perform, error) {
 func (ls *LocalStore) delete(tx *bolt.Tx, rootName []byte, nestName string, prefix []byte) error {
 	if nestName != "" {
 		nest, err := ls.getBucket(tx, rootName, nestName)
+		if err == errNotExist {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -190,6 +193,9 @@ func (ls *LocalStore) delete(tx *bolt.Tx, rootName []byte, nestName string, pref
 	}
 	// get root bucket
 	root, err := ls.getBucket(tx, rootName, "")
+	if err == errNotExist {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -241,6 +247,9 @@ func (ls *LocalStore) Clear(kind, action string) error {
 		return ls.db.Update(func(tx *bolt.Tx) error {
 			// get kind root bucket
 			kindRoot, err := ls.getBucket(tx, kindBucketRoot, "")
+			if err == errNotExist {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -255,6 +264,9 @@ func (ls *LocalStore) Clear(kind, action string) error {
 		return ls.db.Update(func(tx *bolt.Tx) error {
 			// get action root bucket
 			actionRoot, err := ls.getBucket(tx, actionBucketRoot, "")
+			if err == errNotExist {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -276,7 +288,7 @@ func (ls *LocalStore) Clear(kind, action string) error {
 			return ls.delete(tx, kindBucketRoot, kind, actionBt)
 		})
 	} else {
-		// clsoe db
+		// close db
 		if err := ls.db.Close(); err != nil {
 			return err
 		}
@@ -298,6 +310,9 @@ func (ls *LocalStore) Size(kind, action string) (int64, error) {
 	err := ls.db.View(func(tx *bolt.Tx) error {
 		if action != "" && kind == "" {
 			buk, err := ls.getBucket(tx, actionBucketRoot, action)
+			if err == errNotExist {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -306,6 +321,9 @@ func (ls *LocalStore) Size(kind, action string) (int64, error) {
 		}
 		if action == "" && kind != "" {
 			buk, err := ls.getBucket(tx, kindBucketRoot, kind)
+			if err == errNotExist {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -314,31 +332,25 @@ func (ls *LocalStore) Size(kind, action string) (int64, error) {
 		}
 		if action == "" && kind == "" {
 			actRoot, err := ls.getBucket(tx, actionBucketRoot, "")
+			if err == errNotExist {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
-			actRoot.ForEach(func(k, v []byte) error {
+			return actRoot.ForEach(func(k, v []byte) error {
 				if v != nil {
 					return nil
 				}
 				total += int64(actRoot.Bucket(k).Stats().KeyN)
 				return nil
 			})
-			kndRoot, err := ls.getBucket(tx, kindBucketRoot, "")
-			if err != nil {
-				return err
-			}
-			kndRoot.ForEach(func(k, v []byte) error {
-				if v != nil {
-					return nil
-				}
-				total += int64(actRoot.Bucket(k).Stats().KeyN)
-				return nil
-			})
-			return nil
 		}
 		if action != "" && kind != "" {
 			data, err := ls.Get(kind, action)
+			if err == errNotExist {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -350,10 +362,10 @@ func (ls *LocalStore) Size(kind, action string) (int64, error) {
 	return total, err
 }
 
-func (ls *LocalStore) Average(kind, action string) ([]*Perform, error) {
+func (ls *LocalStore) Average(string, string) ([]*Perform, error) {
 	panic("not impl Average")
 }
 
-func (ls *LocalStore) Sum(kind, action string) ([]*Perform, error) {
+func (ls *LocalStore) Sum(string, string) ([]*Perform, error) {
 	panic("not impl Sum")
 }
