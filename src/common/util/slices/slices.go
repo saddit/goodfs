@@ -12,6 +12,10 @@ func StringsReplace(arr []string, origin string, target string) bool {
 	return false
 }
 
+func First[T any](arr []T) T {
+	return arr[0]
+}
+
 func Last[T any](arr []T) T {
 	return arr[len(arr)-1]
 }

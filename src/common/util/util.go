@@ -125,6 +125,9 @@ func NumToString(n interface{}) string {
 }
 
 func ToString(v any) string {
+	if bt, ok := v.([]byte); ok {
+		return string(bt)
+	}
 	return fmt.Sprint(v)
 }
 

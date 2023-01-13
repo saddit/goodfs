@@ -3,11 +3,11 @@ package set
 import "reflect"
 
 type Set interface {
-	Contains(elem interface{}) bool
-	Add(elem interface{})
-	Remove(elem interface{}) bool
+	Contains(elem any) bool
+	Add(elem any)
+	Remove(elem any) bool
 	Size() int
-	Foreach(fn func(elem interface{}))
+	Foreach(fn func(elem any))
 }
 
 func OfInteger(arr []int) Set {
@@ -35,4 +35,12 @@ func OfMapKeys(mp any) Set {
 		}
 	}
 	return st
+}
+
+func To[T any](st Set) []T {
+	var arr []T
+	st.Foreach(func(elem any) {
+		arr = append(arr, elem.(T))
+	})
+	return arr
 }
