@@ -85,7 +85,7 @@ type avgSumStore struct {
 }
 
 // AvgSumStore inner store could just implement Get, Put, Clear and Size.
-// this will get data from inner store and calculate Average and Sum in memeory 
+// this will get data from inner store and calculate their Average and Sum.
 func AvgSumStore(inner Store) Store {
 	return &avgSumStore{inner}
 }
