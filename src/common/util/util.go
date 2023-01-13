@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"common/logs"
+	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -366,6 +367,13 @@ func StrToBytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&h))
 }
 
-func IsOSNotExist(err error) bool {
-	return err != nil && os.IsNotExist(err)
+func IntToBytes(i uint64) []byte {
+	buf := make([]byte, binary.MaxVarintLen64)
+	binary.PutUvarint(buf, i)
+	return buf
+}
+
+func BytesToInt(b []byte) uint64 {
+	i, _ := binary.ReadUvarint(bytes.NewBuffer(b))
+	return i
 }
