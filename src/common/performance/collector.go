@@ -1,6 +1,10 @@
 package performance
 
 import (
+	"common/graceful"
+	"common/logs"
+	"common/util/slices"
+	"context"
 	"sync"
 	"time"
 )
@@ -9,6 +13,8 @@ var (
 	localStore  Store
 	remoteStore Store
 )
+
+var pmLog = logs.New("performance-collector")
 
 func SetLocalStore(s Store) {
 	localStore = s
@@ -37,20 +43,127 @@ func getStore(st StoreType) Store {
 	}
 }
 
-type Collector struct {
-	conf         *Config
+type Collector interface {
+	Put(action string, kindOf string, cost time.Duration) error
+	Store() Store
+	Flush() error
+	Close() error
+}
+
+type pmCollector struct {
 	store        Store
+	conf         *Config
 	memData      []*Perform
 	lastSaveTime time.Time
 	mux          sync.Locker
+	stopAutoSave func()
 }
 
-func NewCollector(cfg *Config) *Collector {
-	return &Collector{
+func NewCollector(cfg *Config) Collector {
+	if !cfg.Enable {
+		return &noneCollector{NoneStore()}
+	}
+	c := &pmCollector{
 		conf:         cfg,
 		store:        getStore(cfg.Store),
 		memData:      make([]*Perform, 0, cfg.MaxInMemory),
 		lastSaveTime: time.Time{},
 		mux:          &sync.Mutex{},
 	}
+	c.stopAutoSave()
+	return c
+}
+
+func (c *pmCollector) Store() Store {
+	return c.store
+}
+
+func (c *pmCollector) Put(action string, kindOf string, cost time.Duration) error {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	c.memData = append(c.memData, &Perform{
+		KindOf: kindOf,
+		Action: action,
+		Cost:   cost,
+	})
+	if len(c.memData) > c.conf.MaxInMemory {
+		if c.conf.FlushWhenReached {
+			if err := c.Flush(); err != nil {
+				return err
+			}
+		} else {
+			slices.RemoveFirst(&c.memData)
+		}
+	}
+	return nil
+}
+
+// Flush save in-memory data to Store and clear memory buffer. it's goroutine unsafe.
+func (c *pmCollector) Flush() error {
+	c.lastSaveTime = time.Now()
+	if err := c.store.Put(c.memData); err != nil {
+		return err
+	}
+	slices.Clear(&c.memData)
+	return nil
+}
+
+func (c *pmCollector) Close() error {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	if err := c.Flush(); err != nil {
+		return err
+	}
+	if c.stopAutoSave != nil {
+		c.stopAutoSave()
+	}
+	return nil
+}
+
+func (c *pmCollector) startAutoFlush() {
+	go func() {
+		defer graceful.Recover()
+		tk := time.NewTicker(c.conf.FlushInterval)
+		ctx, cancel := context.WithCancel(context.Background())
+		c.stopAutoSave = cancel
+		flushFn := func() {
+			c.mux.Lock()
+			defer c.mux.Unlock()
+			if time.Since(c.lastSaveTime) < c.conf.FlushInterval {
+				return
+			}
+			if err := c.Flush(); err != nil {
+				pmLog.Errorf("auto flush fail: %s", err)
+			}
+		}
+		for {
+			select {
+			case <-tk.C:
+				flushFn()
+			case <-ctx.Done():
+				pmLog.Info("stop auto flush")
+				return
+			}
+		}
+	}()
+}
+
+type noneCollector struct {
+	s Store
+}
+
+func (noneCollector) Put(string, string, time.Duration) error {
+	return nil
+}
+
+func (n noneCollector) Store() Store {
+	return n.s
+}
+
+func (noneCollector) Flush() error {
+	return nil
+}
+
+func (noneCollector) Close() error {
+	return nil
 }
