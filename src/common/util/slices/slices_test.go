@@ -17,3 +17,9 @@ func TestNegMod(t *testing.T) {
 	t.Log(-8 % -3)
 	t.Log(8 % 3)
 }
+
+func TestClear(t *testing.T) {
+	arr := []int{1, 2, 3, 4}
+	Clear(&arr)
+	assert.New(t).Equal(0, len(arr))
+}
