@@ -84,7 +84,7 @@ func Head(g *gin.Context) {
 		return
 	}
 	fi, err := os.Stat(filepath.Join(pool.Config.TempPath, id))
-	if util.IsOSNotExist(err) {
+	if os.IsNotExist(err) {
 		response.OkHeader(gin.H{"Size": 0}, g)
 		return
 	}
