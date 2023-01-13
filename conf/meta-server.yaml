@@ -6,7 +6,6 @@ cluster:
   enable: true
   bootstrap: false
   group-id: raft-0
-  log-level: INFO
   election-timeout: 900ms
   heartbeat-timeout: 800ms
   nodes:
