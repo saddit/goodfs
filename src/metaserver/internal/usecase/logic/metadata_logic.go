@@ -16,6 +16,7 @@ import (
 const (
 	MetadataBucketRoot = "go.dfs.metadata.root"
 	VersionBucketRoot  = "go.dfs.version.root"
+	BucketBucketRoot   = "go.dfs.bucket.root"
 	Sep                = "."
 )
 

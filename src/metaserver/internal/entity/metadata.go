@@ -15,7 +15,17 @@ type Version struct {
 	ShardSize     int64    `json:"shardSize" msg:"shard_size" binding:"required"`
 	Size          int64    `json:"size" msg:"size" binding:"required"`
 	Ts            int64    `json:"ts" msg:"ts"`
-	Sequence      uint64   `json:"sequence" msg:"sequence"` //Sequence version number auto generated on saving
+	Sequence      uint64   `json:"sequence" msg:"sequence"` // Sequence version number auto generated on saving
 	Hash          string   `json:"hash" msg:"hash" binding:"required"`
 	Locate        []string `json:"locate" msg:"locate" binding:"min=1"`
+}
+
+type Bucket struct {
+	Versioning     bool     `json:"versioning" msg:"versioning"`          // Versioning marks bucket can store multi versions of object. if true, VersionRemains will be used
+	ReadOnly       bool     `json:"readOnly" msg:"read_only"`             // ReadOnly marks objects in bucket only allowed to read
+	VersionRemains int32    `json:"versionRemains" msg:"version_remains"` // VersionRemains is maximum number of remained versions
+	CreateTime     int64    `json:"createTime" msg:"create_time"`         // CreateTime is bucket created time
+	UpdateTime     int64    `json:"updateTime" msg:"update_time"`         // UpdateTime is last updating time
+	Name           string   `json:"name" msg:"name"`                      // Name is the bucket's name
+	Policies       []string `json:"policies" msg:"policies"`              // Policies is the iam polices for this bucket (No support yet)
 }
