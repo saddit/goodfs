@@ -6,6 +6,7 @@ import (
 	"common/logs"
 	"common/util"
 	"fmt"
+	"github.com/hashicorp/go-hclog"
 	"metaserver/config"
 	. "metaserver/internal/usecase"
 	"os"
@@ -35,9 +36,13 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *RaftWra
 	baseDir := cfg.StoreDir
 
 	c := raft.DefaultConfig()
-	c.LocalID, c.LogOutput, c.LogLevel, c.ElectionTimeout, c.HeartbeatTimeout =
-		raft.ServerID(cfg.ID), os.Stderr, cfg.LogLevel, cfg.ElectionTimeout, cfg.HeartbeatTimeout
-
+	c.LocalID, c.ElectionTimeout, c.HeartbeatTimeout = raft.ServerID(cfg.ID), cfg.ElectionTimeout, cfg.HeartbeatTimeout
+	c.Logger = hclog.New(&hclog.LoggerOptions{
+		Name:   "raft",
+		Color:  hclog.AutoColor,
+		Level:  hclog.LevelFromString(c.LogLevel),
+		Output: logs.Std().Out,
+	})
 	ldb, sdb, fss := newRaftStore(baseDir)
 
 	r, err := raft.NewRaft(c, fsm, ldb, sdb, fss, ts)

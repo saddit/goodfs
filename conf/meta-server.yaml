@@ -10,6 +10,7 @@ cluster:
   heartbeat-timeout: 800ms
   nodes:
     - meta-0,localhost:4090
+    - meta-1,localhost:4091
 registry:
   server-id: meta-0
   group: goodfs

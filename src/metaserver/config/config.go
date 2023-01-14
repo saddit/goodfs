@@ -41,7 +41,7 @@ func (c *Config) initialize(filePath string) {
 	c.filePath, _ = filepath.Abs(filePath)
 	c.persistLock = &sync.Mutex{}
 	c.Cluster.LogLevel = string(c.LogLevel)
-	c.Cluster.StoreDir = c.DataDir
+	c.Cluster.StoreDir = filepath.Join(c.DataDir, c.Registry.ServerID+"_raft")
 	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {
 		c.Cluster.ID = c.Registry.ServerID
@@ -70,8 +70,8 @@ func (c *Config) Persist() error {
 }
 
 type CacheConfig struct {
-	TTL           time.Duration     `yaml:"ttl" env:"TTL" env-default:"1h"`
-	CleanInterval time.Duration     `yaml:"clean-interval" env:"CLEAN_INTERVAL" env-default:"1h"`
+	TTL           time.Duration     `yaml:"ttl" env:"TTL" env-default:"20m"`
+	CleanInterval time.Duration     `yaml:"clean-interval" env:"CLEAN_INTERVAL" env-default:"10m"`
 	MaxSize       datasize.DataSize `yaml:"max-size" env:"MAX_SIZE" env-default:"128MB"`
 }
 
@@ -84,13 +84,13 @@ type HashSlotConfig struct {
 type ClusterConfig struct {
 	Enable           bool          `yaml:"enable" env:"ENABLE" env-default:"false"`
 	Bootstrap        bool          `yaml:"bootstrap" env:"BOOTSTRAP" env-default:"false"`
-	ID               string        `yaml:"-" env:"-"` //ID equals to Registry.ServerId
-	Port             string        `yaml:"-" env:"-"` //Port equals to Config.RpcPort
 	GroupID          string        `yaml:"group-id" env:"GROUP_ID" env-default:"raft"`
-	LogLevel         string        `yaml:"-" env:"-"`
-	StoreDir         string        `yaml:"-" env:"-"`
 	ElectionTimeout  time.Duration `yaml:"election-timeout" env:"ELECTION_TIMEOUT" env-default:"900ms"`
 	HeartbeatTimeout time.Duration `yaml:"heartbeat-timeout" env:"HEARTBEAT_TIMEOUT" env-default:"800ms"`
+	ID               string        `yaml:"-" env:"-"` //ID equals to Registry.ServerId
+	Port             string        `yaml:"-" env:"-"` //Port equals to Config.RpcPort
+	LogLevel         string        `yaml:"-" env:"-"`
+	StoreDir         string        `yaml:"-" env:"-"`
 	Nodes            []string      `yaml:"nodes" env:"NODES" env-separator:","`
 }
 

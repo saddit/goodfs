@@ -1,6 +1,7 @@
 package config
 
 import (
+	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/logs"
@@ -43,12 +44,22 @@ type Config struct {
 	Discovery   DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 }
 
+func (c *Config) initialize() {
+	if e := os.MkdirAll(c.TempPath, cst.OS.ModeUser); e != nil {
+		panic(e)
+	}
+	if e := os.MkdirAll(c.StoragePath, cst.OS.ModeUser); e != nil {
+		panic(e)
+	}
+}
+
 func ReadConfig() Config {
 	var conf Config
 	if err := cleanenv.ReadConfig(ConfFilePath, &conf); err != nil {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", ConfFilePath)
+	conf.initialize()
 	return conf
 }
 
@@ -61,5 +72,6 @@ func ReadConfigFrom(path string) Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", path)
+	conf.initialize()
 	return conf
 }

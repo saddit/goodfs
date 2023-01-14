@@ -3,6 +3,8 @@ package logs
 import (
 	nested "github.com/antonfisher/nested-logrus-formatter"
 	"github.com/sirupsen/logrus"
+	"io"
+	"os"
 	"strings"
 )
 
@@ -25,21 +27,39 @@ func init() {
 	})
 }
 
-func SetLevel(l Level) {
+func ToLogLevel(l Level) logrus.Level {
 	s := strings.ToUpper(string(l))
 	switch Level(s) {
 	case Trace:
-		logrus.SetLevel(logrus.TraceLevel)
+		return logrus.TraceLevel
 	case Debug:
-		logrus.SetLevel(logrus.DebugLevel)
+		return logrus.DebugLevel
 	default:
 		fallthrough
 	case Info:
-		logrus.SetLevel(logrus.InfoLevel)
+		return logrus.InfoLevel
 	case Warn:
-		logrus.SetLevel(logrus.WarnLevel)
+		return logrus.WarnLevel
 	case ERROR:
-		logrus.SetLevel(logrus.ErrorLevel)
+		return logrus.ErrorLevel
+	}
+}
+
+func SetLevel(l Level) {
+	logrus.SetLevel(ToLogLevel(l))
+}
+
+func SetOutput(w io.Writer) {
+	logrus.SetOutput(w)
+	ft, ok := logrus.StandardLogger().Formatter.(*nested.Formatter)
+	if !ok {
+		return
+	}
+	switch w {
+	case os.Stderr, os.Stdout:
+		ft.NoColors = false
+	default:
+		ft.NoColors = true
 	}
 }
 

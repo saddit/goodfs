@@ -14,10 +14,11 @@ import (
 )
 
 func Run(cfg *Config) {
-	pool.InitPool(cfg)
-	defer pool.Close()
 	// init log
 	logs.SetLevel(cfg.LogLevel)
+	// init pool
+	pool.InitPool(cfg)
+	defer pool.Close()
 	//init services
 	versionRepo := repo.NewVersionRepo(pool.Etcd)
 	metaRepo := repo.NewMetadataRepo(pool.Etcd, versionRepo)

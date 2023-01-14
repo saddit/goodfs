@@ -78,8 +78,8 @@ func Head(g *gin.Context) {
 		g.Status(http.StatusNotFound)
 		return
 	}
-	ti, ok := util.GobDecodeGen[entity.TempInfo](bt)
-	if !ok {
+	var ti entity.TempInfo
+	if ok = util.GobDecode(bt, &ti); !ok {
 		g.Status(http.StatusInternalServerError)
 		return
 	}
