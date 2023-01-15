@@ -36,7 +36,7 @@ func (z *PeerInfo) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "HttpPort")
 				return
 			}
-		case "gprc_port":
+		case "grpc_port":
 			z.GrpcPort, err = dc.ReadString()
 			if err != nil {
 				err = msgp.WrapError(err, "GrpcPort")
@@ -82,8 +82,8 @@ func (z *PeerInfo) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "HttpPort")
 		return
 	}
-	// write "gprc_port"
-	err = en.Append(0xa9, 0x67, 0x70, 0x72, 0x63, 0x5f, 0x70, 0x6f, 0x72, 0x74)
+	// write "grpc_port"
+	err = en.Append(0xa9, 0x67, 0x72, 0x70, 0x63, 0x5f, 0x70, 0x6f, 0x72, 0x74)
 	if err != nil {
 		return
 	}
@@ -115,8 +115,8 @@ func (z *PeerInfo) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "http_port"
 	o = append(o, 0xa9, 0x68, 0x74, 0x74, 0x70, 0x5f, 0x70, 0x6f, 0x72, 0x74)
 	o = msgp.AppendString(o, z.HttpPort)
-	// string "gprc_port"
-	o = append(o, 0xa9, 0x67, 0x70, 0x72, 0x63, 0x5f, 0x70, 0x6f, 0x72, 0x74)
+	// string "grpc_port"
+	o = append(o, 0xa9, 0x67, 0x72, 0x70, 0x63, 0x5f, 0x70, 0x6f, 0x72, 0x74)
 	o = msgp.AppendString(o, z.GrpcPort)
 	// string "group_id"
 	o = append(o, 0xa8, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x69, 0x64)
@@ -154,7 +154,7 @@ func (z *PeerInfo) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "HttpPort")
 				return
 			}
-		case "gprc_port":
+		case "grpc_port":
 			z.GrpcPort, bts, err = msgp.ReadStringBytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "GrpcPort")
