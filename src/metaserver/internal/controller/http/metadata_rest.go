@@ -6,8 +6,6 @@ import (
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	. "metaserver/internal/usecase"
-	"metaserver/internal/usecase/logic"
-	"net/http"
 	"sort"
 
 	"github.com/gin-gonic/gin"
@@ -33,10 +31,6 @@ func (m *MetadataController) Post(g *gin.Context) {
 	var data entity.Metadata
 	if err := g.ShouldBindJSON(&data); err != nil {
 		response.FailErr(err, g)
-		return
-	}
-	if ok, other := logic.NewHashSlot().IsKeyOnThisServer(data.Name); !ok {
-		response.Exec(g).Redirect(http.StatusSeeOther, other)
 		return
 	}
 	if err := m.service.AddMetadata(&data); err != nil {

@@ -73,14 +73,18 @@ type (
 		Restore(io.Reader) error
 	}
 
+	RaftApply interface {
+		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
+	}
+
 	IMetadataRepo interface {
 		WritableRepo
 		ReadableRepo
 		SnapshotManager
 		AddVersionWithSequence(string, *entity.Version) error
 		RemoveAllVersion(string) error
-		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
 		GetLastVersionNumber(name string) uint64
+		GetFirstVersionNumber(name string) uint64
 		ForeachVersionBytes(string, func([]byte) bool)
 		GetMetadataBytes(string) ([]byte, error)
 	}
@@ -114,5 +118,19 @@ type (
 	IMetaCache interface {
 		ReadableRepo
 		WritableRepo
+	}
+
+	BucketRepo interface {
+		Foreach(func(k []byte, v []byte) error) error
+		Get(name string) (*entity.Bucket, error)
+		GetBytes(name string) ([]byte, error)
+		Create(bucket *entity.Bucket) error
+		Remove(name string) error
+		Update(bucket *entity.Bucket) error
+		List(prefix string, size int) ([]*entity.Bucket, int, error)
+	}
+
+	BucketService interface {
+		BucketRepo
 	}
 )

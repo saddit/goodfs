@@ -30,10 +30,28 @@ func (z *Bucket) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "Versioning")
 				return
 			}
-		case "read_only":
-			z.ReadOnly, err = dc.ReadBool()
+		case "readonly":
+			z.Readonly, err = dc.ReadBool()
 			if err != nil {
-				err = msgp.WrapError(err, "ReadOnly")
+				err = msgp.WrapError(err, "Readonly")
+				return
+			}
+		case "store_strategy":
+			z.StoreStrategy, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "StoreStrategy")
+				return
+			}
+		case "data_shards":
+			z.DataShards, err = dc.ReadInt32()
+			if err != nil {
+				err = msgp.WrapError(err, "DataShards")
+				return
+			}
+		case "parity_shards":
+			z.ParityShards, err = dc.ReadInt32()
+			if err != nil {
+				err = msgp.WrapError(err, "ParityShards")
 				return
 			}
 		case "version_remains":
@@ -92,9 +110,9 @@ func (z *Bucket) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Bucket) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 7
+	// map header, size 10
 	// write "versioning"
-	err = en.Append(0x87, 0xaa, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x69, 0x6e, 0x67)
+	err = en.Append(0x8a, 0xaa, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x69, 0x6e, 0x67)
 	if err != nil {
 		return
 	}
@@ -103,14 +121,44 @@ func (z *Bucket) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Versioning")
 		return
 	}
-	// write "read_only"
-	err = en.Append(0xa9, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x6f, 0x6e, 0x6c, 0x79)
+	// write "readonly"
+	err = en.Append(0xa8, 0x72, 0x65, 0x61, 0x64, 0x6f, 0x6e, 0x6c, 0x79)
 	if err != nil {
 		return
 	}
-	err = en.WriteBool(z.ReadOnly)
+	err = en.WriteBool(z.Readonly)
 	if err != nil {
-		err = msgp.WrapError(err, "ReadOnly")
+		err = msgp.WrapError(err, "Readonly")
+		return
+	}
+	// write "store_strategy"
+	err = en.Append(0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.StoreStrategy)
+	if err != nil {
+		err = msgp.WrapError(err, "StoreStrategy")
+		return
+	}
+	// write "data_shards"
+	err = en.Append(0xab, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x73, 0x68, 0x61, 0x72, 0x64, 0x73)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt32(z.DataShards)
+	if err != nil {
+		err = msgp.WrapError(err, "DataShards")
+		return
+	}
+	// write "parity_shards"
+	err = en.Append(0xad, 0x70, 0x61, 0x72, 0x69, 0x74, 0x79, 0x5f, 0x73, 0x68, 0x61, 0x72, 0x64, 0x73)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt32(z.ParityShards)
+	if err != nil {
+		err = msgp.WrapError(err, "ParityShards")
 		return
 	}
 	// write "version_remains"
@@ -176,13 +224,22 @@ func (z *Bucket) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Bucket) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 7
+	// map header, size 10
 	// string "versioning"
-	o = append(o, 0x87, 0xaa, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x69, 0x6e, 0x67)
+	o = append(o, 0x8a, 0xaa, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x69, 0x6e, 0x67)
 	o = msgp.AppendBool(o, z.Versioning)
-	// string "read_only"
-	o = append(o, 0xa9, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x6f, 0x6e, 0x6c, 0x79)
-	o = msgp.AppendBool(o, z.ReadOnly)
+	// string "readonly"
+	o = append(o, 0xa8, 0x72, 0x65, 0x61, 0x64, 0x6f, 0x6e, 0x6c, 0x79)
+	o = msgp.AppendBool(o, z.Readonly)
+	// string "store_strategy"
+	o = append(o, 0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
+	o = msgp.AppendInt8(o, z.StoreStrategy)
+	// string "data_shards"
+	o = append(o, 0xab, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x73, 0x68, 0x61, 0x72, 0x64, 0x73)
+	o = msgp.AppendInt32(o, z.DataShards)
+	// string "parity_shards"
+	o = append(o, 0xad, 0x70, 0x61, 0x72, 0x69, 0x74, 0x79, 0x5f, 0x73, 0x68, 0x61, 0x72, 0x64, 0x73)
+	o = msgp.AppendInt32(o, z.ParityShards)
 	// string "version_remains"
 	o = append(o, 0xaf, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x72, 0x65, 0x6d, 0x61, 0x69, 0x6e, 0x73)
 	o = msgp.AppendInt32(o, z.VersionRemains)
@@ -228,10 +285,28 @@ func (z *Bucket) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "Versioning")
 				return
 			}
-		case "read_only":
-			z.ReadOnly, bts, err = msgp.ReadBoolBytes(bts)
+		case "readonly":
+			z.Readonly, bts, err = msgp.ReadBoolBytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "ReadOnly")
+				err = msgp.WrapError(err, "Readonly")
+				return
+			}
+		case "store_strategy":
+			z.StoreStrategy, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "StoreStrategy")
+				return
+			}
+		case "data_shards":
+			z.DataShards, bts, err = msgp.ReadInt32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DataShards")
+				return
+			}
+		case "parity_shards":
+			z.ParityShards, bts, err = msgp.ReadInt32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ParityShards")
 				return
 			}
 		case "version_remains":
@@ -291,7 +366,7 @@ func (z *Bucket) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Bucket) Msgsize() (s int) {
-	s = 1 + 11 + msgp.BoolSize + 10 + msgp.BoolSize + 16 + msgp.Int32Size + 12 + msgp.Int64Size + 12 + msgp.Int64Size + 5 + msgp.StringPrefixSize + len(z.Name) + 9 + msgp.ArrayHeaderSize
+	s = 1 + 11 + msgp.BoolSize + 9 + msgp.BoolSize + 15 + msgp.Int8Size + 12 + msgp.Int32Size + 14 + msgp.Int32Size + 16 + msgp.Int32Size + 12 + msgp.Int64Size + 12 + msgp.Int64Size + 5 + msgp.StringPrefixSize + len(z.Name) + 9 + msgp.ArrayHeaderSize
 	for za0001 := range z.Policies {
 		s += msgp.StringPrefixSize + len(z.Policies[za0001])
 	}
@@ -322,6 +397,12 @@ func (z *Metadata) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "Name")
 				return
 			}
+		case "bucket":
+			z.Bucket, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "Bucket")
+				return
+			}
 		case "create_time":
 			z.CreateTime, err = dc.ReadInt64()
 			if err != nil {
@@ -346,16 +427,26 @@ func (z *Metadata) DecodeMsg(dc *msgp.Reader) (err error) {
 }
 
 // EncodeMsg implements msgp.Encodable
-func (z Metadata) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 3
+func (z *Metadata) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 4
 	// write "name"
-	err = en.Append(0x83, 0xa4, 0x6e, 0x61, 0x6d, 0x65)
+	err = en.Append(0x84, 0xa4, 0x6e, 0x61, 0x6d, 0x65)
 	if err != nil {
 		return
 	}
 	err = en.WriteString(z.Name)
 	if err != nil {
 		err = msgp.WrapError(err, "Name")
+		return
+	}
+	// write "bucket"
+	err = en.Append(0xa6, 0x62, 0x75, 0x63, 0x6b, 0x65, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.Bucket)
+	if err != nil {
+		err = msgp.WrapError(err, "Bucket")
 		return
 	}
 	// write "create_time"
@@ -382,12 +473,15 @@ func (z Metadata) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z Metadata) MarshalMsg(b []byte) (o []byte, err error) {
+func (z *Metadata) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 3
+	// map header, size 4
 	// string "name"
-	o = append(o, 0x83, 0xa4, 0x6e, 0x61, 0x6d, 0x65)
+	o = append(o, 0x84, 0xa4, 0x6e, 0x61, 0x6d, 0x65)
 	o = msgp.AppendString(o, z.Name)
+	// string "bucket"
+	o = append(o, 0xa6, 0x62, 0x75, 0x63, 0x6b, 0x65, 0x74)
+	o = msgp.AppendString(o, z.Bucket)
 	// string "create_time"
 	o = append(o, 0xab, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x5f, 0x74, 0x69, 0x6d, 0x65)
 	o = msgp.AppendInt64(o, z.CreateTime)
@@ -421,6 +515,12 @@ func (z *Metadata) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "Name")
 				return
 			}
+		case "bucket":
+			z.Bucket, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Bucket")
+				return
+			}
 		case "create_time":
 			z.CreateTime, bts, err = msgp.ReadInt64Bytes(bts)
 			if err != nil {
@@ -446,8 +546,8 @@ func (z *Metadata) UnmarshalMsg(bts []byte) (o []byte, err error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z Metadata) Msgsize() (s int) {
-	s = 1 + 5 + msgp.StringPrefixSize + len(z.Name) + 12 + msgp.Int64Size + 12 + msgp.Int64Size
+func (z *Metadata) Msgsize() (s int) {
+	s = 1 + 5 + msgp.StringPrefixSize + len(z.Name) + 7 + msgp.StringPrefixSize + len(z.Bucket) + 12 + msgp.Int64Size + 12 + msgp.Int64Size
 	return
 }
 

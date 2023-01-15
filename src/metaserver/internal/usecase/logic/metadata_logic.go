@@ -16,7 +16,6 @@ import (
 const (
 	MetadataBucketRoot = "go.dfs.metadata.root"
 	VersionBucketRoot  = "go.dfs.version.root"
-	BucketBucketRoot   = "go.dfs.bucket.root"
 	Sep                = "."
 )
 
@@ -87,6 +86,7 @@ func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 		}
 		// update data
 		data.UpdateTime = time.Now().UnixMilli()
+		data.Bucket = origin.Bucket
 		bt, err := util.EncodeMsgp(data)
 		if err != nil {
 			return err

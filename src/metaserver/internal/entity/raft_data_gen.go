@@ -154,7 +154,7 @@ func (z *RaftData) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "Name")
 				return
 			}
-		case "sequnce":
+		case "sequence":
 			z.Sequence, err = dc.ReadUint64()
 			if err != nil {
 				err = msgp.WrapError(err, "Sequence")
@@ -196,6 +196,24 @@ func (z *RaftData) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
+		case "bucket":
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					err = msgp.WrapError(err, "Bucket")
+					return
+				}
+				z.Bucket = nil
+			} else {
+				if z.Bucket == nil {
+					z.Bucket = new(Bucket)
+				}
+				err = z.Bucket.DecodeMsg(dc)
+				if err != nil {
+					err = msgp.WrapError(err, "Bucket")
+					return
+				}
+			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -209,9 +227,9 @@ func (z *RaftData) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *RaftData) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 6
+	// map header, size 7
 	// write "type"
-	err = en.Append(0x86, 0xa4, 0x74, 0x79, 0x70, 0x65)
+	err = en.Append(0x87, 0xa4, 0x74, 0x79, 0x70, 0x65)
 	if err != nil {
 		return
 	}
@@ -240,8 +258,8 @@ func (z *RaftData) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Name")
 		return
 	}
-	// write "sequnce"
-	err = en.Append(0xa7, 0x73, 0x65, 0x71, 0x75, 0x6e, 0x63, 0x65)
+	// write "sequence"
+	err = en.Append(0xa8, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65)
 	if err != nil {
 		return
 	}
@@ -284,15 +302,32 @@ func (z *RaftData) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
+	// write "bucket"
+	err = en.Append(0xa6, 0x62, 0x75, 0x63, 0x6b, 0x65, 0x74)
+	if err != nil {
+		return
+	}
+	if z.Bucket == nil {
+		err = en.WriteNil()
+		if err != nil {
+			return
+		}
+	} else {
+		err = z.Bucket.EncodeMsg(en)
+		if err != nil {
+			err = msgp.WrapError(err, "Bucket")
+			return
+		}
+	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *RaftData) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 6
+	// map header, size 7
 	// string "type"
-	o = append(o, 0x86, 0xa4, 0x74, 0x79, 0x70, 0x65)
+	o = append(o, 0x87, 0xa4, 0x74, 0x79, 0x70, 0x65)
 	o = msgp.AppendInt8(o, int8(z.Type))
 	// string "dest"
 	o = append(o, 0xa4, 0x64, 0x65, 0x73, 0x74)
@@ -300,8 +335,8 @@ func (z *RaftData) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "name"
 	o = append(o, 0xa4, 0x6e, 0x61, 0x6d, 0x65)
 	o = msgp.AppendString(o, z.Name)
-	// string "sequnce"
-	o = append(o, 0xa7, 0x73, 0x65, 0x71, 0x75, 0x6e, 0x63, 0x65)
+	// string "sequence"
+	o = append(o, 0xa8, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65)
 	o = msgp.AppendUint64(o, z.Sequence)
 	// string "version"
 	o = append(o, 0xa7, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
@@ -322,6 +357,17 @@ func (z *RaftData) MarshalMsg(b []byte) (o []byte, err error) {
 		o, err = z.Metadata.MarshalMsg(o)
 		if err != nil {
 			err = msgp.WrapError(err, "Metadata")
+			return
+		}
+	}
+	// string "bucket"
+	o = append(o, 0xa6, 0x62, 0x75, 0x63, 0x6b, 0x65, 0x74)
+	if z.Bucket == nil {
+		o = msgp.AppendNil(o)
+	} else {
+		o, err = z.Bucket.MarshalMsg(o)
+		if err != nil {
+			err = msgp.WrapError(err, "Bucket")
 			return
 		}
 	}
@@ -372,7 +418,7 @@ func (z *RaftData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "Name")
 				return
 			}
-		case "sequnce":
+		case "sequence":
 			z.Sequence, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "Sequence")
@@ -412,6 +458,23 @@ func (z *RaftData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
+		case "bucket":
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.Bucket = nil
+			} else {
+				if z.Bucket == nil {
+					z.Bucket = new(Bucket)
+				}
+				bts, err = z.Bucket.UnmarshalMsg(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "Bucket")
+					return
+				}
+			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -426,7 +489,7 @@ func (z *RaftData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *RaftData) Msgsize() (s int) {
-	s = 1 + 5 + msgp.Int8Size + 5 + msgp.Int8Size + 5 + msgp.StringPrefixSize + len(z.Name) + 8 + msgp.Uint64Size + 8
+	s = 1 + 5 + msgp.Int8Size + 5 + msgp.Int8Size + 5 + msgp.StringPrefixSize + len(z.Name) + 9 + msgp.Uint64Size + 8
 	if z.Version == nil {
 		s += msgp.NilSize
 	} else {
@@ -437,6 +500,12 @@ func (z *RaftData) Msgsize() (s int) {
 		s += msgp.NilSize
 	} else {
 		s += z.Metadata.Msgsize()
+	}
+	s += 7
+	if z.Bucket == nil {
+		s += msgp.NilSize
+	} else {
+		s += z.Bucket.Msgsize()
 	}
 	return
 }

@@ -24,7 +24,7 @@ type Server struct {
 }
 
 // NewRpcServer init a grpc raft server. if no available nodes return empty object
-func NewRpcServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService) (*Server, *raftimpl.RaftWrapper) {
+func NewRpcServer(cfg config.ClusterConfig, fsm raft.FSM, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService) (*Server, *raftimpl.RaftWrapper) {
 	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
 		// CheckLocalUnary,
 		CheckWritableUnary,
@@ -40,7 +40,7 @@ func NewRpcServer(cfg config.ClusterConfig, repo usecase.IMetadataRepo, serv1 us
 	var raftWrapper *raftimpl.RaftWrapper
 	if cfg.Enable {
 		raftGrpcServ := raftServer.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []netGrpc.DialOption{netGrpc.WithInsecure()})
-		raftWrapper = raftimpl.NewRaft(cfg, raftimpl.NewFSM(repo), raftGrpcServ.Transport())
+		raftWrapper = raftimpl.NewRaft(cfg, fsm, raftGrpcServ.Transport())
 		raftGrpcServ.Register(server)
 		pb.RegisterRaftCmdServer(server, NewRaftCmdServer(raftWrapper))
 	} else {

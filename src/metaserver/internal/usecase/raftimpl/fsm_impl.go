@@ -16,15 +16,29 @@ var (
 	log = logs.New("raft-fsm")
 )
 
-type fsm struct {
-	repo IMetadataRepo
+type FSMImpl struct {
+	repo       IMetadataRepo
+	bucketRepo BucketRepo
 }
 
-func NewFSM(repo IMetadataRepo) raft.FSM {
-	return &fsm{repo}
+func NewFSM(repo IMetadataRepo, b BucketRepo) raft.FSM {
+	return &FSMImpl{repo, b}
 }
 
-func (f *fsm) applyMetadata(data *entity.RaftData) *response.RaftFsmResp {
+func (f *FSMImpl) applyBucket(data *entity.RaftData) *response.RaftFsmResp {
+	switch data.Type {
+	case entity.LogInsert:
+		return response.NewRaftFsmResp(f.bucketRepo.Create(data.Bucket))
+	case entity.LogRemove:
+		return response.NewRaftFsmResp(f.bucketRepo.Remove(data.Name))
+	case entity.LogUpdate:
+		return response.NewRaftFsmResp(f.bucketRepo.Update(data.Bucket))
+	default:
+		return response.NewRaftFsmResp(ErrNotFound)
+	}
+}
+
+func (f *FSMImpl) applyMetadata(data *entity.RaftData) *response.RaftFsmResp {
 	switch data.Type {
 	case entity.LogInsert:
 		return response.NewRaftFsmResp(f.repo.AddMetadata(data.Metadata))
@@ -37,7 +51,7 @@ func (f *fsm) applyMetadata(data *entity.RaftData) *response.RaftFsmResp {
 	}
 }
 
-func (f *fsm) applyVersion(data *entity.RaftData) *response.RaftFsmResp {
+func (f *FSMImpl) applyVersion(data *entity.RaftData) *response.RaftFsmResp {
 	switch data.Type {
 	case entity.LogMigrate:
 		resp := response.NewRaftFsmResp(f.repo.AddVersionWithSequence(data.Name, data.Version))
@@ -56,7 +70,7 @@ func (f *fsm) applyVersion(data *entity.RaftData) *response.RaftFsmResp {
 	}
 }
 
-func (f *fsm) applyVersionAll(data *entity.RaftData) *response.RaftFsmResp {
+func (f *FSMImpl) applyVersionAll(data *entity.RaftData) *response.RaftFsmResp {
 	switch data.Type {
 	case entity.LogRemove:
 		return response.NewRaftFsmResp(f.repo.RemoveAllVersion(data.Name))
@@ -65,7 +79,7 @@ func (f *fsm) applyVersionAll(data *entity.RaftData) *response.RaftFsmResp {
 	}
 }
 
-func (f *fsm) Apply(lg *raft.Log) any {
+func (f *FSMImpl) Apply(lg *raft.Log) any {
 	if lg == nil || len(lg.Data) == 0 {
 		return response.NewRaftFsmResp(ErrNilData)
 	}
@@ -85,11 +99,13 @@ func (f *fsm) Apply(lg *raft.Log) any {
 		return f.applyVersion(&data)
 	case entity.DestVersionAll:
 		return f.applyVersionAll(&data)
+	case entity.DestBucket:
+		return f.applyBucket(&data)
 	}
 	return ErrNotFound
 }
 
-func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
+func (f *FSMImpl) Snapshot() (raft.FSMSnapshot, error) {
 	snap, err := f.repo.Snapshot()
 	if err != nil {
 		return nil, err
@@ -97,7 +113,7 @@ func (f *fsm) Snapshot() (raft.FSMSnapshot, error) {
 	return &snapshot{snap}, nil
 }
 
-func (f *fsm) Restore(snapshot io.ReadCloser) (err error) {
+func (f *FSMImpl) Restore(snapshot io.ReadCloser) (err error) {
 	defer snapshot.Close()
 	gzipRd, err := gzip.NewReader(snapshot)
 	if err != nil {

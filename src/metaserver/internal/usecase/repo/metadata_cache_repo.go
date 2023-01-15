@@ -30,6 +30,10 @@ func (pe *partlyErr) Error() string {
 	return "partly matched"
 }
 
+const (
+	MetaCachePrefix = "metadata_"
+)
+
 type MetadataCacheRepo struct {
 	cache cache.ICache
 }
@@ -39,11 +43,11 @@ func NewMetadataCacheRepo(c cache.ICache) *MetadataCacheRepo {
 }
 
 func (m *MetadataCacheRepo) ListMetadata(string, int) ([]*entity.Metadata, int, error) {
-	panic("unsupported method")
+	panic("not impl ListMetadata")
 }
 
 func (m *MetadataCacheRepo) GetMetadata(s string) (*entity.Metadata, error) {
-	if bt, ok := m.cache.HasGet(s); ok {
+	if bt, ok := m.cache.HasGet(fmt.Sprint(MetaCachePrefix, s)); ok {
 		var en entity.Metadata
 		if err := util.DecodeMsgp(&en, bt); err != nil {
 			return nil, err
@@ -54,7 +58,7 @@ func (m *MetadataCacheRepo) GetMetadata(s string) (*entity.Metadata, error) {
 }
 
 func (m *MetadataCacheRepo) GetVersion(s string, u uint64) (*entity.Version, error) {
-	key := fmt.Sprint(s, logic.Sep, u)
+	key := fmt.Sprint(MetaCachePrefix, s, logic.Sep, u)
 	if bt, ok := m.cache.HasGet(key); ok {
 		var en entity.Version
 		if err := util.DecodeMsgp(&en, bt); err != nil {
@@ -85,12 +89,12 @@ func (m *MetadataCacheRepo) AddMetadata(metadata *entity.Metadata) error {
 	if err != nil {
 		return err
 	}
-	m.cache.Set(metadata.Name, bt)
+	m.cache.Set(fmt.Sprint(MetaCachePrefix, metadata.Name), bt)
 	return nil
 }
 
 func (m *MetadataCacheRepo) AddVersion(s string, version *entity.Version) error {
-	key := fmt.Sprint(s, logic.Sep, version.Sequence)
+	key := fmt.Sprint(MetaCachePrefix, s, logic.Sep, version.Sequence)
 	bt, err := util.EncodeMsgp(version)
 	if err != nil {
 		return err
@@ -109,11 +113,11 @@ func (m *MetadataCacheRepo) UpdateVersion(s string, version *entity.Version) err
 }
 
 func (m *MetadataCacheRepo) RemoveMetadata(s string) error {
-	m.cache.Delete(s)
+	m.cache.Delete(fmt.Sprint(MetaCachePrefix, s))
 	return nil
 }
 
 func (m *MetadataCacheRepo) RemoveVersion(s string, u uint64) error {
-	m.cache.Delete(fmt.Sprint(s, logic.Sep, u))
+	m.cache.Delete(fmt.Sprint(MetaCachePrefix, s, logic.Sep, u))
 	return nil
 }

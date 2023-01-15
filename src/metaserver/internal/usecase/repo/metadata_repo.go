@@ -1,56 +1,35 @@
 package repo
 
 import (
+	"bytes"
 	"common/cst"
 	"common/graceful"
 	"common/logs"
-	"common/response"
 	"common/system/disk"
 	"common/util"
 	"fmt"
+	bolt "go.etcd.io/bbolt"
 	"io"
 	"metaserver/internal/entity"
-	. "metaserver/internal/usecase"
+	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
-	"metaserver/internal/usecase/pool"
 	"os"
 	"strings"
-	"time"
-
-	bolt "go.etcd.io/bbolt"
 )
 
 type MetadataRepo struct {
 	MainDB *db.Storage
-	Cache  IMetaCache
+	Cache  usecase.IMetaCache
 }
 
-func NewMetadataRepo(db *db.Storage, c IMetaCache) *MetadataRepo {
+func NewMetadataRepo(db *db.Storage, c usecase.IMetaCache) *MetadataRepo {
 	return &MetadataRepo{MainDB: db, Cache: c}
-}
-
-func (m *MetadataRepo) ApplyRaft(data *entity.RaftData) (bool, *response.RaftFsmResp) {
-	if rf, ok := pool.RaftWrapper.GetRaftIfLeader(); ok {
-		bt, err := util.EncodeMsgp(data)
-		if err != nil {
-			return true, response.NewRaftFsmResp(err)
-		}
-		feat := rf.Apply(bt, 5*time.Second)
-		if err := feat.Error(); err != nil {
-			return true, response.NewRaftFsmResp(err)
-		}
-		if resp := feat.Response(); resp != nil {
-			return true, resp.(*response.RaftFsmResp)
-		}
-		return true, nil
-	}
-	return false, nil
 }
 
 func (m *MetadataRepo) AddMetadata(data *entity.Metadata) error {
 	if data == nil {
-		return ErrNilData
+		return usecase.ErrNilData
 	}
 	if err := m.MainDB.Update(logic.AddMeta(data)); err != nil {
 		return err
@@ -64,6 +43,9 @@ func (m *MetadataRepo) AddMetadata(data *entity.Metadata) error {
 }
 
 func (m *MetadataRepo) UpdateMetadata(name string, data *entity.Metadata) error {
+	if data == nil {
+		return usecase.ErrNilData
+	}
 	if err := m.MainDB.Update(logic.UpdateMeta(name, data)); err != nil {
 		return err
 	}
@@ -107,7 +89,7 @@ func (m *MetadataRepo) GetMetadata(name string) (*entity.Metadata, error) {
 
 func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
 	if data == nil {
-		return ErrNilData
+		return usecase.ErrNilData
 	}
 	if err := m.MainDB.Update(logic.AddVer(name, data)); err != nil {
 		return err
@@ -122,7 +104,7 @@ func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
 
 func (m *MetadataRepo) AddVersionWithSequence(name string, data *entity.Version) error {
 	if data == nil {
-		return ErrNilData
+		return usecase.ErrNilData
 	}
 	if err := m.MainDB.Update(logic.AddVerWithSequence(name, data)); err != nil {
 		return err
@@ -137,7 +119,7 @@ func (m *MetadataRepo) AddVersionWithSequence(name string, data *entity.Version)
 
 func (m *MetadataRepo) UpdateVersion(name string, data *entity.Version) error {
 	if data == nil {
-		return ErrNilData
+		return usecase.ErrNilData
 	}
 	if err := m.MainDB.Update(logic.UpdateVer(name, data)); err != nil {
 		return err
@@ -184,13 +166,34 @@ func (m *MetadataRepo) RemoveAllVersion(name string) error {
 	return nil
 }
 
+func (m *MetadataRepo) GetFirstVersionNumber(name string) uint64 {
+	var fst uint64 = 1
+	if err := m.MainDB.View(func(tx *bolt.Tx) error {
+		if buk := logic.GetVersionBucket(tx, name); buk != nil {
+			k, v := buk.Cursor().First()
+			if k == nil || v == nil {
+				return usecase.ErrNotFound
+			}
+			sp := bytes.Split(k, []byte("."))
+			if len(sp) < 2 {
+				return usecase.ErrNotFound
+			}
+			fst = util.ToUint64(util.BytesToStr(sp[1]))
+		}
+		return nil
+	}); err != nil {
+		return 0
+	}
+	return fst
+}
+
 func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 	var max uint64 = 1
 	if err := m.MainDB.View(func(tx *bolt.Tx) error {
 		if buk := logic.GetVersionBucket(tx, name); buk != nil {
 			max = buk.Sequence()
 		}
-		return ErrNotFound
+		return usecase.ErrNotFound
 	}); err != nil {
 		return 0
 	}
@@ -223,7 +226,7 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 	err = m.MainDB.View(func(tx *bolt.Tx) error {
 		buk := logic.GetVersionBucket(tx, name)
 		if buk == nil {
-			return ErrNotFound
+			return usecase.ErrNotFound
 		}
 		c := buk.Cursor()
 
@@ -247,15 +250,12 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 	err = m.MainDB.View(func(tx *bolt.Tx) error {
 		root := logic.GetMetadataBucket(tx)
 		if root == nil {
-			return ErrNotFound
+			return usecase.ErrNotFound
 		}
 		cur := root.Cursor()
 		var k, v []byte
 		if prefix != "" {
 			k, v = cur.Seek(util.StrToBytes(prefix))
-			if !strings.HasPrefix(util.BytesToStr(k), prefix) {
-				return nil
-			}
 			defer func() { total = len(lst) }()
 		} else {
 			k, v = cur.First()
@@ -279,7 +279,7 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 	return
 }
 
-func (m *MetadataRepo) Snapshot() (SnapshotTx, error) {
+func (m *MetadataRepo) Snapshot() (usecase.SnapshotTx, error) {
 	return m.MainDB.DB().Begin(false)
 }
 
@@ -309,7 +309,7 @@ func (m *MetadataRepo) ForeachVersionBytes(name string, fn func([]byte) bool) {
 	_ = m.MainDB.View(func(tx *bolt.Tx) error {
 		_ = logic.GetVersionBucket(tx, name).ForEach(func(k, v []byte) error {
 			if !fn(v) {
-				return ErrNotFound
+				return usecase.ErrNotFound
 			}
 			return nil
 		})

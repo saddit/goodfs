@@ -12,13 +12,13 @@ type Server struct {
 	netHttp.Server
 }
 
-func NewHttpServer(addr string, service IMetadataService) *Server {
+func NewHttpServer(addr string, service IMetadataService, bucketService BucketService) *Server {
 	engine := gin.Default()
 	engine.Use(CheckLeaderInRaftMode, CheckKeySlot)
 	//Http router
 	NewMetadataController(service).RegisterRoute(engine)
 	NewVersionController(service).RegisterRoute(engine)
-
+	NewBucketController(bucketService).RegisterRoute(engine)
 	return &Server{netHttp.Server{
 		Addr:    addr,
 		Handler: engine,

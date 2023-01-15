@@ -8,6 +8,7 @@ import (
 	"metaserver/internal/controller/http"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
+	"metaserver/internal/usecase/raftimpl"
 	"metaserver/internal/usecase/repo"
 	"metaserver/internal/usecase/service"
 )
@@ -26,9 +27,11 @@ func Run(cfg *Config) {
 		repo.NewBatchRepo(pool.Storage),
 		repo.NewHashIndexRepo(pool.Storage),
 	)
-	hsService := service.NewHashSlotService(pool.HashSlot, metaService, &cfg.HashSlot)
-	grpcServer, pool.RaftWrapper = grpc.NewRpcServer(cfg.Cluster, metaRepo, metaService, hsService)
-	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService)
+	bucketRepo := repo.NewBucketRepo(pool.Storage, repo.NewBucketCacheRepo(pool.Cache))
+	bucketServ := service.NewBucketService(bucketRepo)
+	hsService := service.NewHashSlotService(pool.HashSlot, metaService, bucketServ, &cfg.HashSlot)
+	grpcServer, pool.RaftWrapper = grpc.NewRpcServer(cfg.Cluster, raftimpl.NewFSM(metaRepo, bucketRepo), metaService, hsService)
+	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService, bucketServ)
 	// register on leader change
 	pool.RaftWrapper.RegisterLeaderChangedEvent(hsService)
 	pool.RaftWrapper.RegisterLeaderChangedEvent(logic.NewRegistry())

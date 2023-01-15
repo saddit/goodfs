@@ -1,6 +1,7 @@
 package service
 
 import (
+	"common/graceful"
 	"common/hashslot"
 	"common/logs"
 	"common/pb"
@@ -17,23 +18,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tinylib/msgp/msgp"
 	"google.golang.org/grpc"
 )
 
+var (
+	hsLog = logs.New("hash-slot-migration")
+)
+
 type HashSlotService struct {
-	Store        *db.HashSlotDB
-	Serivce      usecase.IMetadataService
-	Cfg          *config.HashSlotConfig
-	startReceive func()
+	Store         *db.HashSlotDB
+	Service       usecase.IMetadataService
+	BucketService usecase.BucketService
+	Cfg           *config.HashSlotConfig
+	startReceive  func()
 }
 
-func NewHashSlotService(st *db.HashSlotDB, serv usecase.IMetadataService, cfg *config.HashSlotConfig) *HashSlotService {
+func NewHashSlotService(st *db.HashSlotDB, serv usecase.IMetadataService, bucketService usecase.BucketService, cfg *config.HashSlotConfig) *HashSlotService {
 	return &HashSlotService{
-		Store:        st,
-		Serivce:      serv,
-		Cfg:          cfg,
-		startReceive: func() {},
+		Store:         st,
+		Service:       serv,
+		BucketService: bucketService,
+		Cfg:           cfg,
+		startReceive:  func() {},
 	}
 }
 
@@ -186,24 +192,28 @@ func (h *HashSlotService) FinishReceiveItem(success bool) error {
 
 func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 	h.startReceive()
-	logData := &entity.RaftData{
-		Version:  &entity.Version{},
-		Metadata: &entity.Metadata{},
-	}
-	if err := util.DecodeMsgp(
-		util.IfElse[msgp.Unmarshaler](item.IsVersion, logData.Version, logData.Metadata),
-		item.Data,
-	); err != nil {
-		return err
-	}
-	if item.IsVersion {
-		if err := h.Serivce.ReceiveVersion(item.Name, logData.Version); err != nil {
-			if errors.Is(err, usecase.ErrExists) {
-				return nil
-			}
+	var err error
+	switch entity.Dest(item.Dest) {
+	case entity.DestVersion:
+		var i entity.Version
+		if err = util.DecodeMsgp(&i, item.Data); err != nil {
 			return err
 		}
-	} else if err := h.Serivce.AddMetadata(logData.Metadata); err != nil {
+		err = h.Service.ReceiveVersion(item.Name, &i)
+	case entity.DestMetadata:
+		var i entity.Metadata
+		if err = util.DecodeMsgp(&i, item.Data); err != nil {
+			return err
+		}
+		err = h.Service.AddMetadata(&i)
+	case entity.DestBucket:
+		var i entity.Bucket
+		if err = util.DecodeMsgp(&i, item.Data); err != nil {
+			return err
+		}
+		err = h.BucketService.Create(&i)
+	}
+	if err != nil {
 		if errors.Is(err, usecase.ErrExists) {
 			return nil
 		}
@@ -215,7 +225,6 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 // AutoMigrate migrate data
 //TODO(perf): multi goroutine
 func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) error {
-	logger := logs.New("hash-slot-migration")
 	if ok, host, _ := h.Store.GetMigrateTo(); !ok || host != toLoc.GetHost() {
 		return fmt.Errorf("no ready to migrate to %s", toLoc.GetHost())
 	}
@@ -232,80 +241,13 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 		return err
 	}
 	delEdges, _ := hashslot.WrapSlotsToEdges(slots, "")
-	migKeys := h.Serivce.FilterKeys(func(s string) bool {
-		return hashslot.IsSlotInEdges(hashslot.CalcBytesSlot(util.StrToBytes(s)), delEdges)
-	})
-	logger.Debugf("migration keys:\n %v", migKeys)
 	var errs []error
-	var sucNum int
-	for _, key := range migKeys {
-		// get data
-		data, err := h.Serivce.GetMetadataBytes(key)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		// send data
-		if err := stream.Send(&pb.MigrationItem{
-			Name: key,
-			Data: data,
-		}); err != nil {
-			logger.Debugf("send metadata %s err: %s", key, err)
-			errs = append(errs, err)
-			continue
-		}
-		// recv response
-		resp, err := stream.Recv()
-		if err != nil {
-			logger.Debugf("recv send-metadata %s response err: %s", key, err)
-			errs = append(errs, err)
-			continue
-		} else if !resp.Success {
-			logger.Debugf("send-metadata %s recv failure resposne: %s", key, resp.Message)
-			errs = append(errs, errors.New(resp.Message))
-			continue
-		}
-		// start send versions
-		allVersionSuccess := true
-		h.Serivce.ForeachVersionBytes(key, func(b []byte) bool {
-			// send version
-			if err := stream.Send(&pb.MigrationItem{
-				Name:      key,
-				Data:      b,
-				IsVersion: true,
-			}); err != nil {
-				errs = append(errs, err)
-				allVersionSuccess = false
-				logger.Debugf("send-metadata-version %s err: %s", key, err)
-			}
-			// recv response
-			resp, err := stream.Recv()
-			if err != nil {
-				errs = append(errs, err)
-				allVersionSuccess = false
-				logger.Debugf("send-metadata-version %s recv err: %s", key, err)
-			} else if !resp.Success {
-				errs = append(errs, errors.New(resp.Message))
-				allVersionSuccess = false
-				logger.Debugf("send-metadata-version %s recv failure resposne: %s", key, resp.Message)
-			}
-			return true
-		})
-		// delete if all success
-		if allVersionSuccess {
-			if err := h.Serivce.RemoveMetadata(key); err != nil {
-				errs = append(errs, err)
-				logger.Debugf("delete-metadata %s err: %s", key, err)
-			} else {
-				sucNum++
-			}
-		}
-	}
-	if err := h.Store.FinishMigrateTo(); err != nil {
+	errs = append(errs, h.migrateMetadata(stream, delEdges)...)
+	errs = append(errs, h.migrateBuckets(stream, delEdges)...)
+	if err = h.Store.FinishMigrateTo(); err != nil {
 		errs = append(errs, err)
-		logger.Debugf("switch status to normal err: %s", err)
+		hsLog.Debugf("switch status to normal err: %s", err)
 	}
-	logger.Infof("migration totally %d metadata and successed %d verions", len(migKeys), sucNum)
 	if len(errs) > 0 {
 		sb := strings.Builder{}
 		sb.WriteString("occurred errors:")
@@ -313,7 +255,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 			sb.WriteRune('\n')
 			sb.WriteString(err.Error())
 		}
-		logger.Error(sb.String())
+		hsLog.Error(sb.String())
 		return errors.New("migrate partly fails, please retry again")
 	}
 	// all migrate success
@@ -330,8 +272,142 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	}
 	// close stream as success
 	if err := stream.CloseSend(); err != nil {
-		logger.Error(err)
+		hsLog.Error(err)
 	}
-	logger.Infof("finish migration to %s success", toLoc.Host)
+	hsLog.Infof("finish migration to %s success", toLoc.Host)
 	return nil
+}
+
+func (h *HashSlotService) migrateMetadata(stream pb.HashSlot_StreamingReceiveClient, edges hashslot.EdgeList) (errs []error) {
+	var sucNum int
+	metaKeys := h.Service.FilterKeys(func(s string) bool {
+		return hashslot.IsSlotInEdges(hashslot.CalcBytesSlot(util.StrToBytes(s)), edges)
+	})
+	total := len(metaKeys)
+	// send all metadata and versions
+	for len(metaKeys) > 0 {
+		key := metaKeys[0]
+		metaKeys = metaKeys[1:] // for earlier GC
+		data, err := h.Service.GetMetadataBytes(key)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		// send data
+		if err := stream.Send(&pb.MigrationItem{
+			Name: key,
+			Data: data,
+			Dest: int32(entity.DestMetadata),
+		}); err != nil {
+			hsLog.Debugf("send metadata %s err: %s", key, err)
+			errs = append(errs, err)
+			continue
+		}
+		// recv response
+		resp, err := stream.Recv()
+		if err != nil {
+			hsLog.Debugf("recv send-metadata %s response err: %s", key, err)
+			errs = append(errs, err)
+			continue
+		} else if !resp.Success {
+			hsLog.Debugf("send-metadata %s recv failure resposne: %s", key, resp.Message)
+			errs = append(errs, errors.New(resp.Message))
+			continue
+		}
+		// start send versions
+		allVersionSuccess := true
+		h.Service.ForeachVersionBytes(key, func(b []byte) bool {
+			// send version
+			if err := stream.Send(&pb.MigrationItem{
+				Name: key,
+				Data: b,
+				Dest: int32(entity.DestVersion),
+			}); err != nil {
+				errs = append(errs, err)
+				allVersionSuccess = false
+				hsLog.Debugf("send-metadata-version %s err: %s", key, err)
+			}
+			// recv response
+			resp, err := stream.Recv()
+			if err != nil {
+				errs = append(errs, err)
+				allVersionSuccess = false
+				hsLog.Debugf("send-metadata-version %s recv err: %s", key, err)
+			} else if !resp.Success {
+				errs = append(errs, errors.New(resp.Message))
+				allVersionSuccess = false
+				hsLog.Debugf("send-metadata-version %s recv failure resposne: %s", key, resp.Message)
+			}
+			return true
+		})
+		if !allVersionSuccess {
+			continue
+		}
+		sucNum++
+		// delete if all success
+		go func() {
+			defer graceful.Recover()
+			if err := h.Service.RemoveMetadata(key); err != nil {
+				hsLog.Errorf("delete-metadata %s fail: %s", key, err)
+			}
+		}()
+	}
+	hsLog.Infof("migration totally %d metadata and successed %d verions", total, sucNum)
+	return
+}
+
+func (h *HashSlotService) migrateBuckets(stream pb.HashSlot_StreamingReceiveClient, edges hashslot.EdgeList) (errs []error) {
+	var successBuckets int
+	var migKeys [][]byte
+	err := h.BucketService.Foreach(func(k []byte, _ []byte) error {
+		if !hashslot.IsSlotInEdges(hashslot.CalcBytesSlot(k), edges) {
+			return nil
+		}
+		migKeys = append(migKeys, k)
+		return nil
+	})
+	total := len(migKeys)
+	for len(migKeys) > 0 {
+		k := migKeys[0]
+		migKeys = migKeys[1:] // for earlier GC
+		keyStr := util.BytesToStr(k)
+		v, err := h.BucketService.GetBytes(keyStr)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		// send data
+		if err := stream.Send(&pb.MigrationItem{
+			Name: keyStr,
+			Data: v,
+			Dest: int32(entity.DestBucket),
+		}); err != nil {
+			hsLog.Debugf("send bucket %s err: %s", keyStr, err)
+			errs = append(errs, err)
+			continue
+		}
+		// recv response
+		resp, err := stream.Recv()
+		if err != nil {
+			hsLog.Debugf("recv send-bucket %s response err: %s", keyStr, err)
+			errs = append(errs, err)
+			continue
+		} else if !resp.Success {
+			hsLog.Debugf("send-bucket %s recv failure resposne: %s", keyStr, resp.Message)
+			errs = append(errs, errors.New(resp.Message))
+			continue
+		}
+		successBuckets++
+		go func() {
+			defer graceful.Recover()
+			if err := h.BucketService.Remove(keyStr); err != nil {
+				hsLog.Errorf("delete-bucket %s err: %s", keyStr, err)
+			}
+		}()
+	}
+	if err != nil {
+		errs = append(errs, err)
+	}
+	hsLog.Infof("migration totally %d buckets and successed %d", total, successBuckets)
+	return
 }
