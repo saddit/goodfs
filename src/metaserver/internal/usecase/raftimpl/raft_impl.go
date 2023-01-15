@@ -6,7 +6,9 @@ import (
 	"common/logs"
 	"common/util"
 	"fmt"
+	transport "github.com/Jille/raft-grpc-transport"
 	"github.com/hashicorp/go-hclog"
+	"google.golang.org/grpc"
 	"metaserver/config"
 	. "metaserver/internal/usecase"
 	"os"
@@ -21,6 +23,7 @@ var raftLog = logs.New("raft-impl")
 
 type RaftWrapper struct {
 	Raft                *raft.Raft
+	Manager             *transport.Manager
 	ID                  string
 	Address             string
 	Enabled             bool
@@ -32,7 +35,11 @@ func NewDisabledRaft() *RaftWrapper {
 	return &RaftWrapper{Enabled: false}
 }
 
-func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *RaftWrapper {
+func NewRaft(cfg config.ClusterConfig, fsm raft.FSM) *RaftWrapper {
+	if !cfg.Enable {
+		return NewDisabledRaft()
+	}
+	manager := transport.New(raft.ServerAddress(util.GetHostPort(cfg.Port)), []grpc.DialOption{grpc.WithInsecure()})
 	baseDir := cfg.StoreDir
 
 	c := raft.DefaultConfig()
@@ -45,7 +52,7 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *RaftWra
 	})
 	ldb, sdb, fss := newRaftStore(baseDir)
 
-	r, err := raft.NewRaft(c, fsm, ldb, sdb, fss, ts)
+	r, err := raft.NewRaft(c, fsm, ldb, sdb, fss, manager.Transport())
 	if err != nil {
 		panic(fmt.Errorf("raft.NewRaft: %v", err))
 	}
@@ -76,7 +83,13 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM, ts raft.Transport) *RaftWra
 		}()
 	}
 
-	rw := &RaftWrapper{Raft: r, ID: cfg.ID, Address: util.GetHostPort(cfg.Port), Enabled: true}
+	rw := &RaftWrapper{
+		Raft:    r,
+		Manager: manager,
+		ID:      cfg.ID,
+		Address: util.GetHostPort(cfg.Port),
+		Enabled: true,
+	}
 	rw.subscribeLeaderCh()
 
 	return rw

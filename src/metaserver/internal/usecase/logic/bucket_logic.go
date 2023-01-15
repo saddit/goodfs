@@ -73,6 +73,8 @@ func (b *BucketCrud) Create(data *entity.Bucket) usecase.TxFunc {
 		if root.Get(key) != nil {
 			return usecase.ErrExists
 		}
+		data.CreateTime = time.Now().UnixMilli()
+		data.UpdateTime = data.CreateTime
 		v, err := util.EncodeMsgp(data)
 		if err != nil {
 			return err
@@ -143,6 +145,7 @@ func (b *BucketCrud) List(prefix string, limit int, res *[]*entity.Bucket, total
 				return err
 			}
 			*res = append(*res, &i)
+			k, v = cur.Next()
 		}
 		return nil
 	}

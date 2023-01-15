@@ -6,6 +6,8 @@ import (
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	. "metaserver/internal/usecase"
+	"metaserver/internal/usecase/logic"
+	"net/http"
 	"sort"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +24,7 @@ func NewMetadataController(service IMetadataService) *MetadataController {
 func (m *MetadataController) RegisterRoute(engine gin.IRouter) {
 	engine.PUT("/metadata/:name", m.Put)
 	engine.POST("/metadata", m.Post)
+	engine.POST("/metadata/", m.Post)
 	engine.GET("/metadata/:name", m.Get)
 	engine.DELETE("/metadata/:name", m.Delete)
 	engine.GET("/metadata/list", m.List)
@@ -31,6 +34,11 @@ func (m *MetadataController) Post(g *gin.Context) {
 	var data entity.Metadata
 	if err := g.ShouldBindJSON(&data); err != nil {
 		response.FailErr(err, g)
+		return
+	}
+	// post request has not 'name' param. need check again here
+	if ok, other := logic.NewHashSlot().IsKeyOnThisServer(data.Name); !ok {
+		response.Exec(g).Redirect(http.StatusSeeOther, other)
 		return
 	}
 	if err := m.service.AddMetadata(&data); err != nil {

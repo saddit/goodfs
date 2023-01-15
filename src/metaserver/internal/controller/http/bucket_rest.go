@@ -5,6 +5,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
+	"metaserver/internal/usecase/logic"
+	"net/http"
 )
 
 type BucketController struct {
@@ -18,6 +20,7 @@ func NewBucketController(service usecase.BucketService) *BucketController {
 func (b *BucketController) RegisterRoute(route gin.IRouter) {
 	rt := route.Group("bucket")
 	rt.POST("/", b.CreateNew)
+	rt.POST("", b.CreateNew)
 	rt.DELETE("/:name", b.Delete)
 	rt.GET("/:name", b.Get)
 	rt.GET("/list", b.List)
@@ -44,6 +47,11 @@ func (b *BucketController) CreateNew(c *gin.Context) {
 		response.BadRequestMsg("name required", c)
 		return
 	}
+	// post request has not 'name' param. need check again here
+	if ok, other := logic.NewHashSlot().IsKeyOnThisServer(data.Name); !ok {
+		response.Exec(c).Redirect(http.StatusSeeOther, other)
+		return
+	}
 	if err := b.service.Create(&data); err != nil {
 		response.FailErr(err, c)
 		return
@@ -59,7 +67,7 @@ func (b *BucketController) Update(c *gin.Context) {
 		return
 	}
 	data.Name = name
-	if err := b.service.Create(&data); err != nil {
+	if err := b.service.Update(&data); err != nil {
 		response.FailErr(err, c)
 		return
 	}
@@ -78,9 +86,9 @@ func (b *BucketController) Delete(c *gin.Context) {
 func (b *BucketController) List(c *gin.Context) {
 	req := &struct {
 		Prefix   string `form:"prefix"`
-		PageSize int    `form:"page_size" binding:"required"`
+		PageSize int    `form:"page_size" binding:"required,lte=10000"`
 	}{}
-	if err := c.ShouldBindJSON(req); err != nil {
+	if err := c.ShouldBindQuery(req); err != nil {
 		response.FailErr(err, c)
 		return
 	}

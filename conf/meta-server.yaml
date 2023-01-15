@@ -3,7 +3,7 @@ rpc-port: "4090"
 log-level: ""
 data-dir: e:/file/temp
 cluster:
-  enable: true
+  enable: false
   bootstrap: false
   group-id: raft-0
   election-timeout: 900ms

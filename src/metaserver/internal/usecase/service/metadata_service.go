@@ -6,7 +6,6 @@ import (
 	"errors"
 	"metaserver/internal/entity"
 	usecase "metaserver/internal/usecase"
-	"metaserver/internal/usecase/pool"
 	"metaserver/internal/usecase/raftimpl"
 	"strings"
 )
@@ -18,8 +17,8 @@ type MetadataService struct {
 	hashIndex usecase.IHashIndexRepo
 }
 
-func NewMetadataService(repo usecase.IMetadataRepo, batch usecase.IBatchMetaRepo, hashIndex usecase.IHashIndexRepo) *MetadataService {
-	return &MetadataService{raftimpl.RaftApplier(pool.RaftWrapper), repo, batch, hashIndex}
+func NewMetadataService(repo usecase.IMetadataRepo, batch usecase.IBatchMetaRepo, hashIndex usecase.IHashIndexRepo, rw *raftimpl.RaftWrapper) *MetadataService {
+	return &MetadataService{raftimpl.RaftApplier(rw), repo, batch, hashIndex}
 }
 
 func (m *MetadataService) AddMetadata(data *entity.Metadata) error {

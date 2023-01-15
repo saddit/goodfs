@@ -23,6 +23,47 @@ var (
 	url    = "http://codespaces-409403:8010"
 )
 
+func TestClearEtcd(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username:  "root",
+		Password:  "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := etcd.Delete(context.Background(), cst.EtcdPrefix.HashSlot, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cst.EtcdPrefix.HashSlot, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.PeersInfo, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cst.EtcdPrefix.PeersInfo, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.Registry, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cst.EtcdPrefix.Registry, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.ObjectCap, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cst.EtcdPrefix.ObjectCap, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.ApiCredential, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cst.EtcdPrefix.ApiCredential, resp.Deleted)
+	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.SystemInfo, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cst.EtcdPrefix.SystemInfo, resp.Deleted)
+}
+
 func TestPostAPI(t *testing.T) {
 	data := &entity.Metadata{
 		Name: "test.txt",
@@ -129,47 +170,6 @@ func TestGetPeersInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(cst.EtcdPrefix.PeersInfo, resp.Kvs)
-}
-
-func TestClearEtcd(t *testing.T) {
-	etcd, err := clientv3.New(clientv3.Config{
-		Endpoints: []string{"pressed.top:2379"},
-		Username:  "root",
-		Password:  "xianka",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := etcd.Delete(context.Background(), cst.EtcdPrefix.HashSlot, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.HashSlot, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.PeersInfo, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.PeersInfo, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.Registry, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.Registry, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.ObjectCap, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.ObjectCap, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.ApiCredential, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.ApiCredential, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.SystemInfo, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.SystemInfo, resp.Deleted)
 }
 
 func TestCalcHashSlot(t *testing.T) {

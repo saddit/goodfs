@@ -3,7 +3,6 @@ package service
 import (
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
-	"metaserver/internal/usecase/pool"
 	"metaserver/internal/usecase/raftimpl"
 )
 
@@ -12,8 +11,8 @@ type BucketService struct {
 	usecase.RaftApply
 }
 
-func NewBucketService(repo usecase.BucketRepo) *BucketService {
-	return &BucketService{BucketRepo: repo, RaftApply: raftimpl.RaftApplier(pool.RaftWrapper)}
+func NewBucketService(repo usecase.BucketRepo, rw *raftimpl.RaftWrapper) *BucketService {
+	return &BucketService{BucketRepo: repo, RaftApply: raftimpl.RaftApplier(rw)}
 }
 
 func (b *BucketService) Create(bucket *entity.Bucket) error {
