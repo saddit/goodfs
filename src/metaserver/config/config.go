@@ -30,13 +30,20 @@ type Config struct {
 	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	HashSlot    HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
 	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+	DataPath    string          `yaml:"-" env:"-"`
 	filePath    string          `yaml:"-" env:"-"`
-	persistLock *sync.Mutex     `yaml:"-" env:"-"`
+	persistLock sync.Locker     `yaml:"-" env:"-"`
 }
 
 func (c *Config) initialize(filePath string) {
 	c.filePath, _ = filepath.Abs(filePath)
 	c.persistLock = &sync.Mutex{}
+	if c.DataDir == "" {
+		c.DataPath = os.TempDir()
+	}
+	c.DataPath = filepath.Join(c.DataDir, c.Registry.ServerID)
+	c.Cluster.StoreDir = c.DataPath
+	c.Cluster.LogLevel = string(c.Log.Level)
 	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {
 		c.Cluster.ID = c.Registry.ServerID
@@ -65,8 +72,8 @@ func (c *Config) Persist() error {
 }
 
 type CacheConfig struct {
-	TTL           time.Duration     `yaml:"ttl" env:"TTL" env-default:"1h"`
-	CleanInterval time.Duration     `yaml:"clean-interval" env:"CLEAN_INTERVAL" env-default:"1h"`
+	TTL           time.Duration     `yaml:"ttl" env:"TTL" env-default:"20m"`
+	CleanInterval time.Duration     `yaml:"clean-interval" env:"CLEAN_INTERVAL" env-default:"10m"`
 	MaxSize       datasize.DataSize `yaml:"max-size" env:"MAX_SIZE" env-default:"128MB"`
 }
 
@@ -79,13 +86,13 @@ type HashSlotConfig struct {
 type ClusterConfig struct {
 	Enable           bool          `yaml:"enable" env:"ENABLE" env-default:"false"`
 	Bootstrap        bool          `yaml:"bootstrap" env:"BOOTSTRAP" env-default:"false"`
-	ID               string        `yaml:"-" env:"-"` //ID equals to Registry.ServerId
-	Port             string        `yaml:"-" env:"-"` //Port equals to Config.RpcPort
 	GroupID          string        `yaml:"group-id" env:"GROUP_ID" env-default:"raft"`
-	LogLevel         string        `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
-	StoreDir         string        `yaml:"store-dir" env:"STORE_DIR" env-default:"/tmp/goodfs_metaserver"`
 	ElectionTimeout  time.Duration `yaml:"election-timeout" env:"ELECTION_TIMEOUT" env-default:"900ms"`
 	HeartbeatTimeout time.Duration `yaml:"heartbeat-timeout" env:"HEARTBEAT_TIMEOUT" env-default:"800ms"`
+	ID               string        `yaml:"-" env:"-"` //ID equals to Registry.ServerId
+	Port             string        `yaml:"-" env:"-"` //Port equals to Config.RpcPort
+	LogLevel         string        `yaml:"-" env:"-"`
+	StoreDir         string        `yaml:"-" env:"-"`
 	Nodes            []string      `yaml:"nodes" env:"NODES" env-separator:","`
 }
 

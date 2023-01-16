@@ -1,17 +1,18 @@
 port: "8090"
 rpc-port: "4090"
-log-level: ""
-data-dir: e:/file/temp/meta_server_0
+data-dir: e:\file\temp
+log:
+  level: debug
+  store-dir: ""
 cluster:
   enable: false
   bootstrap: false
   group-id: raft-0
-  log-level: INFO
-  store-dir: e:/file/temp/meta_server_raft_0
   election-timeout: 900ms
   heartbeat-timeout: 800ms
   nodes:
     - meta-0,localhost:4090
+    - meta-1,localhost:4091
 registry:
   server-id: meta-0
   group: goodfs

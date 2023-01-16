@@ -31,8 +31,10 @@ func NewCache(config bigcache.Config) *Cache {
 }
 
 func GetGob[T interface{}](c ICache, k string) (*T, bool) {
+	var res T
 	if bt := c.Get(k); bt != nil {
-		return util.GobDecodeGen[T](bt)
+		ok := util.GobDecode(bt, &res)
+		return &res, ok
 	}
 	return nil, false
 }

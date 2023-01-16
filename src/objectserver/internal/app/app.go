@@ -1,30 +1,17 @@
 package app
 
 import (
-	"common/cst"
 	"common/graceful"
 	"common/util"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
-	"os"
-
 	"objectserver/internal/controller/http"
 	"objectserver/internal/controller/locate"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
 )
 
-func initDir(cfg *config.Config) {
-	if e := os.MkdirAll(cfg.TempPath, cst.OS.ModeUser); e != nil {
-		panic(e)
-	}
-	if e := os.MkdirAll(cfg.StoragePath, cst.OS.ModeUser); e != nil {
-		panic(e)
-	}
-}
-
 func Run(cfg *config.Config) {
-	initDir(cfg)
 	//init components
 	pool.InitPool(cfg)
 	defer pool.Close()

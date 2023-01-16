@@ -12,13 +12,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
-func GetMetadata(ip, name string, verNum int32) (*entity.Metadata, error) {
+func GetMetadata(ip, name string, verNum int32, withExtra bool) (*entity.Metadata, error) {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
-	resp, err := pool.Http.Get(fmt.Sprint(metaRest(ip, name), "?version=", verNum))
+	resp, err := pool.Http.Get(fmt.Sprintf("%s?version=%d&with_extra=%t", metaRest(ip, name), verNum, withExtra))
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +37,7 @@ func PostMetadata(ip string, data entity.Metadata) error {
 	if err != nil {
 		return err
 	}
-	resp, err := pool.Http.Post(metaRest(ip, ""), request.ContentTypeJSON, bytes.NewBuffer(bt))
+	resp, err := pool.Http.Post(metaRest(ip, url.PathEscape(fmt.Sprint(data.Bucket, "/", data.Name))), request.ContentTypeJSON, bytes.NewBuffer(bt))
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,8 @@ func PutMetadata(ip string, data entity.Metadata) error {
 	if err != nil {
 		return err
 	}
-	req, err := request.GetPutReq(bytes.NewBuffer(bt), metaRest(ip, data.Name), request.ContentTypeJSON)
+	id := url.PathEscape(fmt.Sprint(data.Bucket, "/", data.Name))
+	req, err := request.GetPutReq(bytes.NewBuffer(bt), metaRest(ip, id), request.ContentTypeJSON)
 	if err != nil {
 		return err
 	}
@@ -111,10 +113,10 @@ func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
 	return util.UnmarshalPtrFromIO[entity.Version](resp.Body)
 }
 
-func ListVersion(ip, name string, page, pageSize int) ([]byte, int, error) {
+func ListVersion(ip, id string, page, pageSize int) ([]byte, int, error) {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
-	resp, err := pool.Http.Get(versionListRest(ip, name, page, pageSize))
+	resp, err := pool.Http.Get(versionListRest(ip, id, page, pageSize))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -127,14 +129,14 @@ func ListVersion(ip, name string, page, pageSize int) ([]byte, int, error) {
 	return bt, total, err
 }
 
-func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
+func PostVersion(ip, id string, body *entity.Version) (uint64, error) {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	bt, err := json.Marshal(body)
 	if err != nil {
 		return 0, err
 	}
-	resp, err := pool.Http.Post(versionRest(ip, name), request.ContentTypeJSON, bytes.NewBuffer(bt))
+	resp, err := pool.Http.Post(versionRest(ip, id), request.ContentTypeJSON, bytes.NewBuffer(bt))
 	if err != nil {
 		return 0, err
 	}
@@ -144,14 +146,14 @@ func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
 	return util.ToUint64(resp.Header.Get("Version")), nil
 }
 
-func PutVersion(ip, name string, body *entity.Version) error {
+func PutVersion(ip, id string, body *entity.Version) error {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	bt, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
-	req, err := request.GetPutReq(bytes.NewBuffer(bt), versionNumRest(ip, name, body.Sequence), request.ContentTypeJSON)
+	req, err := request.GetPutReq(bytes.NewBuffer(bt), versionNumRest(ip, id, body.Sequence), request.ContentTypeJSON)
 	if err != nil {
 		return err
 	}

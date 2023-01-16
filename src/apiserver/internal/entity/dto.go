@@ -16,30 +16,33 @@ type SyncTyping string
 
 type PutResp struct {
 	Name    string `json:"name"`
+	Bucket  string `json:"bucket"`
 	Version int32  `json:"version"`
 }
 
 type PutReq struct {
-	Name     string `uri:"name" binding:"required"`
-	Hash     string `header:"digest" binding:"required"`
-	Ext      string
-	FileName string
-	Locate   []string
-	Store    ObjectStrategy `form:"ss"`
-	Body     io.Reader
+	Store  ObjectStrategy `form:"ss"`
+	Name   string         `uri:"name" binding:"required"`
+	Bucket string         `header:"bucket" binding:"required"`
+	Hash   string         `header:"digest" binding:"required"`
+	Ext    string
+	Locate []string
+	Body   io.Reader
 }
 
 type GetReq struct {
 	Name    string `uri:"name" binding:"required"`
+	Bucket  string `header:"bucket" binding:"required"`
 	Version int32  `form:"version" binding:"min=0"`
 	Range   request.Range
 }
 
 type BigPostReq struct {
-	Name string `uri:"name" binding:"required"`
-	Hash string `header:"digest" binding:"required"`
-	Size int64  `header:"size" binding:"required"`
-	Ext  string
+	Name   string `uri:"name" binding:"required"`
+	Bucket string `header:"bucket" binding:"required"`
+	Hash   string `header:"digest" binding:"required"`
+	Size   int64  `header:"size" binding:"required"`
+	Ext    string
 }
 
 type BigPutReq struct {
@@ -71,7 +74,7 @@ func (bigPut *BigPutReq) Bind(c *gin.Context) error {
 }
 
 func (p *PutReq) Bind(c *gin.Context) error {
-	if err := BindAll(c, p, binding.Query, binding.Header, binding.Uri); err != nil {
+	if err := BindAll(c, p, binding.Uri, binding.Header, binding.Query); err != nil {
 		return err
 	}
 	return nil
@@ -79,7 +82,7 @@ func (p *PutReq) Bind(c *gin.Context) error {
 
 func (g *GetReq) Bind(c *gin.Context) error {
 	g.Version = int32(VerModeLast)
-	if err := BindAll(c, g, binding.Query, binding.Uri); err != nil {
+	if err := BindAll(c, g, binding.Uri, binding.Header, binding.Query); err != nil {
 		return err
 	}
 	if rangeStr := c.GetHeader("Range"); len(rangeStr) > 0 {

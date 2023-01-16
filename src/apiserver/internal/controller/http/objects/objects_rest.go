@@ -31,7 +31,8 @@ func (oc *ObjectsController) Put(c *gin.Context) {
 		return
 	}
 	verNum, err := oc.objectService.StoreObject(req, &entity.Metadata{
-		Name: req.Name,
+		Name:   req.Name,
+		Bucket: req.Bucket,
 		Versions: []*entity.Version{{
 			Size:          c.Request.ContentLength,
 			Hash:          req.Hash,
@@ -46,6 +47,7 @@ func (oc *ObjectsController) Put(c *gin.Context) {
 
 	response.CreatedJson(&entity.PutResp{
 		Name:    req.Name,
+		Bucket:  req.Bucket,
 		Version: verNum,
 	}, c)
 }
@@ -57,7 +59,7 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 		return
 	}
 	// get metadata
-	metaData, err := oc.metaService.GetMetadata(req.Name, req.Version)
+	metaData, err := oc.metaService.GetMetadata(req.Name, req.Bucket, req.Version, false)
 	if err != nil {
 		response.FailErr(err, c).Abort()
 		return

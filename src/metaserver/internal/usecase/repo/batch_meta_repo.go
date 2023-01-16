@@ -41,11 +41,11 @@ func (br *BatchMetaRepo) RemoveVersion(name string, ver uint64) error {
 	return br.Storage.DB().Batch(logic.RemoveVer(name, ver))
 }
 
-func (br *BatchMetaRepo) AddMetadata(data *entity.Metadata) error {
+func (br *BatchMetaRepo) AddMetadata(id string, data *entity.Metadata) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
-	return br.Storage.DB().Batch(logic.AddMeta(data))
+	return br.Storage.DB().Batch(logic.AddMeta(id, data))
 }
 
 func (br *BatchMetaRepo) UpdateMetadata(name string, data *entity.Metadata) error {

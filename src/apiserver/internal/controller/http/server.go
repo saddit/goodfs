@@ -6,6 +6,7 @@ import (
 	. "apiserver/internal/usecase"
 	"apiserver/internal/usecase/componet/auth"
 	"apiserver/internal/usecase/pool"
+	"apiserver/internal/usecase/repo"
 	"common/logs"
 	netHttp "net/http"
 
@@ -16,7 +17,7 @@ type Server struct {
 	netHttp.Server
 }
 
-func NewHttpServer(addr string, o IObjectService, m IMetaService) *Server {
+func NewHttpServer(addr string, o IObjectService, m IMetaService, b repo.IBucketRepo) *Server {
 	authMid := auth.AuthenticationMiddleware(&pool.Config.Auth,
 		auth.NewCallbackValidator(pool.Http, &pool.Config.Auth.Callback),
 		auth.NewPasswordValidator(pool.Etcd, &pool.Config.Auth.Password),
@@ -30,10 +31,11 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService) *Server {
 
 	//rest api
 	objects.NewObjectsController(o, m).Register(authRoute)
-	big.NewBigObjectsController(o, m).Register(authRoute)
+	big.NewBigObjectsController(o, m, b).Register(authRoute)
 	NewLocateController(o).Register(authRoute)
 	NewMetadataController(m).Register(authRoute)
 	NewSecurityController().Register(authRoute)
+	NewBucketController(b).Register(authRoute)
 
 	return &Server{netHttp.Server{Addr: addr, Handler: eng}}
 }

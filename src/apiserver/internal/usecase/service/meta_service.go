@@ -4,8 +4,6 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/repo"
-	"common/response"
-	"net/http"
 )
 
 type MetaService struct {
@@ -17,36 +15,29 @@ func NewMetaService(repo repo.IMetadataRepo, versionRepo repo.IVersionRepo) *Met
 	return &MetaService{repo: repo, versionRepo: versionRepo}
 }
 
-func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
-	ver := md.Versions[0]
-	metaD, err := m.repo.FindByNameWithVersion(md.Name, entity.VerModeNot)
-
-	switch err := err.(type) {
-	case response.IResponseErr:
-		// if err is NotFound error
-		if err.GetStatus() == http.StatusNotFound {
-			if _, err := m.repo.Insert(md); err != nil {
-				return 0, err
-			}
-		}
-	case nil:
-		if _, err = m.versionRepo.Add(metaD.Name, ver); err != nil {
-			return 0, err
-		}
-	default:
-		return 0, err
-	}
-
-	return ver.Sequence, nil
+func (m *MetaService) AddVersion(name, bucket string, version *entity.Version) (int32, error) {
+	return m.versionRepo.Add(name, bucket, version)
 }
 
-func (m *MetaService) UpdateVersion(name string, version *entity.Version) (err error) {
-	err = m.versionRepo.Update(name, version)
+func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
+	res, err := m.repo.Insert(md)
+	if err != nil {
+		return 0, err
+	}
+	return res.Versions[0].Sequence, nil
+}
+
+func (m *MetaService) UpdateVersion(name, bucket string, version *entity.Version) (err error) {
+	err = m.versionRepo.Update(name, bucket, version)
 	return
 }
 
-func (m *MetaService) GetVersion(name string, version int32) (*entity.Version, error) {
-	res, err := m.versionRepo.Find(name, version)
+func (m *MetaService) RemoveVersion(name, bucket string, version int32) error {
+	return m.versionRepo.Delete(name, bucket, version)
+}
+
+func (m *MetaService) GetVersion(name, bucket string, version int32) (*entity.Version, error) {
+	res, err := m.versionRepo.Find(name, bucket, version)
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +47,9 @@ func (m *MetaService) GetVersion(name string, version int32) (*entity.Version, e
 	return res, nil
 }
 
-func (m *MetaService) GetMetadata(name string, ver int32) (*entity.Metadata, error) {
+func (m *MetaService) GetMetadata(name, bucket string, ver int32, withExtra bool) (*entity.Metadata, error) {
 	verMode := entity.VerMode(ver)
-	res, err := m.repo.FindByNameWithVersion(name, verMode)
+	res, err := m.repo.FindByNameWithVersion(name, bucket, verMode, withExtra)
 	if err != nil {
 		return nil, err
 	}

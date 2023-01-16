@@ -7,10 +7,12 @@ import (
 
 type (
 	IMetaService interface {
-		SaveMetadata(*entity.Metadata) (int32, error)
-		UpdateVersion(string, *entity.Version) error
-		GetVersion(string, int32) (*entity.Version, error)
-		GetMetadata(string, int32) (*entity.Metadata, error)
+		SaveMetadata(data *entity.Metadata) (int32, error)
+		AddVersion(name, bucket string, version *entity.Version) (int32, error)
+		UpdateVersion(name, bucket string, data *entity.Version) error
+		GetVersion(name, bucket string, verMode int32) (*entity.Version, error)
+		GetMetadata(name, bucket string, verMode int32, withExtra bool) (*entity.Metadata, error)
+		RemoveVersion(name, bucket string, version int32) error
 	}
 	IObjectService interface {
 		LocateObject(hash string) ([]string, bool)

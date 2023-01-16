@@ -1,11 +1,13 @@
 package config
 
 import (
+	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/logs"
 	"common/registry"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -34,7 +36,7 @@ type Config struct {
 	Port        string          `yaml:"port" env-default:"8100"`
 	RpcPort     string          `yaml:"rpc-port" env-default:"4100"`
 	StoragePath string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"objects"`
-	TempPath    string          `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
+	TempPath    string          `yaml:"temp-path" env:"TEMP_PATH"`
 	Log         logs.Config     `yaml:"log" env-prefix:"LOG"`
 	State       StateConfig     `yaml:"state" env-prefix:"STATE"`
 	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
@@ -43,12 +45,27 @@ type Config struct {
 	Discovery   DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 }
 
+func (c *Config) initialize() {
+	if c.TempPath == "" {
+		c.TempPath = os.TempDir()
+	}
+	c.TempPath = filepath.Join(c.TempPath, c.Registry.ServerID+"_temp")
+	c.StoragePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_store")
+	if e := os.MkdirAll(c.TempPath, cst.OS.ModeUser); e != nil {
+		panic(e)
+	}
+	if e := os.MkdirAll(c.StoragePath, cst.OS.ModeUser); e != nil {
+		panic(e)
+	}
+}
+
 func ReadConfig() Config {
 	var conf Config
 	if err := cleanenv.ReadConfig(ConfFilePath, &conf); err != nil {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", ConfFilePath)
+	conf.initialize()
 	return conf
 }
 
@@ -61,5 +78,6 @@ func ReadConfigFrom(path string) Config {
 		panic(err)
 	}
 	logs.Std().Infof("read config from %s", path)
+	conf.initialize()
 	return conf
 }

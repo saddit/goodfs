@@ -33,3 +33,14 @@ func (r ResponseErr) GetSubMessage() string {
 func (r ResponseErr) GetStatus() int {
 	return r.Status
 }
+
+func CheckErrStatus(status int, err error) bool {
+	if err == nil {
+		return false
+	}
+	respErr, ok := err.(IResponseErr)
+	if !ok {
+		return false
+	}
+	return respErr.GetStatus() == status
+}

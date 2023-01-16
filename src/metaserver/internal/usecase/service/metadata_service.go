@@ -5,25 +5,27 @@ import (
 	"common/util"
 	"errors"
 	"metaserver/internal/entity"
-	. "metaserver/internal/usecase"
+	usecase "metaserver/internal/usecase"
+	"metaserver/internal/usecase/raftimpl"
 	"strings"
 )
 
 type MetadataService struct {
-	repo      IMetadataRepo
-	batch     IBatchMetaRepo
-	hashIndex IHashIndexRepo
+	usecase.RaftApply
+	repo      usecase.IMetadataRepo
+	batch     usecase.IBatchMetaRepo
+	hashIndex usecase.IHashIndexRepo
 }
 
-func NewMetadataService(repo IMetadataRepo, batch IBatchMetaRepo, hashIndex IHashIndexRepo) *MetadataService {
-	return &MetadataService{repo, batch, hashIndex}
+func NewMetadataService(repo usecase.IMetadataRepo, batch usecase.IBatchMetaRepo, hashIndex usecase.IHashIndexRepo, rw *raftimpl.RaftWrapper) *MetadataService {
+	return &MetadataService{raftimpl.RaftApplier(rw), repo, batch, hashIndex}
 }
 
-func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
-	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+func (m *MetadataService) AddMetadata(id string, data *entity.Metadata) error {
+	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogInsert,
 		Dest:     entity.DestMetadata,
-		Name:     data.Name,
+		Name:     id,
 		Metadata: data,
 	}); ok {
 		if resp.Ok() {
@@ -32,11 +34,11 @@ func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
 		return resp
 	}
 
-	return m.repo.AddMetadata(data)
+	return m.repo.AddMetadata(id, data)
 }
 
 func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, error) {
-	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:    entity.LogInsert,
 		Dest:    entity.DestVersion,
 		Name:    name,
@@ -55,7 +57,7 @@ func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, er
 }
 
 func (m *MetadataService) ReceiveVersion(name string, data *entity.Version) error {
-	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:    entity.LogMigrate,
 		Dest:    entity.DestVersion,
 		Name:    name,
@@ -74,7 +76,7 @@ func (m *MetadataService) ReceiveVersion(name string, data *entity.Version) erro
 }
 
 func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) error {
-	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogUpdate,
 		Dest:     entity.DestMetadata,
 		Name:     name,
@@ -91,7 +93,7 @@ func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) err
 
 func (m *MetadataService) UpdateVersion(name string, ver int, data *entity.Version) error {
 	data.Sequence = uint64(ver)
-	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogUpdate,
 		Dest:     entity.DestVersion,
 		Name:     name,
@@ -108,7 +110,7 @@ func (m *MetadataService) UpdateVersion(name string, ver int, data *entity.Versi
 }
 
 func (m *MetadataService) RemoveMetadata(name string) error {
-	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type: entity.LogRemove,
 		Dest: entity.DestMetadata,
 		Name: name,
@@ -123,7 +125,7 @@ func (m *MetadataService) RemoveMetadata(name string) error {
 }
 
 func (m *MetadataService) RemoveVersion(name string, ver int) error {
-	if ok, resp := m.repo.ApplyRaft(&entity.RaftData{
+	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogRemove,
 		Dest:     util.IfElse(ver < 0, entity.DestVersionAll, entity.DestVersion),
 		Name:     name,
@@ -143,17 +145,24 @@ func (m *MetadataService) RemoveVersion(name string, ver int) error {
 }
 
 // GetMetadata 获取metadata及其版本，如果version为-1则不获取任何版本，返回的版本为nil
-func (m *MetadataService) GetMetadata(name string, version int) (*entity.Metadata, *entity.Version, error) {
-	meta, err := m.repo.GetMetadata(name)
+func (m *MetadataService) GetMetadata(id string, version int, withExtra bool) (*entity.Metadata, *entity.Version, error) {
+	meta, err := m.repo.GetMetadata(id)
 	if err != nil {
 		return nil, nil, err
+	}
+	if withExtra {
+		extra, err := m.repo.GetExtra(id)
+		if err != nil {
+			return nil, nil, err
+		}
+		meta.Extra = extra
 	}
 	switch version {
 	case -1:
 		return meta, nil, nil
 	default:
-		ver, err := m.GetVersion(name, version)
-		if err != nil && !errors.Is(err, ErrNotFound) {
+		ver, err := m.GetVersion(id, version)
+		if err != nil && !errors.Is(err, usecase.ErrNotFound) {
 			return nil, nil, err
 		}
 		return meta, ver, nil
@@ -214,7 +223,7 @@ func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error)
 		idx := strings.LastIndexByte(key, '.')
 		name, sequence := key[0:idx], util.ToInt(key[idx+1:])
 		ver, err := m.GetVersion(name, sequence)
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, usecase.ErrNotFound) {
 			needSync = true
 			_ = m.hashIndex.Remove(hash, key)
 			continue

@@ -4,7 +4,9 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
+	"apiserver/internal/usecase/repo"
 	"apiserver/internal/usecase/service"
+	"common/graceful"
 	"common/response"
 	"common/util"
 	"common/util/crypto"
@@ -20,10 +22,11 @@ import (
 type BigObjectsController struct {
 	objectService usecase.IObjectService
 	metaService   usecase.IMetaService
+	bucketRepo    repo.IBucketRepo
 }
 
-func NewBigObjectsController(obj usecase.IObjectService, meta usecase.IMetaService) *BigObjectsController {
-	return &BigObjectsController{obj, meta}
+func NewBigObjectsController(obj usecase.IObjectService, meta usecase.IMetaService, buk repo.IBucketRepo) *BigObjectsController {
+	return &BigObjectsController{obj, meta, buk}
 }
 
 func (bc *BigObjectsController) Register(r gin.IRoutes) {
@@ -35,6 +38,15 @@ func (bc *BigObjectsController) Register(r gin.IRoutes) {
 // Post prepare a resumable uploading
 func (bc *BigObjectsController) Post(g *gin.Context) {
 	req := g.Value("BigPostReq").(*entity.BigPostReq)
+	bucket, err := bc.bucketRepo.Get(req.Bucket)
+	if err != nil {
+		response.FailErr(err, g)
+		return
+	}
+	if bucket.Readonly {
+		response.BadRequestMsg("bucket is readonly", g)
+		return
+	}
 	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
 	if len(ips) == 0 {
 		response.ServiceUnavailableMsg("no available servers", g)
@@ -44,6 +56,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		Hash:    req.Hash,
 		Name:    req.Name,
 		Size:    req.Size,
+		Bucket:  req.Bucket,
 		Locates: ips,
 	}, &pool.Config.Rs)
 	if e != nil {
@@ -102,66 +115,117 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		return
 	}
 	bufSize := int64(stream.Config.BlockSize())
-	for {
+	for curSize < stream.Size {
 		n, err := io.CopyN(stream, g.Request.Body, bufSize)
 		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 			response.FailErr(err, g)
 			return
 		}
 		curSize += n
-		if curSize > stream.Size {
-			// over the intended size, its invalid
-			util.LogErr(stream.Commit(false))
-			response.Exec(g).Fail(http.StatusForbidden, "file exceed the intended size")
-			return
-		} else if curSize < stream.Size {
+		if curSize < stream.Size {
 			if n != bufSize {
 				// not read enough, see as interrupted
 				response.Exec(g).Status(http.StatusPartialContent)
 				return
 			}
-			// not finish yet, continue read from request body
-			continue
 		}
-		// validate digest
-		if pool.Config.Checksum {
-			getStream := service.NewRSTempStream(&service.StreamOption{
-				Hash:    stream.Hash,
-				Size:    stream.Size,
-				Locates: stream.Locates,
-			}, stream.Config)
-			hash := crypto.SHA256IO(getStream)
-			if hash != stream.Hash {
-				util.LogErr(stream.Commit(false))
-				response.Exec(g).Fail(http.StatusForbidden, "signature authentication failure")
-				return
-			}
+	}
+	// over the intended size, its invalid
+	if curSize > stream.Size {
+		util.LogErr(stream.Commit(false))
+		response.Exec(g).Fail(http.StatusForbidden, "file exceed the intended size")
+		return
+	}
+	verNum, err := bc.finishUpload(stream)
+	if err != nil {
+		response.FailErr(err, g)
+		return
+	}
+	response.OkJson(&entity.PutResp{
+		Name:    stream.Name,
+		Bucket:  stream.Bucket,
+		Version: verNum,
+	}, g)
+}
+
+func (bc *BigObjectsController) finishUpload(stream *service.RSResumablePutStream) (verNum int32, err error) {
+	// validate digest
+	if pool.Config.Checksum {
+		getStream := service.NewRSTempStream(&service.StreamOption{
+			Hash:    stream.Hash,
+			Size:    stream.Size,
+			Locates: stream.Locates,
+		}, stream.Config)
+		hash := crypto.SHA256IO(getStream)
+		if hash != stream.Hash {
+			util.LogErr(stream.Commit(false))
+			err = response.NewError(http.StatusForbidden, "signature authentication failure")
+			return
 		}
+	}
+	dg := util.NewDoneGroup()
+	defer dg.Close()
+	// get metadata if exist
+	var metadata *entity.Metadata
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		var inner error
+		metadata, inner = bc.metaService.GetMetadata(stream.Name, stream.Bucket, int32(entity.VerModeNot), true)
+		if err != nil && !response.CheckErrStatus(404, inner) {
+			dg.Error(inner)
+		}
+	}()
+	// get bucket
+	var bucket *entity.Bucket
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		var inner error
+		bucket, inner = bc.bucketRepo.Get(stream.Bucket)
+		if inner != nil {
+			dg.Error(inner)
+		}
+	}()
+	// wait
+	if err = dg.WaitUntilError(); err != nil {
+		return
+	}
+	// update metadata
+	verData := &entity.Version{
+		Hash:          stream.Hash,
+		Size:          stream.Size,
+		Locate:        stream.Locates,
+		DataShards:    stream.Config.DataShards,
+		ParityShards:  stream.Config.ParityShards,
+		ShardSize:     stream.Config.ShardSize(stream.Size),
+		StoreStrategy: entity.ECReedSolomon,
+	}
+	if metadata != nil {
+		verNum, err = bc.metaService.AddVersion(stream.Name, stream.Bucket, verData)
+		if err != nil {
+			return
+		}
+		if metadata.Total > 0 && !bucket.Versioning || metadata.Total >= bucket.VersionRemains {
+			go func() {
+				defer graceful.Recover()
+				// if not err, delete first version
+				inner := bc.metaService.RemoveVersion(stream.Name, stream.Bucket, int32(metadata.FirstVersion))
+				util.LogErrWithPre("remove first version err", inner)
+			}()
+		}
+	} else {
 		// update metadata
-		verNum, err := bc.metaService.SaveMetadata(&entity.Metadata{
-			Name: stream.Name,
-			Versions: []*entity.Version{{
-				Hash:          stream.Hash,
-				Size:          stream.Size,
-				Locate:        stream.Locates,
-				DataShards:    stream.Config.DataShards,
-				ParityShards:  stream.Config.ParityShards,
-				ShardSize:     stream.Config.ShardSize(stream.Size),
-				StoreStrategy: entity.ECReedSolomon,
-			}},
+		verNum, err = bc.metaService.SaveMetadata(&entity.Metadata{
+			Name:     stream.Name,
+			Bucket:   stream.Bucket,
+			Versions: []*entity.Version{verData},
 		})
 		if err != nil {
-			response.FailErr(err, g)
 			return
 		}
-		// commit upload
-		if err = stream.Commit(true); err != nil {
-			response.FailErr(err, g)
-			return
-		}
-		response.OkJson(&entity.PutResp{
-			Name:    stream.Name,
-			Version: verNum,
-		}, g)
 	}
+	// commit upload
+	err = stream.Commit(true)
+	return
 }

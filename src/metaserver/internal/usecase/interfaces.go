@@ -23,20 +23,20 @@ type (
 	IMetadataService interface {
 		MetadataRpcService
 		ReceiveVersion(string, *entity.Version) error
-		AddMetadata(*entity.Metadata) error
+		AddMetadata(string, *entity.Metadata) error
 		AddVersion(string, *entity.Version) (int, error)
 		UpdateMetadata(string, *entity.Metadata) error
 		UpdateVersion(string, int, *entity.Version) error
 		RemoveMetadata(string) error
 		RemoveVersion(string, int) error
-		GetMetadata(string, int) (*entity.Metadata, *entity.Version, error)
+		GetMetadata(string, int, bool) (*entity.Metadata, *entity.Version, error)
 		GetVersion(string, int) (*entity.Version, error)
 		ListVersions(string, int, int) ([]*entity.Version, int, error)
 		ListMetadata(prefix string, size int) (lst []*entity.Metadata, total int, err error)
 	}
 
 	WritableRepo interface {
-		AddMetadata(*entity.Metadata) error
+		AddMetadata(string, *entity.Metadata) error
 		AddVersion(string, *entity.Version) error
 		UpdateMetadata(string, *entity.Metadata) error
 		UpdateVersion(string, *entity.Version) error
@@ -73,16 +73,21 @@ type (
 		Restore(io.Reader) error
 	}
 
+	RaftApply interface {
+		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
+	}
+
 	IMetadataRepo interface {
 		WritableRepo
 		ReadableRepo
 		SnapshotManager
 		AddVersionWithSequence(string, *entity.Version) error
 		RemoveAllVersion(string) error
-		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
-		GetLastVersionNumber(name string) uint64
+		GetLastVersionNumber(id string) uint64
+		GetFirstVersionNumber(id string) uint64
 		ForeachVersionBytes(string, func([]byte) bool)
 		GetMetadataBytes(string) ([]byte, error)
+		GetExtra(id string) (*entity.Extra, error)
 	}
 
 	TxFunc func(*bolt.Tx) error
@@ -114,5 +119,19 @@ type (
 	IMetaCache interface {
 		ReadableRepo
 		WritableRepo
+	}
+
+	BucketRepo interface {
+		Foreach(func(k []byte, v []byte) error) error
+		Get(name string) (*entity.Bucket, error)
+		GetBytes(name string) ([]byte, error)
+		Create(bucket *entity.Bucket) error
+		Remove(name string) error
+		Update(bucket *entity.Bucket) error
+		List(prefix string, size int) ([]*entity.Bucket, int, error)
+	}
+
+	BucketService interface {
+		BucketRepo
 	}
 )

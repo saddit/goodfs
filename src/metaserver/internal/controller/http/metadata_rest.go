@@ -6,8 +6,6 @@ import (
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	. "metaserver/internal/usecase"
-	"metaserver/internal/usecase/logic"
-	"net/http"
 	"sort"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +21,7 @@ func NewMetadataController(service IMetadataService) *MetadataController {
 
 func (m *MetadataController) RegisterRoute(engine gin.IRouter) {
 	engine.PUT("/metadata/:name", m.Put)
-	engine.POST("/metadata", m.Post)
+	engine.POST("/metadata/:name", m.Post)
 	engine.GET("/metadata/:name", m.Get)
 	engine.DELETE("/metadata/:name", m.Delete)
 	engine.GET("/metadata/list", m.List)
@@ -35,11 +33,7 @@ func (m *MetadataController) Post(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	if ok, other := logic.NewHashSlot().IsKeyOnThisServer(data.Name); !ok {
-		response.Exec(g).Redirect(http.StatusSeeOther, other)
-		return
-	}
-	if err := m.service.AddMetadata(&data); err != nil {
+	if err := m.service.AddMetadata(g.Param("name"), &data); err != nil {
 		response.FailErr(err, g)
 		return
 	}
@@ -58,13 +52,14 @@ func (m *MetadataController) Put(g *gin.Context) {
 
 func (m *MetadataController) Get(g *gin.Context) {
 	qry := struct {
-		Version int `form:"version"`
+		Version   int  `form:"version"`
+		WithExtra bool `form:"with_extra"`
 	}{}
 	if err := g.ShouldBindQuery(&qry); err != nil {
 		response.FailErr(err, g)
 		return
 	}
-	meta, vers, err := m.service.GetMetadata(g.Param("name"), qry.Version)
+	meta, vers, err := m.service.GetMetadata(g.Param("name"), qry.Version, qry.WithExtra)
 	if err != nil {
 		response.FailErr(err, g)
 		return
