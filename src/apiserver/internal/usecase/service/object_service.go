@@ -5,9 +5,13 @@ import (
 	. "apiserver/internal/usecase"
 	"apiserver/internal/usecase/logic"
 	"apiserver/internal/usecase/pool"
+	"apiserver/internal/usecase/repo"
 	"bufio"
 	"common/cst"
+	"common/graceful"
 	"common/logs"
+	"common/response"
+	"common/util"
 	"common/util/crypto"
 	"context"
 	"fmt"
@@ -37,11 +41,12 @@ func getLocateResp(raw string) (ip string, idx int) {
 
 type ObjectService struct {
 	metaService IMetaService
+	bucketRepo  repo.IBucketRepo
 	etcd        *clientv3.Client
 }
 
-func NewObjectService(s IMetaService, etcd *clientv3.Client) *ObjectService {
-	return &ObjectService{s, etcd}
+func NewObjectService(s IMetaService, b repo.IBucketRepo, etcd *clientv3.Client) *ObjectService {
+	return &ObjectService{s, b, etcd}
 }
 
 // LocateObject locate object shards by hash. send "hash.idx#key" expect "ip#idx"
@@ -93,22 +98,73 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 }
 
 // StoreObject store object to data server
-func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (int32, error) {
+func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (vn int32, err error) {
+	dg := util.NewDoneGroup()
+	defer dg.Close()
+	// get metadata if exist
+	var metadata *entity.Metadata
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		var inner error
+		metadata, inner = o.metaService.GetMetadata(md.Name, md.Bucket, int32(entity.VerModeNot), true)
+		if err != nil && !response.CheckErrStatus(404, inner) {
+			dg.Error(inner)
+		}
+	}()
+	// get bucket
+	var bucket *entity.Bucket
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		var inner error
+		bucket, inner = o.bucketRepo.Get(md.Bucket)
+		if inner != nil {
+			dg.Error(inner)
+		}
+	}()
+	// wait
+	if err = dg.WaitUntilError(); err != nil {
+		return
+	}
+	// check bucket writable
+	if bucket.Readonly {
+		return 0, response.NewError(400, "bucket is readonly")
+	}
+
 	ver := md.Versions[0]
 	provider := newStreamProvider(ver)
 	provider.FillMetadata(ver)
+	if bucket.StoreStrategy > 0 {
+		ver.StoreStrategy = bucket.StoreStrategy
+		ver.DataShards = bucket.DataShards
+		ver.ParityShards = bucket.ParityShards
+	}
 	// if object not exists, upload to data server
 	if len(req.Locate) == 0 {
-		var e error
-		if ver.Locate, e = streamToDataServer(req, ver, provider); e != nil {
-			return -1, fmt.Errorf("stream to data server err: %w", e)
+		if ver.Locate, err = streamToDataServer(req, ver, provider); err != nil {
+			return -1, fmt.Errorf("stream to data server err: %w", err)
 		}
 	} else {
 		// otherwise save locates
 		ver.Locate = req.Locate
 	}
 	// save metadata
-	return o.metaService.SaveMetadata(md)
+	if metadata == nil {
+		return o.metaService.SaveMetadata(md)
+	}
+	if vn, err = o.metaService.AddVersion(md.Name, md.Bucket, ver); err != nil {
+		return
+	}
+	if metadata.Total > 0 && !bucket.Versioning || metadata.Total >= bucket.VersionRemains {
+		go func() {
+			defer graceful.Recover()
+			// if not err, delete first version
+			inner := o.metaService.RemoveVersion(md.Name, md.Bucket, int32(metadata.FirstVersion))
+			util.LogErrWithPre("remove first version err", inner)
+		}()
+	}
+	return
 }
 
 func streamToDataServer(req *entity.PutReq, meta *entity.Version, provider StreamProvider) ([]string, error) {
@@ -152,7 +208,7 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 	var provider StreamProvider
 	up := func(locates []string) error {
 		ver.Locate = locates
-		return o.metaService.UpdateVersion(meta.Name, ver)
+		return o.metaService.UpdateVersion(meta.Name, meta.Bucket, ver)
 	}
 	opt := &StreamOption{
 		Hash:    ver.Hash,

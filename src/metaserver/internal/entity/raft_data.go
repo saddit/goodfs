@@ -16,13 +16,15 @@ const (
 	DestVersion Dest = 1 << iota
 	DestVersionAll
 	DestMetadata
+	DestBucket
 )
 
 type RaftData struct {
 	Type     LogType   `msg:"type" json:"type"`
 	Dest     Dest      `msg:"dest" json:"dest"`
 	Name     string    `msg:"name" json:"name"`
-	Sequence uint64    `msg:"sequnce" json:"sequence,omitempty"`
+	Sequence uint64    `msg:"sequence" json:"sequence,omitempty"`
 	Version  *Version  `msg:"version" json:"version,omitempty"`
 	Metadata *Metadata `msg:"metadata" json:"metadata,omitempty"`
+	Bucket   *Bucket   `msg:"bucket" json:"bucket,omitempty"`
 }

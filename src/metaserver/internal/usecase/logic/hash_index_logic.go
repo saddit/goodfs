@@ -58,7 +58,7 @@ func (HashIndexLogic) GetIndex(hash string, res *[]string) usecase.TxFunc {
 }
 
 func GetIndexBucket(tx *bolt.Tx, indexName string) *bolt.Bucket {
-	bt := util.StrToBytes(fmt.Sprint("goodfs.metadata.", indexName))
+	bt := util.StrToBytes(fmt.Sprint("go.dfs.index.", indexName))
 	if tx.Writable() {
 		res, _ := tx.CreateBucketIfNotExists(bt)
 		return res

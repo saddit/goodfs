@@ -34,35 +34,20 @@ func GetFileExtOrDefault(fileName string, withDot bool, def string) string {
 	return fileName[idx:]
 }
 
-func GobEncode(v interface{}) []byte {
-	// encode
-	buf := new(bytes.Buffer)   // 创建一个buffer区
-	enc := gob.NewEncoder(buf) // 创建新的需要转化二进制区域对象
-	// 将数据转化为二进制流
+func GobEncode(v any) []byte {
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
 	if err := enc.Encode(v); err != nil {
 		return nil
 	}
 	return buf.Bytes()
 }
 
-func GobDecodeGen[T interface{}](bt []byte) (*T, bool) {
-	var res T
-	dec := gob.NewDecoder(bytes.NewBuffer(bt)) // 创建一个对象 把需要转化的对象放入
-	// 进行流转化
-	if err := dec.Decode(&res); err != nil {
-		return nil, false
-	}
-	return &res, true
-}
-
-func GobDecodeGen2[T interface{}](bt []byte, v *T) bool {
-	var res T
-	dec := gob.NewDecoder(bytes.NewBuffer(bt)) // 创建一个对象 把需要转化的对象放入
-	// 进行流转化
-	if err := dec.Decode(&res); err != nil {
+func GobDecode(bt []byte, v any) bool {
+	dec := gob.NewDecoder(bytes.NewBuffer(bt))
+	if err := dec.Decode(v); err != nil {
 		return false
 	}
-	*v = res
 	return true
 }
 
@@ -89,41 +74,6 @@ func InstanceOf[T any](obj any) bool {
 	return false
 }
 
-// NumToString format number to string by strconv.
-// uint and int with base 10.
-// float with fmt='f' and prec=10.
-// others return empty string
-func NumToString(n interface{}) string {
-	switch n := n.(type) {
-	case int:
-		return strconv.Itoa(n)
-	case int8:
-		return strconv.FormatInt(int64(n), 10)
-	case int16:
-		return strconv.FormatInt(int64(n), 10)
-	case int32:
-		return strconv.FormatInt(int64(n), 10)
-	case int64:
-		return strconv.FormatInt(n, 10)
-	case uint:
-		return strconv.FormatUint(uint64(n), 10)
-	case uint8:
-		return strconv.FormatUint(uint64(n), 10)
-	case uint16:
-		return strconv.FormatUint(uint64(n), 10)
-	case uint32:
-		return strconv.FormatUint(uint64(n), 10)
-	case uint64:
-		return strconv.FormatUint(n, 10)
-	case float32:
-		return strconv.FormatFloat(float64(n), 'f', 10, 32)
-	case float64:
-		return strconv.FormatFloat(n, 'f', 10, 64)
-	default:
-		return ""
-	}
-}
-
 func ToString(v any) string {
 	if bt, ok := v.([]byte); ok {
 		return string(bt)
@@ -131,7 +81,7 @@ func ToString(v any) string {
 	return fmt.Sprint(v)
 }
 
-// LogErr logrus if err != nil
+// LogErr log if err != nil
 func LogErr(err error) {
 	if err != nil {
 		logs.Std().Error(err)
@@ -151,12 +101,14 @@ func CloseAndLog(s io.Closer) {
 	}
 }
 
+// PanicErr panic if err != nil
 func PanicErr(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
+// IfElse cond ? t : f
 func IfElse[T any](cond bool, t T, f T) T {
 	if cond {
 		return t
@@ -164,7 +116,7 @@ func IfElse[T any](cond bool, t T, f T) T {
 	return f
 }
 
-// LookupIP Return ipv4 if success else return empty string.
+// LookupIP returns ipv4 if success else return empty string.
 func LookupIP(addr string) string {
 	if ip := ParseIPFromAddr(addr); ip != nil {
 		return ip.String()
@@ -172,6 +124,7 @@ func LookupIP(addr string) string {
 	return ""
 }
 
+// GetHost get host name from environment variables or os.Hostname or GetServerIP
 func GetHost() string {
 	if host, ok := os.LookupEnv("HOST"); ok {
 		return host
@@ -192,6 +145,9 @@ func GetHostFromAddr(addr string) string {
 	// cut http prefix
 	addr = strings.TrimPrefix(addr, "https://")
 	addr = strings.TrimPrefix(addr, "http://")
+	if strings.LastIndexByte(addr, ':') < 0 {
+		return addr
+	}
 	host, _, _ := net.SplitHostPort(addr)
 	return host
 }
@@ -229,7 +185,7 @@ func ParseIPFromAddr(addr string) net.IP {
 	if ipv6 != nil {
 		return ipv6
 	}
-	
+
 	return loopback
 }
 

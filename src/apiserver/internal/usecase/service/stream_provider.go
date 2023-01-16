@@ -7,6 +7,7 @@ import (
 
 type StreamOption struct {
 	Locates []string
+	Bucket  string
 	Hash    string
 	Name    string
 	Size    int64

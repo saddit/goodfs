@@ -14,7 +14,7 @@ message LocationInfo {
 
 message MigrationItem {
   string name = 1;
-  bool isVersion = 2;
+  int32 dest = 2;
   uint64 sequence = 3;
   bytes data = 4;
 }

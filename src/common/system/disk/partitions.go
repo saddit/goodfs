@@ -1,8 +1,6 @@
 package disk
 
 import (
-	"common/logs"
-
 	"github.com/shirou/gopsutil/v3/disk"
 )
 
@@ -13,7 +11,6 @@ func AllMountPoints() ([]string, error) {
 	}
 	var paths []string
 	for _, part := range parts {
-		logs.Std().Debugf("device=%s,fsType=%s,mountPoint=%s", part.Device, part.Fstype, part.Mountpoint)
 		paths = append(paths, part.Mountpoint)
 	}
 	return paths, nil

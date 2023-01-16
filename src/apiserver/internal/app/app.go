@@ -16,10 +16,11 @@ func Run(cfg *Config) {
 	pool.InitPool(cfg)
 	defer pool.Close()
 	//init services
-	versionRepo := repo.NewVersionRepo(pool.Etcd)
-	metaRepo := repo.NewMetadataRepo(pool.Etcd, versionRepo)
+	versionRepo := repo.NewVersionRepo()
+	bucketRepo := repo.NewBucketRepo()
+	metaRepo := repo.NewMetadataRepo(versionRepo)
 	metaService := service.NewMetaService(metaRepo, versionRepo)
-	objService := service.NewObjectService(metaService, pool.Etcd)
+	objService := service.NewObjectService(metaService, bucketRepo, pool.Etcd)
 	// register
 	cfg.Registry.HttpAddr = util.GetHostPort(cfg.Port)
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry).MustRegister().Unregister()
@@ -27,6 +28,6 @@ func Run(cfg *Config) {
 	defer logic.NewSystemStatLogic().StartAutoSave()()
 	//start api server
 	graceful.ListenAndServe(
-		http.NewHttpServer(cfg.Registry.HttpAddr, objService, metaService),
+		http.NewHttpServer(cfg.Registry.HttpAddr, objService, metaService, bucketRepo),
 	)
 }

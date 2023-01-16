@@ -3,6 +3,7 @@ package logic
 import (
 	"apiserver/internal/usecase/pool"
 	"common/cst"
+	"common/graceful"
 	"common/hashslot"
 	"common/response"
 	"common/util"
@@ -20,8 +21,8 @@ func NewHashSlot() *HashSlot {
 	return &HashSlot{}
 }
 
-// FindMetaLocOfName find metadata location by hash-slot-algo return master-loc, group id, error
-func (HashSlot) FindMetaLocOfName(name string) (string, string, error) {
+// FindMetaLocByName find metadata location by hash-slot-algo return master-loc, group id, error
+func (HashSlot) FindMetaLocByName(name string) (string, string, error) {
 	if time.Now().Unix()-hashSlotCache.updatedAt < expiredDuration {
 		loc, err := hashslot.GetStringIdentify(name, hashSlotCache.provider)
 		if err != nil {
@@ -52,8 +53,11 @@ func (HashSlot) FindMetaLocOfName(name string) (string, string, error) {
 	if err != nil {
 		return "", "", response.NewError(http.StatusServiceUnavailable, err.Error())
 	}
-	// update cache sync
-	go hashSlotCache.update(slots, slotsIdMap)
+	// update cache async
+	go func() {
+		defer graceful.Recover()
+		hashSlotCache.update(slots, slotsIdMap)
+	}()
 	// find location
 	loc, err := hashslot.GetStringIdentify(name, slots)
 	if err != nil {

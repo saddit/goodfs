@@ -12,6 +12,7 @@ import (
 	"metaserver/config"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/raftimpl"
+	"path/filepath"
 	"time"
 
 	"github.com/allegro/bigcache"
@@ -67,7 +68,7 @@ func initEtcd(cfg *etcd.Config) {
 func initStorage(cfg *config.Config) {
 	// open db file
 	Storage = db.NewStorage()
-	if err := Storage.Open(cfg.DataDir); err != nil {
+	if err := Storage.Open(filepath.Join(cfg.DataPath, cfg.Registry.ServerID+".db")); err != nil {
 		panic(fmt.Errorf("open db err: %v", err))
 	}
 }

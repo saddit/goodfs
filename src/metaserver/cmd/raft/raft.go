@@ -16,7 +16,7 @@ var address string
 func init() {
 	cmd.Register("raft", func(args []string) {
 		if len(args) < 2 {
-			fmt.Println("should input command: raft port [add_voter/join_leader/applied_index] [..]")
+			fmt.Println("should input command: raft port [add_voter/join_leader/applied_index/bootstrap/demote_voter] [..]")
 			return
 		}
 		address = util.GetHostPort(args[0])

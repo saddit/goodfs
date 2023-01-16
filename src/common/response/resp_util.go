@@ -11,12 +11,12 @@ func MessageFromJSONBody(body io.ReadCloser) string {
 	defer body.Close()
 	bt, err := io.ReadAll(body)
 	if err != nil {
-		logs.Std().Debugf("MessageFromJSONBody.ReadBody: %f", err)
+		logs.Std().Debugf("MessageFromJSONBody.ReadBody: %s", err)
 		return "unknown"
 	}
 	mp := make(map[string]interface{})
 	if err := json.Unmarshal(bt, &mp); err != nil {
-		logs.Std().Debugf("MessageFromJSONBody.UnmarshalBody: %f", err)
+		logs.Std().Debugf("MessageFromJSONBody.UnmarshalBody: %s", err)
 		return "unknown"
 	}
 	return fmt.Sprint(mp["message"])
