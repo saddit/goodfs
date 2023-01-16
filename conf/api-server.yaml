@@ -2,8 +2,11 @@ port: 8080
 checksum: false
 select-strategy: random
 log:
-  level: info
+  level: debug
   store-dir: /workspaces/temp/log
+performance:
+  enable: true
+  stroe: local
 registry:
   server-id: node
   group: "goodfs"

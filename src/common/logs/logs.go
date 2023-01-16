@@ -54,3 +54,7 @@ func New(name string) *logrus.Entry {
 func IsDebug() bool {
 	return Std().Level == logrus.DebugLevel
 }
+
+func IsTrace() bool {
+	return Std().Level == logrus.TraceLevel
+}
