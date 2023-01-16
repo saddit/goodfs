@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -30,8 +31,12 @@ type LocalStore struct {
 
 func NewLocalStore(path string) Store {
 	underlying := &LocalStore{mux: &sync.Mutex{}, path: path}
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil && !os.IsExist(err) {
+		logs.Std().Errorf("open boltdb err: %s", err)
+		return nil
+	}
 	if err := underlying.openDatabase(path); err != nil {
-		logs.Std().Infof("open boltdb err: %s", err)
+		logs.Std().Errorf("open boltdb err: %s", err)
 		return nil
 	}
 	return AvgSumStore(underlying)
