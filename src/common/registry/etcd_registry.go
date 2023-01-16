@@ -7,6 +7,7 @@ import (
 	"common/util"
 	"context"
 	"fmt"
+	"net"
 	"strings"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -87,6 +88,18 @@ func (e *EtcdRegistry) MustRegister() *EtcdRegistry {
 	return e
 }
 
+func (e *EtcdRegistry) LookupIP(hostport string) string {
+	host, port, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return net.JoinHostPort("127.0.0.1", "16384")
+	}
+	ip := util.ParseIPFromAddr(host)
+	if ip == nil {
+		return net.JoinHostPort("127.0.0.1", port)
+	}
+	return net.JoinHostPort(ip.String(), port)
+}
+
 func (e *EtcdRegistry) Register() error {
 	// skip if already register
 	if e.leaseId != -1 {
@@ -95,7 +108,7 @@ func (e *EtcdRegistry) Register() error {
 	ctx := context.Background()
 	var err error
 	//init registered key
-	registerValue := NewRV(e.cfg.HttpAddr, e.cfg.RpcAddr)
+	registerValue := NewRV(e.LookupIP(e.cfg.HttpAddr), e.LookupIP(e.cfg.RpcAddr))
 	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), registerValue); err != nil {
 		return err
 	}

@@ -196,7 +196,7 @@ func GetHostFromAddr(addr string) string {
 	return host
 }
 
-// ParseIPFromAddr Parse to net.IP if found ipv4 else return private or loopback ip. If no found anything, return nil.
+// ParseIPFromAddr Parse to net.IP if found ipv4 else return private or ipv6 or loopback ip. If no found anything, return nil.
 func ParseIPFromAddr(addr string) net.IP {
 	host := GetHostFromAddr(addr)
 	if netIP := net.ParseIP(host); netIP != nil {
@@ -209,6 +209,7 @@ func ParseIPFromAddr(addr string) net.IP {
 	}
 	var loopback net.IP
 	var private net.IP
+	var ipv6 net.IP
 	for _, ip := range ips {
 		if ip.IsLoopback() {
 			loopback = ip
@@ -216,11 +217,19 @@ func ParseIPFromAddr(addr string) net.IP {
 			private = ip
 		} else if ip.To4() != nil {
 			return ip
+		} else if ip.To16() != nil {
+			ipv6 = ip
 		}
 	}
+
 	if private != nil {
 		return private
 	}
+
+	if ipv6 != nil {
+		return ipv6
+	}
+	
 	return loopback
 }
 
@@ -234,6 +243,9 @@ func GetPortFromAddr(addr string) string {
 
 // GetServerIP Return public ipv4 if success else return private or loopback ip. At least, return "127.0.0.1"
 func GetServerIP() string {
+	if env, ok := os.LookupEnv("SERVER_IP"); ok {
+		return env
+	}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		LogErr(err)
