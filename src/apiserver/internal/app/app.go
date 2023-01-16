@@ -8,14 +8,11 @@ import (
 	"apiserver/internal/usecase/repo"
 	"apiserver/internal/usecase/service"
 	"common/graceful"
-	"common/logs"
 	"common/registry"
 	"common/util"
 )
 
 func Run(cfg *Config) {
-	// init log
-	logs.SetLevel(cfg.Log.Level)
 	pool.InitPool(cfg)
 	defer pool.Close()
 	//init services

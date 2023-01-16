@@ -6,6 +6,7 @@ import (
 	. "apiserver/internal/usecase"
 	"apiserver/internal/usecase/componet/auth"
 	"apiserver/internal/usecase/pool"
+	"common/logs"
 	netHttp "net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,8 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService) *Server {
 		auth.NewPasswordValidator(pool.Etcd, &pool.Config.Auth.Password),
 	)
 
-	eng := gin.Default()
+	eng := gin.New()
+	eng.Use(gin.LoggerWithWriter(logs.Std().Out), gin.RecoveryWithWriter(logs.Std().Out))
 	eng.UseRawPath = true
 	eng.UnescapePathValues = false
 	authRoute := eng.Group("/v1", authMid...)

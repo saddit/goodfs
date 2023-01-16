@@ -3,7 +3,6 @@ package app
 import (
 	"common/cst"
 	"common/graceful"
-	"common/logs"
 	"common/util"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
@@ -26,7 +25,6 @@ func initDir(cfg *config.Config) {
 
 func Run(cfg *config.Config) {
 	initDir(cfg)
-	logs.SetLevel(cfg.LogLevel)
 	//init components
 	pool.InitPool(cfg)
 	defer pool.Close()

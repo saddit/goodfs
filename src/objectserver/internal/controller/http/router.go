@@ -14,7 +14,8 @@ type Server struct {
 }
 
 func NewHttpServer(addr string) *Server {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.LoggerWithWriter(logs.Std().Out), gin.RecoveryWithWriter(logs.Std().Out))
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get)
 	r.HEAD("/objects/:name", objects.Head)
 	r.PUT("/objects/:name", temp.FilterEmptyRequest, objects.Put)
