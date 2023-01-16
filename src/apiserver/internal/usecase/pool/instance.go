@@ -3,9 +3,13 @@ package pool
 import (
 	"apiserver/config"
 	"apiserver/internal/usecase/componet/selector"
+	"common/logs"
+	"common/performance"
 	"common/registry"
 	"common/util"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -17,6 +21,7 @@ var (
 	Http      *http.Client
 	Balancer  selector.Selector
 	Discovery *registry.EtcdDiscovery
+	Perform   performance.Collector
 )
 
 func InitPool(cfg *config.Config) {
@@ -25,10 +30,12 @@ func InitPool(cfg *config.Config) {
 	initEtcd(cfg)
 	initDiscovery(Etcd, cfg)
 	initBalancer(cfg)
+	initPerform(&cfg.Performance, &cfg.Log, &cfg.Registry, Etcd)
 }
 
 func Close() {
 	Http.CloseIdleConnections()
+	util.LogErr(Perform.Close())
 	util.LogErr(Etcd.Close())
 }
 
@@ -56,4 +63,21 @@ func initHttpClient() {
 
 func initBalancer(cfg *config.Config) {
 	Balancer = selector.NewSelector(cfg.SelectStrategy)
+}
+
+func initPerform(cfg *performance.Config, logCfg *logs.Config, regCfg *registry.Config, etcd *clientv3.Client) {
+	if cfg.Store == performance.Local {
+		localPath := logCfg.StoreDir
+		if localPath == "" {
+			localPath = os.TempDir()
+		}
+		performance.SetLocalStore(performance.NewLocalStore(filepath.Join(localPath, regCfg.ServerID + ".perf")))
+	}
+	if cfg.Store == performance.Remote {
+		performance.SetRemoteStore(performance.NewEtcdStore(etcd, []string{
+			performance.ActionRead, 
+			performance.ActionWrite,
+		}))
+	}
+	Perform = performance.NewCollector(cfg)
 }
