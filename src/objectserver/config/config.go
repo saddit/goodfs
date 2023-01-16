@@ -36,7 +36,7 @@ type Config struct {
 	RpcPort     string          `yaml:"rpc-port" env-default:"4100"`
 	StoragePath string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"objects"`
 	TempPath    string          `yaml:"temp-path" env:"TEMP_PATH" env-default:"temp"`
-	LogLevel    logs.Level      `yaml:"log-level" env:"LOG_LEVEL" env-default:"INFO"`
+	Log         logs.Config     `yaml:"log" env-prefix:"LOG"`
 	State       StateConfig     `yaml:"state" env-prefix:"STATE"`
 	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
 	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`

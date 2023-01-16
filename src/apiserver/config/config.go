@@ -5,6 +5,7 @@ import (
 	"common/cst"
 	"common/etcd"
 	"common/logs"
+	"common/performance"
 	"common/registry"
 	"os"
 	"time"
@@ -17,17 +18,18 @@ const (
 )
 
 type Config struct {
-	Port           string          `yaml:"port" env:"PORT" env-default:"8080"`
-	SelectStrategy string          `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
-	Checksum       bool            `yaml:"checksum" env:"CHECKSUM" env-default:"false"`
-	LocateTimeout  time.Duration   `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"1s"`
-	LogLevel       logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
-	Etcd           etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	Rs             RsConfig        `yaml:"-"`
-	Object         ObjectConfig    `yaml:"object" env-prefix:"OBJECT"`
-	Discovery      DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
-	Registry       registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
-	Auth           auth.Config     `yaml:"auth" env-prefix:"AUTH"`
+	Checksum       bool               `yaml:"checksum" env:"CHECKSUM" env-default:"false"`
+	Port           string             `yaml:"port" env:"PORT" env-default:"8080"`
+	SelectStrategy string             `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
+	LocateTimeout  time.Duration      `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"1s"`
+	Log            logs.Config        `yaml:"log" env-prefix:"LOG"`
+	Etcd           etcd.Config        `yaml:"etcd" env-prefix:"ETCD"`
+	Object         ObjectConfig       `yaml:"object" env-prefix:"OBJECT"`
+	Discovery      DiscoveryConfig    `yaml:"discovery" env-prefix:"DISCOVERY"`
+	Registry       registry.Config    `yaml:"registry" env-prefix:"REGISTRY"`
+	Auth           auth.Config        `yaml:"auth" env-prefix:"AUTH"`
+	Performance    performance.Config `yaml:"performance" env-prefix:"PERFORMANCE"`
+	Rs             RsConfig           `yaml:"-"`
 }
 
 func (c *Config) initialize() {

@@ -12,10 +12,10 @@ type Level string
 
 const (
 	Trace Level = "TRACE"
-	Debug       = "DEBUG"
-	Info        = "INFO"
-	Warn        = "WARN"
-	ERROR       = "ERROR"
+	Debug Level = "DEBUG"
+	Info  Level = "INFO"
+	Warn  Level = "WARN"
+	Error Level = "ERROR"
 )
 
 func init() {
@@ -40,7 +40,7 @@ func ToLogLevel(l Level) logrus.Level {
 		return logrus.InfoLevel
 	case Warn:
 		return logrus.WarnLevel
-	case ERROR:
+	case Error:
 		return logrus.ErrorLevel
 	}
 }
@@ -73,4 +73,8 @@ func New(name string) *logrus.Entry {
 
 func IsDebug() bool {
 	return Std().Level == logrus.DebugLevel
+}
+
+func IsTrace() bool {
+	return Std().Level == logrus.TraceLevel
 }

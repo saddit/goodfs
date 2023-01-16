@@ -4,12 +4,15 @@ import (
 	"common/cache"
 	"common/datasize"
 	"common/etcd"
+	"common/logs"
 	"common/registry"
 	"common/util"
-	"github.com/allegro/bigcache"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"objectserver/config"
 	"objectserver/internal/db"
+
+	"github.com/allegro/bigcache"
+	"github.com/gin-gonic/gin"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
@@ -23,10 +26,20 @@ var (
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
+	initLog(&cfg.Log)
 	initCache(&cfg.Cache)
 	initEtcd(&cfg.Etcd)
 	initRegister(Etcd, cfg)
 	initObjectCap(Etcd, cfg)
+}
+
+func initLog(cfg *logs.Config) {
+	logs.SetLevel(cfg.Level)
+	if logs.IsDebug() || logs.IsTrace() {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 }
 
 func initObjectCap(et *clientv3.Client, cfg *config.Config) {

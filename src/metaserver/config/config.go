@@ -23,8 +23,8 @@ const (
 type Config struct {
 	Port        string          `yaml:"port" env:"PORT" env-default:"8090"`
 	RpcPort     string          `yaml:"rpc-port" env:"RPC_PORT" env-default:"4090"`
-	LogLevel    logs.Level      `yaml:"log-level" env:"LOG_LEVEL"`
-	DataDir     string          `yaml:"data-dir" env:"DATA_DIR"`
+	DataDir     string          `yaml:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
+	Log         logs.Config     `yaml:"log" env-prefix:"LOG"`
 	Cluster     ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
 	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
 	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
@@ -40,7 +40,7 @@ func (c *Config) initialize(filePath string) {
 	}
 	c.filePath, _ = filepath.Abs(filePath)
 	c.persistLock = &sync.Mutex{}
-	c.Cluster.LogLevel = string(c.LogLevel)
+	c.Cluster.LogLevel = string(c.Log.Level)
 	c.Cluster.StoreDir = filepath.Join(c.DataDir, c.Registry.ServerID+"_raft")
 	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {

@@ -1,6 +1,8 @@
 package slices
 
-import "common/util/math"
+import (
+	"common/util/math"
+)
 
 func StringsReplace(arr []string, origin string, target string) bool {
 	for i, a := range arr {
@@ -12,8 +14,24 @@ func StringsReplace(arr []string, origin string, target string) bool {
 	return false
 }
 
+func First[T any](arr []T) T {
+	return arr[0]
+}
+
 func Last[T any](arr []T) T {
 	return arr[len(arr)-1]
+}
+
+func Clear[T any](arr *[]T) {
+	*arr = (*arr)[:0]
+}
+
+func RemoveFirst[T any](arr *[]T) {
+	*arr = (*arr)[1:]
+}
+
+func RemoveLast[T any](arr *[]T) {
+	*arr = (*arr)[:len(*arr)-1]
 }
 
 // SafeChunk [start, end], negative number means counting from tail to head

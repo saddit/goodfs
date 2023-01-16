@@ -4,6 +4,7 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase/pool"
 	"bytes"
+	"common/performance"
 	"common/request"
 	"common/response"
 	"common/util"
@@ -11,9 +12,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 func GetMetadata(ip, name string, verNum int32) (*entity.Metadata, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	resp, err := pool.Http.Get(fmt.Sprint(metaRest(ip, name), "?version=", verNum))
 	if err != nil {
 		return nil, err
@@ -25,6 +29,8 @@ func GetMetadata(ip, name string, verNum int32) (*entity.Metadata, error) {
 }
 
 func PostMetadata(ip string, data entity.Metadata) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	data.Versions = nil
 	bt, err := json.Marshal(&data)
 	if err != nil {
@@ -41,6 +47,8 @@ func PostMetadata(ip string, data entity.Metadata) error {
 }
 
 func PutMetadata(ip string, data entity.Metadata) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	data.Versions = nil
 	bt, err := json.Marshal(&data)
 	if err != nil {
@@ -61,6 +69,8 @@ func PutMetadata(ip string, data entity.Metadata) error {
 }
 
 func DelMetadata(ip, name string) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	req, err := request.GetDeleteReq(metaRest(ip, name))
 	if err != nil {
 		return err
@@ -76,6 +86,8 @@ func DelMetadata(ip, name string) error {
 }
 
 func ListMetadata(ip, prefix string, pageSize int) ([]*entity.Metadata, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	resp, err := pool.Http.Get(metadataListRest(ip, prefix, pageSize))
 	if err != nil {
 		return nil, err
@@ -87,6 +99,8 @@ func ListMetadata(ip, prefix string, pageSize int) ([]*entity.Metadata, error) {
 }
 
 func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	resp, err := pool.Http.Get(versionNumRest(ip, name, verNum))
 	if err != nil {
 		return nil, err
@@ -98,6 +112,8 @@ func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
 }
 
 func ListVersion(ip, name string, page, pageSize int) ([]byte, int, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	resp, err := pool.Http.Get(versionListRest(ip, name, page, pageSize))
 	if err != nil {
 		return nil, 0, err
@@ -112,6 +128,8 @@ func ListVersion(ip, name string, page, pageSize int) ([]byte, int, error) {
 }
 
 func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	bt, err := json.Marshal(body)
 	if err != nil {
 		return 0, err
@@ -127,6 +145,8 @@ func PostVersion(ip, name string, body *entity.Version) (uint64, error) {
 }
 
 func PutVersion(ip, name string, body *entity.Version) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	bt, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -147,6 +167,8 @@ func PutVersion(ip, name string, body *entity.Version) error {
 
 // DelVersion verNum < 0 will delete all version
 func DelVersion(ip, name string, verNum int32) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	req, err := request.GetDeleteReq(versionNumRest(ip, name, verNum))
 	if err != nil {
 		return err

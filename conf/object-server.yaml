@@ -1,6 +1,7 @@
 port: 8100
 rpc-port: 4100
-log-level: info
+log:
+  level: debug
 storage-path: e:/file/temp/objects_1
 temp-path: e:/file/temp/objects_temp_1
 cache:

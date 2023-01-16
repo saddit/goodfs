@@ -7,7 +7,6 @@ import (
 	"common/logs"
 	"common/response"
 	"common/system/disk"
-	"common/util"
 	"fmt"
 	"io"
 	global "objectserver/internal/usecase/pool"
@@ -83,7 +82,7 @@ func GetTemp(name string, size int64, writer io.Writer) error {
 // if offset is not multiple of 4KB, direct-io will be disabled
 func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 	f, err := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, cst.OS.ModeUser)
-	if util.IsOSNotExist(err) {
+	if os.IsNotExist(err) {
 		return response.NewError(404, "object not found")
 	}
 	if err != nil {
@@ -125,13 +124,13 @@ func Delete(name string) error {
 func DeleteFile(path, name string) (int64, error) {
 	pt := filepath.Join(path, name)
 	info, err := os.Stat(path)
-	if util.IsOSNotExist(err) {
+	if os.IsNotExist(err) {
 		return 0, nil
 	}
 	if err != nil {
 		return 0, err
 	}
-	if err = os.Remove(pt); err != nil && !util.IsOSNotExist(err) {
+	if err = os.Remove(pt); err != nil && !os.IsNotExist(err) {
 		return 0, err
 	}
 	return info.Size(), nil

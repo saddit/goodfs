@@ -2,7 +2,6 @@ package app
 
 import (
 	"common/graceful"
-	"common/logs"
 	"common/util"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
@@ -13,8 +12,6 @@ import (
 )
 
 func Run(cfg *config.Config) {
-	// init logger
-	logs.SetLevel(cfg.LogLevel)
 	//init components
 	pool.InitPool(cfg)
 	defer pool.Close()
