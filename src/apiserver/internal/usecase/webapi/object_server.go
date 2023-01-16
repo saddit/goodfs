@@ -2,6 +2,7 @@ package webapi
 
 import (
 	"apiserver/internal/usecase/pool"
+	"common/performance"
 	"common/response"
 	"common/util"
 	"fmt"
@@ -11,9 +12,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func DeleteTmpObject(locate, id string) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	req, err := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
 	if err != nil {
 		return err
@@ -29,6 +33,8 @@ func DeleteTmpObject(locate, id string) error {
 }
 
 func PostTmpObject(ip, name string, size int64) (string, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	req, _ := http.NewRequest(http.MethodPost, tempRest(ip, name), nil)
 	req.Header.Add("Size", fmt.Sprint(size))
 	resp, e := pool.Http.Do(req)
@@ -46,6 +52,8 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 }
 
 func PatchTmpObject(ip, id string, body io.Reader) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	req, _ := http.NewRequest(http.MethodPatch, tempRest(ip, id), body)
 	keepAlive(req)
 	resp, e := pool.Http.Do(req)
@@ -66,6 +74,8 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 }
 
 func PutTmpObject(ip, id, name string) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	form := make(url.Values)
 	form.Set("name", name)
 	req, _ := http.NewRequest(http.MethodPut, tempRest(ip, id), strings.NewReader(form.Encode()))
@@ -88,6 +98,8 @@ func PutTmpObject(ip, id, name string) error {
 }
 
 func HeadTmpObject(ip, id string) (int64, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	resp, e := http.Head(tempRest(ip, id))
 	if e != nil {
 		return 0, e
@@ -114,6 +126,8 @@ func HeadTmpObject(ip, id string) (int64, error) {
 }
 
 func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	req, err := http.NewRequest(http.MethodGet, tempRest(ip, name), nil)
 	if err != nil {
 		return nil, err
@@ -123,6 +137,8 @@ func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
 }
 
 func GetObject(ip, name string, offset int, size int64) (*http.Response, error) {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	req, err := http.NewRequest(http.MethodGet, objectRest(ip, name), nil)
 	if err != nil {
 		return nil, err
@@ -133,6 +149,8 @@ func GetObject(ip, name string, offset int, size int64) (*http.Response, error) 
 }
 
 func HeadObject(ip, id string) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	resp, err := http.Head(objectRest(ip, id))
 	if err != nil {
 		return err
@@ -147,6 +165,8 @@ func HeadObject(ip, id string) error {
 }
 
 func PutObject(ip, id string, body io.Reader) error {
+	st := time.Now()
+	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	req, _ := http.NewRequest(http.MethodPut, objectRest(ip, id), body)
 	keepAlive(req)
 	resp, e := pool.Http.Do(req)

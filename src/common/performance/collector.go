@@ -45,6 +45,7 @@ func getStore(st StoreType) Store {
 
 type Collector interface {
 	Put(action string, kindOf string, cost time.Duration) error
+	PutAsync(action string, kindOf string, cost time.Duration)
 	Store() Store
 	Flush() error
 	Close() error
@@ -70,12 +71,21 @@ func NewCollector(cfg *Config) Collector {
 		lastSaveTime: time.Time{},
 		mux:          &sync.Mutex{},
 	}
-	c.stopAutoSave()
+	c.startAutoFlush()
 	return c
 }
 
 func (c *pmCollector) Store() Store {
 	return c.store
+}
+
+func (c *pmCollector) PutAsync(action string, kindOf string, cost time.Duration) {
+	go func() {
+		defer graceful.Recover()
+		if err := c.Put(action, kindOf, cost); err != nil {
+			logs.Std().Errorf("put performance err: %s", err)
+		}
+	}()
 }
 
 func (c *pmCollector) Put(action string, kindOf string, cost time.Duration) error {
@@ -95,6 +105,7 @@ func (c *pmCollector) Put(action string, kindOf string, cost time.Duration) erro
 			slices.RemoveFirst(&c.memData)
 		}
 	}
+	logs.Std().Debugf("performance: [%s-%s] spend %s", kindOf, action, cost)
 	return nil
 }
 
@@ -150,6 +161,9 @@ func (c *pmCollector) startAutoFlush() {
 
 type noneCollector struct {
 	s Store
+}
+
+func (noneCollector) PutAsync(action string, kindOf string, cost time.Duration) {
 }
 
 func (noneCollector) Put(string, string, time.Duration) error {

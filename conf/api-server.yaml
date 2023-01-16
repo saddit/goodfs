@@ -1,7 +1,9 @@
 port: 8080
-log-level: info
 checksum: false
 select-strategy: random
+log:
+  level: info
+  store-dir: /workspaces/temp/log
 registry:
   server-id: node
   group: "goodfs"

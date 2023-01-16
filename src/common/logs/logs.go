@@ -10,10 +10,10 @@ type Level string
 
 const (
 	Trace Level = "TRACE"
-	Debug       = "DEBUG"
-	Info        = "INFO"
-	Warn        = "WARN"
-	ERROR       = "ERROR"
+	Debug Level = "DEBUG"
+	Info  Level = "INFO"
+	Warn  Level = "WARN"
+	Error Level = "ERROR"
 )
 
 func init() {
@@ -38,7 +38,7 @@ func SetLevel(l Level) {
 		logrus.SetLevel(logrus.InfoLevel)
 	case Warn:
 		logrus.SetLevel(logrus.WarnLevel)
-	case ERROR:
+	case Error:
 		logrus.SetLevel(logrus.ErrorLevel)
 	}
 }
