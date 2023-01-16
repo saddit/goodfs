@@ -3,10 +3,10 @@ checksum: false
 select-strategy: random
 log:
   level: debug
-  store-dir: /workspaces/temp/log
+  store-dir: e:/file/temp/log
 performance:
   enable: true
-  stroe: local
+  store: local
 registry:
   server-id: node
   group: "goodfs"

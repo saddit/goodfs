@@ -34,7 +34,7 @@ type Config struct {
 
 func (c *Config) initialize() {
 	c.Rs = c.Object.ReedSolomon
-	// aligend to 4KB
+	// aligned to 4KB
 	if i := c.Rs.BlockPerShard % cst.OS.PageSize; i > 0 {
 		c.Rs.BlockPerShard = c.Rs.BlockPerShard - i + cst.OS.PageSize
 	}
