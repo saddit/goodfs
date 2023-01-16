@@ -18,7 +18,14 @@ const (
 	MultiReplication
 )
 
+type Extra struct {
+	Total        int `json:"total"`
+	FirstVersion int `json:"firstVersion"`
+	LastVersion  int `json:"lastVersion"`
+}
+
 type Metadata struct {
+	Extra
 	Name       string     `json:"name"`
 	Bucket     string     `json:"bucket"`
 	CreateTime int64      `json:"createTime"`

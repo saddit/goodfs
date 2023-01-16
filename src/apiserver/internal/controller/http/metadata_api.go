@@ -7,7 +7,9 @@ import (
 	"apiserver/internal/usecase/webapi"
 	"common/response"
 	"common/util"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"net/url"
 )
 
 type MetadataController struct {
@@ -27,13 +29,14 @@ func (mc *MetadataController) Register(route gin.IRouter) {
 func (mc *MetadataController) Get(c *gin.Context) {
 	body := struct {
 		Name    string `uri:"name"`
+		Bucket  string `header:"bucket" binding:"required"`
 		Version int32  `form:"version"`
 	}{}
 	if err := entity.Bind(c, &body, false); err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	data, err := mc.Service.GetMetadata(body.Name, body.Version)
+	data, err := mc.Service.GetMetadata(body.Name, body.Bucket, body.Version, true)
 	if err != nil {
 		response.FailErr(err, c)
 		return
@@ -45,19 +48,21 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 	body := struct {
 		Page     int    `form:"page" binding:"required"`
 		PageSize int    `form:"page_size" binding:"required"`
+		Bucket   string `header:"bucket" binding:"required"`
 		Name     string `uri:"name" binding:"min=1"`
 	}{}
 	if err := entity.Bind(c, &body, false); err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	loc, gid, err := logic.NewHashSlot().FindMetaLocOfName(body.Name)
+	id := fmt.Sprint(body.Bucket, "/", body.Name)
+	loc, gid, err := logic.NewHashSlot().FindMetaLocByName(id)
 	if err != nil {
 		response.FailErr(err, c)
 		return
 	}
 	loc = logic.NewDiscovery().SelectMetaByGroupID(gid, loc)
-	version, total, err := webapi.ListVersion(loc, body.Name, body.Page, body.PageSize)
+	version, total, err := webapi.ListVersion(loc, url.PathEscape(id), body.Page, body.PageSize)
 	if err != nil {
 		response.FailErr(err, c)
 		return

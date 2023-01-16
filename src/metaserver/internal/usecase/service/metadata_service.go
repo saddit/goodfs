@@ -21,11 +21,11 @@ func NewMetadataService(repo usecase.IMetadataRepo, batch usecase.IBatchMetaRepo
 	return &MetadataService{raftimpl.RaftApplier(rw), repo, batch, hashIndex}
 }
 
-func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
+func (m *MetadataService) AddMetadata(id string, data *entity.Metadata) error {
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogInsert,
 		Dest:     entity.DestMetadata,
-		Name:     data.Name,
+		Name:     id,
 		Metadata: data,
 	}); ok {
 		if resp.Ok() {
@@ -34,7 +34,7 @@ func (m *MetadataService) AddMetadata(data *entity.Metadata) error {
 		return resp
 	}
 
-	return m.repo.AddMetadata(data)
+	return m.repo.AddMetadata(id, data)
 }
 
 func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, error) {
@@ -145,16 +145,23 @@ func (m *MetadataService) RemoveVersion(name string, ver int) error {
 }
 
 // GetMetadata 获取metadata及其版本，如果version为-1则不获取任何版本，返回的版本为nil
-func (m *MetadataService) GetMetadata(name string, version int) (*entity.Metadata, *entity.Version, error) {
-	meta, err := m.repo.GetMetadata(name)
+func (m *MetadataService) GetMetadata(id string, version int, withExtra bool) (*entity.Metadata, *entity.Version, error) {
+	meta, err := m.repo.GetMetadata(id)
 	if err != nil {
 		return nil, nil, err
+	}
+	if withExtra {
+		extra, err := m.repo.GetExtra(id)
+		if err != nil {
+			return nil, nil, err
+		}
+		meta.Extra = extra
 	}
 	switch version {
 	case -1:
 		return meta, nil, nil
 	default:
-		ver, err := m.GetVersion(name, version)
+		ver, err := m.GetVersion(id, version)
 		if err != nil && !errors.Is(err, usecase.ErrNotFound) {
 			return nil, nil, err
 		}

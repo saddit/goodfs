@@ -1,7 +1,9 @@
 package request
 
 import (
+	"bytes"
 	"common/util"
+	"encoding/json"
 	"io"
 	"net/http"
 
@@ -35,4 +37,12 @@ func GetPutReq(body io.Reader, url, contentType string) (*http.Request, error) {
 
 func GetDeleteReq(url string) (*http.Request, error) {
 	return GetReq(nil, http.MethodDelete, url, ContentTypeUrlEncode)
+}
+
+func JsonReq(method string, url string, data any) (*http.Request, error) {
+	bt, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	return GetReq(bytes.NewBuffer(bt), method, url, ContentTypeJSON)
 }

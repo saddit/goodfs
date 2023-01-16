@@ -41,7 +41,7 @@ func (f *FSMImpl) applyBucket(data *entity.RaftData) *response.RaftFsmResp {
 func (f *FSMImpl) applyMetadata(data *entity.RaftData) *response.RaftFsmResp {
 	switch data.Type {
 	case entity.LogInsert:
-		return response.NewRaftFsmResp(f.repo.AddMetadata(data.Metadata))
+		return response.NewRaftFsmResp(f.repo.AddMetadata(data.Name, data.Metadata))
 	case entity.LogRemove:
 		return response.NewRaftFsmResp(f.repo.RemoveMetadata(data.Name))
 	case entity.LogUpdate:

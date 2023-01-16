@@ -48,6 +48,7 @@ func StartTempRemovalBackground(cache cache.ICache) func() {
 		for {
 			select {
 			case entry := <-ch:
+				log.Debugf("cache key %s evicted", entry.Key)
 				if strings.HasPrefix(entry.Key, entity.TempKeyPrefix) {
 					var ti entity.TempInfo
 					if ok := util.GobDecode(entry.Value, &ti); ok {

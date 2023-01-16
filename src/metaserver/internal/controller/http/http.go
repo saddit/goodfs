@@ -20,6 +20,8 @@ func NewHttpServer(addr string, service IMetadataService, bucketService BucketSe
 		CheckLeaderInRaftMode,
 		CheckKeySlot,
 	)
+	engine.UseRawPath = true
+	engine.UnescapePathValues = true
 	//Http router
 	NewMetadataController(service).RegisterRoute(engine)
 	NewVersionController(service).RegisterRoute(engine)

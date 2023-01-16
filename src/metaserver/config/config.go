@@ -30,18 +30,20 @@ type Config struct {
 	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	HashSlot    HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
 	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+	DataPath    string          `yaml:"-" env:"-"`
 	filePath    string          `yaml:"-" env:"-"`
 	persistLock sync.Locker     `yaml:"-" env:"-"`
 }
 
 func (c *Config) initialize(filePath string) {
-	if c.DataDir == "" {
-		c.DataDir = os.TempDir()
-	}
 	c.filePath, _ = filepath.Abs(filePath)
 	c.persistLock = &sync.Mutex{}
+	if c.DataDir == "" {
+		c.DataPath = os.TempDir()
+	}
+	c.DataPath = filepath.Join(c.DataDir, c.Registry.ServerID)
+	c.Cluster.StoreDir = c.DataPath
 	c.Cluster.LogLevel = string(c.Log.Level)
-	c.Cluster.StoreDir = filepath.Join(c.DataDir, c.Registry.ServerID+"_raft")
 	c.Cluster.Port = c.RpcPort
 	if c.Cluster.Enable {
 		c.Cluster.ID = c.Registry.ServerID

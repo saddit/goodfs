@@ -3,6 +3,7 @@ package entity
 //go:generate msgp -tests=false
 
 type Metadata struct {
+	*Extra     `msg:"-"`
 	Name       string `json:"name" msg:"name" binding:"required"`
 	Bucket     string `json:"bucket" msg:"bucket"`
 	CreateTime int64  `json:"createTime" msg:"create_time"`

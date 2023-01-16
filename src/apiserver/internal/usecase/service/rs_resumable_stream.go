@@ -11,6 +11,7 @@ import (
 type resumeToken struct {
 	Name    string           `json:"name"`
 	Hash    string           `json:"hash"`
+	Bucket  string           `json:"bucket"`
 	Size    int64            `json:"size"`
 	Servers []string         `json:"servers"`
 	Ids     []string         `json:"ids"`
@@ -49,6 +50,7 @@ func NewRSResumablePutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSResu
 	token := &resumeToken{
 		Name:    opt.Name,
 		Hash:    opt.Hash,
+		Bucket:  opt.Bucket,
 		Servers: opt.Locates,
 		Size:    opt.Size,
 		Ids:     ids,
@@ -74,13 +76,5 @@ func (p *RSResumablePutStream) CurrentSize() (int64, error) {
 
 // Token 上传记录
 func (p *RSResumablePutStream) Token() string {
-	tk := resumeToken{
-		Name:    p.Name,
-		Hash:    p.Hash,
-		Size:    p.Size,
-		Servers: p.Servers,
-		Ids:     p.Ids,
-		Config:  p.Config,
-	}
-	return base64.StdEncoding.EncodeToString(util.GobEncode(tk))
+	return base64.StdEncoding.EncodeToString(util.GobEncode(p.resumeToken))
 }

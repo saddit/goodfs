@@ -45,7 +45,7 @@ func GobEncode(v any) []byte {
 
 func GobDecode(bt []byte, v any) bool {
 	dec := gob.NewDecoder(bytes.NewBuffer(bt))
-	if err := dec.Decode(&v); err != nil {
+	if err := dec.Decode(v); err != nil {
 		return false
 	}
 	return true
@@ -145,6 +145,9 @@ func GetHostFromAddr(addr string) string {
 	// cut http prefix
 	addr = strings.TrimPrefix(addr, "https://")
 	addr = strings.TrimPrefix(addr, "http://")
+	if strings.LastIndexByte(addr, ':') < 0 {
+		return addr
+	}
 	host, _, _ := net.SplitHostPort(addr)
 	return host
 }
@@ -182,7 +185,7 @@ func ParseIPFromAddr(addr string) net.IP {
 	if ipv6 != nil {
 		return ipv6
 	}
-	
+
 	return loopback
 }
 

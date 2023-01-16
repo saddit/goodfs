@@ -205,7 +205,7 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 		if err = util.DecodeMsgp(&i, item.Data); err != nil {
 			return err
 		}
-		err = h.Service.AddMetadata(&i)
+		err = h.Service.AddMetadata(item.Name, &i)
 	case entity.DestBucket:
 		var i entity.Bucket
 		if err = util.DecodeMsgp(&i, item.Data); err != nil {

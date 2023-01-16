@@ -27,16 +27,16 @@ func NewMetadataRepo(db *db.Storage, c usecase.IMetaCache) *MetadataRepo {
 	return &MetadataRepo{MainDB: db, Cache: c}
 }
 
-func (m *MetadataRepo) AddMetadata(data *entity.Metadata) error {
+func (m *MetadataRepo) AddMetadata(id string, data *entity.Metadata) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
-	if err := m.MainDB.Update(logic.AddMeta(data)); err != nil {
+	if err := m.MainDB.Update(logic.AddMeta(id, data)); err != nil {
 		return err
 	}
 	go func() {
 		defer graceful.Recover()
-		err := m.Cache.AddMetadata(data)
+		err := m.Cache.AddMetadata(id, data)
 		util.LogErrWithPre("metadata cache", err)
 	}()
 	return nil
@@ -72,61 +72,61 @@ func (m *MetadataRepo) RemoveMetadata(name string) error {
 	return nil
 }
 
-func (m *MetadataRepo) GetMetadata(name string) (*entity.Metadata, error) {
-	if data, err := m.Cache.GetMetadata(name); err == nil {
+func (m *MetadataRepo) GetMetadata(id string) (*entity.Metadata, error) {
+	if data, err := m.Cache.GetMetadata(id); err == nil {
 		return data, nil
 	}
 	data := &entity.Metadata{}
-	if err := m.MainDB.View(logic.GetMeta(name, data)); err != nil {
+	if err := m.MainDB.View(logic.GetMeta(id, data)); err != nil {
 		return nil, err
 	}
 	go func() {
 		defer graceful.Recover()
-		util.LogErrWithPre("add metadata cache", m.Cache.AddMetadata(data))
+		util.LogErrWithPre("add metadata cache", m.Cache.AddMetadata(id, data))
 	}()
 	return data, nil
 }
 
-func (m *MetadataRepo) AddVersion(name string, data *entity.Version) error {
+func (m *MetadataRepo) AddVersion(id string, data *entity.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
-	if err := m.MainDB.Update(logic.AddVer(name, data)); err != nil {
+	if err := m.MainDB.Update(logic.AddVer(id, data)); err != nil {
 		return err
 	}
 	go func() {
 		defer graceful.Recover()
-		err := m.Cache.AddVersion(name, data)
+		err := m.Cache.AddVersion(id, data)
 		util.LogErrWithPre("metadata cache", err)
 	}()
 	return nil
 }
 
-func (m *MetadataRepo) AddVersionWithSequence(name string, data *entity.Version) error {
+func (m *MetadataRepo) AddVersionWithSequence(id string, data *entity.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
-	if err := m.MainDB.Update(logic.AddVerWithSequence(name, data)); err != nil {
+	if err := m.MainDB.Update(logic.AddVerWithSequence(id, data)); err != nil {
 		return err
 	}
 	go func() {
 		defer graceful.Recover()
-		err := m.Cache.AddVersion(name, data)
+		err := m.Cache.AddVersion(id, data)
 		util.LogErrWithPre("metadata cache", err)
 	}()
 	return nil
 }
 
-func (m *MetadataRepo) UpdateVersion(name string, data *entity.Version) error {
+func (m *MetadataRepo) UpdateVersion(id string, data *entity.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
-	if err := m.MainDB.Update(logic.UpdateVer(name, data)); err != nil {
+	if err := m.MainDB.Update(logic.UpdateVer(id, data)); err != nil {
 		return err
 	}
 	go func() {
 		defer graceful.Recover()
-		err := m.Cache.UpdateVersion(name, data)
+		err := m.Cache.UpdateVersion(id, data)
 		util.LogErrWithPre("metadata cache", err)
 	}()
 	return nil
@@ -174,11 +174,11 @@ func (m *MetadataRepo) GetFirstVersionNumber(name string) uint64 {
 			if k == nil || v == nil {
 				return usecase.ErrNotFound
 			}
-			sp := bytes.Split(k, []byte("."))
-			if len(sp) < 2 {
+			idx := bytes.LastIndexByte(k, logic.Sep[0])
+			if idx < 0 {
 				return usecase.ErrNotFound
 			}
-			fst = util.ToUint64(util.BytesToStr(sp[1]))
+			fst = util.ToUint64(util.BytesToStr(k[idx+1:]))
 		}
 		return nil
 	}); err != nil {
@@ -191,9 +191,17 @@ func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 	var max uint64 = 1
 	if err := m.MainDB.View(func(tx *bolt.Tx) error {
 		if buk := logic.GetVersionBucket(tx, name); buk != nil {
-			max = buk.Sequence()
+			k, v := buk.Cursor().Last()
+			if k == nil || v == nil {
+				return usecase.ErrNotFound
+			}
+			idx := bytes.LastIndexByte(k, logic.Sep[0])
+			if idx < 0 {
+				return usecase.ErrNotFound
+			}
+			max = util.ToUint64(util.BytesToStr(k[idx+1:]))
 		}
-		return usecase.ErrNotFound
+		return nil
 	}); err != nil {
 		return 0
 	}
@@ -324,4 +332,10 @@ func (m *MetadataRepo) GetMetadataBytes(key string) ([]byte, error) {
 		return nil
 	})
 	return res, err
+}
+
+func (m *MetadataRepo) GetExtra(id string) (*entity.Extra, error) {
+	var i entity.Extra
+	err := m.MainDB.View(logic.GetExtra(id, &i))
+	return &i, err
 }

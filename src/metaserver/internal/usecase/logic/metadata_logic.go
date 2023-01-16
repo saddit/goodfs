@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bytes"
 	"common/logs"
 	"errors"
 	"fmt"
@@ -31,10 +32,10 @@ func ForeachKeys(fn func(string) bool) TxFunc {
 	}
 }
 
-func AddMeta(data *entity.Metadata) TxFunc {
+func AddMeta(id string, data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
 		root := GetMetadataBucket(tx)
-		key := util.StrToBytes(data.Name)
+		key := util.StrToBytes(id)
 		// check duplicate
 		if root.Get(key) != nil {
 			return ErrExists
@@ -47,7 +48,7 @@ func AddMeta(data *entity.Metadata) TxFunc {
 			return err
 		}
 		// create version bucket
-		if err = CreateVersionBucket(tx, data.Name); err != nil {
+		if err = CreateVersionBucket(tx, id); err != nil {
 			return err
 		}
 		// put metadata
@@ -60,7 +61,7 @@ func RemoveMeta(name string) TxFunc {
 		key := util.StrToBytes(name)
 		root := GetMetadataBucket(tx)
 		if root.Get(key) == nil {
-			return ErrNotFound
+			return nil
 		}
 		if err := root.Delete(key); err != nil {
 			return err
@@ -74,11 +75,11 @@ func RemoveMeta(name string) TxFunc {
 	}
 }
 
-func UpdateMeta(name string, data *entity.Metadata) TxFunc {
+func UpdateMeta(id string, data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
 		root := GetMetadataBucket(tx)
 		var origin entity.Metadata
-		if err := getMeta(root, name, &origin); err != nil {
+		if err := getMeta(root, id, &origin); err != nil {
 			return err
 		}
 		if data.UpdateTime < origin.UpdateTime {
@@ -91,13 +92,35 @@ func UpdateMeta(name string, data *entity.Metadata) TxFunc {
 		if err != nil {
 			return err
 		}
-		return root.Put(util.StrToBytes(name), bt)
+		return root.Put(util.StrToBytes(id), bt)
 	}
 }
 
 func GetMeta(name string, data *entity.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
 		return getMeta(GetMetadataBucket(tx), name, data)
+	}
+}
+
+func GetExtra(id string, extra *entity.Extra) TxFunc {
+	return func(tx *bolt.Tx) error {
+		b := GetVersionBucket(tx, id)
+		if b == nil {
+			return ErrNotFound
+		}
+		extra.Total = b.Stats().KeyN
+		cur := b.Cursor()
+		// first key
+		k, _ := cur.First()
+		if idx := bytes.LastIndexByte(k, Sep[0]); idx > 0 {
+			extra.FirstVersion = util.ToInt(util.BytesToStr(k[idx+1:]))
+		}
+		// last key
+		k, _ = cur.Last()
+		if idx := bytes.LastIndexByte(k, Sep[0]); idx > 0 {
+			extra.LastVersion = util.ToInt(util.BytesToStr(k[idx+1:]))
+		}
+		return nil
 	}
 }
 
@@ -122,7 +145,7 @@ func AddVerWithSequence(name string, data *entity.Version) TxFunc {
 			if err := bucket.Put(key, bt); err != nil {
 				return err
 			}
-			return NewHashIndexLogic().AddIndex(data.Hash, string(key))(tx)
+			return NewHashIndexLogic().AddIndex(data.Hash, util.BytesToStr(key))(tx)
 		}
 		return ErrNotFound
 	}
@@ -144,7 +167,7 @@ func AddVer(name string, data *entity.Version) TxFunc {
 			if err := bucket.Put(key, bt); err != nil {
 				return err
 			}
-			return NewHashIndexLogic().AddIndex(data.Hash, string(key))(tx)
+			return NewHashIndexLogic().AddIndex(data.Hash, util.BytesToStr(key))(tx)
 		}
 		return ErrNotFound
 	}
@@ -155,27 +178,27 @@ func RemoveVer(name string, ver uint64) TxFunc {
 		key := util.StrToBytes(fmt.Sprint(name, Sep, ver))
 		b := GetVersionBucket(tx, name)
 		if b == nil {
-			return ErrNotFound
+			return nil
 		}
 		var data entity.Version
 		if err := getVer(b, name, ver, &data); err != nil {
 			return err
 		}
 		// remove index
-		if err := NewHashIndexLogic().RemoveIndex(data.Hash, string(key))(tx); err != nil {
+		if err := NewHashIndexLogic().RemoveIndex(data.Hash, util.BytesToStr(key))(tx); err != nil {
 			return fmt.Errorf("remove hash-index err: %w", err)
 		}
 		return b.Delete(key)
 	}
 }
 
-func UpdateVer(name string, data *entity.Version) TxFunc {
+func UpdateVer(id string, data *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if b := GetVersionBucket(tx, name); b != nil {
-			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
+		if b := GetVersionBucket(tx, id); b != nil {
+			key := util.StrToBytes(fmt.Sprint(id, Sep, data.Sequence))
 			// get old one
 			var origin entity.Version
-			if err := getVer(b, name, data.Sequence, &origin); err != nil {
+			if err := getVer(b, id, data.Sequence, &origin); err != nil {
 				return err
 			}
 			// validate timestamp
@@ -197,10 +220,10 @@ func UpdateVer(name string, data *entity.Version) TxFunc {
 	}
 }
 
-func GetVer(name string, ver uint64, dest *entity.Version) TxFunc {
+func GetVer(id string, ver uint64, dest *entity.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
-		if bucket := GetVersionBucket(tx, name); bucket != nil {
-			return getVer(bucket, name, ver, dest)
+		if bucket := GetVersionBucket(tx, id); bucket != nil {
+			return getVer(bucket, id, ver, dest)
 		}
 		return ErrNotFound
 	}
@@ -257,11 +280,11 @@ func GetVersionBucket(tx *bolt.Tx, name string) *bolt.Bucket {
 	return nil
 }
 
-func getVer(bucket *bolt.Bucket, name string, ver uint64, dest *entity.Version) error {
+func getVer(bucket *bolt.Bucket, id string, ver uint64, dest *entity.Version) error {
 	if bucket == nil {
 		return ErrNotFound
 	}
-	bt := bucket.Get(util.StrToBytes(fmt.Sprint(name, Sep, ver)))
+	bt := bucket.Get(util.StrToBytes(fmt.Sprint(id, Sep, ver)))
 	if bt == nil {
 		return ErrNotFound
 	}

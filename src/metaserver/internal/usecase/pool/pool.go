@@ -68,7 +68,7 @@ func initEtcd(cfg *etcd.Config) {
 func initStorage(cfg *config.Config) {
 	// open db file
 	Storage = db.NewStorage()
-	if err := Storage.Open(filepath.Join(cfg.DataDir, cfg.Registry.ServerID)); err != nil {
+	if err := Storage.Open(filepath.Join(cfg.DataPath, cfg.Registry.ServerID+".db")); err != nil {
 		panic(fmt.Errorf("open db err: %v", err))
 	}
 }

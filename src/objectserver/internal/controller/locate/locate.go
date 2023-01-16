@@ -72,7 +72,7 @@ func (l *Locator) handlerLocate(message []byte, ip string) {
 		return
 	}
 	hash, respKey := tp[0], tp[1]
-	logs.Std().Debugf("handler locating request: hash=%s, response to key %s", hash, respKey)
+	logs.Std().Tracef("handler locating request: hash=%s, response to key %s", hash, respKey)
 	if service.Exist(hash) {
 		tp = strings.Split(hash, ".")
 		if len(tp) != 2 {

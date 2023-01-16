@@ -84,12 +84,12 @@ func (m *MetadataCacheRepo) ListVersions(s string, start int, end int) ([]*entit
 	return res, 0, nil
 }
 
-func (m *MetadataCacheRepo) AddMetadata(metadata *entity.Metadata) error {
+func (m *MetadataCacheRepo) AddMetadata(id string, metadata *entity.Metadata) error {
 	bt, err := util.EncodeMsgp(metadata)
 	if err != nil {
 		return err
 	}
-	m.cache.Set(fmt.Sprint(MetaCachePrefix, metadata.Name), bt)
+	m.cache.Set(fmt.Sprint(MetaCachePrefix, id), bt)
 	return nil
 }
 
@@ -103,9 +103,8 @@ func (m *MetadataCacheRepo) AddVersion(s string, version *entity.Version) error 
 	return nil
 }
 
-func (m *MetadataCacheRepo) UpdateMetadata(s string, metadata *entity.Metadata) error {
-	metadata.Name = s
-	return m.AddMetadata(metadata)
+func (m *MetadataCacheRepo) UpdateMetadata(id string, metadata *entity.Metadata) error {
+	return m.AddMetadata(id, metadata)
 }
 
 func (m *MetadataCacheRepo) UpdateVersion(s string, version *entity.Version) error {

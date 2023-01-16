@@ -20,11 +20,11 @@ func FilterDuplicates(obj usecase.IObjectService) gin.HandlerFunc {
 		g.Set("BigPostReq", &req)
 		if ips, ok := obj.LocateObject(req.Hash); ok {
 			ver, err := obj.StoreObject(&entity.PutReq{
-				Name:     req.Name,
-				Hash:     req.Hash,
-				Ext:      req.Ext,
-				Locate:   ips,
-				FileName: req.Hash,
+				Name:   req.Name,
+				Hash:   req.Hash,
+				Bucket: req.Bucket,
+				Ext:    req.Ext,
+				Locate: ips,
 			}, &entity.Metadata{
 				Name: req.Name,
 				Versions: []*entity.Version{{
@@ -38,6 +38,7 @@ func FilterDuplicates(obj usecase.IObjectService) gin.HandlerFunc {
 			}
 			response.OkJson(&entity.PutResp{
 				Name:    req.Name,
+				Bucket:  req.Bucket,
 				Version: ver,
 			}, g).Abort()
 		}
