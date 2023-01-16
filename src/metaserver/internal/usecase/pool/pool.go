@@ -5,6 +5,7 @@ import (
 	"common/cst"
 	"common/datasize"
 	"common/etcd"
+	"common/logs"
 	"common/registry"
 	"common/util"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache"
+	"github.com/gin-gonic/gin"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -33,11 +35,21 @@ func InitPool(cfg *config.Config) {
 	Config = cfg
 	HttpHostPort = util.GetHostPort(cfg.Port)
 	GrpcHostPort = util.GetHostPort(cfg.Cluster.Port)
+	initLog(&cfg.Log)
 	initCache(cfg.Cache)
 	initEtcd(&cfg.Etcd)
 	initRegistry(&cfg.Registry, Etcd)
 	initStorage(cfg)
 	initHashSlot(&cfg.Registry, Etcd)
+}
+
+func initLog(cfg *logs.Config) {
+	logs.SetLevel(cfg.Level)
+	if cfg.Level == logs.Trace || cfg.Level == logs.Debug {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 }
 
 func initEtcd(cfg *etcd.Config) {

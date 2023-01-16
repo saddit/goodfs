@@ -2,8 +2,7 @@ package app
 
 import (
 	"common/graceful"
-	"common/logs"
-	. "metaserver/config"
+	"metaserver/config"
 	"metaserver/internal/controller/grpc"
 	"metaserver/internal/controller/http"
 	"metaserver/internal/usecase/logic"
@@ -12,9 +11,7 @@ import (
 	"metaserver/internal/usecase/service"
 )
 
-func Run(cfg *Config) {
-	// init logger
-	logs.SetLevel(cfg.LogLevel)
+func Run(cfg *config.Config) {
 	// init components
 	pool.InitPool(cfg)
 	defer pool.Close()

@@ -13,8 +13,13 @@ type Server struct {
 }
 
 func NewHttpServer(addr string, service IMetadataService) *Server {
-	engine := gin.Default()
-	engine.Use(CheckLeaderInRaftMode, CheckKeySlot)
+	engine := gin.New()
+	engine.Use(
+		gin.LoggerWithWriter(logs.Std().Out), 
+		gin.RecoveryWithWriter(logs.Std().Out), 
+		CheckLeaderInRaftMode, 
+		CheckKeySlot,
+	)
 	//Http router
 	NewMetadataController(service).RegisterRoute(engine)
 	NewVersionController(service).RegisterRoute(engine)

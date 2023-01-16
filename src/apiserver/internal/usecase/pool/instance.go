@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -26,7 +27,8 @@ var (
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
-	initHttpClient()
+	initLog(&cfg.Log)
+	initHttp()
 	initEtcd(cfg)
 	initDiscovery(Etcd, cfg)
 	initBalancer(cfg)
@@ -57,7 +59,16 @@ func initDiscovery(etcd *clientv3.Client, cfg *config.Config) {
 	Discovery = registry.NewEtcdDiscovery(etcd, &cfg.Registry)
 }
 
-func initHttpClient() {
+func initLog(cfg *logs.Config) {
+	logs.SetLevel(cfg.Level)
+	if cfg.Level == logs.Trace || cfg.Level == logs.Debug {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+}
+
+func initHttp() {
 	Http = &http.Client{Timeout: 5 * time.Second}
 }
 
