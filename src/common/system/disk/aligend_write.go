@@ -1,11 +1,31 @@
 package disk
 
 import (
+	"common/util/math"
 	"errors"
 	"io"
 
 	"github.com/ncw/directio"
 )
+
+type AlignedReader struct {
+	io.Reader
+}
+
+func NewAlignedReader(rd io.Reader) *AlignedReader {
+	return &AlignedReader{rd}
+}
+
+func (ar *AlignedReader) Read(p []byte) (n int, err error) {
+	n, err = ar.Reader.Read(p)
+	if err != nil && io.EOF != err{
+		return
+	}
+	if i := n % directio.BlockSize; i > 0 {
+		n = math.MinInt(len(p), n - i + directio.BlockSize)
+	}
+	return
+}
 
 // AlignedWriter impl io.ReaderFrom interface
 // Write data aligned to multiple of 4KB

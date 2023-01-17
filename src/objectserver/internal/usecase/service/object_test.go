@@ -44,7 +44,6 @@ func TestWriteReadDeleteFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(buf.String())
 	assert.New(t).Equal(4096+13, buf.Len())
 }
 

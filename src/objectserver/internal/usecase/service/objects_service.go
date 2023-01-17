@@ -177,7 +177,7 @@ func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (in
 		}
 	}
 	// write file and aligned to power of 4KB
-	return disk.NewAlignedWriter(file).ReadFrom(fileStream)
+	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(8 * cst.OS.PageSize))
 }
 
 // WriteFile should make sure size of each write is a multiple of 4096 (except last)
@@ -188,7 +188,7 @@ func WriteFile(fullPath string, fileStream io.Reader) (int64, error) {
 	}
 	defer file.Close()
 	// write file and aligned to power of 4KB
-	return disk.NewAlignedWriter(file).ReadFrom(fileStream)
+	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(8 * cst.OS.PageSize))
 }
 
 // MvTmpToStorage move the temp file to storage path with a new name
