@@ -79,31 +79,29 @@ func GetTemp(name string, size int64, writer io.Writer) error {
 }
 
 // GetFile read file with provided size. offset corresponds to io.SeekStart.
-// if offset is not multiple of 4KB, direct-io will be disabled
+// if offset is not multiple of 4KB, direct-io will be disabled.
 func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
-	f, err := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, cst.OS.ModeUser)
+	file, err := disk.OpenFileDirectIO(fullPath, os.O_RDONLY, cst.OS.ModeUser)
 	if os.IsNotExist(err) {
 		return response.NewError(404, "object not found")
 	}
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer file.Close()
 	if offset > 0 {
 		if int(offset)%cst.OS.PageSize > 0 {
 			logs.Std().Warn("offset must be power of 4KB, direct-io will be disabled")
-			if err = disk.DisableDirectIO(f); err != nil {
+			if err = disk.DisableDirectIO(file); err != nil {
 				return fmt.Errorf("diable direct-io: %w", err)
 			}
 		}
-		if _, err = f.Seek(offset, io.SeekStart); err != nil {
+		if _, err = file.Seek(offset, io.SeekStart); err != nil {
 			return err
 		}
 	}
-	if _, err = io.CopyBuffer(disk.LimitWriter(writer, size), f, disk.AlignedBlock(8*cst.OS.PageSize)); err != nil {
-		return err
-	}
-	return nil
+	_, err = io.CopyBuffer(writer, disk.LimitReader(file, size), disk.AlignedBlock(8*cst.OS.PageSize))
+	return err
 }
 
 // Delete remove the object under the storage path

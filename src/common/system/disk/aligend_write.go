@@ -8,6 +8,20 @@ import (
 	"github.com/ncw/directio"
 )
 
+func AlignedSize(n int) int {
+	if i := n % directio.BlockSize; i > 0 {
+		return n - i + directio.BlockSize
+	}
+	return n
+}
+
+func AlignedSize64(n int64) int64 {
+	if i := n % directio.BlockSize; i > 0 {
+		return n - i + directio.BlockSize
+	}
+	return n
+}
+
 type AlignedReader struct {
 	io.Reader
 }
@@ -21,9 +35,7 @@ func (ar *AlignedReader) Read(p []byte) (n int, err error) {
 	if err != nil && io.EOF != err{
 		return
 	}
-	if i := n % directio.BlockSize; i > 0 {
-		n = math.MinInt(len(p), n - i + directio.BlockSize)
-	}
+	n = math.MinInt(len(p), AlignedSize(n))
 	return
 }
 
