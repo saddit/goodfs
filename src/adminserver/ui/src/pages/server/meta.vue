@@ -41,7 +41,8 @@
                    :options="masters"></SelectBox>
         <!-- row 3 slots -->
         <span class="text-sm text-gray-700">{{ t('which-slots') }}</span>
-        <input v-model="migrateReq.slotsStr" id="slots" name="slots" required type="text" placeholder="0-1000,2000-2500" class="text-input col-span-2"/>
+        <input v-model="migrateReq.slotsStr" id="slots" name="slots" required type="text" placeholder="0-1000,2000-2500"
+               class="text-input col-span-2"/>
         <!-- row 4 button -->
         <span></span>
         <button class="btn-revert max-h-10 mx-1" @click="closeMigrateDialog">{{ $t('btn-cancel') }}</button>
@@ -92,7 +93,7 @@ let slots: { [key: string]: SlotsInfo } = {}
 const slotRanges = ref<SlotRange[]>([])
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
-const migrateReq = ref<MetaMigrateReq>({srcServerId: "", destServerId: "", slots: [], slotsStr:""})
+const migrateReq = ref<MetaMigrateReq>({srcServerId: "", destServerId: "", slots: [], slotsStr: ""})
 const openMigrateDialog = ref(false)
 const selectedRaftMaster = ref("")
 const invitedServId = ref("")
@@ -103,138 +104,151 @@ const formErrMsg = ref("")
 const {t} = useI18n({inheritLocale: true})
 
 watch(selectedRaftMaster, v => {
-  v ? getSlaves(v) : undefined
+    v ? getSlaves(v) : undefined
 })
 
 function getSlotRanges() {
-  let res: SlotRange[] = []
-  for (let idx in slots) {
-    for (let slot of slots[idx].slots) {
-      let sp = slot.split("-")
-      res.push({
-        identify: slots[idx].id,
-        start: parseInt(sp[0]),
-        end: parseInt(sp[1])
-      })
+    let res: SlotRange[] = []
+    for (let idx in slots) {
+        let arr = slots[idx].slots
+        if (arr.length == 0) {
+            res.push({
+                identify: slots[idx].id,
+                start: 0,
+                end: 0
+            })
+            continue
+        }
+        for (let slot of arr) {
+            let sp = slot.split("-")
+            res.push({
+                identify: slots[idx].id,
+                start: parseInt(sp[0]),
+                end: parseInt(sp[1])
+            })
+        }
     }
-  }
-  return res.sort((a, b) => {
-    return a.start - b.start
-  })
+    return res.sort((a, b) => {
+        return a.start - b.start
+    })
 }
 
 const masters = computed(() => {
-  let masters: ServerInfo[] = []
-  for (let i in infos.value) {
-    if (infos.value[i].isMaster) {
-      masters.push(infos.value[i])
+    let masters: ServerInfo[] = []
+    for (let i in infos.value) {
+        if (infos.value[i].isMaster) {
+            masters.push(infos.value[i])
+        }
     }
-  }
-  return masters
+    return masters
 })
 
 function getSlaves(masterId: string) {
-  api.metadata.getPeers(masterId).then(v => {
-    slaves.value = v
-  }).catch((err: Error) => {
-    useToast().error(err.message)
-  })
+    api.metadata.getPeers(masterId).then(v => {
+        slaves.value = v
+    }).catch((err: Error) => {
+        useToast().error(err.message)
+    })
 }
 
 function leaveCluster(servId: string) {
-  api.metadata.leaveCluster(servId).then(() => {
-    useToast().success(t('req-success'))
-  }).catch((e: Error) => {
-    useToast().error(e.message)
-  })
+    api.metadata.leaveCluster(servId).then(() => {
+        useToast().success(t('req-success'))
+    }).catch((e: Error) => {
+        useToast().error(e.message)
+    })
 }
 
 function joinCluster(masterId: string, servId: string) {
-  api.metadata.joinLeader(masterId, servId).then(() => {
-    useToast().success(t('req-success'))
-  }).catch((e: Error) => {
-    useToast().error(e.message)
-  })
+    api.metadata.joinLeader(masterId, servId).then(() => {
+        useToast().success(t('req-success'))
+    }).catch((e: Error) => {
+        useToast().error(e.message)
+    })
 }
 
 function closeMigrateDialog() {
-  openMigrateDialog.value = false
-  formErrMsg.value = ""
-  migrateReq.value = {srcServerId: "", destServerId: "", slots: [], slotsStr: ""}
+    openMigrateDialog.value = false
+    formErrMsg.value = ""
+    migrateReq.value = {srcServerId: "", destServerId: "", slots: [], slotsStr: ""}
 }
 
 
 function closeRaftCmdDialog() {
-  openRaftCmdDialog.value = false
-  selectedRaftMaster.value = ""
-  slaves.value = []
+    openRaftCmdDialog.value = false
+    selectedRaftMaster.value = ""
+    slaves.value = []
 }
 
 function getSlotsString(id: string): string {
-  for (let k in slots) {
-    if (slots[k].serverId === id) {
-      return slots[k].slots.join(",")
+    for (let k in slots) {
+        if (slots[k].serverId === id) {
+            return slots[k].slots.join(",")
+        }
     }
-  }
-  return "unknown slots"
+    return "unknown slots"
 }
 
 function updateInfo(state: any) {
-  if (infos.value.length > 0) {
-    return
-  }
-  let stats = state.serverStat.metaServer
-  for (let k in stats) {
-    let v = stats[k]
-    infos.value.push(v)
-    capInfo.value.used += v.sysInfo.diskInfo.used
-    capInfo.value.total += v.sysInfo.diskInfo.total
-    capInfo.value.free += v.sysInfo.diskInfo.free
-  }
+    if (infos.value.length > 0) {
+        return
+    }
+    let stats = state.serverStat.metaServer
+    for (let k in stats) {
+        let v = stats[k]
+        infos.value.push(v)
+        capInfo.value.used += v.sysInfo.diskInfo.used
+        capInfo.value.total += v.sysInfo.diskInfo.total
+        capInfo.value.free += v.sysInfo.diskInfo.free
+    }
 }
 
 function getSlotsDetail() {
-  api.metadata.slotsDetail().then(res => {
-    slots = res
-    slotRanges.value = getSlotRanges()
-  }).catch((err: Error) => {
-    useToast().error(err.message)
-  })
+    api.metadata.slotsDetail().then(res => {
+        slots = res
+        slotRanges.value = getSlotRanges()
+    }).catch((err: Error) => {
+        useToast().error(err.message)
+    })
 }
 
 function startMigrate() {
-  if (migrateReq.value.srcServerId == migrateReq.value.destServerId) {
-    formErrMsg.value = t('do-not-choose-same-id')
-    return
-  }
-  if (!/^(\d+-\d+,?)+$/.test(migrateReq.value.slotsStr)) {
-    formErrMsg.value = t('err-format-of-slots')
-    return;
-  }
-  migrateReq.value.slots = migrateReq.value.slotsStr.split(",")
-  api.metadata.startMigrate(migrateReq.value)
-      .catch((err: Error) => {
-        formErrMsg.value = err.message
-      })
+    if (migrateReq.value.srcServerId == migrateReq.value.destServerId) {
+        formErrMsg.value = t('do-not-choose-same-id')
+        return
+    }
+    if (!/^(\d+-\d+,?)+$/.test(migrateReq.value.slotsStr)) {
+        formErrMsg.value = t('err-format-of-slots')
+        return;
+    }
+    migrateReq.value.slots = migrateReq.value.slotsStr.split(",")
+    api.metadata.startMigrate(migrateReq.value)
+        .then(() => {
+            useToast().success(t('req-success'))
+            closeMigrateDialog()
+        })
+        .catch((err: Error) => {
+            formErrMsg.value = err.message
+        })
 }
 
 store.$subscribe((mutation, state) => {
-  updateInfo(state)
+    updateInfo(state)
 })
 
 onBeforeMount(() => {
-  updateInfo(store)
-  getSlotsDetail()
+    updateInfo(store)
+    getSlotsDetail()
 })
 </script>
 
 <style scoped>
 .text-input {
-  @apply block appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm
+    @apply block appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm
 }
 
 .text-input-sm {
-  @apply block appearance-none rounded-md border border-gray-300 px-2 py-1 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 text-sm
+    @apply block appearance-none rounded-md border border-gray-300 px-2 py-1 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 text-sm
 }
 </style>
 
