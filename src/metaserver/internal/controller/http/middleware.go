@@ -34,7 +34,9 @@ func CheckKeySlot(c *gin.Context) {
 			return
 		}
 		if ok, other := logic.NewHashSlot().IsKeyOnThisServer(name); !ok {
-			response.Exec(c).Redirect(http.StatusSeeOther, other)
+			response.Exec(c).
+				Header(gin.H{"Location": other}).
+				Fail(http.StatusSeeOther, "see other")
 			return
 		}
 	}

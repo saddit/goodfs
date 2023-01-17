@@ -152,7 +152,11 @@ func TestGetHashSlot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(cst.EtcdPrefix.HashSlot, resp.Kvs)
+	for _, kv := range resp.Kvs {
+		var i hashslot.SlotInfo
+		_ = util.DecodeMsgp(&i, kv.Value)
+		t.Logf("key=%s, value=%s", kv.Key, i.Slots)
+	}
 }
 
 func TestGetPeersInfo(t *testing.T) {
@@ -169,7 +173,9 @@ func TestGetPeersInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(cst.EtcdPrefix.PeersInfo, resp.Kvs)
+	for _, kv := range resp.Kvs {
+		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
+	}
 }
 
 func TestCalcHashSlot(t *testing.T) {

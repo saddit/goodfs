@@ -5,7 +5,7 @@ package entity
 type Metadata struct {
 	*Extra     `msg:"-"`
 	Name       string `json:"name" msg:"name" binding:"required"`
-	Bucket     string `json:"bucket" msg:"bucket"`
+	Bucket     string `json:"bucket" msg:"bucket" binding:"required"`
 	CreateTime int64  `json:"createTime" msg:"create_time"`
 	UpdateTime int64  `json:"updateTime" msg:"update_time"`
 }

@@ -41,6 +41,10 @@ func Run(cfg *config.Config) {
 	defer pool.Registry.Unregister()
 	// auto save disk-info
 	defer logic.NewSystemStatLogic().StartAutoSave()()
+	// remove slots-info
+	defer logic.NewHashSlot().RemoveFromEtcd(cfg.HashSlot.StoreID)
+	// flush config
+	defer cfg.Persist()
 
 	graceful.ListenAndServe(httpServer, grpcServer)
 }

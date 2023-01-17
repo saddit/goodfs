@@ -95,7 +95,7 @@ func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {
 	if srcAddr == "" || destAddr == "" {
 		return response.NewError(400, "invalid server id")
 	}
-	cc, err := grpc.Dial(srcAddr)
+	cc, err := grpc.Dial(srcAddr, grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
@@ -129,8 +129,12 @@ func (m *Metadata) GetSlotsDetail() (map[string]*hashslot.SlotInfo, error) {
 	res := make(map[string]*hashslot.SlotInfo, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		var info hashslot.SlotInfo
-		if err := util.DecodeMsgp(&info, kv.Value); err != nil {
+		if err = util.DecodeMsgp(&info, kv.Value); err != nil {
 			return nil, err
+		}
+		// to avoid NULL in json
+		if info.Slots == nil {
+			info.Slots = []string{}
 		}
 		res[info.GroupID] = &info
 	}
