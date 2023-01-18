@@ -8,8 +8,13 @@ import "message.proto";
 
 message ObjectData {
   string fileName = 1;
+  bytes data = 2;
+  int64 size = 3;
+}
+
+message ObjectInfo {
+  string fileName = 1;
   string originLocate = 2;
-  bytes data = 3;
 }
 
 message RequiredInfo {
@@ -19,7 +24,8 @@ message RequiredInfo {
 }
 
 service ObjectMigration {
-  rpc ReceiveObject(stream ObjectData) returns (stream Response);
+  rpc ReceiveData(stream ObjectData) returns (Response);
+  rpc ReceiveObject(ObjectInfo) returns (Response);
   rpc RequireSend(RequiredInfo) returns (Response);
   rpc LeaveCommand(EmptyReq) returns (Response);
   rpc JoinCommand(EmptyReq) returns (Response);

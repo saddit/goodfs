@@ -9,6 +9,7 @@ import (
 	"io"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
+	"os"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -25,22 +26,41 @@ func NewMigrationServer(service *service.MigrationService) *MigrationServer {
 	return &MigrationServer{Service: service}
 }
 
-func (ms *MigrationServer) ReceiveObject(stream pb.ObjectMigration_ReceiveObjectServer) error {
+func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServer) error {
+	var file *os.File
+	defer func () {
+		if file != nil {
+			_ = file.Close()
+		}
+	}()
 	for {
 		data, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return err
+			return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
 		}
-		if err = ms.Service.Received(data); err != nil {
-			util.LogErr(stream.Send(&pb.Response{Success: false, Message: err.Error()}))
-		} else {
-			util.LogErr(stream.Send(&pb.Response{Success: true}))
+		if file == nil {
+			if file, err = ms.Service.OpenFile(data.FileName, data.Size); err != nil {
+				if os.IsExist(err) {
+					break
+				}
+				return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
+			}
+		}
+		if err = ms.Service.AppendData(file, data.Data); err != nil {
+			return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
 		}
 	}
-	return nil
+	return stream.SendAndClose(&pb.Response{Success: true})
+}
+
+func (ms *MigrationServer) ReceiveObject(_ context.Context, info *pb.ObjectInfo) (*pb.Response, error) {
+	if err := ms.Service.Received(info); err != nil {
+		return &pb.Response{Success: false, Message: err.Error()}, nil
+	}
+	return &pb.Response{Success: true}, nil
 }
 
 func (ms *MigrationServer) RequireSend(_ context.Context, info *pb.RequiredInfo) (*pb.Response, error) {

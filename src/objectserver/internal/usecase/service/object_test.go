@@ -69,7 +69,6 @@ func TestWriteWithSize(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	t.Logf("fist write %d bytes", n)
 	assert.New(t).GreaterOrEqual(n, int64(fstSize))
 	// write second time
 	bt = make([]byte, secSize)
@@ -82,7 +81,6 @@ func TestWriteWithSize(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	t.Logf("second write %d bytes", n)
 	assert.New(t).GreaterOrEqual(n, int64(secSize))
 	// read file
 	exceptSize := fstSize + secSize - (fstSize+secSize)%4096 + 4096
@@ -111,4 +109,57 @@ func TestWriteWithSize(t *testing.T) {
 	assert.New(t).Equal(0, numOfOther)
 	assert.New(t).Equal(fstSize, numOfA)
 	assert.New(t).Equal(secSize, numOfB)
+}
+
+func TestWriteFileCompress(t *testing.T) {
+	defer func() {
+		_, err := DeleteFile(".", "new_file")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	}()
+	var bt []byte
+	fstSize, sndSize := 1024*910*3, 1024*1000
+	// first write
+	bt = make([]byte, fstSize)
+	for i := range bt {
+		bt[i] = 'A'
+	}
+	buf := bytes.NewBuffer(bt)
+	n, err := WriteFileCompress("./new_file", buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.New(t).Equal(len(bt), int(n))
+	// second write
+	bt = make([]byte, sndSize)
+	for i := range bt {
+		bt[i] = 'B'
+	}
+	buf = bytes.NewBuffer(bt)
+	n, err = WriteFileCompress("./new_file", buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.New(t).Equal(len(bt), int(n))
+	// read
+	buf = bytes.NewBuffer(nil)
+	err = GetFileCompress("./new_file", 0, int64(fstSize+sndSize), buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var numOfA, numOfB, numOfOther int
+	for _, b := range buf.Bytes() {
+		if b == 'A' {
+			numOfA++
+		} else if b == 'B' {
+			numOfB++
+		} else {
+			numOfOther++
+		}
+	}
+	assert.New(t).Equal(fstSize, numOfA)
+	assert.New(t).Equal(sndSize, numOfB)
+	assert.New(t).Equal(0, numOfOther)
 }

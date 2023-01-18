@@ -12,6 +12,8 @@ import (
 	global "objectserver/internal/usecase/pool"
 	"os"
 	"path/filepath"
+
+	"github.com/klauspost/compress/s2"
 )
 
 const (
@@ -48,25 +50,35 @@ func UnMarkExist(name string) {
 }
 
 // Put save object to storage path
-func Put(fileName string, fileStream io.Reader) error {
+func Put(fileName string, fileStream io.Reader, compress bool) (err error) {
 	if Exist(fileName) {
-		return nil
+		return
 	}
-	size, err := WriteFile(filepath.Join(global.Config.StoragePath, fileName), fileStream)
+	var size int64
+	if compress {
+		size, err = WriteFileCompress(filepath.Join(global.Config.StoragePath, fileName), fileStream)
+	} else {
+		size, err = WriteFile(filepath.Join(global.Config.StoragePath, fileName), fileStream)
+	}
 	if err != nil {
-		return err
+		return
 	}
 	go func() {
 		defer graceful.Recover()
 		global.ObjectCap.CurrentCap.Add(uint64(size))
 		MarkExist(fileName)
 	}()
-	return nil
+	return
 }
 
 // Get read object to writer with provided size. pass to GetFile
-func Get(name string, offset, size int64, writer io.Writer) error {
-	if err := GetFile(filepath.Join(global.Config.StoragePath, name), offset, size, writer); err != nil {
+func Get(name string, offset, size int64, compress bool, writer io.Writer) (err error) {
+	if compress {
+		err = GetFileCompress(filepath.Join(global.Config.StoragePath, name), offset, size, writer)
+	} else {
+		err = GetFile(filepath.Join(global.Config.StoragePath, name), offset, size, writer)
+	}
+	if err != nil {
 		return err
 	}
 	MarkExist(name)
@@ -118,7 +130,7 @@ func Delete(name string) error {
 	return nil
 }
 
-// DeleteFile will remove the file under the path if file not exist, do nothing
+// DeleteFile will remove the file under the path. if file not exist, it will do nothing.
 func DeleteFile(path, name string) (int64, error) {
 	pt := filepath.Join(path, name)
 	info, err := os.Stat(path)
@@ -134,8 +146,8 @@ func DeleteFile(path, name string) (int64, error) {
 	return info.Size(), nil
 }
 
-// WriteFileWithSize will use provided curSize to remove padding of tail
-// and keep writing data aligned to multiple of 4KB
+// WriteFileWithSize will append data to file using provided curSize to remove padding of data
+// and work with DIO keeping readed data aligned to multiple of 4KB
 func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (int64, error) {
 	file, err := disk.OpenFileDirectIO(fullPath, os.O_RDWR|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
@@ -175,10 +187,10 @@ func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (in
 		}
 	}
 	// write file and aligned to power of 4KB
-	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(8 * cst.OS.PageSize))
+	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(8*cst.OS.PageSize))
 }
 
-// WriteFile should make sure size of each write is a multiple of 4096 (except last)
+// WriteFile will append data to file and work with DIO. make sure size of each write is a multiple of 4096 (except last)
 func WriteFile(fullPath string, fileStream io.Reader) (int64, error) {
 	file, err := disk.OpenFileDirectIO(fullPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
@@ -186,7 +198,41 @@ func WriteFile(fullPath string, fileStream io.Reader) (int64, error) {
 	}
 	defer file.Close()
 	// write file and aligned to power of 4KB
-	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(8 * cst.OS.PageSize))
+	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(8*cst.OS.PageSize))
+}
+
+// GetFileCompress read s2-compressed file and work with COW
+func GetFileCompress(fullPath string, offset, size int64, writer io.Writer) error {
+	file, err := os.Open(fullPath)
+	if os.IsNotExist(err) {
+		return response.NewError(404, "object not found")
+	}
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if offset > 0 {
+		if _, err = file.Seek(offset, io.SeekStart); err != nil {
+			return err
+		}
+	}
+	_, err = io.CopyBuffer(writer, s2.NewReader(disk.LimitReader(file, size)), disk.AlignedBlock(8*cst.OS.PageSize))
+	return err
+}
+
+// WriteFile append data to file compressing by s2 and work with COW
+func WriteFileCompress(fullPath string, fileStream io.Reader) (int64, error) {
+	file, err := os.OpenFile(fullPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+	wt := s2.NewWriter(file, s2.WriterBetterCompression())
+	n, err := io.CopyBuffer(wt, fileStream, make([]byte, 8 * cst.OS.PageSize))
+	if err != nil {
+		return n, err
+	}
+	return n, wt.Close()
 }
 
 // MvTmpToStorage move the temp file to storage path with a new name
