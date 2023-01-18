@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"common/cst"
+	"common/datasize"
 	"common/graceful"
 	"common/logs"
 	"common/response"
@@ -147,7 +148,7 @@ func DeleteFile(path, name string) (int64, error) {
 }
 
 // WriteFileWithSize will append data to file using provided curSize to remove padding of data
-// and work with DIO keeping readed data aligned to multiple of 4KB
+// and work with DIO keeping read data aligned to multiple of 4KB
 func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (int64, error) {
 	file, err := disk.OpenFileDirectIO(fullPath, os.O_RDWR|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
@@ -220,7 +221,7 @@ func GetFileCompress(fullPath string, offset, size int64, writer io.Writer) erro
 	return err
 }
 
-// WriteFile append data to file compressing by s2 and work with COW
+// WriteFileCompress append data to file compressing by s2 and work with COW
 func WriteFileCompress(fullPath string, fileStream io.Reader) (int64, error) {
 	file, err := os.OpenFile(fullPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
@@ -228,26 +229,42 @@ func WriteFileCompress(fullPath string, fileStream io.Reader) (int64, error) {
 	}
 	defer file.Close()
 	wt := s2.NewWriter(file, s2.WriterBetterCompression())
-	n, err := io.CopyBuffer(wt, fileStream, make([]byte, 8 * cst.OS.PageSize))
+	n, err := io.CopyBuffer(wt, fileStream, make([]byte, 8*cst.OS.PageSize))
 	if err != nil {
 		return n, err
 	}
 	return n, wt.Close()
 }
 
-// MvTmpToStorage move the temp file to storage path with a new name
-func MvTmpToStorage(tmpName, fileName string) error {
+// CommitFile move the temp file to storage path with a new name
+func CommitFile(tmpName, fileName string, compress bool) error {
 	filePath := filepath.Join(global.Config.StoragePath, fileName)
 	tempPath := filepath.Join(global.Config.TempPath, tmpName)
 	if ExistPath(filePath) {
 		return nil
 	}
-	if err := os.Rename(tempPath, filePath); err != nil {
-		if os.IsNotExist(err) {
-			return response.NewError(404, "object not found")
+	if compress {
+		tmp, err := os.Open(filePath)
+		if err != nil {
+			return err
 		}
-		return err
+		target, err := os.OpenFile(filePath, cst.OS.WriteFlag, cst.OS.ModeUser)
+		if err != nil {
+			return err
+		}
+		_, err = io.CopyBuffer(s2.NewWriter(target), tmp, make([]byte, datasize.MB*4))
+		if err != nil {
+			return err
+		}
+	} else {
+		if err := os.Rename(tempPath, filePath); err != nil {
+			if os.IsNotExist(err) {
+				return response.NewError(404, "object not found")
+			}
+			return err
+		}
 	}
+
 	go func() {
 		defer graceful.Recover()
 		if info, err := os.Stat(filePath); err == nil {
