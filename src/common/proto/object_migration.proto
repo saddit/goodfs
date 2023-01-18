@@ -25,7 +25,7 @@ message RequiredInfo {
 
 service ObjectMigration {
   rpc ReceiveData(stream ObjectData) returns (Response);
-  rpc ReceiveObject(ObjectInfo) returns (Response);
+  rpc FinishReceive(ObjectInfo) returns (Response);
   rpc RequireSend(RequiredInfo) returns (Response);
   rpc LeaveCommand(EmptyReq) returns (Response);
   rpc JoinCommand(EmptyReq) returns (Response);

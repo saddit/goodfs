@@ -197,7 +197,7 @@ func GetPortFromAddr(addr string) string {
 	return port
 }
 
-// GetServerIP Return public ipv4 if success else return private or loopback ip. At least, return "127.0.0.1"
+// GetServerIP Return public ipv4 if success else return private or ipv6 or loopback ip. At least, return "127.0.0.1"
 func GetServerIP() string {
 	if env, ok := os.LookupEnv("SERVER_IP"); ok {
 		return env
@@ -210,6 +210,7 @@ func GetServerIP() string {
 
 	var loopback net.IP
 	var private net.IP
+	var ipv6 net.IP
 	for _, address := range addrs {
 		ip := ParseIPFromAddr(address.String())
 		if ip != nil {
@@ -219,6 +220,8 @@ func GetServerIP() string {
 				loopback = ip
 			} else if ip.To4() != nil {
 				return ip.String()
+			} else if ip.To16() != nil {
+				ipv6 = ip
 			}
 		}
 	}
@@ -227,11 +230,11 @@ func GetServerIP() string {
 		return private.String()
 	}
 
-	if loopback != nil {
-		return loopback.String()
+	if ipv6 != nil {
+		return ipv6.String()
 	}
 
-	return "127.0.0.1"
+	return loopback.String()
 }
 
 func ToInt(str string) int {

@@ -6,6 +6,7 @@ import (
 	"common/pb"
 	"common/util"
 	"context"
+	"errors"
 	"io"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
@@ -28,7 +29,7 @@ func NewMigrationServer(service *service.MigrationService) *MigrationServer {
 
 func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServer) error {
 	var file *os.File
-	defer func () {
+	defer func() {
 		if file != nil {
 			_ = file.Close()
 		}
@@ -56,8 +57,8 @@ func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServ
 	return stream.SendAndClose(&pb.Response{Success: true})
 }
 
-func (ms *MigrationServer) ReceiveObject(_ context.Context, info *pb.ObjectInfo) (*pb.Response, error) {
-	if err := ms.Service.Received(info); err != nil {
+func (ms *MigrationServer) FinishReceive(_ context.Context, info *pb.ObjectInfo) (*pb.Response, error) {
+	if err := ms.Service.FinishObject(info); err != nil {
 		return &pb.Response{Success: false, Message: err.Error()}, nil
 	}
 	return &pb.Response{Success: true}, nil
@@ -65,7 +66,11 @@ func (ms *MigrationServer) ReceiveObject(_ context.Context, info *pb.ObjectInfo)
 
 func (ms *MigrationServer) RequireSend(_ context.Context, info *pb.RequiredInfo) (*pb.Response, error) {
 	logs.Std().Infof("start sending %dB data to %s", info.RequiredSize, info.TargetAddress)
-	if err := ms.Service.SendingTo(map[string]int64{
+	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, true)
+	if !ok {
+		return nil, errors.New("could not find register address")
+	}
+	if err := ms.Service.SendingTo(curLocate, map[string]int64{
 		info.TargetAddress: info.RequiredSize,
 	}); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -79,7 +84,12 @@ func (ms *MigrationServer) LeaveCommand(context.Context, *pb.EmptyReq) (*pb.Resp
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if err = ms.Service.SendingTo(sizeMap); err != nil {
+	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, true)
+	if !ok {
+		return nil, errors.New("could not find register address")
+	}
+	util.LogErr(pool.Registry.Unregister())
+	if err = ms.Service.SendingTo(curLocate, sizeMap); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.Response{Success: true, Message: "ok"}, nil
@@ -87,6 +97,11 @@ func (ms *MigrationServer) LeaveCommand(context.Context, *pb.EmptyReq) (*pb.Resp
 
 func (ms *MigrationServer) JoinCommand(context.Context, *pb.EmptyReq) (*pb.Response, error) {
 	// get deviation value
+	util.LogErr(pool.Registry.Register())
+	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, true)
+	if !ok {
+		return nil, errors.New("could not find register address")
+	}
 	sizeMap, err := ms.Service.DeviationValues(true)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -117,7 +132,7 @@ func (ms *MigrationServer) JoinCommand(context.Context, *pb.EmptyReq) (*pb.Respo
 			defer wg.Done()
 			if _, err := cliMap[key].RequireSend(context.Background(), &pb.RequiredInfo{
 				RequiredSize:  value,
-				TargetAddress: util.GetHostPort(pool.Config.RpcPort),
+				TargetAddress: curLocate,
 			}); err != nil {
 				success = false
 				logs.Std().Error(err)
