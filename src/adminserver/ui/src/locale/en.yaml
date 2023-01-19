@@ -3,6 +3,7 @@ home: 'Home'
 about: 'About'
 setting: 'Setting'
 metadata: 'Metadata'
+bucket: 'Bucket'
 not-found: "Not Found"
 server: 'Server'
 api-server: 'API Server'
