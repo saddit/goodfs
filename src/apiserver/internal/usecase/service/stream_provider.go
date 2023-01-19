@@ -6,12 +6,13 @@ import (
 )
 
 type StreamOption struct {
-	Locates []string
-	Bucket  string
-	Hash    string
-	Name    string
-	Size    int64
-	Updater LocatesUpdater
+	Locates  []string
+	Bucket   string
+	Hash     string
+	Name     string
+	Size     int64
+	Compress bool
+	Updater  LocatesUpdater
 }
 
 func RsStreamProvider(opt *StreamOption, cfg *config.RsConfig) StreamProvider {

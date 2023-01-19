@@ -73,11 +73,12 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 	return nil
 }
 
-func PutTmpObject(ip, id, name string) error {
+func PutTmpObject(ip, id, name string, compress bool) error {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	form := make(url.Values)
 	form.Set("name", name)
+	form.Set("compress", fmt.Sprintf("%t", compress))
 	req, _ := http.NewRequest(http.MethodPut, tempRest(ip, id), strings.NewReader(form.Encode()))
 	keepAlive(req)
 	resp, e := pool.Http.Do(req)
@@ -136,10 +137,12 @@ func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
 	return pool.Http.Do(req)
 }
 
-func GetObject(ip, name string, offset int, size int64) (*http.Response, error) {
+func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Response, error) {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
-	req, err := http.NewRequest(http.MethodGet, objectRest(ip, name), nil)
+	form := url.Values{}
+	form.Set("compress", fmt.Sprintf("%t", compress))
+	req, err := http.NewRequest(http.MethodGet, objectRest(ip, name), strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}

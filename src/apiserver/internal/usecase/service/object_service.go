@@ -133,8 +133,13 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (vn
 	}
 
 	ver := md.Versions[0]
+	// if bucket enforce compress
+	if bucket.Compress {
+		ver.Compress = true
+	}
 	provider := newStreamProvider(ver)
 	provider.FillMetadata(ver)
+	// if bucket enforce store strategy
 	if bucket.StoreStrategy > 0 {
 		ver.StoreStrategy = bucket.StoreStrategy
 		ver.DataShards = bucket.DataShards
@@ -234,8 +239,9 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 
 func newStreamProvider(meta *entity.Version) StreamProvider {
 	opt := &StreamOption{
-		Hash: meta.Hash,
-		Size: meta.Size,
+		Hash:     meta.Hash,
+		Size:     meta.Size,
+		Compress: meta.Compress,
 	}
 	switch meta.StoreStrategy {
 	default:

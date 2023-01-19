@@ -21,7 +21,7 @@ func NewCopyPutStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*Copy
 		wg.Todo()
 		go func(idx int) {
 			defer wg.Done()
-			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), opt.Size)
+			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), opt.Size, opt.Compress)
 			if e != nil {
 				wg.Error(e)
 			} else {

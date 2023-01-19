@@ -20,7 +20,7 @@ func NewCopyGetStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*Copy
 	lb := logic.NewDiscovery().NewDataServSelector()
 	for idx, loc := range opt.Locates {
 		id := fmt.Sprint(opt.Hash, ".", idx)
-		getStream, err = NewGetStream(loc, id, opt.Size)
+		getStream, err = NewGetStream(loc, id, opt.Size, opt.Compress)
 		if err == nil {
 			break
 		}

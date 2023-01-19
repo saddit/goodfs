@@ -14,26 +14,27 @@ type PutStream struct {
 	Locate    string
 	name      string
 	tmpId     string
+	compress  bool
 	committed *atomic.Value
 }
 
 //NewPutStream IO: 发送Post请求到数据服务器
-func NewPutStream(ip, name string, size int64) (*PutStream, error) {
+func NewPutStream(ip, name string, size int64, compress bool) (*PutStream, error) {
 	id, e := PostTmpObject(ip, name, size)
 	if e != nil {
 		return nil, e
 	}
 	flag := &atomic.Value{}
 	flag.Store(false)
-	res := &PutStream{Locate: ip, name: name, tmpId: id, committed: flag}
+	res := &PutStream{Locate: ip, name: name, tmpId: id, committed: flag, compress: compress}
 	return res, nil
 }
 
 //newExistedPutStream 不发送Post请求
-func newExistedPutStream(ip, name, id string) *PutStream {
+func newExistedPutStream(ip, name, id string, compress bool) *PutStream {
 	flag := &atomic.Value{}
 	flag.Store(false)
-	res := &PutStream{Locate: ip, name: name, tmpId: id, committed: flag}
+	res := &PutStream{Locate: ip, name: name, tmpId: id, committed: flag, compress: compress}
 	return res
 }
 
@@ -64,7 +65,7 @@ func (p *PutStream) Commit(ok bool) error {
 			return nil
 		}
 
-		return PutTmpObject(p.Locate, p.tmpId, p.name)
+		return PutTmpObject(p.Locate, p.tmpId, p.name, p.compress)
 	}
 	return nil
 }
