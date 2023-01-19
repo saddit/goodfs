@@ -17,7 +17,7 @@ func NewObjectsController() *ObjectsController {
 }
 
 func (oc *ObjectsController) Register(route gin.IRouter) {
-	route.Group("objects").
+	route.Group("objects").Use(RequireToken).
 		GET("/download/:name", oc.Download).
 		PUT("/upload", oc.Upload).
 		POST("/join/:serverId", oc.Join).
@@ -26,13 +26,14 @@ func (oc *ObjectsController) Register(route gin.IRouter) {
 
 func (oc *ObjectsController) Upload(c *gin.Context) {
 	body := struct {
-		File *multipart.FileHeader `form:"file" binding:"required"`
+		File   *multipart.FileHeader `form:"file" binding:"required"`
+		Bucket string                `form:"bucket" binding:"required"`
 	}{}
 	if err := c.ShouldBind(&body); err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	if err := logic.NewObjects().Upload(body.File, GetAuthToken(c)); err != nil {
+	if err := logic.NewObjects().Upload(body.File, body.Bucket, GetAuthToken(c)); err != nil {
 		response.FailErr(err, c)
 		return
 	}
@@ -42,13 +43,14 @@ func (oc *ObjectsController) Upload(c *gin.Context) {
 func (oc *ObjectsController) Download(c *gin.Context) {
 	body := struct {
 		Name    string `uri:"name"`
+		Bucket  string `form:"bucket"`
 		Version int    `form:"version"`
 	}{}
 	if err := entity.Bind(c, &body, false); err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	reader, err := logic.NewObjects().Download(body.Name, body.Version, GetAuthToken(c))
+	reader, err := logic.NewObjects().Download(body.Name, body.Bucket, body.Version, GetAuthToken(c))
 	if err != nil {
 		response.FailErr(err, c)
 		return

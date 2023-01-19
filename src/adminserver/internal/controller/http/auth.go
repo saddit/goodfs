@@ -34,6 +34,14 @@ func GetAuthToken(c *gin.Context) string {
 	return tk.(string)
 }
 
+func RequireToken(c *gin.Context) {
+	if GetAuthToken(c) == "" {
+		response.Exec(c).Abort().Fail(403, "invalid credential")
+		return
+	}
+	c.Next()
+}
+
 func ClearCredential(router gin.IRouter) {
 	router.POST("/logout", func(c *gin.Context) {
 		sessions.Default(c).Clear()

@@ -15,12 +15,13 @@ func NewMetadataController() *MetadataController {
 }
 
 func (mc *MetadataController) Register(r gin.IRouter) {
-	r.Group("metadata").
+	r.Group("metadata").Use(RequireToken).
 		GET("/page", mc.Page).
 		GET("/versions", mc.Versions).
 		POST("/migration", mc.Migration).
 		GET("/slots_detail", mc.SlotsDetail).
 		GET("/peers", mc.Peers).
+		GET("/buckets", mc.BucketList).
 		POST("/leave_cluster", mc.LeaveCluster).
 		POST("/join_leader", mc.JoinLeader)
 }
@@ -130,4 +131,20 @@ func (mc *MetadataController) Peers(c *gin.Context) {
 		return
 	}
 	response.OkJson(res, c)
+}
+
+func (mc *MetadataController) BucketList(c *gin.Context) {
+	var cond logic.BucketCond
+	if err := c.ShouldBindQuery(&cond); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	list, total, err := logic.NewMetadata().BucketPaging(&cond)
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Exec(c).
+		Header(gin.H{"X-Total-Count": total}).
+		JSON(list)
 }
