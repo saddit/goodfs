@@ -216,10 +216,12 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 		return o.metaService.UpdateVersion(meta.Name, meta.Bucket, ver)
 	}
 	opt := &StreamOption{
-		Hash:    ver.Hash,
-		Size:    ver.Size,
-		Name:    meta.Name,
-		Updater: up,
+		Hash:     ver.Hash,
+		Size:     ver.Size,
+		Name:     meta.Name,
+		Bucket:   meta.Bucket,
+		Compress: ver.Compress,
+		Updater:  up,
 	}
 	switch ver.StoreStrategy {
 	default:
