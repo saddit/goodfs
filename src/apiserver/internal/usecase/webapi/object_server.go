@@ -73,13 +73,12 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 	return nil
 }
 
-func PutTmpObject(ip, id, name string, compress bool) error {
+func PutTmpObject(ip, id string, compress bool) error {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	form := make(url.Values)
-	form.Set("name", name)
 	form.Set("compress", fmt.Sprintf("%t", compress))
-	req, _ := http.NewRequest(http.MethodPut, tempRest(ip, id), strings.NewReader(form.Encode()))
+	req, _ := http.NewRequest(http.MethodPut, fmt.Sprint(tempRest(ip, id), "?", form.Encode()), nil)
 	keepAlive(req)
 	resp, e := pool.Http.Do(req)
 	if e != nil {

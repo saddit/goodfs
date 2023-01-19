@@ -244,7 +244,7 @@ func CommitFile(tmpName, fileName string, compress bool) error {
 		return nil
 	}
 	if compress {
-		tmp, err := os.Open(filePath)
+		tmp, err := os.Open(tempPath)
 		if err != nil {
 			return err
 		}

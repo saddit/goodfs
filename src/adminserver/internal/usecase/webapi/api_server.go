@@ -1,7 +1,9 @@
 package webapi
 
 import (
+	"adminserver/internal/entity"
 	"adminserver/internal/usecase/pool"
+	"common/request"
 	"common/response"
 	"common/util"
 	"fmt"
@@ -76,6 +78,54 @@ func CheckToken(ip, token string) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return nil
+}
+
+func CreateBucket(ip string, b *entity.Bucket, token string) error {
+	req, err := request.JsonReq(http.MethodPost, fmt.Sprintf("%s://%s/v1/bucket", GetSchema(), ip), b)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", token)
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return nil
+}
+
+func UpdateBucket(ip string, b *entity.Bucket, token string) error {
+	req, err := request.JsonReq(http.MethodPut, fmt.Sprintf("%s://%s/v1/bucket/%s", GetSchema(), b.Name, ip), b)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", token)
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return nil
+}
+
+func DeleteBucket(ip, name string, token string) error {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s://%s/v1/bucket/%s", GetSchema(), ip, name), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", token)
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusNoContent {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
 	return nil

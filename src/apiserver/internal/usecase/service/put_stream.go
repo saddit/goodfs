@@ -65,7 +65,7 @@ func (p *PutStream) Commit(ok bool) error {
 			return nil
 		}
 
-		return PutTmpObject(p.Locate, p.tmpId, p.name, p.compress)
+		return PutTmpObject(p.Locate, p.tmpId, p.compress)
 	}
 	return nil
 }

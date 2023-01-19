@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TODO: bucket crud
+
 type MetadataController struct {
 }
 
