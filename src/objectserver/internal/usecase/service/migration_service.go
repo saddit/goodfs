@@ -139,10 +139,18 @@ func (ms *MigrationService) SendingTo(curLocate string, sizeMap map[string]int64
 		addrs = append(addrs, k)
 		clientMap[k] = pb.NewObjectMigrationClient(cc)
 	}
+	success := true
 	dg := util.LimitDoneGroup(16)
 	defer dg.Close()
 	var cur string
 	var leftSize int64
+	go func() {
+		defer graceful.Recover()
+		for err := range dg.ErrorUtilDone() {
+			msLog.Error(err)
+			success = false
+		}
+	}()
 	err := filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			msLog.Errorf("walk path %s err: %s, will skip this path", path, err)
@@ -196,11 +204,7 @@ func (ms *MigrationService) SendingTo(curLocate string, sizeMap map[string]int64
 		}()
 		return nil
 	})
-	success := true
-	for err := range dg.ErrorUtilDone() {
-		msLog.Error(err)
-		success = false
-	}
+	dg.Wait()
 	if err != nil && err != io.EOF {
 		return err
 	}
