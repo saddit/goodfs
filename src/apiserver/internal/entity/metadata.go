@@ -41,6 +41,7 @@ func (m *Metadata) LastVersion() *Version {
 }
 
 type Version struct {
+	Compress      bool           `json:"compress"`
 	Hash          string         `json:"hash"`
 	StoreStrategy ObjectStrategy `json:"storeStrategy"`
 	Sequence      int32          `json:"sequence"`
@@ -55,6 +56,7 @@ type Version struct {
 type Bucket struct {
 	Versioning     bool           `json:"versioning"`     // Versioning marks bucket can store multi versions of object. if true, VersionRemains will be used
 	Readonly       bool           `json:"readonly"`       // Readonly marks objects in bucket only allowed to read
+	Compress       bool           `json:"compress"`       // Compress marks objects in bucket should be compressed before store
 	StoreStrategy  ObjectStrategy `json:"storeStrategy"`  // StoreStrategy if not zero, it will apply to ever objects under this bucket
 	DataShards     int            `json:"dataShards"`     // DataShards used when StoreStrategy is not zero
 	ParityShards   int            `json:"parityShards"`   // ParityShards used when StoreStrategy is not zero
