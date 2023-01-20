@@ -1,10 +1,11 @@
-package service
+package test
 
 import (
 	"bytes"
 	"io"
 	"objectserver/config"
 	global "objectserver/internal/usecase/pool"
+	. "objectserver/internal/usecase/service"
 	"os"
 	"path/filepath"
 
@@ -223,10 +224,4 @@ func TestCommitFile(t *testing.T) {
 	assert.New(t).Equal(fst, numOfA)
 	assert.New(t).Equal(snd, numOfB)
 	assert.New(t).Equal(0, numOfOther)
-}
-
-func TestGetFileCompress(t *testing.T) {
-	buffer := bytes.NewBuffer(nil)
-	_ = GetFileCompress("./testfile", 0, int64(18717), buffer)
-	_ = os.WriteFile("./new_file", buffer.Bytes(), 0700)
 }
