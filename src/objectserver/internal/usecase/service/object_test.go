@@ -3,6 +3,8 @@ package service
 import (
 	"bytes"
 	"io"
+	"objectserver/config"
+	global "objectserver/internal/usecase/pool"
 	"os"
 	"path/filepath"
 
@@ -161,5 +163,52 @@ func TestWriteFileCompress(t *testing.T) {
 	}
 	assert.New(t).Equal(fstSize, numOfA)
 	assert.New(t).Equal(sndSize, numOfB)
+	assert.New(t).Equal(0, numOfOther)
+}
+
+func TestCommitFile(t *testing.T) {
+	defer func() {
+		_, err := DeleteFile(".", "new_file")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		_, err = DeleteFile(".", "new_file_compress")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	}()
+	bt := make([]byte, 3090)
+	for i := range bt {
+		bt[i] = 'A'
+	}
+	buf := bytes.NewBuffer(bt)
+	_, err := WriteFile(filepath.Join(".", "new_file"), buf)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	global.Config = &config.Config{StoragePath: ".", TempPath: "."}
+	if err = CommitFile("new_file", "new_file_compress", true); err != nil {
+		t.Error(err)
+		return
+	}
+	buf = bytes.NewBuffer(nil)
+	if err = GetFileCompress("./new_file_compress", 0, int64(len(bt)), buf); err != nil {
+		t.Error(err)
+		return
+	}
+	var numOfA, numOfB, numOfOther int
+	for _, b := range buf.Bytes() {
+		if b == 'A' {
+			numOfA++
+		} else if b == 'B' {
+			numOfB++
+		} else {
+			numOfOther++
+		}
+	}
+	assert.New(t).Equal(len(bt), numOfA)
 	assert.New(t).Equal(0, numOfOther)
 }

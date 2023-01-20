@@ -35,7 +35,7 @@ func Put(c *gin.Context) {
 		return
 	}
 	if len(cache) > 0 {
-		go func ()  {
+		go func() {
 			defer graceful.Recover()
 			pool.Cache.Set(req.Name, cache)
 		}()
@@ -60,7 +60,7 @@ func Get(c *gin.Context) {
 		Size     int64  `header:"size" binding:"required"`
 		Compress bool   `form:"compress"`
 	}{}
-	if err := entity.BindAll(c, req, binding.Uri, binding.Query); err != nil {
+	if err := entity.BindAll(c, req, binding.Uri, binding.Query, binding.Header); err != nil {
 		response.FailErr(err, c)
 		return
 	}
@@ -80,7 +80,7 @@ func Get(c *gin.Context) {
 		return
 	}
 	if len(buf) > 0 {
-		go func ()  {
+		go func() {
 			defer graceful.Recover()
 			pool.Cache.Set(req.Name, buf)
 		}()

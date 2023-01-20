@@ -217,7 +217,7 @@ func GetFileCompress(fullPath string, offset, size int64, writer io.Writer) erro
 			return err
 		}
 	}
-	_, err = io.CopyBuffer(writer, s2.NewReader(disk.LimitReader(file, size)), disk.AlignedBlock(8*cst.OS.PageSize))
+	_, err = io.CopyBuffer(disk.LimitWriter(writer, size), s2.NewReader(file), disk.AlignedBlock(8*cst.OS.PageSize))
 	return err
 }
 
@@ -246,13 +246,20 @@ func CommitFile(tmpName, fileName string, compress bool) error {
 	if compress {
 		tmp, err := os.Open(tempPath)
 		if err != nil {
+			if os.IsNotExist(err) {
+				return response.NewError(404, "object not found")
+			}
 			return err
 		}
+		defer tmp.Close()
 		target, err := os.OpenFile(filePath, cst.OS.WriteFlag, cst.OS.ModeUser)
 		if err != nil {
 			return err
 		}
-		_, err = io.CopyBuffer(s2.NewWriter(target), tmp, make([]byte, datasize.MB*4))
+		defer target.Close()
+		wt := s2.NewWriter(target, s2.WriterBlockSize(int(datasize.MB*2)))
+		defer wt.Close()
+		_, err = io.CopyBuffer(wt, tmp, make([]byte, datasize.MB*4))
 		if err != nil {
 			return err
 		}
@@ -265,12 +272,12 @@ func CommitFile(tmpName, fileName string, compress bool) error {
 		}
 	}
 
-	go func() {
-		defer graceful.Recover()
-		if info, err := os.Stat(filePath); err == nil {
-			global.ObjectCap.CurrentCap.Add(uint64(info.Size()))
-		}
-		MarkExist(fileName)
-	}()
+	//go func() {
+	//	defer graceful.Recover()
+	//	if info, err := os.Stat(filePath); err == nil {
+	//		global.ObjectCap.CurrentCap.Add(uint64(info.Size()))
+	//	}
+	//	MarkExist(fileName)
+	//}()
 	return nil
 }

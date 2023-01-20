@@ -166,24 +166,22 @@ func HeadObject(ip, id string) error {
 	return fmt.Errorf("requset %s: %s", resp.Request.URL, resp.Status)
 }
 
-func PutObject(ip, id string, body io.Reader) error {
+func PutObject(ip, id string, compress bool, body io.Reader) error {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
-	req, _ := http.NewRequest(http.MethodPut, objectRest(ip, id), body)
-	keepAlive(req)
-	resp, e := pool.Http.Do(req)
-	if e != nil {
-		return e
+	form := url.Values{}
+	form.Set("compress", fmt.Sprint(compress))
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprint(objectRest(ip, id), "?", form.Encode()), body)
+	if err != nil {
+		return err
 	}
-	if resp.StatusCode == http.StatusBadRequest {
-		content, err := io.ReadAll(resp.Body)
-		if err != nil {
-			content = util.StrToBytes(resp.Status)
-		}
-		return fmt.Errorf("put object id=%v, return content=%v", id, string(content))
+	keepAlive(req)
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("put object id=%v, return code=%v", id, resp.Status)
+		return fmt.Errorf("put object id=%v, return code=%v, %s", id, resp.Status, response.MessageFromJSONBody(resp.Body))
 	}
 	return nil
 }

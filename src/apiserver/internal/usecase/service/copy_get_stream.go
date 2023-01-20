@@ -33,7 +33,7 @@ func NewCopyGetStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*Copy
 	}
 	var fixStream io.WriteCloser
 	if len(failIds) > rpCfg.ToleranceLossNum() {
-		fixStream, err = NewCopyFixStream(failIds, newLocates, opt.Updater, rpCfg)
+		fixStream, err = NewCopyFixStream(failIds, newLocates, opt, rpCfg)
 		util.LogErrWithPre("fix copies err", err)
 	}
 	return &CopyGetStream{

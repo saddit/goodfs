@@ -4,6 +4,7 @@ import (
 	"apiserver/config"
 	"apiserver/internal/usecase/webapi"
 	"bytes"
+	"common/cst"
 	"common/graceful"
 	"common/util"
 	"errors"
@@ -14,18 +15,20 @@ import (
 type CopyFixStream struct {
 	fileNames []string
 	locates   []string
+	compress  bool
 	buffer    *bytes.Buffer
 	rpConfig  *config.ReplicationConfig
 	Updater   LocatesUpdater
 }
 
-func NewCopyFixStream(lostNames []string, newLocates []string, up LocatesUpdater, cfg *config.ReplicationConfig) (*CopyFixStream, error) {
+func NewCopyFixStream(lostNames []string, newLocates []string, opt *StreamOption, cfg *config.ReplicationConfig) (*CopyFixStream, error) {
 	return &CopyFixStream{
 		fileNames: lostNames,
 		locates:   newLocates,
 		rpConfig:  cfg,
-		buffer:    bytes.NewBuffer(make([]byte, 0, 4096)),
-		Updater:   up,
+		compress:  opt.Compress,
+		buffer:    bytes.NewBuffer(make([]byte, 0, 8*cst.OS.PageSize)),
+		Updater:   opt.Updater,
 	}, nil
 }
 
@@ -53,7 +56,7 @@ func (c *CopyFixStream) startFix() func() error {
 		var errs []string
 		data := c.buffer.Bytes()
 		for idx, name := range c.fileNames {
-			if err := webapi.PutObject(c.locates[idx], name, bytes.NewBuffer(data)); err != nil {
+			if err := webapi.PutObject(c.locates[idx], name, c.compress, bytes.NewBuffer(data)); err != nil {
 				errs = append(errs, fmt.Sprintf("fix %s put-api err: %s", name, err))
 			}
 		}

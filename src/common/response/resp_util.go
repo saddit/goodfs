@@ -8,6 +8,9 @@ import (
 )
 
 func MessageFromJSONBody(body io.ReadCloser) string {
+	if body == nil {
+		return "unknown"
+	}
 	defer body.Close()
 	bt, err := io.ReadAll(body)
 	if err != nil {
