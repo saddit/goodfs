@@ -2,26 +2,32 @@ package service
 
 import (
 	"bytes"
+	"common/cst"
+	"common/datasize"
 	"common/graceful"
 	"common/logs"
 	"common/pb"
 	"common/util"
+	xmath "common/util/math"
 	"common/util/slices"
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"math"
 	"objectserver/internal/db"
-	"objectserver/internal/usecase/logic"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/webapi"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
+)
+
+var (
+	msLog = logs.New("migration-service")
 )
 
 type MigrationService struct {
@@ -39,7 +45,7 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 	if err != nil {
 		return nil, err
 	}
-	size := util.IfElse(join, len(capMap)+1, len(capMap)-1)
+	size := util.IfElse(join, len(capMap), len(capMap)-1)
 	if size == 0 {
 		return nil, fmt.Errorf("non avaliable object servers")
 	}
@@ -48,7 +54,7 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 		total += float64(v)
 	}
 	avg := uint64(math.Ceil(total / float64(size)))
-	rpcMap := logic.NewPeers().GetPeerMap()
+	rpcMap := pool.Discovery.GetServiceMapping(pool.Config.Registry.Name, true)
 	res := make(map[string]int64, len(rpcMap))
 	for k, v := range capMap {
 		// skip self
@@ -70,131 +76,157 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 	return res, nil
 }
 
-func (ms *MigrationService) SendingTo(sizeMap map[string]int64) error {
-	logger := logs.New("migration-send")
-	// dail connection to all servers
-	streamMap := make(map[string]pb.ObjectMigration_ReceiveObjectClient, len(sizeMap))
+func (ms *MigrationService) writeStream(stream pb.ObjectMigration_ReceiveDataClient, file io.Reader, name string, size int64) (err error) {
+	defer func() {
+		resp, inner := stream.CloseAndRecv()
+		if inner != nil {
+			msLog.Errorf("send file %s fail, close and recv err: %s", name, inner)
+		}
+		if !resp.Success {
+			err = fmt.Errorf("send file %s fail, close and recv message: %s", name, resp.Message)
+		}
+	}()
+	buf := make([]byte, xmath.MinNumber(size, int64(4*datasize.MB)))
+	for {
+		n, inner := file.Read(buf)
+		if inner == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("read file %s err: %s", name, inner)
+		}
+		if inner = stream.Send(&pb.ObjectData{
+			FileName: name,
+			Size:     size,
+			Data:     buf[:n],
+		}); inner != nil {
+			msLog.Errorf("stream interrupted, send %s data returns err: %s", name, inner)
+			return
+		}
+	}
+	return
+}
+
+func (ms *MigrationService) sendFileTo(path string, client pb.ObjectMigrationClient, info *pb.ObjectInfo) error {
+	// open stream
+	stream, err := client.ReceiveData(context.Background())
+	if err != nil {
+		return fmt.Errorf("create stream err: %w", err)
+	}
+	// open file
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("open %s err: %w", path, err)
+	}
+	defer file.Close()
+	// send data
+	if err = ms.writeStream(stream, file, info.FileName, info.Size); err != nil {
+		return err
+	}
+	// finish an object
+	resp, err := client.FinishReceive(context.Background(), info)
+	if err != nil {
+		return fmt.Errorf("finish send file %s err: %w", info.FileName, err)
+	}
+	if !resp.Success {
+		return fmt.Errorf("finish send file %s fail: %s", info.FileName, resp.Message)
+	}
+	return nil
+}
+
+func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int64) error {
+	if len(sizeMap) == 0 {
+		return nil
+	}
+	clientMap := make(map[string]pb.ObjectMigrationClient, len(sizeMap))
 	conns := make([]*grpc.ClientConn, 0, len(sizeMap))
+	addrs := make([]string, 0, len(sizeMap))
 	defer func() {
 		for _, cc := range conns {
 			util.LogErr(cc.Close())
 		}
 	}()
 	for k := range sizeMap {
+		// dail connection to all servers
 		cc, err := grpc.Dial(k, grpc.WithInsecure())
 		if err != nil {
 			return err
 		}
 		conns = append(conns, cc)
-		stream, err := pb.NewObjectMigrationClient(cc).ReceiveObject(context.Background())
-		if err != nil {
-			return err
-		}
-		streamMap[k] = stream
+		addrs = append(addrs, k)
+		clientMap[k] = pb.NewObjectMigrationClient(cc)
 	}
-	defer func() {
-		for _, stream := range streamMap {
-			util.LogErr(stream.CloseSend())
-		}
-	}()
-	// sending data concurrency, limiting num of routine under 16
-	wg := sync.WaitGroup{}
-	ctrl := make(chan struct{}, 16)
-	defer close(ctrl)
-	next := make(chan string, 1)
-	// open a routine to provide next server
+	success := true
+	dg := util.LimitDoneGroup(128)
+	defer dg.Close()
 	go func() {
-		defer close(next)
-		for k := range sizeMap {
-			next <- k
+		defer graceful.Recover()
+		for err := range dg.WaitError() {
+			msLog.Error(err)
+			success = false
 		}
 	}()
-	// record which server to send thread safe
-	successFlag := true
-	lock := sync.Mutex{}
-	cur := <-next
+	cur := slices.First(addrs)
+	slices.RemoveFirst(&addrs)
 	leftSize := sizeMap[cur]
-	curLocate := util.GetHostPort(pool.Config.Port)
-	//TODO(perf): run multi goroutines to each server
-	// race files by CAS on memory
 	err := filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return err
+			msLog.Errorf("walk path %s err: %s, will skip this path", path, err)
+			return nil
 		}
 		if info.IsDir() {
 			return nil
 		}
-		if cur == "" {
-			return fmt.Errorf("server is depleted but there are still files not being transferred")
+		// switch to next server if already exceeds left size
+		if leftSize -= info.Size(); leftSize <= 0 {
+			if len(addrs) > 0 {
+				cur = slices.First(addrs)
+				slices.RemoveFirst(&addrs)
+				leftSize = sizeMap[cur]
+			} else {
+				return io.EOF
+			}
 		}
-		ctrl <- struct{}{}
-		wg.Add(1)
-		go func() {
-			defer graceful.Recover()
-			defer func() {
-				wg.Done()
-				<-ctrl
+		client := clientMap[cur]
+		dg.Todo()
+		go func(toAddr string) {
+			defer dg.Done()
+			if inner := ms.sendFileTo(path, client, &pb.ObjectInfo{
+				FileName:     info.Name(),
+				Size:         info.Size(),
+				OriginLocate: httpLocate,
+			}); inner != nil {
+				dg.Error(inner)
+				return
+			}
+			go func() {
+				defer graceful.Recover()
+				// remove local file
+				if inner := os.Remove(path); inner != nil {
+					msLog.Errorf("migrate %s success, but delete fail: %s", path, err)
+				}
 			}()
-			// read data
-			bt, err := os.ReadFile(path)
-			if err != nil {
-				logger.Errorf("read file %s err: %s", path, err)
-				return
-			}
-			// send to server
-			if ok := func() bool {
-				lock.Lock()
-				defer lock.Unlock()
-				stream, ok := streamMap[cur]
-				if !ok {
-					logger.Errorf("not found stream of %s", cur)
-					return false
-				}
-				err = stream.Send(&pb.ObjectData{
-					FileName:     info.Name(),
-					Data:         bt,
-					OriginLocate: curLocate,
-				})
-				if err != nil {
-					logger.Errorf("send %s to server %s fail: %s", path, cur, err)
-					return false
-				}
-				resp, err := stream.Recv()
-				if err != nil {
-					logger.Errorf("send %s to %s server fail: %s", path, cur, err)
-					return false
-				}
-				if !resp.Success {
-					logger.Errorf("send %s to server %s fail: %s", path, cur, resp.Message)
-					return false
-				}
-				// switch to next server if already exceeds left size
-				if leftSize -= info.Size(); leftSize <= 0 {
-					cur = <-next
-					leftSize = sizeMap[cur]
-				}
-				return true
-			}(); !ok {
-				successFlag = false
-				return
-			}
-			// remove local file
-			if err = os.Remove(path); err != nil {
-				successFlag = false
-				logger.Errorf("migrate %s success, but delete fail: %s", path, err)
-				return
-			}
-		}()
+		}(cur)
 		return nil
 	})
-	wg.Wait()
-	if err != nil {
+	dg.Wait()
+	if err != nil && err != io.EOF {
 		return err
 	}
-	return util.IfElse(successFlag, nil, fmt.Errorf("migration fail, see logs for detail"))
+	return util.IfElse(success, nil, fmt.Errorf("migration fail, see logs for detail"))
 }
 
-func (ms *MigrationService) Received(data *pb.ObjectData) error {
+func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
+	// check file existed
+	statInfo, err := os.Stat(filepath.Join(pool.Config.StoragePath, data.FileName))
+	if err != nil {
+		return fmt.Errorf("file %s not exists: %w", data.FileName, err)
+	}
+	if statInfo.Size() != data.Size {
+		return fmt.Errorf("file %s size excpect %d, actual %d", data.FileName, data.Size, statInfo.Size())
+	}
+	// add to capacity db
+	pool.ObjectCap.AddCap(data.Size)
 	servs := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
 	if len(servs) == 0 {
 		return fmt.Errorf("not exist meta-server")
@@ -217,8 +249,8 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 			}
 			for _, v := range versions {
 				// index sensitive: locations[i] to shard[i]
-				sp := strings.Split(data.FileName, ".")
-				seq := util.ToInt(slices.Last(sp))
+				idx := strings.LastIndexByte(data.FileName, '.')
+				seq := util.ToInt(data.FileName[idx+1:])
 				// do not change if location of this shard has been updated
 				if v.Locations[seq] == data.OriginLocate {
 					v.Locations[seq] = newLoc
@@ -234,10 +266,6 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 	if len(versionsMap) == 0 {
 		logs.Std().Infof("deprecated: non metadata needs to update for %s (from %s)", data.FileName, data.OriginLocate)
 		return nil
-	}
-	// save file
-	if err := Put(data.FileName, bytes.NewBuffer(data.Data)); err != nil {
-		return err
 	}
 	// update locations
 	//FIXME: this will cause inconsistent state
@@ -258,8 +286,29 @@ func (ms *MigrationService) Received(data *pb.ObjectData) error {
 		}(addr, versions)
 	}
 	dg.Wait()
-	if fails := failNum.Load(); fails >= int32(math.Ceil(total/2.0)) {
+	if fails := failNum.Load(); fails >= int32(math.Ceil(total/2)) {
 		return fmt.Errorf("too much failures when updating metadata (%d/%.0f)", fails, total)
 	}
 	return nil
+}
+
+func (ms *MigrationService) OpenFile(name string, size int64) (*os.File, error) {
+	path := filepath.Join(pool.Config.StoragePath, name)
+	stat, err := os.Stat(path)
+	if err == nil {
+		// if size equals, see as existed
+		if stat.Size() == size {
+			return nil, os.ErrExist
+		}
+		// some file may migrate failure. remove it if exists.
+		if err = os.Remove(path); err != nil {
+			return nil, err
+		}
+	}
+	return os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
+}
+
+func (ms *MigrationService) AppendData(file *os.File, data []byte) error {
+	_, err := io.CopyBuffer(file, bytes.NewBuffer(data), make([]byte, 16*cst.OS.PageSize))
+	return err
 }

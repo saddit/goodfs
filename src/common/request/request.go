@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"common/util"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,4 +47,8 @@ func JsonReq(method string, url string, data any) (*http.Request, error) {
 		return nil, err
 	}
 	return GetReq(bytes.NewBuffer(bt), method, url, ContentTypeJSON)
+}
+
+func UrlValuesEncode(url string, form *url.Values) (*http.Request, error) {
+	return http.NewRequest(http.MethodGet, fmt.Sprint(url, "?", form.Encode()), nil)
 }

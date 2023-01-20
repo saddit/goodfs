@@ -1,5 +1,16 @@
 import axios from "axios";
 
+async function bucketPage(req: BucketReq): Promise<PageResult<Bucket>> {
+    let resp = await axios.get("/metadata/buckets", {
+        params: req
+    })
+    let total = resp.headers["x-total-count"] || "0"
+    return {
+        total: parseInt(total),
+        list: resp.data
+    }
+}
+
 async function metadataPage(req: MetadataReq): Promise<PageResult<Metadata>> {
     let resp = await axios.get("/metadata/page", {
         params: req

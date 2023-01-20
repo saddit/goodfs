@@ -15,6 +15,20 @@ declare interface Version {
     locate: string[]
 }
 
+declare interface Bucket {
+    name: string
+    readonly: boolean
+    versioning: boolean
+    versionRemains: number
+    compress: boolean
+    storeStrategy: number
+    dataShards: number
+    parityShards: number
+    createTime: number
+    updateTime: number
+    policies: string[]
+}
+
 declare interface Metadata {
     name: string
     createTime: number

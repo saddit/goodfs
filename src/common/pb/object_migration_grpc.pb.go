@@ -22,7 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ObjectMigrationClient interface {
-	ReceiveObject(ctx context.Context, opts ...grpc.CallOption) (ObjectMigration_ReceiveObjectClient, error)
+	ReceiveData(ctx context.Context, opts ...grpc.CallOption) (ObjectMigration_ReceiveDataClient, error)
+	FinishReceive(ctx context.Context, in *ObjectInfo, opts ...grpc.CallOption) (*Response, error)
 	RequireSend(ctx context.Context, in *RequiredInfo, opts ...grpc.CallOption) (*Response, error)
 	LeaveCommand(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
 	JoinCommand(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Response, error)
@@ -36,35 +37,47 @@ func NewObjectMigrationClient(cc grpc.ClientConnInterface) ObjectMigrationClient
 	return &objectMigrationClient{cc}
 }
 
-func (c *objectMigrationClient) ReceiveObject(ctx context.Context, opts ...grpc.CallOption) (ObjectMigration_ReceiveObjectClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ObjectMigration_ServiceDesc.Streams[0], "/proto.ObjectMigration/ReceiveObject", opts...)
+func (c *objectMigrationClient) ReceiveData(ctx context.Context, opts ...grpc.CallOption) (ObjectMigration_ReceiveDataClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ObjectMigration_ServiceDesc.Streams[0], "/proto.ObjectMigration/ReceiveData", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &objectMigrationReceiveObjectClient{stream}
+	x := &objectMigrationReceiveDataClient{stream}
 	return x, nil
 }
 
-type ObjectMigration_ReceiveObjectClient interface {
+type ObjectMigration_ReceiveDataClient interface {
 	Send(*ObjectData) error
-	Recv() (*Response, error)
+	CloseAndRecv() (*Response, error)
 	grpc.ClientStream
 }
 
-type objectMigrationReceiveObjectClient struct {
+type objectMigrationReceiveDataClient struct {
 	grpc.ClientStream
 }
 
-func (x *objectMigrationReceiveObjectClient) Send(m *ObjectData) error {
+func (x *objectMigrationReceiveDataClient) Send(m *ObjectData) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *objectMigrationReceiveObjectClient) Recv() (*Response, error) {
+func (x *objectMigrationReceiveDataClient) CloseAndRecv() (*Response, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	m := new(Response)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *objectMigrationClient) FinishReceive(ctx context.Context, in *ObjectInfo, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/proto.ObjectMigration/FinishReceive", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *objectMigrationClient) RequireSend(ctx context.Context, in *RequiredInfo, opts ...grpc.CallOption) (*Response, error) {
@@ -98,7 +111,8 @@ func (c *objectMigrationClient) JoinCommand(ctx context.Context, in *EmptyReq, o
 // All implementations must embed UnimplementedObjectMigrationServer
 // for forward compatibility
 type ObjectMigrationServer interface {
-	ReceiveObject(ObjectMigration_ReceiveObjectServer) error
+	ReceiveData(ObjectMigration_ReceiveDataServer) error
+	FinishReceive(context.Context, *ObjectInfo) (*Response, error)
 	RequireSend(context.Context, *RequiredInfo) (*Response, error)
 	LeaveCommand(context.Context, *EmptyReq) (*Response, error)
 	JoinCommand(context.Context, *EmptyReq) (*Response, error)
@@ -109,8 +123,11 @@ type ObjectMigrationServer interface {
 type UnimplementedObjectMigrationServer struct {
 }
 
-func (UnimplementedObjectMigrationServer) ReceiveObject(ObjectMigration_ReceiveObjectServer) error {
-	return status.Errorf(codes.Unimplemented, "method ReceiveObject not implemented")
+func (UnimplementedObjectMigrationServer) ReceiveData(ObjectMigration_ReceiveDataServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReceiveData not implemented")
+}
+func (UnimplementedObjectMigrationServer) FinishReceive(context.Context, *ObjectInfo) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FinishReceive not implemented")
 }
 func (UnimplementedObjectMigrationServer) RequireSend(context.Context, *RequiredInfo) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequireSend not implemented")
@@ -134,30 +151,48 @@ func RegisterObjectMigrationServer(s grpc.ServiceRegistrar, srv ObjectMigrationS
 	s.RegisterService(&ObjectMigration_ServiceDesc, srv)
 }
 
-func _ObjectMigration_ReceiveObject_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ObjectMigrationServer).ReceiveObject(&objectMigrationReceiveObjectServer{stream})
+func _ObjectMigration_ReceiveData_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ObjectMigrationServer).ReceiveData(&objectMigrationReceiveDataServer{stream})
 }
 
-type ObjectMigration_ReceiveObjectServer interface {
-	Send(*Response) error
+type ObjectMigration_ReceiveDataServer interface {
+	SendAndClose(*Response) error
 	Recv() (*ObjectData, error)
 	grpc.ServerStream
 }
 
-type objectMigrationReceiveObjectServer struct {
+type objectMigrationReceiveDataServer struct {
 	grpc.ServerStream
 }
 
-func (x *objectMigrationReceiveObjectServer) Send(m *Response) error {
+func (x *objectMigrationReceiveDataServer) SendAndClose(m *Response) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *objectMigrationReceiveObjectServer) Recv() (*ObjectData, error) {
+func (x *objectMigrationReceiveDataServer) Recv() (*ObjectData, error) {
 	m := new(ObjectData)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+func _ObjectMigration_FinishReceive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ObjectInfo)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ObjectMigrationServer).FinishReceive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.ObjectMigration/FinishReceive",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ObjectMigrationServer).FinishReceive(ctx, req.(*ObjectInfo))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ObjectMigration_RequireSend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -222,6 +257,10 @@ var ObjectMigration_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ObjectMigrationServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "FinishReceive",
+			Handler:    _ObjectMigration_FinishReceive_Handler,
+		},
+		{
 			MethodName: "RequireSend",
 			Handler:    _ObjectMigration_RequireSend_Handler,
 		},
@@ -236,9 +275,8 @@ var ObjectMigration_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "ReceiveObject",
-			Handler:       _ObjectMigration_ReceiveObject_Handler,
-			ServerStreams: true,
+			StreamName:    "ReceiveData",
+			Handler:       _ObjectMigration_ReceiveData_Handler,
 			ClientStreams: true,
 		},
 	},

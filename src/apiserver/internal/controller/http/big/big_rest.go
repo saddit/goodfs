@@ -47,18 +47,29 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		response.BadRequestMsg("bucket is readonly", g)
 		return
 	}
-	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, pool.Config.Rs.AllShards())
+	conf := pool.Config.Object.ReedSolomon
+	// if bucket enforce compress
+	if bucket.Compress {
+		req.Compress = true
+	}
+	// if bucket enforce store strategy
+	if bucket.StoreStrategy == entity.ECReedSolomon {
+		conf.DataShards = bucket.DataShards
+		conf.ParityShards = bucket.ParityShards
+	}
+	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, conf.AllShards())
 	if len(ips) == 0 {
 		response.ServiceUnavailableMsg("no available servers", g)
 		return
 	}
 	stream, e := service.NewRSResumablePutStream(&service.StreamOption{
-		Hash:    req.Hash,
-		Name:    req.Name,
-		Size:    req.Size,
-		Bucket:  req.Bucket,
-		Locates: ips,
-	}, &pool.Config.Rs)
+		Hash:     req.Hash,
+		Name:     req.Name,
+		Size:     req.Size,
+		Bucket:   req.Bucket,
+		Compress: req.Compress,
+		Locates:  ips,
+	}, &conf)
 	if e != nil {
 		response.FailErr(e, g)
 		return

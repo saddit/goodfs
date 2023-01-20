@@ -100,6 +100,15 @@ func (e *EtcdDiscovery) GetServices(name string, rpc bool) []string {
 	return []string{}
 }
 
+func (e *EtcdDiscovery) GetService(name string, id string, rpc bool) (string, bool) {
+	service := util.IfElse(rpc, e.rpcService, e.httpService)
+	if sl, ok := service[name]; ok {
+		addr, ok := sl.data[id]
+		return addr, ok
+	}
+	return "", false
+}
+
 func (e *EtcdDiscovery) GetServiceByAddr(name, addr string, rpc bool) (id string, httpAddr string, rpcAddr string) {
 	if rpc {
 		id = e.rpcService[name].data[addr]

@@ -2,9 +2,9 @@ package objects
 
 import (
 	"bytes"
+	"common/graceful"
 	"common/request"
 	"common/response"
-	"common/util"
 	"io"
 	"net/http"
 	"objectserver/internal/entity"
@@ -12,22 +12,33 @@ import (
 	"objectserver/internal/usecase/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 func Put(c *gin.Context) {
-	fileName := c.Param("name")
+	req := &struct {
+		Name     string `uri:"name"`
+		Compress bool   `form:"compress"`
+	}{}
+	if err := entity.BindAll(c, req, binding.Uri, binding.Query); err != nil {
+		response.FailErr(err, c)
+		return
+	}
 	var reader io.Reader = c.Request.Body
 	var cache []byte
 	if uint64(c.Request.ContentLength) <= pool.Config.Cache.MaxItemSize.Byte() {
 		cache = make([]byte, 0, c.Request.ContentLength)
 		reader = &entity.BufferTeeReader{Reader: c.Request.Body, Body: bytes.NewBuffer(cache)}
 	}
-	if err := service.Put(fileName, reader); err != nil {
+	if err := service.Put(req.Name, reader, req.Compress); err != nil {
 		response.FailErr(err, c)
 		return
 	}
 	if len(cache) > 0 {
-		pool.Cache.Set(fileName, cache)
+		go func() {
+			defer graceful.Recover()
+			pool.Cache.Set(req.Name, cache)
+		}()
 	}
 	response.Ok(c)
 }
@@ -43,25 +54,36 @@ func Delete(c *gin.Context) {
 }
 
 func Get(c *gin.Context) {
-	size := util.ToInt64(c.GetHeader("Size"))
-	fileName := c.Param("name")
+	req := &struct {
+		Name     string `uri:"name"`
+		Range    string `header:"range"`
+		Size     int64  `header:"size" binding:"required"`
+		Compress bool   `form:"compress"`
+	}{}
+	if err := entity.BindAll(c, req, binding.Uri, binding.Query, binding.Header); err != nil {
+		response.FailErr(err, c)
+		return
+	}
 	var rg request.Range
 	var offset int64
-	if ok := rg.ConvertFrom(c.GetHeader("Range")); ok {
+	if ok := rg.ConvertFrom(req.Range); ok {
 		offset = rg.FirstBytes().First
 	}
 	var writer io.Writer = c.Writer
 	var buf []byte
-	if uint64(size) <= pool.Config.Cache.MaxItemSize.Byte() {
-		buf = make([]byte, 0, size)
+	if uint64(req.Size) <= pool.Config.Cache.MaxItemSize.Byte() {
+		buf = make([]byte, 0, req.Size)
 		writer = &entity.BufferTeeWriter{Writer: c.Writer, Body: bytes.NewBuffer(buf)}
 	}
-	if err := service.Get(fileName, offset, size, writer); err != nil {
+	if err := service.Get(req.Name, offset, req.Size, req.Compress, writer); err != nil {
 		response.FailErr(err, c)
 		return
 	}
 	if len(buf) > 0 {
-		pool.Cache.Set(fileName, buf)
+		go func() {
+			defer graceful.Recover()
+			pool.Cache.Set(req.Name, buf)
+		}()
 	}
 	c.Status(http.StatusOK)
 }

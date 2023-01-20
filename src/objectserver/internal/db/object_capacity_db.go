@@ -35,6 +35,10 @@ func NewObjectCapacity(c clientv3.KV, cfg *config.Config) *ObjectCapacity {
 	}
 }
 
+func (oc *ObjectCapacity) AddCap(i int64) {
+	oc.CurrentCap.Add(uint64(i))
+}
+
 func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 	ctx, cancel := context.WithCancel(context.Background())
 	tk := time.NewTicker(interval)

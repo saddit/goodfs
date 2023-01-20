@@ -14,22 +14,27 @@ import (
 func Run(cfg *config.Config) {
 	//init components
 	pool.InitPool(cfg)
+	defer pool.Etcd.Close()
+	defer pool.Cache.Close()
 	defer pool.Close()
 	netAddr := util.GetHostPort(cfg.Port)
-	// register service
-	util.PanicErr(pool.Registry.Register())
-	defer pool.Registry.Unregister()
-	// locating serv
-	defer locate.New(pool.Etcd).StartLocate(netAddr)()
-	// cleaning serv
-	defer service.StartTempRemovalBackground(pool.Cache)()
-	// auto save server capacity info
-	defer pool.ObjectCap.StartAutoSave(cfg.State.SyncInterval)()
-	// driver manger
-	driverManager := service.NewDriverManager(service.NewFreeFirstDriver())
-	defer driverManager.StartAutoUpdate()()
+	pool.OnOpen(func() {
+		// register service
+		util.PanicErr(pool.Registry.Register())
+		pool.OnClose(
+			// unregister
+			func() { pool.Registry.Unregister() },
+			// locating serv
+			locate.New(pool.Etcd).StartLocate(netAddr),
+			// cleaning serv
+			service.StartTempRemovalBackground(pool.Cache),
+			// auto save server capacity info
+			pool.ObjectCap.StartAutoSave(cfg.State.SyncInterval),
+		)
+	})
+	pool.Open()
 	// warmup serv
 	service.WarmUpLocateCache()
 	// startup server
-	graceful.ListenAndServe(http.NewHttpServer(netAddr), grpc.NewRpcServer(cfg.RpcPort, service.NewMigrationService(pool.ObjectCap)))
+	graceful.ListenAndServe(nil, http.NewHttpServer(netAddr), grpc.NewRpcServer(cfg.RpcPort, service.NewMigrationService(pool.ObjectCap)))
 }
