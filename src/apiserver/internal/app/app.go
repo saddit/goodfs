@@ -28,6 +28,7 @@ func Run(cfg *Config) {
 	defer logic.NewSystemStatLogic().StartAutoSave()()
 	//start api server
 	graceful.ListenAndServe(
+		nil,
 		http.NewHttpServer(cfg.Registry.HttpAddr, objService, metaService, bucketRepo),
 	)
 }

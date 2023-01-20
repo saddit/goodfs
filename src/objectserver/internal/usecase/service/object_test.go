@@ -179,12 +179,23 @@ func TestCommitFile(t *testing.T) {
 			return
 		}
 	}()
-	bt := make([]byte, 3090)
+	fst, snd := 4096, 3080
+	bt := make([]byte, fst)
 	for i := range bt {
 		bt[i] = 'A'
 	}
 	buf := bytes.NewBuffer(bt)
 	_, err := WriteFile(filepath.Join(".", "new_file"), buf)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	bt = make([]byte, snd)
+	for i := range bt {
+		bt[i] = 'B'
+	}
+	buf = bytes.NewBuffer(bt)
+	_, err = WriteFile(filepath.Join(".", "new_file"), buf)
 	if err != nil {
 		t.Error(err)
 		return
@@ -195,7 +206,7 @@ func TestCommitFile(t *testing.T) {
 		return
 	}
 	buf = bytes.NewBuffer(nil)
-	if err = GetFileCompress("./new_file_compress", 0, int64(len(bt)), buf); err != nil {
+	if err = GetFileCompress("./new_file_compress", 0, int64(fst+snd), buf); err != nil {
 		t.Error(err)
 		return
 	}
@@ -209,6 +220,13 @@ func TestCommitFile(t *testing.T) {
 			numOfOther++
 		}
 	}
-	assert.New(t).Equal(len(bt), numOfA)
+	assert.New(t).Equal(fst, numOfA)
+	assert.New(t).Equal(snd, numOfB)
 	assert.New(t).Equal(0, numOfOther)
+}
+
+func TestGetFileCompress(t *testing.T) {
+	buffer := bytes.NewBuffer(nil)
+	_ = GetFileCompress("./testfile", 0, int64(18717), buffer)
+	_ = os.WriteFile("./new_file", buffer.Bytes(), 0700)
 }

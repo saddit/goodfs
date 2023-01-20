@@ -113,7 +113,7 @@ func (d *doneGroup) WaitUntilError() error {
 	}
 }
 
-// ErrorUtilDone receive errors until done.
+// ErrorUtilDone receive errors until done. will close if done.
 func (d *doneGroup) ErrorUtilDone() <-chan error {
 	go func() {
 		defer func() {

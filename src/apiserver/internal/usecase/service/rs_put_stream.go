@@ -48,8 +48,8 @@ func newExistedRSPutStream(ips, ids []string, hash string, compress bool, rsCfg 
 }
 
 func (p *RSPutStream) Commit(ok bool) error {
-	if e := p.Flush(); e != nil {
-		return nil
+	if err := p.Flush(); err != nil {
+		return err
 	}
 
 	wg := util.NewDoneGroup()

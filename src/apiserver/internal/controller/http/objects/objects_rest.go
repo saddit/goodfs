@@ -37,6 +37,7 @@ func (oc *ObjectsController) Put(c *gin.Context) {
 			Size:          c.Request.ContentLength,
 			Hash:          req.Hash,
 			StoreStrategy: req.Store,
+			Compress:      req.Compress,
 		}},
 	})
 
@@ -79,12 +80,13 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 		}
 	}
 	// copy to response
-	_, err = io.Copy(c.Writer, stream)
+	n, err := io.Copy(c.Writer, stream)
 	if err != nil {
 		response.FailErr(err, c)
 		return
 	}
 	response.OkHeader(gin.H{
-		"Accept-Ranges": "bytes",
+		"Accept-Ranges":  "bytes",
+		"Content-Length": n,
 	}, c)
 }

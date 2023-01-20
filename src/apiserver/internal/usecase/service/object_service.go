@@ -62,8 +62,8 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	// remove this key after all
 	defer o.etcd.Delete(ctx, tempId)
 	wt := o.etcd.Watch(ctx, tempId)
-	locates := make([]string, pool.Config.Rs.AllShards())
-	for i := 0; i < pool.Config.Rs.AllShards(); i++ {
+	locates := make([]string, pool.Config.Object.ReedSolomon.AllShards())
+	for i := 0; i < pool.Config.Object.ReedSolomon.AllShards(); i++ {
 		val := fmt.Sprintf("%s.%d#%s", hash, i, tempId)
 		_, err := o.etcd.Put(ctx, cst.EtcdPrefix.LocationSubKey, val)
 		if err != nil {
@@ -133,18 +133,14 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (vn
 	}
 
 	ver := md.Versions[0]
-	// if bucket enforce compress
-	if bucket.Compress {
-		ver.Compress = true
-	}
-	provider := newStreamProvider(ver)
-	provider.FillMetadata(ver)
-	// if bucket enforce store strategy
-	if bucket.StoreStrategy > 0 {
-		ver.StoreStrategy = bucket.StoreStrategy
-		ver.DataShards = bucket.DataShards
-		ver.ParityShards = bucket.ParityShards
-	}
+	FillVersionConfig(ver, bucket)
+	provider := NewStreamProvider(&StreamOption{
+		Bucket:   bucket.Name,
+		Hash:     ver.Hash,
+		Name:     metadata.Name,
+		Size:     ver.Size,
+		Compress: ver.Compress,
+	}, ver)
 	// if object not exists, upload to data server
 	if len(req.Locate) == 0 {
 		if ver.Locate, err = streamToDataServer(req, ver, provider); err != nil {
@@ -210,7 +206,6 @@ func streamToDataServer(req *entity.PutReq, meta *entity.Version, provider Strea
 }
 
 func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error) {
-	var provider StreamProvider
 	up := func(locates []string) error {
 		ver.Locate = locates
 		return o.metaService.UpdateVersion(meta.Name, meta.Bucket, ver)
@@ -223,6 +218,10 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 		Compress: ver.Compress,
 		Updater:  up,
 	}
+	return NewStreamProvider(opt, ver).GetStream(ver.Locate)
+}
+
+func NewStreamProvider(opt *StreamOption, ver *entity.Version) StreamProvider {
 	switch ver.StoreStrategy {
 	default:
 		fallthrough
@@ -230,30 +229,38 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 		cfg := pool.Config.Object.ReedSolomon
 		cfg.DataShards = ver.DataShards
 		cfg.ParityShards = ver.ParityShards
-		provider = RsStreamProvider(opt, &cfg)
-	case entity.MultiReplication:
-		cfg := pool.Config.Object.Replication
-		cfg.CopiesCount = ver.DataShards
-		provider = CpStreamProvider(opt, &cfg)
-	}
-	return provider.GetStream(ver.Locate)
-}
-
-func newStreamProvider(meta *entity.Version) StreamProvider {
-	opt := &StreamOption{
-		Hash:     meta.Hash,
-		Size:     meta.Size,
-		Compress: meta.Compress,
-	}
-	switch meta.StoreStrategy {
-	default:
-		fallthrough
-	case entity.ECReedSolomon:
-		cfg := pool.Config.Object.ReedSolomon
 		return RsStreamProvider(opt, &cfg)
 	case entity.MultiReplication:
 		cfg := pool.Config.Object.Replication
+		cfg.CopiesCount = ver.DataShards
 		return CpStreamProvider(opt, &cfg)
+	}
+}
+
+func FillVersionConfig(ver *entity.Version, bucket *entity.Bucket) {
+	if bucket.Compress {
+		ver.Compress = true
+	}
+	rsConf := pool.Config.Object.ReedSolomon
+	rpConf := pool.Config.Object.Replication
+
+	if bucket.StoreStrategy > 0 {
+		ver.StoreStrategy = bucket.StoreStrategy
+		rsConf.DataShards = bucket.DataShards
+		rsConf.ParityShards = bucket.ParityShards
+		rpConf.CopiesCount = bucket.DataShards
+	}
+
+	switch ver.StoreStrategy {
+	default:
+		fallthrough
+	case entity.ECReedSolomon:
+		ver.DataShards = rsConf.DataShards
+		ver.ParityShards = rsConf.ParityShards
+		ver.ShardSize = rsConf.ShardSize(ver.Size)
+	case entity.MultiReplication:
+		ver.DataShards = rpConf.CopiesCount
+		ver.ShardSize = int(ver.Size)
 	}
 }
 

@@ -3,6 +3,7 @@ package webapi
 import (
 	"apiserver/internal/usecase/pool"
 	"common/performance"
+	"common/request"
 	"common/response"
 	"common/util"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -141,7 +141,7 @@ func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Re
 	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
 	form := url.Values{}
 	form.Set("compress", fmt.Sprintf("%t", compress))
-	req, err := http.NewRequest(http.MethodGet, objectRest(ip, name), strings.NewReader(form.Encode()))
+	req, err := request.UrlValuesEncode(objectRest(ip, name), &form)
 	if err != nil {
 		return nil, err
 	}

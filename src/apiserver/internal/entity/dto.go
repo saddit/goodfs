@@ -21,13 +21,14 @@ type PutResp struct {
 }
 
 type PutReq struct {
-	Store  ObjectStrategy `form:"ss"`
-	Name   string         `uri:"name" binding:"required"`
-	Bucket string         `header:"bucket" binding:"required"`
-	Hash   string         `header:"digest" binding:"required"`
-	Ext    string
-	Locate []string
-	Body   io.Reader
+	Store    ObjectStrategy `form:"ss"`
+	Compress bool           `form:"compress"`
+	Name     string         `uri:"name" binding:"required"`
+	Bucket   string         `header:"bucket" binding:"required"`
+	Hash     string         `header:"digest" binding:"required"`
+	Ext      string
+	Locate   []string
+	Body     io.Reader
 }
 
 type GetReq struct {

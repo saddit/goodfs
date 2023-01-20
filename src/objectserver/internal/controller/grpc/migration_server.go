@@ -80,15 +80,17 @@ func (ms *MigrationServer) RequireSend(_ context.Context, info *pb.RequiredInfo)
 }
 
 func (ms *MigrationServer) LeaveCommand(context.Context, *pb.EmptyReq) (*pb.Response, error) {
+	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, true)
+	if !ok {
+		return &pb.Response{Success: false, Message: "it's an unregister server"}, nil
+	}
 	sizeMap, err := ms.Service.DeviationValues(false)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, true)
-	if !ok {
-		return nil, errors.New("could not find register address")
+	if err = pool.CloseGraceful(); err != nil {
+		return &pb.Response{Success: false, Message: "close pool fail"}, nil
 	}
-	util.LogErr(pool.Registry.Unregister())
 	if err = ms.Service.SendingTo(curLocate, sizeMap); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -96,12 +98,14 @@ func (ms *MigrationServer) LeaveCommand(context.Context, *pb.EmptyReq) (*pb.Resp
 }
 
 func (ms *MigrationServer) JoinCommand(context.Context, *pb.EmptyReq) (*pb.Response, error) {
-	// get deviation value
-	util.LogErr(pool.Registry.Register())
+	if err := pool.OpenGraceful(); err != nil {
+		return &pb.Response{Success: false, Message: "open pool fail"}, nil
+	}
 	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, true)
 	if !ok {
-		return nil, errors.New("could not find register address")
+		return &pb.Response{Success: false, Message: "could not find register address of server"}, nil
 	}
+	// get deviation value
 	sizeMap, err := ms.Service.DeviationValues(true)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

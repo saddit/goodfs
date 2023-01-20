@@ -16,7 +16,6 @@ import (
 	"io/fs"
 	"math"
 	"objectserver/internal/db"
-	"objectserver/internal/usecase/logic"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/webapi"
 	"os"
@@ -55,7 +54,7 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 		total += float64(v)
 	}
 	avg := uint64(math.Ceil(total / float64(size)))
-	rpcMap := logic.NewPeers().GetPeerMap()
+	rpcMap := pool.Discovery.GetServiceMapping(pool.Config.Registry.Name, true)
 	res := make(map[string]int64, len(rpcMap))
 	for k, v := range capMap {
 		// skip self
@@ -212,6 +211,10 @@ func (ms *MigrationService) SendingTo(curLocate string, sizeMap map[string]int64
 }
 
 func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
+	// check file existed
+	if !Exist(data.FileName) {
+		return fmt.Errorf("file %s not exists", data.FileName)
+	}
 	servs := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
 	if len(servs) == 0 {
 		return fmt.Errorf("not exist meta-server")
@@ -234,8 +237,8 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 			}
 			for _, v := range versions {
 				// index sensitive: locations[i] to shard[i]
-				sp := strings.Split(data.FileName, ".")
-				seq := util.ToInt(slices.Last(sp))
+				idx := strings.LastIndexByte(data.FileName, '.')
+				seq := util.ToInt(data.FileName[idx+1:])
 				// do not change if location of this shard has been updated
 				if v.Locations[seq] == data.OriginLocate {
 					v.Locations[seq] = newLoc
@@ -251,10 +254,6 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	if len(versionsMap) == 0 {
 		logs.Std().Infof("deprecated: non metadata needs to update for %s (from %s)", data.FileName, data.OriginLocate)
 		return nil
-	}
-	// check file existed
-	if !Exist(data.FileName) {
-		return fmt.Errorf("file %s not exists", data.FileName)
 	}
 	// update locations
 	//FIXME: this will cause inconsistent state
@@ -275,7 +274,7 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 		}(addr, versions)
 	}
 	dg.Wait()
-	if fails := failNum.Load(); fails >= int32(math.Ceil(total/2.0)) {
+	if fails := failNum.Load(); fails >= int32(math.Ceil(total/2)) {
 		return fmt.Errorf("too much failures when updating metadata (%d/%.0f)", fails, total)
 	}
 	return nil
@@ -289,7 +288,7 @@ func (ms *MigrationService) OpenFile(name string, size int64) (*os.File, error) 
 		if stat.Size() == size {
 			return nil, os.ErrExist
 		}
-		// some file may migrate failure. remove it if exist.
+		// some file may migrate failure. remove it if exists.
 		if err = os.Remove(path); err != nil {
 			return nil, err
 		}

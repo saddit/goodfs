@@ -16,6 +16,7 @@ func Run(cfg *config.Config) {
 	httpAddr := util.GetHostPort(cfg.Port)
 
 	graceful.ListenAndServe(
+		nil,
 		controller.NewHttpServer(httpAddr, resource.FileSystem()),
 	)
 }

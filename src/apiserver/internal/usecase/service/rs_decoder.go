@@ -2,6 +2,7 @@ package service
 
 import (
 	"apiserver/config"
+	"common/logs"
 	"io"
 
 	"github.com/klauspost/reedsolomon"
@@ -53,26 +54,34 @@ func (d *rsDecoder) getData() error {
 	for i := range shards {
 		if d.readers[i] != nil {
 			shards[i] = make([]byte, d.rsCfg.BlockPerShard)
-			n, e := io.ReadFull(d.readers[i], shards[i])
-			if e != nil && e != io.EOF && e != io.ErrUnexpectedEOF {
+			n, err := io.ReadFull(d.readers[i], shards[i])
+			if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+				logs.Std().Debugf("read shard %d err: %s", i, err)
 				shards[i] = nil
-			} else if n != d.rsCfg.BlockPerShard {
-				shards[i] = shards[i][:n]
+				continue
 			}
+			shards[i] = shards[i][:n]
 		}
 	}
-	//缺失修复
-	if e := d.enc.ReconstructData(shards); e != nil {
-		return e
+	// reconstruct all if parity shards lost
+	reconstructFunc := d.enc.ReconstructData
+	for i := d.rsCfg.DataShards; i < d.rsCfg.AllShards(); i++ {
+		if d.writers[i] != nil {
+			reconstructFunc = d.enc.Reconstruct
+			break
+		}
+	}
+	if err := reconstructFunc(shards); err != nil {
+		return err
 	}
 	for i, w := range d.writers {
 		if w != nil {
-			if _, e := w.Write(shards[i]); e != nil {
-				return nil
+			if _, err := w.Write(shards[i]); err != nil {
+				return err
 			}
 		}
 	}
-	//合并shard
+	// combine data shards
 	for i := 0; i < d.rsCfg.DataShards; i++ {
 		shardSize := int64(len(shards[i]))
 		if d.total+shardSize > d.size {

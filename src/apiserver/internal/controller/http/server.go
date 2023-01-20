@@ -8,9 +8,8 @@ import (
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
 	"common/logs"
-	netHttp "net/http"
-
 	"github.com/gin-gonic/gin"
+	netHttp "net/http"
 )
 
 type Server struct {

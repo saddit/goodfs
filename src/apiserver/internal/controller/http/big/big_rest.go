@@ -47,7 +47,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		response.BadRequestMsg("bucket is readonly", g)
 		return
 	}
-	conf := pool.Config.Rs
+	conf := pool.Config.Object.ReedSolomon
 	// if bucket enforce compress
 	if bucket.Compress {
 		req.Compress = true

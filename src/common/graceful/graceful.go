@@ -12,18 +12,21 @@ import (
 	"time"
 )
 
-type ServableServer interface {
+type Server interface {
 	ListenAndServe() error
 	Shutdown(context.Context) error
 }
 
 var log = logs.New("graceful")
 
-func ListenAndServe(srvs ...ServableServer) {
+func ListenAndServe(ctx context.Context, srvs ...Server) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	// Initializing the server in a goroutine so that
 	// it won't block the graceful shutdown handling below
 	for _, s := range srvs {
-		go func(srv ServableServer) {
+		go func(srv Server) {
 			defer Recover()
 			if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Errorf("listen server error: %s", err)
@@ -35,7 +38,8 @@ func ListenAndServe(srvs ...ServableServer) {
 		wg := sync.WaitGroup{}
 		for _, s := range srvs {
 			wg.Add(1)
-			go func(srv ServableServer) {
+			go func(srv Server) {
+				defer Recover()
 				defer wg.Done()
 				// The context is used to inform the server it has 5 seconds to finish the request it is currently handling
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -56,6 +60,9 @@ func ListenAndServe(srvs ...ServableServer) {
 	// kill -2 is syscall.SIGINT
 	// kill -9 is syscall.SIGKILL but can't be caught, so don't need to add it
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	<-quit
+	select {
+	case <-quit:
+	case <-ctx.Done():
+	}
 	log.Infoln("shutting down server...")
 }

@@ -46,5 +46,5 @@ func Run(cfg *config.Config) {
 	// flush config
 	defer cfg.Persist()
 
-	graceful.ListenAndServe(httpServer, grpcServer)
+	graceful.ListenAndServe(nil, httpServer, grpcServer)
 }
