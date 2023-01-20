@@ -26,6 +26,7 @@ jobs:
       with:
         node-version: 16
         cache: 'yarn'
+        cache-dependency-path: src/adminserver/ui
        
     - name: Build Vue
       run: cd src/adminserver/ui && yarn run build
