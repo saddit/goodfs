@@ -37,13 +37,13 @@ jobs:
       run: go work sync
 
     - name: Build AdminServer
-      run: go build -v src/adminserver
+      run: go build -v ./src/adminserver
     
     - name: Build ApiServer
-      run: go build -v src/adminserver
+      run: go build -v ./src/adminserver
       
     - name: Build MetaServer
-      run: go build -v src/metaserver
+      run: go build -v ./src/metaserver
       
     - name: Build ObjectServer
-      run: go build -v src/objectserver
+      run: go build -v ./src/objectserver
