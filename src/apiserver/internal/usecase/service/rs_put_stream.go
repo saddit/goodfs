@@ -24,7 +24,7 @@ func NewRSPutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSPutStream, er
 		wg.Todo()
 		go func(idx int) {
 			defer wg.Done()
-			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), int64(perShard))
+			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), int64(perShard), opt.Compress)
 			if e != nil {
 				wg.Error(e)
 			} else {
@@ -39,17 +39,17 @@ func NewRSPutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSPutStream, er
 	return &RSPutStream{enc, opt.Locates}, nil
 }
 
-func newExistedRSPutStream(ips, ids []string, hash string, rsCfg *config.RsConfig) *RSPutStream {
+func newExistedRSPutStream(ips, ids []string, hash string, compress bool, rsCfg *config.RsConfig) *RSPutStream {
 	writers := make([]io.WriteCloser, len(ids))
 	for i := range writers {
-		writers[i] = newExistedPutStream(ips[i], fmt.Sprintf("%s.%d", hash, i), ids[i])
+		writers[i] = newExistedPutStream(ips[i], fmt.Sprintf("%s.%d", hash, i), ids[i], compress)
 	}
 	return &RSPutStream{NewEncoder(writers, rsCfg), ips}
 }
 
 func (p *RSPutStream) Commit(ok bool) error {
-	if e := p.Flush(); e != nil {
-		return nil
+	if err := p.Flush(); err != nil {
+		return err
 	}
 
 	wg := util.NewDoneGroup()

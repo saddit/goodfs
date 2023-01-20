@@ -7,6 +7,7 @@ import (
 	"common/logs"
 	"common/system"
 	"common/util"
+	"common/util/slices"
 	"context"
 	"math"
 	"sync"
@@ -41,10 +42,10 @@ func newStatTimeline() *statTimeline {
 func (st *statTimeline) Append(cpu *TimeStat, mem *TimeStat) {
 	// limit size
 	if len(st.CpuTimeline) == maxTimeStat {
-		st.CpuTimeline = st.CpuTimeline[1:maxTimeStat]
+		slices.RemoveFirst(&st.CpuTimeline)
 	}
 	if len(st.MemTimeline) == maxTimeStat {
-		st.MemTimeline = st.CpuTimeline[1:maxTimeStat]
+		slices.RemoveFirst(&st.MemTimeline)
 	}
 	// add new stat
 	st.CpuTimeline = append(st.CpuTimeline, cpu)

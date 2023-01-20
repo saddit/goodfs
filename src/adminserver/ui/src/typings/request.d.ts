@@ -10,7 +10,12 @@ declare interface Pageable {
 
 declare interface MetadataReq extends Pageable {
     name: string
+    bucket: string
     version?: number
+}
+
+declare interface BucketReq extends Pageable {
+    name: string
 }
 
 declare interface MetaMigrateReq {

@@ -3,6 +3,7 @@ package webapi
 import (
 	"apiserver/internal/usecase/pool"
 	"common/performance"
+	"common/request"
 	"common/response"
 	"common/util"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -73,12 +73,12 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 	return nil
 }
 
-func PutTmpObject(ip, id, name string) error {
+func PutTmpObject(ip, id string, compress bool) error {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
 	form := make(url.Values)
-	form.Set("name", name)
-	req, _ := http.NewRequest(http.MethodPut, tempRest(ip, id), strings.NewReader(form.Encode()))
+	form.Set("compress", fmt.Sprintf("%t", compress))
+	req, _ := http.NewRequest(http.MethodPut, fmt.Sprint(tempRest(ip, id), "?", form.Encode()), nil)
 	keepAlive(req)
 	resp, e := pool.Http.Do(req)
 	if e != nil {
@@ -136,10 +136,12 @@ func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
 	return pool.Http.Do(req)
 }
 
-func GetObject(ip, name string, offset int, size int64) (*http.Response, error) {
+func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Response, error) {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
-	req, err := http.NewRequest(http.MethodGet, objectRest(ip, name), nil)
+	form := url.Values{}
+	form.Set("compress", fmt.Sprintf("%t", compress))
+	req, err := request.UrlValuesEncode(objectRest(ip, name), &form)
 	if err != nil {
 		return nil, err
 	}
@@ -164,24 +166,22 @@ func HeadObject(ip, id string) error {
 	return fmt.Errorf("requset %s: %s", resp.Request.URL, resp.Status)
 }
 
-func PutObject(ip, id string, body io.Reader) error {
+func PutObject(ip, id string, compress bool, body io.Reader) error {
 	st := time.Now()
 	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
-	req, _ := http.NewRequest(http.MethodPut, objectRest(ip, id), body)
-	keepAlive(req)
-	resp, e := pool.Http.Do(req)
-	if e != nil {
-		return e
+	form := url.Values{}
+	form.Set("compress", fmt.Sprint(compress))
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprint(objectRest(ip, id), "?", form.Encode()), body)
+	if err != nil {
+		return err
 	}
-	if resp.StatusCode == http.StatusBadRequest {
-		content, err := io.ReadAll(resp.Body)
-		if err != nil {
-			content = util.StrToBytes(resp.Status)
-		}
-		return fmt.Errorf("put object id=%v, return content=%v", id, string(content))
+	keepAlive(req)
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("put object id=%v, return code=%v", id, resp.Status)
+		return fmt.Errorf("put object id=%v, return code=%v, %s", id, resp.Status, response.MessageFromJSONBody(resp.Body))
 	}
 	return nil
 }

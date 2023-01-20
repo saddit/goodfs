@@ -54,19 +54,24 @@ func Post(g *gin.Context) {
 }
 
 func Put(g *gin.Context) {
-	id := g.Param("name")
-	var ti *entity.TempInfo
-	var ok bool
-	if ti, ok = cache.GetGob[entity.TempInfo](pool.Cache, id); ok {
-		if err := service.MvTmpToStorage(id, ti.Name); err != nil {
-			response.FailErr(err, g)
-			return
-		}
-	} else {
+	req := &struct {
+		ID       string `uri:"name"`
+		Compress bool   `form:"compress"`
+	}{}
+	if err := entity.BindAll(g, req, binding.Uri, binding.Query); err != nil {
+		response.FailErr(err, g)
+		return
+	}
+	ti, ok := cache.GetGob[entity.TempInfo](pool.Cache, req.ID)
+	if !ok {
 		response.BadRequestMsg("file has been removed", g)
 		return
 	}
-	pool.Cache.Delete(id)
+	if err := service.CommitFile(req.ID, ti.Name, req.Compress); err != nil {
+		response.FailErr(err, g)
+		return
+	}
+	pool.Cache.Delete(req.ID)
 	response.Ok(g)
 }
 

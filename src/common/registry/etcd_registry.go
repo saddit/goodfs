@@ -81,6 +81,12 @@ func (e *EtcdRegistry) GetServices(name string, rpc bool) []string {
 	return res
 }
 
+func (e *EtcdRegistry) GetService(name string, id string, rpc bool) (string, bool) {
+	mp := e.GetServiceMapping(name, rpc)
+	v, ok := mp[id]
+	return v, ok
+}
+
 func (e *EtcdRegistry) MustRegister() *EtcdRegistry {
 	if err := e.Register(); err != nil {
 		panic(err)

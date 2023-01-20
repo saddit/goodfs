@@ -12,6 +12,7 @@ import (
 	"common/response"
 	"common/util"
 	"encoding/json"
+	"fmt"
 	"net"
 	"sort"
 	"sync"
@@ -23,7 +24,16 @@ import (
 
 type MetadataCond struct {
 	Name     string `form:"name"`
+	Bucket   string `form:"bucket"`
 	Version  int    `form:"version"`
+	Page     int    `form:"page" binding:"required"`
+	PageSize int    `form:"pageSize" binding:"required"`
+	OrderBy  string `form:"orderBy"`
+	Desc     bool   `form:"desc"`
+}
+
+type BucketCond struct {
+	Name     string `form:"name"`
 	Page     int    `form:"page" binding:"required"`
 	PageSize int    `form:"pageSize" binding:"required"`
 	OrderBy  string `form:"orderBy"`
@@ -51,7 +61,7 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, e
 		dg.Add(1)
 		go func(loc string) {
 			defer dg.Done()
-			data, total, err := webapi.ListMetadata(loc, cond.Name, cond.Page*cond.PageSize, cond.OrderBy, cond.Desc)
+			data, total, err := webapi.ListMetadata(loc, fmt.Sprint(cond.Bucket, "/", cond.Name), cond.Page*cond.PageSize)
 			if err != nil {
 				dg.Error(err)
 				return
@@ -65,6 +75,7 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, e
 	if err := dg.WaitUntilError(); err != nil {
 		return nil, 0, err
 	}
+	// TODO: remove order logic
 	if st, ed, ok := util.PagingOffset(cond.Page, cond.PageSize, len(lst)); ok {
 		sort.Slice(lst, func(i, j int) bool {
 			var res bool
@@ -86,7 +97,40 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, e
 }
 
 func (m *Metadata) VersionPaging(cond MetadataCond, token string) ([]byte, int, error) {
-	return webapi.ListVersion(SelectApiServer(), cond.Name, cond.Page, cond.PageSize, token)
+	return webapi.ListVersion(SelectApiServer(), cond.Bucket, cond.Name, cond.Page, cond.PageSize, token)
+}
+
+func (m *Metadata) BucketPaging(cond *BucketCond) ([]*entity.Bucket, int, error) {
+	servers := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
+	lst := make([]*entity.Bucket, 0, len(servers)*cond.Page*cond.PageSize)
+	if len(servers) == 0 {
+		logs.Std().Warn("not found any metadata server")
+		return lst, 0, nil
+	}
+	var totals int
+	mux := &sync.Mutex{}
+	dg := util.NewDoneGroup()
+	defer dg.Close()
+	for _, ip := range servers {
+		dg.Add(1)
+		go func(loc string) {
+			defer dg.Done()
+			data, total, err := webapi.ListBuckets(loc, cond.Name, cond.Page*cond.PageSize)
+			if err != nil {
+				dg.Error(err)
+				return
+			}
+			mux.Lock()
+			defer mux.Unlock()
+			totals += total
+			lst = append(lst, data...)
+		}(ip)
+	}
+	if err := dg.WaitUntilError(); err != nil {
+		return nil, 0, err
+	}
+	st, ed, _ := util.PagingOffset(cond.Page, cond.PageSize, len(lst))
+	return lst[st:ed], totals, nil
 }
 
 func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {

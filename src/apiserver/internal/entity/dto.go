@@ -21,13 +21,14 @@ type PutResp struct {
 }
 
 type PutReq struct {
-	Store  ObjectStrategy `form:"ss"`
-	Name   string         `uri:"name" binding:"required"`
-	Bucket string         `header:"bucket" binding:"required"`
-	Hash   string         `header:"digest" binding:"required"`
-	Ext    string
-	Locate []string
-	Body   io.Reader
+	Store    ObjectStrategy `form:"ss"`
+	Compress bool           `form:"compress"`
+	Name     string         `uri:"name" binding:"required"`
+	Bucket   string         `header:"bucket" binding:"required"`
+	Hash     string         `header:"digest" binding:"required"`
+	Ext      string
+	Locate   []string
+	Body     io.Reader
 }
 
 type GetReq struct {
@@ -38,11 +39,12 @@ type GetReq struct {
 }
 
 type BigPostReq struct {
-	Name   string `uri:"name" binding:"required"`
-	Bucket string `header:"bucket" binding:"required"`
-	Hash   string `header:"digest" binding:"required"`
-	Size   int64  `header:"size" binding:"required"`
-	Ext    string
+	Compress bool   `form:"compress"`
+	Name     string `uri:"name" binding:"required"`
+	Bucket   string `header:"bucket" binding:"required"`
+	Hash     string `header:"digest" binding:"required"`
+	Size     int64  `header:"size" binding:"required"`
+	Ext      string
 }
 
 type BigPutReq struct {
@@ -51,7 +53,7 @@ type BigPutReq struct {
 }
 
 func (b *BigPostReq) Bind(c *gin.Context) error {
-	if err := BindAll(c, b, binding.Header, binding.Uri); err != nil {
+	if err := BindAll(c, b, binding.Header, binding.Query, binding.Uri); err != nil {
 		return err
 	}
 	return nil

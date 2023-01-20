@@ -11,6 +11,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.10
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.8.1
+	go.etcd.io/bbolt v1.3.6
 	go.etcd.io/etcd/api/v3 v3.5.4
 	go.etcd.io/etcd/client/v3 v3.5.4
 )

@@ -11,6 +11,7 @@ type Metadata struct {
 }
 
 type Version struct {
+	Compress      bool     `json:"compress" msg:"compress"`
 	StoreStrategy int8     `json:"storeStrategy" msg:"store_strategy" binding:"required"`
 	DataShards    int32    `json:"dataShards" msg:"data_shards" binding:"required"`
 	ParityShards  int32    `json:"parityShards" msg:"parity_shards"`
@@ -25,6 +26,7 @@ type Version struct {
 type Bucket struct {
 	Versioning     bool     `json:"versioning" msg:"versioning"`          // Versioning marks bucket can store multi versions of object. if true, VersionRemains will be used
 	Readonly       bool     `json:"readonly" msg:"readonly"`              // Readonly marks objects in bucket only allowed to read
+	Compress       bool     `json:"compress" msg:"compress"`              // Compress marks objects in bucket should be compressed before store
 	StoreStrategy  int8     `json:"storeStrategy" msg:"store_strategy"`   // StoreStrategy if not zero, it will apply to ever objects under this bucket
 	DataShards     int32    `json:"dataShards" msg:"data_shards"`         // DataShards used when StoreStrategy is not zero
 	ParityShards   int32    `json:"parityShards" msg:"parity_shards"`     // ParityShards used when StoreStrategy is not zero

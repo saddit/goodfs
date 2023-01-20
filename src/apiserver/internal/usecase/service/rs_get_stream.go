@@ -24,7 +24,7 @@ type provideStream struct {
 	err    error
 }
 
-func provideGetStream(hash string, locates []string, shardSize int) <-chan *provideStream {
+func provideGetStream(hash string, locates []string, shardSize int, compress bool) <-chan *provideStream {
 	respChan := make(chan *provideStream, 1)
 	go func() {
 		defer graceful.Recover()
@@ -36,7 +36,7 @@ func provideGetStream(hash string, locates []string, shardSize int) <-chan *prov
 				defer graceful.Recover()
 				defer wg.Done()
 				if len(ip) > 0 {
-					reader, e := NewGetStream(ip, fmt.Sprintf("%s.%d", hash, idx), int64(shardSize))
+					reader, e := NewGetStream(ip, fmt.Sprintf("%s.%d", hash, idx), int64(shardSize), compress)
 					respChan <- &provideStream{reader, idx, e}
 				} else {
 					respChan <- &provideStream{nil, idx, fmt.Errorf("shard %s.%d lost", hash, idx)}
@@ -53,11 +53,11 @@ func NewRSGetStream(option *StreamOption, rsCfg *config.RsConfig) (*RSGetStream,
 	writers := make([]io.Writer, rsCfg.AllShards())
 	perSize := rsCfg.ShardSize(option.Size)
 	lb := logic.NewDiscovery().NewDataServSelector()
-	for r := range provideGetStream(option.Hash, option.Locates, perSize) {
+	for r := range provideGetStream(option.Hash, option.Locates, perSize, option.Compress) {
 		if r.err != nil {
 			logs.Std().Error(r.err)
 			ip := lb.Select()
-			writers[r.index], r.err = NewPutStream(ip, fmt.Sprintf("%s.%d", option.Hash, r.index), int64(perSize))
+			writers[r.index], r.err = NewPutStream(ip, fmt.Sprintf("%s.%d", option.Hash, r.index), int64(perSize), option.Compress)
 			if r.err != nil {
 				return nil, r.err
 			}

@@ -9,13 +9,14 @@ import (
 )
 
 type resumeToken struct {
-	Name    string           `json:"name"`
-	Hash    string           `json:"hash"`
-	Bucket  string           `json:"bucket"`
-	Size    int64            `json:"size"`
-	Servers []string         `json:"servers"`
-	Ids     []string         `json:"ids"`
-	Config  *config.RsConfig `json:"config"`
+	Compress bool             `json:"compress"`
+	Size     int64            `json:"size"`
+	Name     string           `json:"name"`
+	Hash     string           `json:"hash"`
+	Bucket   string           `json:"bucket"`
+	Servers  []string         `json:"servers"`
+	Ids      []string         `json:"ids"`
+	Config   *config.RsConfig `json:"config"`
 }
 
 // RSResumablePutStream 断点续传
@@ -32,7 +33,7 @@ func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, erro
 	}
 	var tk resumeToken
 	if ok := util.GobDecode(bt, &tk); ok {
-		return &RSResumablePutStream{newExistedRSPutStream(tk.Servers, tk.Ids, tk.Hash, tk.Config), &tk}, nil
+		return &RSResumablePutStream{newExistedRSPutStream(tk.Servers, tk.Ids, tk.Hash, tk.Compress, tk.Config), &tk}, nil
 	}
 	return nil, fmt.Errorf("invalid token")
 }
@@ -48,13 +49,14 @@ func NewRSResumablePutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSResu
 		ids[i] = putStream.writers[i].(*PutStream).tmpId
 	}
 	token := &resumeToken{
-		Name:    opt.Name,
-		Hash:    opt.Hash,
-		Bucket:  opt.Bucket,
-		Servers: opt.Locates,
-		Size:    opt.Size,
-		Ids:     ids,
-		Config:  rsCfg,
+		Name:     opt.Name,
+		Hash:     opt.Hash,
+		Bucket:   opt.Bucket,
+		Servers:  opt.Locates,
+		Size:     opt.Size,
+		Compress: opt.Compress,
+		Ids:      ids,
+		Config:   rsCfg,
 	}
 	return &RSResumablePutStream{putStream, token}, nil
 }

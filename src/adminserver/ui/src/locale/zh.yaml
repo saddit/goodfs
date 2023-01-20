@@ -3,6 +3,7 @@ home: '首页'
 about: '关于'
 setting: '设置'
 metadata: '元数据'
+bucket: '对象桶'
 not-found: "未找到"
 server: '服务器'
 api-server: '接口服务'

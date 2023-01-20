@@ -23,8 +23,12 @@ type Locator struct {
 func New(etcd *clientv3.Client) *Locator {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if res, _ := etcd.Get(ctx, cst.EtcdPrefix.LocationSubKey, clientv3.WithCountOnly()); res.Count == 0 {
-		_, err := etcd.Put(ctx, cst.EtcdPrefix.LocationSubKey, "")
+	res, err := etcd.Get(ctx, cst.EtcdPrefix.LocationSubKey, clientv3.WithCountOnly())
+	if err != nil {
+		util.LogErr(err)
+	}
+	if err != nil || res.Count == 0 {
+		_, err = etcd.Put(ctx, cst.EtcdPrefix.LocationSubKey, "")
 		util.LogErr(err)
 	}
 	return &Locator{etcd}

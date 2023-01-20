@@ -84,7 +84,7 @@
             </tr>
           </template>
           <tr v-else>
-            <td colspan="7" class="text-center">{{ t('no-data') }}</td>
+            <td :colspan="7" class="text-center">{{ t('no-data') }}</td>
           </tr>
           </tbody>
         </table>
@@ -98,13 +98,14 @@
 <script setup lang="ts">
 import {createColumnHelper, FlexRender, getCoreRowModel, useVueTable} from '@tanstack/vue-table'
 import {ArrowLongDownIcon, ArrowLongUpIcon, MagnifyingGlassIcon} from '@heroicons/vue/20/solid'
+import type {RouteParamValue} from "vue-router";
 
 const defPage: Pageable = {page: 1, total: 0, pageSize: 10, orderBy: 'create_time', desc: false}
 
 const dataList = ref<Metadata[]>([])
 const versionList = ref<Version[]>([])
-const dataReq = reactive<MetadataReq>({name: '', ...defPage})
-const versionReq = reactive<MetadataReq>({name: '', ...defPage})
+const dataReq = reactive<MetadataReq>({name: '', bucket: '', ...defPage})
+const versionReq = reactive<MetadataReq>({name: '', bucket: '', ...defPage})
 const showVersionTb = ref(false)
 
 const {t} = useI18n({inheritLocale: true})
@@ -127,6 +128,7 @@ function queryMetadata() {
 
 function queryVersion(name: string) {
     versionReq.name = name
+    versionReq.bucket = dataReq.bucket
     api.metadata.versionPage(versionReq)
         .then(res => {
             versionList.value = res.list
@@ -174,6 +176,7 @@ watch(() => versionReq.pageSize, () => {
 })
 
 onBeforeMount(() => {
+    dataReq.bucket = useRoute().query['bucket'] as string
     queryMetadata()
 })
 

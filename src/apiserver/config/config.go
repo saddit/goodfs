@@ -3,6 +3,7 @@ package config
 import (
 	"apiserver/internal/usecase/componet/auth"
 	"common/cst"
+	"common/datasize"
 	"common/etcd"
 	"common/logs"
 	"common/performance"
@@ -29,14 +30,15 @@ type Config struct {
 	Registry       registry.Config    `yaml:"registry" env-prefix:"REGISTRY"`
 	Auth           auth.Config        `yaml:"auth" env-prefix:"AUTH"`
 	Performance    performance.Config `yaml:"performance" env-prefix:"PERFORMANCE"`
-	Rs             RsConfig           `yaml:"-"`
 }
 
 func (c *Config) initialize() {
-	c.Rs = c.Object.ReedSolomon
 	// aligned to 4KB
-	if i := c.Rs.BlockPerShard % cst.OS.PageSize; i > 0 {
-		c.Rs.BlockPerShard = c.Rs.BlockPerShard - i + cst.OS.PageSize
+	if i := c.Object.ReedSolomon.BlockPerShard % cst.OS.PageSize; i > 0 {
+		c.Object.ReedSolomon.BlockPerShard = c.Object.ReedSolomon.BlockPerShard - i + cst.OS.PageSize
+	}
+	if i := int(c.Object.Replication.BlockSize) % cst.OS.PageSize; i > 0 {
+		c.Object.Replication.BlockSize = datasize.DataSize(int(c.Object.Replication.BlockSize) - i + cst.OS.PageSize)
 	}
 }
 
@@ -51,9 +53,10 @@ type ObjectConfig struct {
 }
 
 type ReplicationConfig struct {
-	CopiesCount       int     `yaml:"copies-count" env:"COPIES_COUNT" env-default:"3"`
-	LossToleranceRate float32 `yaml:"loss-tolerance-rate" env:"LOSS_TOLERANCE_RATE" env-default:"0"`
-	CopyAsync         bool    `yaml:"copy-async" env:"COPY_ASYNC" env-default:"false"`
+	CopiesCount       int               `yaml:"copies-count" env:"COPIES_COUNT" env-default:"3"`
+	BlockSize         datasize.DataSize `yaml:"block-size" env:"BLOCK_SIZE" env-default:"32KB"` // Auto aligned to power of 4KB
+	LossToleranceRate float32           `yaml:"loss-tolerance-rate" env:"LOSS_TOLERANCE_RATE" env-default:"0"`
+	CopyAsync         bool              `yaml:"copy-async" env:"COPY_ASYNC" env-default:"false"`
 }
 
 func (rp *ReplicationConfig) AtLeastCopiesNum() int {
@@ -68,7 +71,7 @@ func (rp *ReplicationConfig) ToleranceLossNum() int {
 type RsConfig struct {
 	DataShards    int `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`
 	ParityShards  int `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`
-	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"` // Auto aligen to power of 4KB
+	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"` // Auto aligned to power of 4KB
 }
 
 func (r *RsConfig) AllShards() int {

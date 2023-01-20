@@ -4,11 +4,15 @@ import (
 	"common/cache"
 	"common/datasize"
 	"common/etcd"
+	"common/graceful"
 	"common/logs"
 	"common/registry"
 	"common/util"
+	"common/util/slices"
+	"errors"
 	"objectserver/config"
 	"objectserver/internal/db"
+	"sync"
 
 	"github.com/allegro/bigcache"
 	"github.com/gin-gonic/gin"
@@ -23,6 +27,45 @@ var (
 	Discovery registry.Discovery
 	ObjectCap *db.ObjectCapacity
 )
+
+var (
+	openFn       func()
+	onCloseEvent []func()
+	closeOnce    = &sync.Once{}
+	openOnce     = &sync.Once{}
+)
+
+// OnClose as defer on pool.Close(). Last in first invoke.
+func OnClose(fn ...func()) {
+	onCloseEvent = append(onCloseEvent, fn...)
+}
+
+func OnOpen(fn func()) {
+	openFn = fn
+}
+
+func Open() {
+	openOnce.Do(func() {
+		closeOnce = &sync.Once{}
+		openFn()
+	})
+}
+
+func OpenGraceful() (err error) {
+	defer graceful.Recover(func(msg string) {
+		err = errors.New(msg)
+	})
+	Open()
+	return
+}
+
+func CloseGraceful() (err error) {
+	defer graceful.Recover(func(msg string) {
+		err = errors.New(msg)
+	})
+	Close()
+	return
+}
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
@@ -76,6 +119,12 @@ func initRegister(et *clientv3.Client, cfg *config.Config) {
 }
 
 func Close() {
-	util.LogErr(Etcd.Close())
-	util.LogErr(Cache.Close())
+	closeOnce.Do(func() {
+		defer slices.Clear(&onCloseEvent)
+		openOnce = &sync.Once{}
+		for _, fn := range onCloseEvent {
+			//goland:noinspection GoDeferInLoop
+			defer fn()
+		}
+	})
 }

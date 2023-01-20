@@ -2,7 +2,10 @@ package service
 
 import (
 	"apiserver/config"
+	"common/datasize"
+	"common/logs"
 	"common/util"
+	"common/util/slices"
 	"fmt"
 	"go.uber.org/atomic"
 	"io"
@@ -10,6 +13,7 @@ import (
 
 type CopyPutStream struct {
 	rpConfig config.ReplicationConfig
+	cache    []byte
 	writers  []io.WriteCloser
 }
 
@@ -21,7 +25,7 @@ func NewCopyPutStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*Copy
 		wg.Todo()
 		go func(idx int) {
 			defer wg.Done()
-			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), opt.Size)
+			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), opt.Size, opt.Compress)
 			if e != nil {
 				wg.Error(e)
 			} else {
@@ -35,10 +39,15 @@ func NewCopyPutStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*Copy
 	return &CopyPutStream{
 		rpConfig: *rpCfg,
 		writers:  writers,
+		cache:    make([]byte, 0, rpCfg.BlockSize),
 	}, nil
 }
 
-func (c *CopyPutStream) Write(p []byte) (n int, err error) {
+func (c *CopyPutStream) Flush() (err error) {
+	if len(c.cache) == 0 {
+		return nil
+	}
+	defer func() { slices.Clear(&c.cache) }()
 	dg := util.NewDoneGroup()
 	defer dg.Close()
 	sucNum := atomic.NewInt32(0)
@@ -46,15 +55,38 @@ func (c *CopyPutStream) Write(p []byte) (n int, err error) {
 		dg.Todo()
 		go func(writer io.Writer) {
 			defer dg.Done()
-			if _, err := writer.Write(p); err != nil {
+			if _, err := writer.Write(c.cache); err != nil {
 				dg.Error(err)
 				return
 			}
 			sucNum.Inc()
 		}(wt)
 	}
-	if err := dg.WaitUntilError(); err != nil && c.rpConfig.AtLeastCopiesNum() > int(sucNum.Load()) {
-		return 0, err
+	for inner := range dg.ErrorUtilDone() {
+		logs.Std().Debugf("write replication err: %s", inner)
+		if c.rpConfig.AtLeastCopiesNum() > int(sucNum.Load()) {
+			return inner
+		}
+	}
+	return
+}
+
+func (c *CopyPutStream) Write(p []byte) (n int, err error) {
+	length := len(p)
+	cur := 0
+	for length > 0 {
+		next := int(c.rpConfig.BlockSize) - len(c.cache)
+		if next > length {
+			next = length
+		}
+		c.cache = append(c.cache, p[cur:cur+next]...)
+		if datasize.DataSize(len(c.cache)) == c.rpConfig.BlockSize {
+			if err := c.Flush(); err != nil {
+				return cur, err
+			}
+		}
+		cur += next
+		length -= next
 	}
 	return len(p), nil
 }
@@ -70,6 +102,9 @@ func (c *CopyPutStream) Close() error {
 }
 
 func (c *CopyPutStream) Commit(ok bool) error {
+	if err := c.Flush(); err != nil {
+		return err
+	}
 	wg := util.NewDoneGroup()
 	defer wg.Close()
 	for _, w := range c.writers {

@@ -20,7 +20,7 @@ func NewCopyGetStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*Copy
 	lb := logic.NewDiscovery().NewDataServSelector()
 	for idx, loc := range opt.Locates {
 		id := fmt.Sprint(opt.Hash, ".", idx)
-		getStream, err = NewGetStream(loc, id, opt.Size)
+		getStream, err = NewGetStream(loc, id, opt.Size, opt.Compress)
 		if err == nil {
 			break
 		}
@@ -33,7 +33,7 @@ func NewCopyGetStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*Copy
 	}
 	var fixStream io.WriteCloser
 	if len(failIds) > rpCfg.ToleranceLossNum() {
-		fixStream, err = NewCopyFixStream(failIds, newLocates, opt.Updater, rpCfg)
+		fixStream, err = NewCopyFixStream(failIds, newLocates, opt, rpCfg)
 		util.LogErrWithPre("fix copies err", err)
 	}
 	return &CopyGetStream{

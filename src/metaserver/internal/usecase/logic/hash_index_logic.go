@@ -42,7 +42,6 @@ func (HashIndexLogic) GetIndex(hash string, res *[]string) usecase.TxFunc {
 	return func(tx *bolt.Tx) error {
 		buk := GetIndexBucket(tx, HashIndexName)
 		if buk == nil {
-
 			return nil
 		}
 		hashBuk := buk.Bucket(util.StrToBytes(hash))
