@@ -66,7 +66,7 @@ func (ms *MigrationServer) FinishReceive(_ context.Context, info *pb.ObjectInfo)
 
 func (ms *MigrationServer) RequireSend(_ context.Context, info *pb.RequiredInfo) (*pb.Response, error) {
 	logs.Std().Infof("start sending %dB data to %s", info.RequiredSize, info.TargetAddress)
-	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, true)
+	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, false)
 	if !ok {
 		return nil, errors.New("could not find register address")
 	}
@@ -80,7 +80,7 @@ func (ms *MigrationServer) RequireSend(_ context.Context, info *pb.RequiredInfo)
 }
 
 func (ms *MigrationServer) LeaveCommand(context.Context, *pb.EmptyReq) (*pb.Response, error) {
-	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, true)
+	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, false)
 	if !ok {
 		return &pb.Response{Success: false, Message: "it's an unregister server"}, nil
 	}

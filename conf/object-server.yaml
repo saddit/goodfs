@@ -1,5 +1,5 @@
-port: 8100
-rpc-port: 4100
+port: 8101
+rpc-port: 4101
 log:
   level: debug
 storage-path: e:/file/temp

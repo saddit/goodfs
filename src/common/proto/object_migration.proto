@@ -15,6 +15,7 @@ message ObjectData {
 message ObjectInfo {
   string fileName = 1;
   string originLocate = 2;
+  int64 size = 3;
 }
 
 message RequiredInfo {

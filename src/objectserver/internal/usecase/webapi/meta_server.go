@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 var cli = http.Client{}
@@ -29,7 +30,7 @@ func VersionsByHash(ip, hash string) ([]*pb.Version, error) {
 }
 
 func UpdateVersionLocates(ip, name string, version int, locates []string) error {
-	uri := fmt.Sprintf("http://%s/metadata_version/%s/locates?version=%d", ip, name, version)
+	uri := fmt.Sprintf("http://%s/metadata_version/%s/locates?version=%d", ip, url.PathEscape(name), version)
 	bt, err := json.Marshal(map[string]interface{}{"locations": locates})
 	if err != nil {
 		return err
