@@ -53,12 +53,21 @@ func (c *CopyFixStream) startFix() func() error {
 	dg.Todo()
 	go func() {
 		defer dg.Done()
-		var errs []string
 		data := c.buffer.Bytes()
+		wg := util.NewDoneGroup()
+		defer wg.Close()
 		for idx, name := range c.fileNames {
-			if err := webapi.PutObject(c.locates[idx], name, c.compress, bytes.NewBuffer(data)); err != nil {
-				errs = append(errs, fmt.Sprintf("fix %s put-api err: %s", name, err))
-			}
+			wg.Todo()
+			go func(i int, key string) {
+				defer wg.Done()
+				if err := webapi.PutObject(c.locates[i], key, c.compress, bytes.NewBuffer(data)); err != nil {
+					wg.Error(fmt.Errorf("fix %s put-api err: %w", key, err))
+				}
+			}(idx, name)
+		}
+		var errs []string
+		for err := range wg.ErrorUtilDone() {
+			errs = append(errs, err.Error())
 		}
 		if len(errs) > 0 {
 			dg.Error(errors.New(strings.Join(errs, ";")))
