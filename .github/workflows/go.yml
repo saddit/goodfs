@@ -29,7 +29,7 @@ jobs:
         cache-dependency-path: src/adminserver/ui
        
     - name: Build Vue
-      run: cd src/adminserver/ui && yarn run build
+      run: cd src/adminserver/ui && yarn && yarn run build
 
     - name: Build AdminServer
       run: go build -v src/adminserver
