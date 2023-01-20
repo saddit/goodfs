@@ -7,6 +7,8 @@ updates:
     commit-message:
       prefix: "build"
       include: "scope"
+    labels:
+      - "dependencies"
   - package-ecosystem: "gomod"
     directory: "/src/metaserver"
     schedule:
@@ -14,6 +16,8 @@ updates:
     commit-message:
       prefix: "build"
       include: "scope"
+    labels:
+      - "dependencies"
   - package-ecosystem: "gomod"
     directory: "/src/objectserver"
     schedule:
@@ -21,6 +25,8 @@ updates:
     commit-message:
       prefix: "build"
       include: "scope"
+    labels:
+      - "dependencies"
   - package-ecosystem: "gomod"
     directory: "/src/adminserver"
     schedule:
@@ -28,6 +34,8 @@ updates:
     commit-message:
       prefix: "build"
       include: "scope"
+    labels:
+      - "dependencies"
   - package-ecosystem: "yarn"
     directory: "/src/adminserver/ui"
     schedule:
@@ -35,3 +43,5 @@ updates:
     commit-message:
       prefix: "build(ui)"
       include: "scope"
+    labels:
+      - "dependencies"
