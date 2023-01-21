@@ -171,12 +171,9 @@ func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (in
 			return 0, err
 		}
 		bt := make([]byte, pageSize)
-		n, err := io.ReadFull(file, bt)
+		_, err = io.ReadFull(file, bt)
 		if err != nil {
-			return 0, err
-		}
-		if int64(n) < pageSize {
-			return 0, fmt.Errorf("read tail except %d but %d", pageSize, n)
+			return 0, fmt.Errorf("read tail 4KB err: %w", err)
 		}
 		// remove padding
 		bt = bt[:len(bt)-int(paddingLen)]
