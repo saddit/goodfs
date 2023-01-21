@@ -1,4 +1,4 @@
-package big
+package http
 
 import (
 	"apiserver/internal/entity"
@@ -30,7 +30,7 @@ func NewBigObjectsController(obj usecase.IObjectService, meta usecase.IMetaServi
 }
 
 func (bc *BigObjectsController) Register(r gin.IRoutes) {
-	r.POST("/big/:name", FilterDuplicates(bc.objectService), bc.Post)
+	r.POST("/big/:name", bc.FilterDuplicates, bc.Post)
 	r.HEAD("/big/:token", bc.Head)
 	r.PATCH("/big/:token", bc.Patch)
 }
@@ -239,4 +239,38 @@ func (bc *BigObjectsController) finishUpload(stream *service.RSResumablePutStrea
 	// commit upload
 	err = stream.Commit(true)
 	return
+}
+
+func (bc *BigObjectsController) FilterDuplicates(g *gin.Context) {
+	var req entity.BigPostReq
+	if err := req.Bind(g); err != nil {
+		response.BadRequestErr(err, g).Abort()
+		return
+	}
+	req.Ext = util.GetFileExtOrDefault(req.Name, false, "bytes")
+	g.Set("BigPostReq", &req)
+	if ips, ok := bc.objectService.LocateObject(req.Hash); ok {
+		ver, err := bc.objectService.StoreObject(&entity.PutReq{
+			Name:   req.Name,
+			Hash:   req.Hash,
+			Bucket: req.Bucket,
+			Ext:    req.Ext,
+			Locate: ips,
+		}, &entity.Metadata{
+			Name: req.Name,
+			Versions: []*entity.Version{{
+				Size: req.Size,
+				Hash: req.Hash,
+			}},
+		})
+		if err != nil {
+			response.FailErr(err, g).Abort()
+			return
+		}
+		response.OkJson(&entity.PutResp{
+			Name:    req.Name,
+			Bucket:  req.Bucket,
+			Version: ver,
+		}, g).Abort()
+	}
 }

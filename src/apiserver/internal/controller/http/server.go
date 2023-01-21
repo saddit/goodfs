@@ -1,8 +1,6 @@
 package http
 
 import (
-	"apiserver/internal/controller/http/big"
-	"apiserver/internal/controller/http/objects"
 	. "apiserver/internal/usecase"
 	"apiserver/internal/usecase/componet/auth"
 	"apiserver/internal/usecase/pool"
@@ -29,8 +27,8 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService, b repo.IBucket
 	authRoute := eng.Group("/v1", authMid...)
 
 	//rest api
-	objects.NewObjectsController(o, m).Register(authRoute)
-	big.NewBigObjectsController(o, m, b).Register(authRoute)
+	NewObjectsController(o, m).Register(authRoute)
+	NewBigObjectsController(o, m, b).Register(authRoute)
 	NewLocateController(o).Register(authRoute)
 	NewMetadataController(m).Register(authRoute)
 	NewSecurityController().Register(authRoute)

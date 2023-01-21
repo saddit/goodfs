@@ -1,8 +1,10 @@
-package objects
+package http
 
 import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
+	"common/datasize"
+	"common/logs"
 	"common/response"
 	"common/util"
 	"github.com/gin-gonic/gin"
@@ -19,7 +21,7 @@ func NewObjectsController(obj usecase.IObjectService, meta usecase.IMetaService)
 }
 
 func (oc *ObjectsController) Register(r gin.IRoutes) {
-	r.PUT("/objects/:name", ValidatePut(oc.objectService), oc.Put)
+	r.PUT("/objects/:name", oc.ValidatePut, oc.Put)
 	r.GET("/objects/:name", oc.Get)
 }
 
@@ -89,4 +91,33 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 		"Accept-Ranges":  "bytes",
 		"Content-Length": n,
 	}, c)
+}
+
+func (oc *ObjectsController) ValidatePut(g *gin.Context) {
+	var req entity.PutReq
+	if err := req.Bind(g); err != nil {
+		response.BadRequestErr(err, g).Abort()
+		return
+	}
+	if g.Request.ContentLength <= 0 {
+		response.BadRequestMsg("empty request", g).Abort()
+		return
+	}
+	if req.Store == 0 {
+		if g.Request.ContentLength > int64(datasize.MB*16) {
+			req.Store = entity.ECReedSolomon
+		} else {
+			req.Store = entity.MultiReplication
+		}
+	}
+	if ext, ok := util.GetFileExt(req.Name, false); ok {
+		req.Ext = ext
+	} else {
+		req.Ext = "bytes"
+	}
+	if loc, ok := oc.objectService.LocateObject(req.Hash); ok {
+		logs.Std().Debugf("find locates for %s: %s", req.Hash, loc)
+		req.Locate = loc
+	}
+	g.Set("PutReq", &req)
 }
