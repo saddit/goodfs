@@ -19,6 +19,7 @@ type Server struct {
 func NewRpcServer(port string, service *service.MigrationService) *Server {
 	serv := grpc.NewServer()
 	pb.RegisterObjectMigrationServer(serv, NewMigrationServer(service))
+	pb.RegisterConfigServiceServer(serv, &ConfigServiceServer{})
 	return &Server{serv, port}
 }
 

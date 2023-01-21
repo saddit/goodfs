@@ -2,6 +2,7 @@ package http
 
 import (
 	"adminserver/internal/usecase/logic"
+	"adminserver/internal/usecase/pool"
 	"common/response"
 	"common/util"
 	"github.com/gin-gonic/gin"
@@ -25,7 +26,8 @@ func (mc *MetadataController) Register(r gin.IRouter) {
 		GET("/peers", mc.Peers).
 		GET("/buckets", mc.BucketList).
 		POST("/leave_cluster", mc.LeaveCluster).
-		POST("/join_leader", mc.JoinLeader)
+		POST("/join_leader", mc.JoinLeader).
+		GET("/config/:serverId", mc.GetConfig)
 }
 
 func (mc *MetadataController) Page(c *gin.Context) {
@@ -149,4 +151,23 @@ func (mc *MetadataController) BucketList(c *gin.Context) {
 	response.Exec(c).
 		Header(gin.H{"X-Total-Count": total}).
 		JSON(list)
+}
+
+func (mc *MetadataController) GetConfig(c *gin.Context) {
+	sid := c.Param("serverId")
+	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, sid, true)
+	if !ok {
+		response.BadRequestMsg("unknown serverId", c)
+		return
+	}
+	jsonData, err := logic.NewMetadata().GetConfig(ip)
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	if _, err = c.Writer.Write(jsonData); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
 }
