@@ -41,6 +41,7 @@ func NewRpcServer(port string, rw *raftimpl.RaftWrapper, serv1 usecase.IMetadata
 	// register hash-slot services
 	pb.RegisterHashSlotServer(server, NewHashSlotServer(serv2))
 	pb.RegisterMetadataApiServer(server, NewMetadataApiServer(serv1))
+	pb.RegisterConfigServiceServer(server, &ConfigServiceServer{})
 	return &Server{server, port}
 }
 

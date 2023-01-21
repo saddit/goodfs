@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "../pb";
+
+import "message.proto";
+
+message ConfigResp {
+  bytes jsonEncode = 1;
+}
+
+service ConfigService {
+  rpc GetConfig(EmptyReq) returns (ConfigResp);
+}
