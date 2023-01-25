@@ -1,4 +1,4 @@
-name: Release API Server
+name: Release ADMIN Server
 
 on:
   workflow_dispatch:
@@ -15,9 +15,19 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version-file: ./src/apiserver/go.mod
+          go-version-file: ./src/adminserver/go.mod
           cache: true
-          cache-dependency-path: ./src/apiserver/go.sum
+          cache-dependency-path: ./src/adminserver/go.sum
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: src/adminserver/ui
+
+      - name: Build Frontend
+        run: cd src/adminserver/ui && yarn && yarn run build
         
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
@@ -25,6 +35,6 @@ jobs:
           distribution: goreleaser
           version: latest
           args: release --rm-dist
-          workdir: ./src/apiserver
+          workdir: ./src/adminserver
         env:
           GITHUB_TOKEN: ${{ secrets.GO_RELEASER_GH_TK }}
