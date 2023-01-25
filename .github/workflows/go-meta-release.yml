@@ -1,4 +1,4 @@
-name: Release API Server
+name: Release META Server
 
 on:
   workflow_dispatch:
@@ -15,9 +15,9 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version-file: ./src/apiserver/go.mod
+          go-version-file: ./src/metaserver/go.mod
           cache: true
-          cache-dependency-path: ./src/apiserver/go.sum
+          cache-dependency-path: ./src/metaserver/go.sum
         
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
@@ -25,6 +25,6 @@ jobs:
           distribution: goreleaser
           version: latest
           args: release --rm-dist
-          workdir: ./src/apiserver
+          workdir: ./src/metaserver
         env:
           GITHUB_TOKEN: ${{ secrets.GO_RELEASER_GH_TK }}

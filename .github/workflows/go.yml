@@ -30,7 +30,7 @@ jobs:
         cache: 'yarn'
         cache-dependency-path: src/adminserver/ui
        
-    - name: Build Vue
+    - name: Build Frontend
       run: cd src/adminserver/ui && yarn && yarn run build
       
     - name: Go work sync
