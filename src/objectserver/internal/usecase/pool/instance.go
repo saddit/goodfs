@@ -88,7 +88,7 @@ func initDriverManger(ex []string) {
 
 func initPathCache(cfg *config.Config) {
 	var err error
-	PathDB, err = db.NewPathCache(filepath.Join(cfg.BaseMountPoint, cfg.StoragePath, cfg.Registry.ServerID+"-path-cache"))
+	PathDB, err = db.NewPathCache(filepath.Join(cfg.BaseMountPoint, cfg.PathCachePath))
 	if err != nil {
 		panic(err)
 	}

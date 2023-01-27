@@ -17,21 +17,23 @@ var log = logs.New("locate-service")
 
 // WarmUpLocateCache walk all objects under the storage path and save marks to cache
 func WarmUpLocateCache() {
-	err := filepath.Walk(pool.Config.StoragePath, func(_ string, info fs.FileInfo, err error) error {
+	for _, mp := range pool.DriverManager.GetAllMountPoint() {
+		err := filepath.Walk(filepath.Join(mp, pool.Config.StoragePath), func(_ string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			pool.ObjectCap.AddCap(info.Size())
+			if !info.IsDir() {
+				MarkExist(info.Name())
+			}
+			return nil
+		})
 		if err != nil {
-			return err
+			log.Error(err)
+			return
 		}
-		pool.ObjectCap.CurrentCap.Add(uint64(info.Size()))
-		if !info.IsDir() {
-			MarkExist(info.Name())
-		}
-		return nil
-	})
-	if err != nil {
-		log.Error(err)
-		return
 	}
-	if err = pool.ObjectCap.Save(); err != nil {
+	if err := pool.ObjectCap.Save(); err != nil {
 		log.Error(err)
 		return
 	}

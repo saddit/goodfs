@@ -150,6 +150,27 @@ func (pc *PathCache) RemoveAll(name string) error {
 	return err
 }
 
+func (pc *PathCache) IteratorAll(fn func(path string) error) error {
+	return pc.db.View(func(txn *badger.Txn) error {
+		itr := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer itr.Close()
+		for itr.Valid() {
+			itr.Next()
+			if err := itr.Item().Value(func(val []byte) error {
+				for _, b := range bytes.Split(val, Sep) {
+					if err := fn(util.BytesToStr(pc.decodeValue(b))); err != nil {
+						return err
+					}
+				}
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (pc *PathCache) Close() error {
 	return pc.db.Close()
 }

@@ -100,7 +100,7 @@ func Put(fileName string, fileStream io.Reader, compress bool) (err error) {
 	}
 	go func() {
 		defer graceful.Recover()
-		global.ObjectCap.CurrentCap.Add(uint64(size))
+		global.ObjectCap.AddCap(size)
 		util.LogErr(global.PathDB.Put(fileName, fullPath))
 		MarkExist(fileName)
 	}()
@@ -164,7 +164,7 @@ func Delete(name string) error {
 	}
 	go func() {
 		defer graceful.Recover()
-		global.ObjectCap.CurrentCap.Sub(uint64(size))
+		global.ObjectCap.SubCap(size)
 		util.LogErr(global.PathDB.Remove(name, fullPath))
 		UnMarkExist(name)
 	}()
@@ -314,7 +314,7 @@ func CommitFile(mountPoint, tmpName, fileName string, compress bool) error {
 	go func() {
 		defer graceful.Recover()
 		if info, err := os.Stat(filePath); err == nil {
-			global.ObjectCap.CurrentCap.Add(uint64(info.Size()))
+			global.ObjectCap.AddCap(info.Size())
 			util.LogErr(global.PathDB.Put(fileName, filePath))
 			MarkExist(fileName)
 		}

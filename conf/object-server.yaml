@@ -5,7 +5,6 @@ log:
 exclude-mount-points: ["C:", "D:"]
 base-mount-point: "E:"
 storage-path: /file/temp
-temp-path: /file/temp
 cache:
   max-size: 1GB
   ttl: 3h
