@@ -12,6 +12,8 @@ import (
 	"errors"
 	"objectserver/config"
 	"objectserver/internal/db"
+	"objectserver/internal/usecase/component"
+	"path/filepath"
 	"sync"
 
 	"github.com/allegro/bigcache"
@@ -20,12 +22,14 @@ import (
 )
 
 var (
-	Config    *config.Config
-	Cache     cache.ICache
-	Etcd      *clientv3.Client
-	Registry  registry.Registry
-	Discovery registry.Discovery
-	ObjectCap *db.ObjectCapacity
+	Config        *config.Config
+	Etcd          *clientv3.Client
+	ObjectCap     *db.ObjectCapacity
+	PathDB        *db.PathCache
+	DriverManager *component.DriverManager
+	Cache         cache.ICache
+	Registry      registry.Registry
+	Discovery     registry.Discovery
 )
 
 var (
@@ -70,10 +74,24 @@ func CloseGraceful() (err error) {
 func InitPool(cfg *config.Config) {
 	Config = cfg
 	initLog(&cfg.Log)
+	initDriverManger(cfg.ExcludeMountPoints)
 	initCache(&cfg.Cache)
 	initEtcd(&cfg.Etcd)
 	initRegister(Etcd, cfg)
 	initObjectCap(Etcd, cfg)
+	initPathCache(cfg)
+}
+
+func initDriverManger(ex []string) {
+	DriverManager = component.NewDriverManager(component.NewSpaceFirstBalancer(), ex...)
+}
+
+func initPathCache(cfg *config.Config) {
+	var err error
+	PathDB, err = db.NewPathCache(filepath.Join(cfg.BaseMountPoint, cfg.StoragePath, cfg.Registry.ServerID+"-path-cache"))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func initLog(cfg *logs.Config) {

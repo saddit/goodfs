@@ -202,7 +202,7 @@ func TestCommitFile(t *testing.T) {
 		return
 	}
 	global.Config = &config.Config{StoragePath: ".", TempPath: "."}
-	if err = CommitFile("new_file", "new_file_compress", true); err != nil {
+	if err = CommitFile("E:", "new_file", "new_file_compress", true); err != nil {
 		t.Error(err)
 		return
 	}

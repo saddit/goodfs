@@ -1,4 +1,4 @@
-package locate
+package service
 
 import (
 	"common/cst"
@@ -7,20 +7,19 @@ import (
 	"common/util"
 	"context"
 	"fmt"
-	"objectserver/internal/usecase/service"
 	"strings"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-var log = logs.New("object-locator")
+var locatorLog = logs.New("object-locator")
 
 type Locator struct {
 	etcd *clientv3.Client
 }
 
-func New(etcd *clientv3.Client) *Locator {
+func NewLocator(etcd *clientv3.Client) *Locator {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	res, err := etcd.Get(ctx, cst.EtcdPrefix.LocationSubKey, clientv3.WithCountOnly())
@@ -72,12 +71,12 @@ func (l *Locator) handlerLocate(message []byte, ip string) {
 	defer graceful.Recover()
 	tp := strings.Split(string(message), "#")
 	if len(tp) != 2 {
-		logs.Std().Errorf("Receive incorrect message %s", string(message))
+		locatorLog.Errorf("Receive incorrect message %s", string(message))
 		return
 	}
 	hash, respKey := tp[0], tp[1]
-	logs.Std().Tracef("handler locating request: hash=%s, response to key %s", hash, respKey)
-	if service.Exist(hash) {
+	locatorLog.Tracef("handler locating request: hash=%s, response to key %s", hash, respKey)
+	if Exist(hash) {
 		tp = strings.Split(hash, ".")
 		if len(tp) != 2 {
 			logs.Std().Errorf("Receive incorrect message %s", string(message))
@@ -86,9 +85,9 @@ func (l *Locator) handlerLocate(message []byte, ip string) {
 		loc := fmt.Sprint(ip, "#", tp[1])
 		_, err := l.etcd.Put(context.Background(), respKey, loc)
 		if err != nil {
-			logs.Std().Errorf("Put locate repsone on key %s error: %s", respKey, err)
+			locatorLog.Errorf("Put locate repsone on key %s error: %s", respKey, err)
 			return
 		}
-		logs.Std().Debugf("put %s to key %s success", loc, respKey)
+		locatorLog.Debugf("put %s to key %s success", loc, respKey)
 	}
 }

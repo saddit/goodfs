@@ -19,9 +19,13 @@ import (
 
 func Patch(g *gin.Context) {
 	id := g.Param("name")
-	fullPath := filepath.Join(pool.Config.TempPath, id)
+	ti, ok := cache.GetGob[entity.TempInfo](pool.Cache, id)
+	if !ok {
+		response.BadRequestMsg("file has been removed", g)
+		return
+	}
 	// only allow last chuck may not be power of 4KB
-	if _, err := service.WriteFile(fullPath, g.Request.Body); err != nil {
+	if _, err := service.WriteFile(ti.FullPath, g.Request.Body); err != nil {
 		util.LogErr(g.AbortWithError(http.StatusInternalServerError, err))
 		return
 	}
@@ -41,10 +45,15 @@ func Post(g *gin.Context) {
 		return
 	}
 	tmpInfo := &entity.TempInfo{
-		Name: req.Name,
-		Size: req.Size,
-		Id:   entity.TempKeyPrefix + uuid.NewString(),
+		Name:       req.Name,
+		Size:       req.Size,
+		Id:         entity.TempKeyPrefix + uuid.NewString(),
+		MountPoint: pool.Config.BaseMountPoint,
 	}
+	if dm, err := pool.DriverManager.SelectDriver(); err == nil {
+		tmpInfo.MountPoint = dm.MountPoint
+	}
+	tmpInfo.FullPath = filepath.Join(tmpInfo.MountPoint, pool.Config.TempPath, tmpInfo.Id)
 	if !pool.Cache.SetGob(tmpInfo.Id, tmpInfo) {
 		g.AbortWithStatus(http.StatusInternalServerError)
 		return
@@ -67,7 +76,7 @@ func Put(g *gin.Context) {
 		response.BadRequestMsg("file has been removed", g)
 		return
 	}
-	if err := service.CommitFile(req.ID, ti.Name, req.Compress); err != nil {
+	if err := service.CommitFile(ti.MountPoint, req.ID, ti.Name, req.Compress); err != nil {
 		response.FailErr(err, g)
 		return
 	}
