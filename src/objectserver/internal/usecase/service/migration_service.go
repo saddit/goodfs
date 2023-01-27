@@ -169,46 +169,55 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 	cur := slices.First(addrs)
 	slices.RemoveFirst(&addrs)
 	leftSize := sizeMap[cur]
-	err := filepath.Walk(pool.Config.StoragePath, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			msLog.Errorf("walk path %s err: %s, will skip this path", path, err)
-			return nil
-		}
-		if info.IsDir() {
-			return nil
-		}
-		// switch to next server if already exceeds left size
-		if leftSize -= info.Size(); leftSize <= 0 {
-			if len(addrs) > 0 {
-				cur = slices.First(addrs)
-				slices.RemoveFirst(&addrs)
-				leftSize = sizeMap[cur]
-			} else {
-				return io.EOF
+	var err error
+	for _, mp := range pool.DriverManager.GetAllMountPoint() {
+		err = filepath.Walk(filepath.Join(mp, pool.Config.StoragePath), func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				msLog.Errorf("walk path %s err: %s, will skip this path", path, err)
+				return nil
 			}
-		}
-		client := clientMap[cur]
-		dg.Todo()
-		go func(toAddr string) {
-			defer dg.Done()
-			if inner := ms.sendFileTo(path, client, &pb.ObjectInfo{
-				FileName:     info.Name(),
-				Size:         info.Size(),
-				OriginLocate: httpLocate,
-			}); inner != nil {
-				dg.Error(inner)
-				return
+			if info.IsDir() {
+				return nil
 			}
-			go func() {
-				defer graceful.Recover()
-				// remove local file
-				if inner := os.Remove(path); inner != nil {
-					msLog.Errorf("migrate %s success, but delete fail: %s", path, err)
+			// switch to next server if already exceeds left size
+			if leftSize -= info.Size(); leftSize <= 0 {
+				if len(addrs) > 0 {
+					cur = slices.First(addrs)
+					slices.RemoveFirst(&addrs)
+					leftSize = sizeMap[cur]
+				} else {
+					return io.EOF
 				}
-			}()
-		}(cur)
-		return nil
-	})
+			}
+			client := clientMap[cur]
+			dg.Todo()
+			go func(toAddr string) {
+				defer dg.Done()
+				if inner := ms.sendFileTo(path, client, &pb.ObjectInfo{
+					FileName:     info.Name(),
+					Size:         info.Size(),
+					OriginLocate: httpLocate,
+				}); inner != nil {
+					dg.Error(inner)
+					return
+				}
+				go func() {
+					defer graceful.Recover()
+					// remove local file
+					if inner := os.Remove(path); inner != nil {
+						msLog.Errorf("migrate %s success, but delete fail: %s", path, err)
+					}
+				}()
+			}(cur)
+			return nil
+		})
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			dg.Error(err)
+		}
+	}
 	dg.Wait()
 	if err != nil && err != io.EOF {
 		return err
@@ -218,7 +227,11 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 
 func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	// check file existed
-	statInfo, err := os.Stat(filepath.Join(pool.Config.StoragePath, data.FileName))
+	realPath, ok := FindRealStoragePath(data.FileName)
+	if !ok {
+		return fmt.Errorf("file %s not exists", data.FileName)
+	}
+	statInfo, err := os.Stat(realPath)
 	if err != nil {
 		return fmt.Errorf("file %s not exists: %w", data.FileName, err)
 	}
@@ -293,7 +306,15 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 }
 
 func (ms *MigrationService) OpenFile(name string, size int64) (*os.File, error) {
-	path := filepath.Join(pool.Config.StoragePath, name)
+	path, ok := FindRealStoragePath(name)
+	if !ok {
+		if dm, err := pool.DriverManager.SelectDriver(); err == nil {
+			path = filepath.Join(dm.MountPoint, pool.Config.StoragePath, name)
+		} else {
+			path = filepath.Join(pool.Config.BaseMountPoint, pool.Config.StoragePath, name)
+		}
+		_ = pool.PathDB.Put(name, path)
+	}
 	stat, err := os.Stat(path)
 	if err == nil {
 		// if size equals, see as existed

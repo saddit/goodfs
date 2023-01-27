@@ -139,6 +139,17 @@ func (pc *PathCache) Remove(name, path string) error {
 	return err
 }
 
+func (pc *PathCache) RemoveAll(name string) error {
+	err := pc.db.Update(func(txn *badger.Txn) error {
+		key := util.StrToBytes(name)
+		return txn.Delete(key)
+	})
+	if err == badger.ErrKeyNotFound {
+		err = nil
+	}
+	return err
+}
+
 func (pc *PathCache) Close() error {
 	return pc.db.Close()
 }

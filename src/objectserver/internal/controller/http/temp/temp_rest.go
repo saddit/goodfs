@@ -26,16 +26,16 @@ func Patch(g *gin.Context) {
 	}
 	// only allow last chuck may not be power of 4KB
 	if _, err := service.WriteFile(ti.FullPath, g.Request.Body); err != nil {
-		util.LogErr(g.AbortWithError(http.StatusInternalServerError, err))
+		response.FailErr(err, g)
 		return
 	}
-	g.Status(http.StatusOK)
+	response.Ok(g)
 }
 
 func Delete(g *gin.Context) {
 	id := g.Param("name")
 	defer pool.Cache.Delete(id)
-	g.Status(http.StatusOK)
+	response.Ok(g)
 }
 
 func Post(g *gin.Context) {
@@ -97,7 +97,7 @@ func Head(g *gin.Context) {
 		g.Status(http.StatusInternalServerError)
 		return
 	}
-	fi, err := os.Stat(filepath.Join(pool.Config.TempPath, id))
+	fi, err := os.Stat(ti.FullPath)
 	if os.IsNotExist(err) {
 		response.OkHeader(gin.H{"Size": 0}, g)
 		return

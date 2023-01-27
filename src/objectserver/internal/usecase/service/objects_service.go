@@ -35,6 +35,11 @@ func Exist(name string) bool {
 		MarkExist(name)
 		return true
 	} else {
+		// remove this no existed path from path-db
+		go func() {
+			defer graceful.Recover()
+			util.LogErr(global.PathDB.Remove(name, realPath))
+		}()
 		return false
 	}
 }
@@ -45,8 +50,13 @@ func FindRealStoragePath(fileName string) (string, bool) {
 	if err != nil {
 		path, err = global.DriverManager.FindMountPath(filepath.Join(global.Config.StoragePath, fileName))
 		if err != nil {
-			return path, false
+			return "", false
 		}
+		// save path to path-cache
+		go func() {
+			defer graceful.Recover()
+			util.LogErr(global.PathDB.Put(fileName, path))
+		}()
 	}
 	return path, true
 }
@@ -91,7 +101,7 @@ func Put(fileName string, fileStream io.Reader, compress bool) (err error) {
 	go func() {
 		defer graceful.Recover()
 		global.ObjectCap.CurrentCap.Add(uint64(size))
-		util.LogErr(global.PathDB.Put(fileName, mp))
+		util.LogErr(global.PathDB.Put(fileName, fullPath))
 		MarkExist(fileName)
 	}()
 	return
@@ -99,10 +109,11 @@ func Put(fileName string, fileStream io.Reader, compress bool) (err error) {
 
 // Get read object to writer with provided size. pass to GetFile
 func Get(name string, offset, size int64, compress bool, writer io.Writer) (err error) {
-	fullPath, ok := FindRealStoragePath(name)
-	if !ok {
+	if !Exist(name) {
 		return response.NewError(404, "object not found")
 	}
+
+	fullPath, _ := FindRealStoragePath(name)
 	if compress {
 		err = GetFileCompress(fullPath, offset, size, writer)
 	} else {
@@ -143,10 +154,10 @@ func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 
 // Delete remove the object under the storage path
 func Delete(name string) error {
-	fullPath, ok := FindRealStoragePath(name)
-	if !ok {
-		return response.NewError(404, "object not found")
+	if !Exist(name) {
+		return nil
 	}
+	fullPath, _ := FindRealStoragePath(name)
 	size, err := DeleteFile(fullPath, name)
 	if err != nil {
 		return err
@@ -304,8 +315,9 @@ func CommitFile(mountPoint, tmpName, fileName string, compress bool) error {
 		defer graceful.Recover()
 		if info, err := os.Stat(filePath); err == nil {
 			global.ObjectCap.CurrentCap.Add(uint64(info.Size()))
+			util.LogErr(global.PathDB.Put(fileName, filePath))
+			MarkExist(fileName)
 		}
-		MarkExist(fileName)
 	}()
 	return nil
 }

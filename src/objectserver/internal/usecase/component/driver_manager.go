@@ -97,3 +97,11 @@ func (dm *DriverManager) FindMountPath(path string) (string, error) {
 	}
 	return "", os.ErrNotExist
 }
+
+func (dm *DriverManager) GetAllMountPoint() []string {
+	res := make([]string, 0, len(dm.drivers))
+	for _, driver := range dm.drivers {
+		res = append(res, driver.MountPoint)
+	}
+	return res
+}
