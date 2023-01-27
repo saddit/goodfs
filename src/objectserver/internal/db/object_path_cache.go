@@ -4,11 +4,15 @@ import (
 	"bytes"
 	"common/logs"
 	"common/util"
-	"common/util/slices"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/dgraph-io/badger/v3/options"
 	"os"
 	"runtime"
+)
+
+var (
+	Sep    = []byte(",")
+	SepEnc = []byte("%2C")
 )
 
 type PathCache struct {
@@ -44,15 +48,26 @@ func (pc *PathCache) get(txn *badger.Txn, key []byte) ([]byte, error) {
 	return res, err
 }
 
+func (pc *PathCache) encodeValue(val []byte) []byte {
+	// FIXME: allocate N and copy N
+	return bytes.ReplaceAll(val, Sep, SepEnc)
+}
+
+func (pc *PathCache) decodeValue(val []byte) []byte {
+	// FIXME: allocate N and copy N
+	return bytes.ReplaceAll(val, SepEnc, Sep)
+}
+
 func (pc *PathCache) Put(name, path string) error {
 	return pc.db.Update(func(txn *badger.Txn) error {
 		key := util.StrToBytes(name)
-		value := util.StrToBytes(path)
+		value := pc.encodeValue(util.StrToBytes(path))
 		origin, err := pc.get(txn, key)
 		if err != nil && err != badger.ErrKeyNotFound {
 			return err
 		}
-		return txn.Set(key, bytes.Join([][]byte{origin, value}, []byte{','}))
+		// not use bytes.Join to avoid memory copy
+		return txn.Set(key, append(append(origin, Sep...), value...))
 	})
 }
 
@@ -65,13 +80,13 @@ func (pc *PathCache) Get(name string) ([]string, error) {
 		if err != nil {
 			return err
 		}
-		sp := bytes.Split(value, []byte{','})
+		sp := bytes.Split(value, Sep)
 		if len(sp) == 0 {
 			return badger.ErrKeyNotFound
 		}
 		res = make([]string, 0, len(sp))
 		for _, b := range sp {
-			res = append(res, util.BytesToStr(b))
+			res = append(res, util.BytesToStr(pc.decodeValue(b)))
 		}
 		return nil
 	})
@@ -90,17 +105,38 @@ func (pc *PathCache) GetLast(name string) (string, error) {
 		if err != nil {
 			return err
 		}
-		sp := bytes.Split(value, []byte{','})
-		if len(sp) == 0 {
-			return badger.ErrKeyNotFound
+		if idx := bytes.LastIndexByte(value, Sep[0]); idx > 0 {
+			res = util.BytesToStr(pc.decodeValue(value[idx+1:]))
+			return nil
 		}
-		res = util.BytesToStr(slices.Last(sp))
-		return nil
+		return badger.ErrKeyNotFound
 	})
 	if err == badger.ErrKeyNotFound {
 		err = os.ErrNotExist
 	}
 	return res, err
+}
+
+func (pc *PathCache) Remove(name, path string) error {
+	err := pc.db.Update(func(txn *badger.Txn) error {
+		key := util.StrToBytes(name)
+		val, err := pc.get(txn, key)
+		if err != nil {
+			return err
+		}
+		before, after, ok := bytes.Cut(val, pc.encodeValue(util.StrToBytes(path)))
+		if !ok {
+			return badger.ErrKeyNotFound
+		}
+		before = bytes.TrimSuffix(before, Sep)
+		after = bytes.TrimPrefix(after, Sep)
+		// not use bytes.Join to avoid memory allocating and copy
+		return txn.Set(key, append(append(before, Sep...), after...))
+	})
+	if err == badger.ErrKeyNotFound {
+		err = nil
+	}
+	return err
 }
 
 func (pc *PathCache) Close() error {

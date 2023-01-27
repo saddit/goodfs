@@ -115,12 +115,6 @@ func Get(name string, offset, size int64, compress bool, writer io.Writer) (err 
 	return nil
 }
 
-// GetTemp read temp file to writer with provided size. pass to GetFile
-func GetTemp(name string, size int64, writer io.Writer) error {
-	// TODO real path
-	return GetFile(filepath.Join(global.Config.TempPath, name), 0, size, writer)
-}
-
 // GetFile read file with provided size. offset corresponds to io.SeekStart.
 // if offset is not multiple of 4KB, direct-io will be disabled.
 func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
@@ -160,6 +154,7 @@ func Delete(name string) error {
 	go func() {
 		defer graceful.Recover()
 		global.ObjectCap.CurrentCap.Sub(uint64(size))
+		util.LogErr(global.PathDB.Remove(name, fullPath))
 		UnMarkExist(name)
 	}()
 	return nil

@@ -30,6 +30,15 @@ func RemoveFirst[T any](arr *[]T) {
 	*arr = (*arr)[1:]
 }
 
+func Search[T comparable](arr []T, target T) int {
+	for i, v := range arr {
+		if v == target {
+			return i
+		}
+	}
+	return -1
+}
+
 func RemoveLast[T any](arr *[]T) {
 	*arr = (*arr)[:len(*arr)-1]
 }

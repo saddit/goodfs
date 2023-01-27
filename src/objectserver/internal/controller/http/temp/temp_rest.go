@@ -122,7 +122,12 @@ func Get(g *gin.Context) {
 		response.BadRequestErr(err, g)
 		return
 	}
-	if err := service.GetTemp(req.Name, req.Size, g.Writer); err != nil {
+	ti, ok := cache.GetGob[entity.TempInfo](pool.Cache, req.Name)
+	if !ok {
+		response.BadRequestMsg("file has been removed", g)
+		return
+	}
+	if err := service.GetFile(ti.FullPath, 0, req.Size, g.Writer); err != nil {
 		response.FailErr(err, g)
 		return
 	}
