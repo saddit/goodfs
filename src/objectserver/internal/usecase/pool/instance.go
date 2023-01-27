@@ -2,6 +2,7 @@ package pool
 
 import (
 	"common/cache"
+	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/graceful"
@@ -13,6 +14,7 @@ import (
 	"objectserver/config"
 	"objectserver/internal/db"
 	"objectserver/internal/usecase/component"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -73,13 +75,29 @@ func CloseGraceful() (err error) {
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
-	initLog(&cfg.Log)
 	initDriverManger(cfg.ExcludeMountPoints)
+	initDir(cfg, DriverManager)
+	initLog(&cfg.Log)
 	initCache(&cfg.Cache)
 	initEtcd(&cfg.Etcd)
 	initRegister(Etcd, cfg)
 	initObjectCap(Etcd, cfg)
 	initPathCache(cfg)
+}
+
+func initDir(cfg *config.Config, dm *component.DriverManager) {
+	if e := os.MkdirAll(filepath.Join(cfg.BaseMountPoint, cfg.PathCachePath), cst.OS.ModeUser); e != nil {
+		panic(e)
+	}
+	dm.Update()
+	for _, mp := range dm.GetAllMountPoint() {
+		if e := os.MkdirAll(filepath.Join(mp, cfg.TempPath), cst.OS.ModeUser); e != nil {
+			panic(e)
+		}
+		if e := os.MkdirAll(filepath.Join(mp, cfg.StoragePath), cst.OS.ModeUser); e != nil {
+			panic(e)
+		}
+	}
 }
 
 func initDriverManger(ex []string) {

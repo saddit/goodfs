@@ -308,11 +308,7 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 func (ms *MigrationService) OpenFile(name string, size int64) (*os.File, error) {
 	path, ok := FindRealStoragePath(name)
 	if !ok {
-		if dm, err := pool.DriverManager.SelectDriver(); err == nil {
-			path = filepath.Join(dm.MountPoint, pool.Config.StoragePath, name)
-		} else {
-			path = filepath.Join(pool.Config.BaseMountPoint, pool.Config.StoragePath, name)
-		}
+		path = filepath.Join(pool.DriverManager.SelectMountPointFallback(pool.Config.BaseMountPoint), pool.Config.StoragePath, name)
 		_ = pool.PathDB.Put(name, path)
 	}
 	stat, err := os.Stat(path)

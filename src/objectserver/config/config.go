@@ -1,7 +1,6 @@
 package config
 
 import (
-	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/logs"
@@ -56,12 +55,6 @@ func (c *Config) initialize() {
 	c.PathCachePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_path-cache")
 	c.TempPath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_temp")
 	c.StoragePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_store")
-	if e := os.MkdirAll(c.TempPath, cst.OS.ModeUser); e != nil {
-		panic(e)
-	}
-	if e := os.MkdirAll(c.StoragePath, cst.OS.ModeUser); e != nil {
-		panic(e)
-	}
 }
 
 func ReadConfig() Config {

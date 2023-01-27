@@ -79,6 +79,14 @@ func (dm *DriverManager) SelectDriver() (*Driver, error) {
 	return dm.balancer.Select(dm.drivers)
 }
 
+func (dm *DriverManager) SelectMountPointFallback(fb string) string {
+	d, err := dm.balancer.Select(dm.drivers)
+	if err != nil {
+		return fb
+	}
+	return d.MountPoint
+}
+
 func (dm *DriverManager) IsPathExist(path string) bool {
 	for _, d := range dm.drivers {
 		if _, err := os.Stat(filepath.Join(d.MountPoint, path)); !os.IsNotExist(err) {
@@ -90,8 +98,8 @@ func (dm *DriverManager) IsPathExist(path string) bool {
 
 func (dm *DriverManager) FindMountPath(path string) (string, error) {
 	for _, d := range dm.drivers {
-		path = filepath.Join(d.MountPoint, path)
-		if _, err := os.Stat(path); !os.IsNotExist(err) {
+		fullPath := filepath.Join(d.MountPoint, path)
+		if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
 			return path, nil
 		}
 	}

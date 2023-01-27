@@ -48,10 +48,7 @@ func Post(g *gin.Context) {
 		Name:       req.Name,
 		Size:       req.Size,
 		Id:         entity.TempKeyPrefix + uuid.NewString(),
-		MountPoint: pool.Config.BaseMountPoint,
-	}
-	if dm, err := pool.DriverManager.SelectDriver(); err == nil {
-		tmpInfo.MountPoint = dm.MountPoint
+		MountPoint: pool.DriverManager.SelectMountPointFallback(pool.Config.BaseMountPoint),
 	}
 	tmpInfo.FullPath = filepath.Join(tmpInfo.MountPoint, pool.Config.TempPath, tmpInfo.Id)
 	if !pool.Cache.SetGob(tmpInfo.Id, tmpInfo) {

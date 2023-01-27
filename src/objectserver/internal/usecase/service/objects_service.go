@@ -64,7 +64,7 @@ func FindRealStoragePath(fileName string) (string, bool) {
 // ExistPath check if the given path exists.
 func ExistPath(fullPath string) bool {
 	_, err := os.Stat(fullPath)
-	return !os.IsNotExist(err)
+	return err == nil
 }
 
 // MarkExist save object mark into cache
@@ -83,10 +83,7 @@ func Put(fileName string, fileStream io.Reader, compress bool) (err error) {
 		return
 	}
 
-	mp := global.Config.BaseMountPoint
-	if dm, err := global.DriverManager.SelectDriver(); err == nil {
-		mp = dm.MountPoint
-	}
+	mp := global.DriverManager.SelectMountPointFallback(global.Config.BaseMountPoint)
 	fullPath := filepath.Join(mp, global.Config.StoragePath, fileName)
 
 	var size int64

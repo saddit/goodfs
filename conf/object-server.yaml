@@ -2,7 +2,7 @@ port: 8101
 rpc-port: 4101
 log:
   level: debug
-exclude-mount-points: ["C:", "D:"]
+exclude-mount-points: ["C:"]
 base-mount-point: "E:"
 storage-path: /file/temp
 cache:
