@@ -309,7 +309,7 @@ func (ms *MigrationService) OpenFile(name string, size int64) (*os.File, error) 
 	path, ok := FindRealStoragePath(name)
 	if !ok {
 		path = filepath.Join(pool.DriverManager.SelectMountPointFallback(pool.Config.BaseMountPoint), pool.Config.StoragePath, name)
-		_ = pool.PathDB.Put(name, path)
+		util.LogErr(pool.PathDB.Put(name, path))
 	}
 	stat, err := os.Stat(path)
 	if err == nil {
