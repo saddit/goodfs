@@ -1,5 +1,5 @@
-port: 8101
-rpc-port: 4101
+port: 8100
+rpc-port: 4100
 log:
   level: debug
 exclude-mount-points: ["C:"]
@@ -11,7 +11,7 @@ cache:
   clean-interval: 12m
   max-item-size: 16MB
 registry:
-  server-id: obj-1
+  server-id: obj-0
   group: "goodfs"
   name: "objectserver"
 etcd:

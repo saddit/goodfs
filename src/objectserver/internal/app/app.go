@@ -13,10 +13,7 @@ import (
 func Run(cfg *config.Config) {
 	//init components
 	pool.InitPool(cfg)
-	defer pool.Etcd.Close()
-	defer pool.Cache.Close()
-	defer pool.PathDB.Close()
-	defer pool.Close()
+	defer pool.CloseAll()
 	netAddr := util.GetHostPort(cfg.Port)
 	pool.OnOpen(func() {
 		// register service

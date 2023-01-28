@@ -155,7 +155,7 @@ func Delete(name string) error {
 		return nil
 	}
 	fullPath, _ := FindRealStoragePath(name)
-	size, err := DeleteFile(fullPath, name)
+	size, err := DeleteFile(fullPath, "")
 	if err != nil {
 		return err
 	}

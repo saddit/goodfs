@@ -2,19 +2,43 @@ package test
 
 import (
 	"bytes"
+	"common/system/disk"
+	"common/util"
 	"io"
 	"objectserver/config"
-	global "objectserver/internal/usecase/pool"
+	"objectserver/internal/usecase/pool"
 	. "objectserver/internal/usecase/service"
 	"os"
 	"path/filepath"
-
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func Init() {
+	abs, err := filepath.Abs(".")
+	util.PanicErr(err)
+	mps, err := disk.AllMountPoints()
+	util.PanicErr(err)
+	for _, mp := range mps {
+		if strings.HasPrefix(abs, mp) {
+			abs = strings.TrimPrefix(abs, mp)
+			break
+		}
+	}
+	util.PanicErr(os.Setenv("STORAGE_PATH", filepath.Join(abs, "/temp")))
+	cfg := config.ReadConfigFrom("./config-test.yaml")
+	pool.InitPool(&cfg)
+}
+
+func Close() {
+	pool.CloseAll()
+}
+
 func TestWriteReadDeleteFile(t *testing.T) {
+	Init()
+	defer Close()
 	defer func() {
 		_, err := DeleteFile(".", "new_file")
 		if err != nil {
@@ -51,6 +75,8 @@ func TestWriteReadDeleteFile(t *testing.T) {
 }
 
 func TestWriteWithSize(t *testing.T) {
+	Init()
+	defer Close()
 	defer func() {
 		_, err := DeleteFile(".", "new_file")
 		if err != nil {
@@ -115,6 +141,8 @@ func TestWriteWithSize(t *testing.T) {
 }
 
 func TestWriteFileCompress(t *testing.T) {
+	Init()
+	defer Close()
 	defer func() {
 		_, err := DeleteFile(".", "new_file")
 		if err != nil {
@@ -169,24 +197,17 @@ func TestWriteFileCompress(t *testing.T) {
 
 func TestCommitFile(t *testing.T) {
 	defer func() {
-		_, err := DeleteFile(".", "new_file")
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		_, err = DeleteFile(".", "new_file_compress")
-		if err != nil {
-			t.Error(err)
-			return
-		}
+		_ = os.RemoveAll("./temp")
 	}()
+	Init()
+	defer Close()
 	fst, snd := 4096, 3080
 	bt := make([]byte, fst)
 	for i := range bt {
 		bt[i] = 'A'
 	}
 	buf := bytes.NewBuffer(bt)
-	_, err := WriteFile(filepath.Join(".", "new_file"), buf)
+	_, err := WriteFile(filepath.Join(pool.Config.BaseMountPoint, pool.Config.TempPath, "new_file"), buf)
 	if err != nil {
 		t.Error(err)
 		return
@@ -196,18 +217,18 @@ func TestCommitFile(t *testing.T) {
 		bt[i] = 'B'
 	}
 	buf = bytes.NewBuffer(bt)
-	_, err = WriteFile(filepath.Join(".", "new_file"), buf)
+	_, err = WriteFile(filepath.Join(pool.Config.BaseMountPoint, pool.Config.TempPath, "new_file"), buf)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	global.Config = &config.Config{StoragePath: ".", TempPath: "."}
 	if err = CommitFile("E:", "new_file", "new_file_compress", true); err != nil {
 		t.Error(err)
 		return
 	}
 	buf = bytes.NewBuffer(nil)
-	if err = GetFileCompress("./new_file_compress", 0, int64(fst+snd), buf); err != nil {
+	path, _ := FindRealStoragePath("new_file_compress")
+	if err = GetFileCompress(path, 0, int64(fst+snd), buf); err != nil {
 		t.Error(err)
 		return
 	}

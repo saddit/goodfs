@@ -255,9 +255,9 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 		go func(ip string) {
 			defer graceful.Recover()
 			defer dg.Done()
-			versions, err := webapi.VersionsByHash(ip, hash)
-			if err != nil {
-				dg.Error(err)
+			versions, inner := webapi.VersionsByHash(ip, hash)
+			if inner != nil {
+				dg.Error(inner)
 				return
 			}
 			for _, v := range versions {
@@ -272,7 +272,7 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 			}
 		}(addr)
 	}
-	if err := dg.WaitUntilError(); err != nil {
+	if err = dg.WaitUntilError(); err != nil {
 		return err
 	}
 	// if no metadata exist for this file from 'origin-locate', deprecate it.
@@ -291,8 +291,8 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 			defer graceful.Recover()
 			defer dg.Done()
 			for _, ver := range arr {
-				if err := webapi.UpdateVersionLocates(ip, ver.Name, int(ver.Sequence), ver.Locations); err != nil {
-					logs.Std().Errorf("update %+v to meta-server %s fail: %s", ver, ip, err)
+				if inner := webapi.UpdateVersionLocates(ip, ver.Name, int(ver.Sequence), ver.Locations); inner != nil {
+					logs.Std().Errorf("update %+v to meta-server %s fail: %s", ver, ip, inner)
 					failNum.Inc()
 				}
 			}

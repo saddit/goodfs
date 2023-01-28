@@ -154,6 +154,13 @@ func initRegister(et *clientv3.Client, cfg *config.Config) {
 	Registry, Discovery = er, er
 }
 
+func CloseAll() {
+	defer Etcd.Close()
+	defer Cache.Close()
+	defer PathDB.Close()
+	defer Close()
+}
+
 func Close() {
 	closeOnce.Do(func() {
 		defer slices.Clear(&onCloseEvent)
