@@ -2,6 +2,7 @@ package pool
 
 import (
 	"common/cache"
+	"common/collection/set"
 	"common/cst"
 	"common/datasize"
 	"common/etcd"
@@ -75,7 +76,7 @@ func CloseGraceful() (err error) {
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
-	initDriverManger(cfg.ExcludeMountPoints)
+	initDriverManger(cfg.ExcludeMountPoints, cfg.AllowedMountPoints)
 	initDir(cfg, DriverManager)
 	initLog(&cfg.Log)
 	initCache(&cfg.Cache)
@@ -100,8 +101,10 @@ func initDir(cfg *config.Config, dm *component.DriverManager) {
 	}
 }
 
-func initDriverManger(ex []string) {
-	DriverManager = component.NewDriverManager(component.NewSpaceFirstBalancer(), ex...)
+func initDriverManger(ex []string, in []string) {
+	DriverManager = component.NewDriverManager(component.SpaceFirstBalancer())
+	DriverManager.Excludes = set.OfString(ex)
+	DriverManager.Includes = set.OfString(in)
 }
 
 func initPathCache(cfg *config.Config) {

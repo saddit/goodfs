@@ -23,10 +23,11 @@ type DriverManager struct {
 	drivers  []*Driver
 	balancer DriverBalancer
 	Excludes set.Set
+	Includes set.Set
 }
 
-func NewDriverManager(lb DriverBalancer, excludes ...string) *DriverManager {
-	return &DriverManager{balancer: lb, Excludes: set.OfString(excludes)}
+func NewDriverManager(lb DriverBalancer) *DriverManager {
+	return &DriverManager{balancer: lb, Excludes: set.NewMapSet(), Includes: set.NewMapSet()}
 }
 
 func (dm *DriverManager) Update() {
@@ -38,7 +39,11 @@ func (dm *DriverManager) Update() {
 	info := make([]*Driver, 0, len(mps))
 	for _, mp := range mps {
 		// skip excluded mount point
-		if dm.Excludes.Contains(mp) {
+		if dm.Includes.Size() > 0 {
+			if !dm.Includes.Contains(mp) {
+				continue
+			}
+		} else if dm.Excludes.Contains(mp) {
 			continue
 		}
 		// get driver stat

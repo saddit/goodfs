@@ -30,6 +30,16 @@ func RemoveFirst[T any](arr *[]T) {
 	*arr = (*arr)[1:]
 }
 
+func Extremal[T any](arr []T, fn func(ex, cur T) bool) T {
+	var exIdx int
+	for i := range arr {
+		if fn(arr[exIdx], arr[i]) {
+			exIdx = i
+		}
+	}
+	return arr[exIdx]
+}
+
 func Search[T comparable](arr []T, target T) int {
 	for i, v := range arr {
 		if v == target {

@@ -67,7 +67,10 @@ func (pc *PathCache) Put(name, path string) error {
 			return err
 		}
 		// not use bytes.Join to avoid memory copy
-		return txn.Set(key, append(append(origin, Sep...), value...))
+		if len(origin) > 0 {
+			value = append(append(origin, Sep...), value...)
+		}
+		return txn.Set(key, value)
 	})
 }
 
@@ -131,7 +134,10 @@ func (pc *PathCache) Remove(name, path string) error {
 		before = bytes.TrimSuffix(before, Sep)
 		after = bytes.TrimPrefix(after, Sep)
 		// not use bytes.Join to avoid memory allocating and copy
-		return txn.Set(key, append(append(before, Sep...), after...))
+		if len(before) > 0 {
+			after = append(append(before, Sep...), after...)
+		}
+		return txn.Set(key, after)
 	})
 	if err == badger.ErrKeyNotFound {
 		err = nil
@@ -154,8 +160,7 @@ func (pc *PathCache) IteratorAll(fn func(path string) error) error {
 	return pc.db.View(func(txn *badger.Txn) error {
 		itr := txn.NewIterator(badger.DefaultIteratorOptions)
 		defer itr.Close()
-		for itr.Valid() {
-			itr.Next()
+		for itr.Rewind(); itr.Valid(); itr.Next() {
 			if err := itr.Item().Value(func(val []byte) error {
 				for _, b := range bytes.Split(val, Sep) {
 					if err := fn(util.BytesToStr(pc.decodeValue(b))); err != nil {
