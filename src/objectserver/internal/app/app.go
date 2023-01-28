@@ -6,7 +6,6 @@ import (
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
 	"objectserver/internal/controller/http"
-	"objectserver/internal/controller/locate"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/service"
 )
@@ -14,9 +13,7 @@ import (
 func Run(cfg *config.Config) {
 	//init components
 	pool.InitPool(cfg)
-	defer pool.Etcd.Close()
-	defer pool.Cache.Close()
-	defer pool.Close()
+	defer pool.CloseAll()
 	netAddr := util.GetHostPort(cfg.Port)
 	pool.OnOpen(func() {
 		// register service
@@ -25,11 +22,13 @@ func Run(cfg *config.Config) {
 			// unregister
 			func() { pool.Registry.Unregister() },
 			// locating serv
-			locate.New(pool.Etcd).StartLocate(netAddr),
+			service.NewLocator(pool.Etcd).StartLocate(netAddr),
 			// cleaning serv
 			service.StartTempRemovalBackground(pool.Cache),
 			// auto save server capacity info
 			pool.ObjectCap.StartAutoSave(cfg.State.SyncInterval),
+			// auto update driver stat
+			pool.DriverManager.StartAutoUpdate(),
 		)
 	})
 	pool.Open()

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/logs"
@@ -32,31 +31,31 @@ type DiscoveryConfig struct {
 	MetaServName string `yaml:"meta-serv-name" env-default:"metaserver"`
 }
 
+type innerConf struct {
+	PathCachePath string `yaml:"-" env:"-"` // PathCachePath is a path to store path-db-file under BaseMountPoint
+	TempPath      string `yaml:"-" env:"-"` // TempPath is a path to store temporary object file under different mount points
+}
+
 type Config struct {
-	Port        string          `yaml:"port" env-default:"8100"`
-	RpcPort     string          `yaml:"rpc-port" env-default:"4100"`
-	StoragePath string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"objects"`
-	TempPath    string          `yaml:"temp-path" env:"TEMP_PATH"`
-	Log         logs.Config     `yaml:"log" env-prefix:"LOG"`
-	State       StateConfig     `yaml:"state" env-prefix:"STATE"`
-	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
-	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
-	Discovery   DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
+	innerConf
+	Port               string          `yaml:"port" env-default:"8100"`                                           // Port is port which the http server will listen to
+	RpcPort            string          `yaml:"rpc-port" env-default:"4100"`                                       // RpcPort is port which the rpc server will listen to
+	BaseMountPoint     string          `yaml:"base-mount-point" env:"BASE_MOUNT_POINT" env-required:"true"`       // BaseMountPoint refers a mount point to store central data also as a fallback choice.
+	StoragePath        string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"/objects"`            // StoragePath is a path to store object file under different mount points
+	AllowedMountPoints []string        `yaml:"allowed-mount-points" env:"ALLOWED_MOUNT_POINTS" env-separator:","` // AllowedMountPoints limits only these mount points allowed to store object file. Priority over ExcludeMountPoints but not affect BaseMountPoint.
+	ExcludeMountPoints []string        `yaml:"exclude-mount-points" env:"EXCLUDE_MOUNT_POINTS" env-separator:","` // ExcludeMountPoints avoids to store object file under these mount points
+	Log                logs.Config     `yaml:"log" env-prefix:"LOG"`
+	State              StateConfig     `yaml:"state" env-prefix:"STATE"`
+	Cache              CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+	Etcd               etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
+	Registry           registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Discovery          DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 }
 
 func (c *Config) initialize() {
-	if c.TempPath == "" {
-		c.TempPath = os.TempDir()
-	}
-	c.TempPath = filepath.Join(c.TempPath, c.Registry.ServerID+"_temp")
+	c.PathCachePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_path-cache")
+	c.TempPath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_temp")
 	c.StoragePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_store")
-	if e := os.MkdirAll(c.TempPath, cst.OS.ModeUser); e != nil {
-		panic(e)
-	}
-	if e := os.MkdirAll(c.StoragePath, cst.OS.ModeUser); e != nil {
-		panic(e)
-	}
 }
 
 func ReadConfig() Config {

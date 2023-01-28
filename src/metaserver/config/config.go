@@ -23,7 +23,7 @@ const (
 type Config struct {
 	Port        string          `yaml:"port" env:"PORT" env-default:"8090"`
 	RpcPort     string          `yaml:"rpc-port" env:"RPC_PORT" env-default:"4090"`
-	DataDir     string          `yaml:"data-dir" env:"DATA_DIR" env-default:"/tmp/goodfs"`
+	DataDir     string          `yaml:"data-dir" env:"DATA_DIR"`
 	Log         logs.Config     `yaml:"log" env-prefix:"LOG"`
 	Cluster     ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
 	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
