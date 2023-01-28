@@ -198,7 +198,7 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 					Size:         info.Size(),
 					OriginLocate: httpLocate,
 				}); inner != nil {
-					dg.Error(inner)
+					dg.Errors(inner)
 					return
 				}
 				go func() {
@@ -215,7 +215,7 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 			break
 		}
 		if err != nil {
-			dg.Error(err)
+			dg.Errors(err)
 		}
 	}
 	dg.Wait()
@@ -253,7 +253,6 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	for _, addr := range servs {
 		dg.Todo()
 		go func(ip string) {
-			defer graceful.Recover()
 			defer dg.Done()
 			versions, inner := webapi.VersionsByHash(ip, hash)
 			if inner != nil {

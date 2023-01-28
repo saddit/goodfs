@@ -21,6 +21,7 @@ type DoneGroup interface {
 	NonErrDoneGroup
 	Close()
 	Error(error)
+	Errors(error)
 	WaitError() <-chan error
 	WaitUntilError() error
 	ErrorUtilDone() <-chan error
@@ -37,7 +38,7 @@ func NewNonErrDoneGroup() NonErrDoneGroup {
 	return &doneGroup{sync.WaitGroup{}, nil, atomic.NewBool(true)}
 }
 
-func NewDoneGroup() DoneGroup {
+func NewDoneGroup() *doneGroup {
 	return &doneGroup{sync.WaitGroup{}, make(chan error, 1), atomic.NewBool(false)}
 }
 
@@ -63,12 +64,22 @@ func (d *doneGroup) Todo() {
 	d.Add(1)
 }
 
-// Error deliver an error non blocking. Only one error can be received
+// Error deliver an error. Only one error can be received since Close would be invoked.
 func (d *doneGroup) Error(e error) {
 	if d.closed.Load() {
 		return
 	}
 	defer d.Close()
+	if d.ec != nil {
+		d.ec <- e
+	}
+}
+
+// Errors deliver an error. Must call WaitError in another goroutine prevent from deadlock.
+func (d *doneGroup) Errors(e error) {
+	if d.closed.Load() {
+		return
+	}
 	if d.ec != nil {
 		d.ec <- e
 	}
@@ -134,7 +145,7 @@ type limitDoneGroup struct {
 }
 
 // LimitDoneGroup limit only allows in Todo() and Done() function. Add() has not effect.
-func LimitDoneGroup(max int) DoneGroup {
+func LimitDoneGroup(max int) *limitDoneGroup {
 	return &limitDoneGroup{NewDoneGroup(), make(chan struct{}, max)}
 }
 
