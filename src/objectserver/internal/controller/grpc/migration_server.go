@@ -43,6 +43,9 @@ func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServ
 			return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
 		}
 		if file == nil {
+			if data.FileName == "" {
+				return stream.SendAndClose(&pb.Response{Success: false, Message: "FileName should not be empty"})
+			}
 			if file, err = ms.Service.OpenFile(data.FileName, data.Size); err != nil {
 				if os.IsExist(err) {
 					break

@@ -58,6 +58,7 @@ func ImmediateTick(t time.Duration) <-chan time.Time {
 	tk := time.NewTicker(t)
 	go func() {
 		defer close(ch)
+		defer tk.Stop()
 		for t := range tk.C {
 			ch <- t
 		}

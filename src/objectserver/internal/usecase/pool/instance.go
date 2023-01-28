@@ -2,6 +2,8 @@ package pool
 
 import (
 	"common/cache"
+	"common/collection/set"
+	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/graceful"
@@ -12,6 +14,9 @@ import (
 	"errors"
 	"objectserver/config"
 	"objectserver/internal/db"
+	"objectserver/internal/usecase/component"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/allegro/bigcache"
@@ -20,12 +25,14 @@ import (
 )
 
 var (
-	Config    *config.Config
-	Cache     cache.ICache
-	Etcd      *clientv3.Client
-	Registry  registry.Registry
-	Discovery registry.Discovery
-	ObjectCap *db.ObjectCapacity
+	Config        *config.Config
+	Etcd          *clientv3.Client
+	ObjectCap     *db.ObjectCapacity
+	PathDB        *db.PathCache
+	DriverManager *component.DriverManager
+	Cache         cache.ICache
+	Registry      registry.Registry
+	Discovery     registry.Discovery
 )
 
 var (
@@ -69,11 +76,43 @@ func CloseGraceful() (err error) {
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
+	initDriverManger(cfg.ExcludeMountPoints, cfg.AllowedMountPoints)
+	initDir(cfg, DriverManager)
 	initLog(&cfg.Log)
 	initCache(&cfg.Cache)
 	initEtcd(&cfg.Etcd)
 	initRegister(Etcd, cfg)
 	initObjectCap(Etcd, cfg)
+	initPathCache(cfg)
+}
+
+func initDir(cfg *config.Config, dm *component.DriverManager) {
+	if e := os.MkdirAll(filepath.Join(cfg.BaseMountPoint, cfg.PathCachePath), cst.OS.ModeUser); e != nil {
+		panic(e)
+	}
+	dm.Update()
+	for _, mp := range dm.GetAllMountPoint() {
+		if e := os.MkdirAll(filepath.Join(mp, cfg.TempPath), cst.OS.ModeUser); e != nil {
+			panic(e)
+		}
+		if e := os.MkdirAll(filepath.Join(mp, cfg.StoragePath), cst.OS.ModeUser); e != nil {
+			panic(e)
+		}
+	}
+}
+
+func initDriverManger(ex []string, in []string) {
+	DriverManager = component.NewDriverManager(component.SpaceFirstBalancer())
+	DriverManager.Excludes = set.OfString(ex)
+	DriverManager.Includes = set.OfString(in)
+}
+
+func initPathCache(cfg *config.Config) {
+	var err error
+	PathDB, err = db.NewPathCache(filepath.Join(cfg.BaseMountPoint, cfg.PathCachePath))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func initLog(cfg *logs.Config) {
@@ -116,6 +155,13 @@ func initRegister(et *clientv3.Client, cfg *config.Config) {
 	cfg.Registry.RpcAddr = util.GetHostPort(cfg.RpcPort)
 	er := registry.NewEtcdRegistry(et, cfg.Registry)
 	Registry, Discovery = er, er
+}
+
+func CloseAll() {
+	defer Etcd.Close()
+	defer Cache.Close()
+	defer PathDB.Close()
+	defer Close()
 }
 
 func Close() {

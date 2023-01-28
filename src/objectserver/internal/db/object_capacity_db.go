@@ -19,7 +19,7 @@ import (
 
 type ObjectCapacity struct {
 	cli         clientv3.KV
-	CurrentCap  *atomic.Uint64
+	currentCap  *atomic.Uint64
 	CurrentID   string
 	groupName   string
 	serviceName string
@@ -36,7 +36,11 @@ func NewObjectCapacity(c clientv3.KV, cfg *config.Config) *ObjectCapacity {
 }
 
 func (oc *ObjectCapacity) AddCap(i int64) {
-	oc.CurrentCap.Add(uint64(i))
+	oc.currentCap.Add(uint64(i))
+}
+
+func (oc *ObjectCapacity) SubCap(i int64) {
+	oc.currentCap.Sub(uint64(i))
 }
 
 func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
@@ -70,7 +74,7 @@ func (oc *ObjectCapacity) Save() error {
 	go func() {
 		defer dg.Done()
 		keyCap := cst.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
-		if _, err := oc.cli.Put(context.Background(), keyCap, oc.CurrentCap.String()); err != nil {
+		if _, err := oc.cli.Put(context.Background(), keyCap, oc.currentCap.String()); err != nil {
 			dg.Error(err)
 			return
 		}
@@ -114,7 +118,7 @@ func (oc *ObjectCapacity) GetAll() (map[string]uint64, error) {
 
 func (oc *ObjectCapacity) Get(s string) (uint64, error) {
 	if s == oc.CurrentID {
-		return oc.CurrentCap.Load(), nil
+		return oc.currentCap.Load(), nil
 	}
 	key := cst.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
 	resp, err := oc.cli.Get(context.Background(), key)

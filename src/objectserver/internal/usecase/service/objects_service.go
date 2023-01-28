@@ -8,6 +8,7 @@ import (
 	"common/logs"
 	"common/response"
 	"common/system/disk"
+	"common/util"
 	"fmt"
 	"io"
 	global "objectserver/internal/usecase/pool"
@@ -26,18 +27,44 @@ func Exist(name string) bool {
 	if global.Cache.Has(LocateKeyPrefix+name) || global.Cache.Has(name) {
 		return true
 	}
-	if ExistPath(filepath.Join(global.Config.StoragePath, name)) {
+	realPath, ok := FindRealStoragePath(name)
+	if !ok {
+		return false
+	}
+	if ExistPath(realPath) {
 		MarkExist(name)
 		return true
 	} else {
+		// remove this no existed path from path-db
+		go func() {
+			defer graceful.Recover()
+			util.LogErr(global.PathDB.Remove(name, realPath))
+		}()
 		return false
 	}
+}
+
+// FindRealStoragePath find storage path with real mount point of this file
+func FindRealStoragePath(fileName string) (string, bool) {
+	path, err := global.PathDB.GetLast(fileName)
+	if err != nil {
+		path, err = global.DriverManager.FindMountPath(filepath.Join(global.Config.StoragePath, fileName))
+		if err != nil {
+			return "", false
+		}
+		// save path to path-cache
+		go func() {
+			defer graceful.Recover()
+			util.LogErr(global.PathDB.Put(fileName, path))
+		}()
+	}
+	return path, true
 }
 
 // ExistPath check if the given path exists.
 func ExistPath(fullPath string) bool {
 	_, err := os.Stat(fullPath)
-	return !os.IsNotExist(err)
+	return err == nil
 }
 
 // MarkExist save object mark into cache
@@ -55,18 +82,23 @@ func Put(fileName string, fileStream io.Reader, compress bool) (err error) {
 	if Exist(fileName) {
 		return
 	}
+
+	mp := global.DriverManager.SelectMountPointFallback(global.Config.BaseMountPoint)
+	fullPath := filepath.Join(mp, global.Config.StoragePath, fileName)
+
 	var size int64
 	if compress {
-		size, err = WriteFileCompress(filepath.Join(global.Config.StoragePath, fileName), fileStream)
+		size, err = WriteFileCompress(fullPath, fileStream)
 	} else {
-		size, err = WriteFile(filepath.Join(global.Config.StoragePath, fileName), fileStream)
+		size, err = WriteFile(fullPath, fileStream)
 	}
 	if err != nil {
 		return
 	}
 	go func() {
 		defer graceful.Recover()
-		global.ObjectCap.CurrentCap.Add(uint64(size))
+		global.ObjectCap.AddCap(size)
+		util.LogErr(global.PathDB.Put(fileName, fullPath))
 		MarkExist(fileName)
 	}()
 	return
@@ -74,21 +106,21 @@ func Put(fileName string, fileStream io.Reader, compress bool) (err error) {
 
 // Get read object to writer with provided size. pass to GetFile
 func Get(name string, offset, size int64, compress bool, writer io.Writer) (err error) {
+	if !Exist(name) {
+		return response.NewError(404, "object not found")
+	}
+
+	fullPath, _ := FindRealStoragePath(name)
 	if compress {
-		err = GetFileCompress(filepath.Join(global.Config.StoragePath, name), offset, size, writer)
+		err = GetFileCompress(fullPath, offset, size, writer)
 	} else {
-		err = GetFile(filepath.Join(global.Config.StoragePath, name), offset, size, writer)
+		err = GetFile(fullPath, offset, size, writer)
 	}
 	if err != nil {
 		return err
 	}
 	MarkExist(name)
 	return nil
-}
-
-// GetTemp read temp file to writer with provided size. pass to GetFile
-func GetTemp(name string, size int64, writer io.Writer) error {
-	return GetFile(filepath.Join(global.Config.TempPath, name), 0, size, writer)
 }
 
 // GetFile read file with provided size. offset corresponds to io.SeekStart.
@@ -119,13 +151,18 @@ func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 
 // Delete remove the object under the storage path
 func Delete(name string) error {
-	size, err := DeleteFile(global.Config.StoragePath, name)
+	if !Exist(name) {
+		return nil
+	}
+	fullPath, _ := FindRealStoragePath(name)
+	size, err := DeleteFile(fullPath, "")
 	if err != nil {
 		return err
 	}
 	go func() {
 		defer graceful.Recover()
-		global.ObjectCap.CurrentCap.Sub(uint64(size))
+		global.ObjectCap.SubCap(size)
+		util.LogErr(global.PathDB.Remove(name, fullPath))
 		UnMarkExist(name)
 	}()
 	return nil
@@ -234,9 +271,9 @@ func WriteFileCompress(fullPath string, fileStream io.Reader) (int64, error) {
 }
 
 // CommitFile move the temp file to storage path with a new name
-func CommitFile(tmpName, fileName string, compress bool) error {
-	filePath := filepath.Join(global.Config.StoragePath, fileName)
-	tempPath := filepath.Join(global.Config.TempPath, tmpName)
+func CommitFile(mountPoint, tmpName, fileName string, compress bool) error {
+	filePath := filepath.Join(mountPoint, global.Config.StoragePath, fileName)
+	tempPath := filepath.Join(mountPoint, global.Config.TempPath, tmpName)
 	if ExistPath(filePath) {
 		return nil
 	}
@@ -274,9 +311,10 @@ func CommitFile(tmpName, fileName string, compress bool) error {
 	go func() {
 		defer graceful.Recover()
 		if info, err := os.Stat(filePath); err == nil {
-			global.ObjectCap.CurrentCap.Add(uint64(info.Size()))
+			global.ObjectCap.AddCap(info.Size())
+			util.LogErr(global.PathDB.Put(fileName, filePath))
+			MarkExist(fileName)
 		}
-		MarkExist(fileName)
 	}()
 	return nil
 }

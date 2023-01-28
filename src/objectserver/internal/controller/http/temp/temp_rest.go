@@ -19,19 +19,23 @@ import (
 
 func Patch(g *gin.Context) {
 	id := g.Param("name")
-	fullPath := filepath.Join(pool.Config.TempPath, id)
-	// only allow last chuck may not be power of 4KB
-	if _, err := service.WriteFile(fullPath, g.Request.Body); err != nil {
-		util.LogErr(g.AbortWithError(http.StatusInternalServerError, err))
+	ti, ok := cache.GetGob[entity.TempInfo](pool.Cache, id)
+	if !ok {
+		response.BadRequestMsg("file has been removed", g)
 		return
 	}
-	g.Status(http.StatusOK)
+	// only allow last chuck may not be power of 4KB
+	if _, err := service.WriteFile(ti.FullPath, g.Request.Body); err != nil {
+		response.FailErr(err, g)
+		return
+	}
+	response.Ok(g)
 }
 
 func Delete(g *gin.Context) {
 	id := g.Param("name")
 	defer pool.Cache.Delete(id)
-	g.Status(http.StatusOK)
+	response.Ok(g)
 }
 
 func Post(g *gin.Context) {
@@ -41,10 +45,12 @@ func Post(g *gin.Context) {
 		return
 	}
 	tmpInfo := &entity.TempInfo{
-		Name: req.Name,
-		Size: req.Size,
-		Id:   entity.TempKeyPrefix + uuid.NewString(),
+		Name:       req.Name,
+		Size:       req.Size,
+		Id:         entity.TempKeyPrefix + uuid.NewString(),
+		MountPoint: pool.DriverManager.SelectMountPointFallback(pool.Config.BaseMountPoint),
 	}
+	tmpInfo.FullPath = filepath.Join(tmpInfo.MountPoint, pool.Config.TempPath, tmpInfo.Id)
 	if !pool.Cache.SetGob(tmpInfo.Id, tmpInfo) {
 		g.AbortWithStatus(http.StatusInternalServerError)
 		return
@@ -67,7 +73,7 @@ func Put(g *gin.Context) {
 		response.BadRequestMsg("file has been removed", g)
 		return
 	}
-	if err := service.CommitFile(req.ID, ti.Name, req.Compress); err != nil {
+	if err := service.CommitFile(ti.MountPoint, req.ID, ti.Name, req.Compress); err != nil {
 		response.FailErr(err, g)
 		return
 	}
@@ -88,7 +94,7 @@ func Head(g *gin.Context) {
 		g.Status(http.StatusInternalServerError)
 		return
 	}
-	fi, err := os.Stat(filepath.Join(pool.Config.TempPath, id))
+	fi, err := os.Stat(ti.FullPath)
 	if os.IsNotExist(err) {
 		response.OkHeader(gin.H{"Size": 0}, g)
 		return
@@ -113,7 +119,12 @@ func Get(g *gin.Context) {
 		response.BadRequestErr(err, g)
 		return
 	}
-	if err := service.GetTemp(req.Name, req.Size, g.Writer); err != nil {
+	ti, ok := cache.GetGob[entity.TempInfo](pool.Cache, req.Name)
+	if !ok {
+		response.BadRequestMsg("file has been removed", g)
+		return
+	}
+	if err := service.GetFile(ti.FullPath, 0, req.Size, g.Writer); err != nil {
 		response.FailErr(err, g)
 		return
 	}
