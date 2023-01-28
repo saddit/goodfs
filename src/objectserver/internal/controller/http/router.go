@@ -27,6 +27,8 @@ func NewHttpServer(addr string) *Server {
 	r.HEAD("/temp/:name", temp.FilterExpired, temp.Head)
 	r.GET("/temp/:name", temp.FilterExpired, temp.Get)
 	r.PUT("/temp/:name", temp.FilterExpired, temp.Put)
+
+	r.GET("/ping", func(c *gin.Context) { c.Status(http.StatusOK) })
 	return &Server{&http.Server{Addr: addr, Handler: r}}
 }
 
