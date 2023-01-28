@@ -30,6 +30,7 @@ type Config struct {
 	Registry       registry.Config    `yaml:"registry" env-prefix:"REGISTRY"`
 	Auth           auth.Config        `yaml:"auth" env-prefix:"AUTH"`
 	Performance    performance.Config `yaml:"performance" env-prefix:"PERFORMANCE"`
+	TLS            TLSConfig          `yaml:"tls" env-prefix:"TLS"`
 }
 
 func (c *Config) initialize() {
@@ -85,6 +86,12 @@ func (r *RsConfig) BlockSize() int {
 func (r *RsConfig) ShardSize(totalSize int64) int {
 	dsNum := int64(r.DataShards)
 	return int((totalSize + dsNum - 1) / dsNum)
+}
+
+type TLSConfig struct {
+	Enabled        bool   `yaml:"enabled" env:"ENABLED"`
+	ServerCertFile string `yaml:"server-cert-file" env:"SERVER_CERT_FILE"`
+	ServerKeyFile  string `yaml:"server-key-file" env:"SERVER_KEY_FILE"`
 }
 
 func ReadConfig() Config {
