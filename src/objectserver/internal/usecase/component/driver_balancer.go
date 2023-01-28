@@ -60,6 +60,8 @@ func (sw *spaceWeightedBalancer) Select(drivers []*Driver) (*Driver, error) {
 		w2 := sw.weighted[cur.MountPoint]
 		return cur.FreeSpace-w2 > max.FreeSpace-w1
 	})
-	sw.weighted[last.MountPoint] += sw.factor
+	if sw.weighted[last.MountPoint] += sw.factor; sw.weighted[last.MountPoint] > last.FreeSpace {
+		sw.weighted[last.MountPoint] /= sw.factor
+	}
 	return last, nil
 }
