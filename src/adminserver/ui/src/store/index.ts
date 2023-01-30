@@ -14,6 +14,7 @@ export const useStore = defineStore('default', () => {
 
     function clearAuth() {
         basicAuth.value = ""
+        user.value = ""
     }
 
     function setAuth(username: string, password: string) {

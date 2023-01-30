@@ -220,7 +220,6 @@ func TestGetRegistry(t *testing.T) {
 	}
 }
 
-func TestGetSystemInfo(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
 		Username:  "root",

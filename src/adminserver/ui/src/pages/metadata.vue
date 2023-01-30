@@ -10,7 +10,7 @@
                  class="text-input-pri"
                  :placeholder="t('search-by-name')"/>
           <!-- TODO: beautify -->
-          <input type="file" class="ml-8" @change="uploadObject" />
+          <input v-if="dataReq.bucket" type="file" class="ml-8" @change="uploadObject" />
         </div>
         <table class="mt-4">
           <thead>
@@ -98,7 +98,6 @@
 <script setup lang="ts">
 import {createColumnHelper, FlexRender, getCoreRowModel, useVueTable} from '@tanstack/vue-table'
 import {ArrowLongDownIcon, ArrowLongUpIcon, MagnifyingGlassIcon} from '@heroicons/vue/20/solid'
-import type {RouteParamValue} from "vue-router";
 
 const defPage: Pageable = {page: 1, total: 0, pageSize: 10, orderBy: 'create_time', desc: false}
 
@@ -160,12 +159,12 @@ watch(() => dataReq.page, () => {
 watch(() => dataReq.pageSize, () => {
     queryMetadata()
 })
-watch(() => dataReq.orderBy, () => {
-    queryMetadata()
-})
-watch(() => dataReq.desc, () => {
-    queryMetadata()
-})
+// watch(() => dataReq.orderBy, () => {
+//     queryMetadata()
+// })
+// watch(() => dataReq.desc, () => {
+//     queryMetadata()
+// })
 
 watch(() => versionReq.page, () => {
     queryVersion(versionReq.name)
