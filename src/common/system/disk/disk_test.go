@@ -2,6 +2,7 @@ package disk
 
 import (
 	"common/logs"
+	"github.com/shirou/gopsutil/v3/disk"
 	"testing"
 )
 
@@ -23,4 +24,11 @@ func TestAllMountPoints(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("%v", paths)
+}
+
+func TestIOCounter(t *testing.T) {
+	d, _ := disk.IOCounters()
+	for _, stat := range d {
+		t.Logf("%+v", stat)
+	}
 }

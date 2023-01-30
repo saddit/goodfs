@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"apiserver/internal/entity"
+	"common/system"
 	"io"
 )
 
@@ -18,5 +19,7 @@ type (
 		LocateObject(hash string) ([]string, bool)
 		StoreObject(req *entity.PutReq, md *entity.Metadata) (int32, error)
 		GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error)
+		WatchingObjectServerStat() func()
+		GetServerSystemInfo(serverId string) *system.Info
 	}
 )

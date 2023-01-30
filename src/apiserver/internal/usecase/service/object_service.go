@@ -11,6 +11,7 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/response"
+	"common/system"
 	"common/util"
 	"common/util/crypto"
 	"context"
@@ -43,10 +44,11 @@ type ObjectService struct {
 	metaService IMetaService
 	bucketRepo  repo.IBucketRepo
 	etcd        *clientv3.Client
+	sysStat     map[string]*system.Info
 }
 
 func NewObjectService(s IMetaService, b repo.IBucketRepo, etcd *clientv3.Client) *ObjectService {
-	return &ObjectService{s, b, etcd}
+	return &ObjectService{s, b, etcd, make(map[string]*system.Info)}
 }
 
 // LocateObject locate object shards by hash. send "hash.idx#key" expect "ip#idx"
@@ -219,6 +221,62 @@ func (o *ObjectService) GetObject(meta *entity.Metadata, ver *entity.Version) (i
 		Updater:  up,
 	}
 	return NewStreamProvider(opt, ver).GetStream(ver.Locate)
+}
+
+func (o *ObjectService) GetServerSystemInfo(serverId string) *system.Info {
+	return o.sysStat[serverId]
+}
+
+func (o *ObjectService) WatchingObjectServerStat() func() {
+	keyPrefix := cst.EtcdPrefix.FmtSystemInfo(pool.Config.Registry.Group, pool.Config.Discovery.DataServName, "")
+	// get exists system stat first
+	resp, err := o.etcd.Get(context.Background(), keyPrefix, clientv3.WithPrefix())
+	if err == nil {
+		for _, kv := range resp.Kvs {
+			serverId := util.BytesToStr(kv.Key)
+			var stat system.Info
+			if err := util.DecodeMsgp(&stat, kv.Value); err != nil {
+				logs.Std().Errorf("decode System.Info err: %s", err)
+				continue
+			}
+			o.sysStat[serverId] = &stat
+		}
+	} else {
+		logs.Std().Errorf("get exists object-server sys-info fail: %s", err)
+	}
+	// start watching prefix
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer graceful.Recover()
+		// retry if abort by error
+		for {
+			var success bool
+			watchChan := o.etcd.Watch(ctx, keyPrefix, clientv3.WithPrefix(), clientv3.WithFilterDelete())
+			for events := range watchChan {
+				if events.Canceled {
+					logs.Std().Errorf("watching object-server system stat abort: %s", events.Err())
+					success = false
+					break
+				}
+				for _, event := range events.Events {
+					serverId := util.BytesToStr(event.Kv.Key)
+					var stat system.Info
+					if err := util.DecodeMsgp(&stat, event.Kv.Value); err != nil {
+						logs.Std().Errorf("decode System.Info err: %s", err)
+						continue
+					}
+					o.sysStat[serverId] = &stat
+				}
+			}
+			// quit if canceled by context
+			if success {
+				break
+			}
+			// sleep 2 sec before retry
+			time.Sleep(2 * time.Second)
+		}
+	}()
+	return cancel
 }
 
 func NewStreamProvider(opt *StreamOption, ver *entity.Version) StreamProvider {

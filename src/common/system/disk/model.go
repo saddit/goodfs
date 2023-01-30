@@ -33,9 +33,9 @@ type Info struct {
 	Used   datasize.DataSize `msg:"used" json:"used"`
 	Files  uint64            `msg:"files" json:"files"`
 	Ffree  uint64            `msg:"f_free" json:"ffree"`
-	FSType string            `msg:"fs_type" json:"fsType"`
 	Major  uint32            `msg:"major" json:"major"`
 	Minor  uint32            `msg:"minor" json:"minor"`
+	FSType string            `msg:"fs_type" json:"fsType"`
 }
 
 // DevID is the device name
