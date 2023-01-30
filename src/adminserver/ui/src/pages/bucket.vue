@@ -150,7 +150,7 @@ const isDeleting = computed({
 
 const isOperating = computed({
     get: ()=>{
-        return operateType.value > opNone
+        return operateType.value == opAdd || operateType.value == opUpdate
     },
     set: (v)=>{
         if (v) {
@@ -170,19 +170,24 @@ function routeToMetadata(name: string) {
 }
 
 function queryBuckets() {
-    api.metadata.bucketPage(dataReq).catch((err:Error)=>{
+    api.metadata.bucketPage(dataReq).then(res => {
+        dataReq.total = res.total
+        dataList.value = res.list
+    }).catch((err:Error)=>{
         useToast().error(err.message)
     })
 }
 
 async function addBucket() {
     if (!operatingBucket.value.name) {
-        useToast().error("undifined bucket")
+        useToast().error("bucket name required")
         return
     }
     try {
         await api.metadata.addBucket(operatingBucket.value)
         useToast().success(t('req-success'))
+        operateType.value = opNone
+        operatingBucket.value = {} as Bucket
     } catch (e: any) {
         useToast().error(e.message)
     }
@@ -190,12 +195,14 @@ async function addBucket() {
 
 async function updateBucket() {
     if (!operatingBucket.value.name) {
-        useToast().error("undifined bucket")
+        useToast().error("bucket name required")
         return
     }
     try {
         await api.metadata.updateBucket(operatingBucket.value)
         useToast().success(t('req-success'))
+        operateType.value = opNone
+        operatingBucket.value = {} as Bucket
     } catch (e: any) {
         useToast().error(e.message)
     }
@@ -203,12 +210,14 @@ async function updateBucket() {
 
 async function removeBucket() {
     if (!operatingBucket.value.name) {
-        useToast().error("undifined bucket")
+        useToast().error("bucket name required")
         return
     }
     try {
         await api.metadata.removeBucket(operatingBucket.value.name)
         useToast().success(t('req-success'))
+        operateType.value = opNone
+        operatingBucket.value = {} as Bucket
     } catch (e: any) {
         useToast().error(e.message)
     }
@@ -235,7 +244,12 @@ const columns = [
     }),
     columnHelper.accessor('versioning', {
         header: 'Versioning',
-        cell: props => props.getValue()
+        cell: ({row})=> h('input', {
+            type: "checkbox",
+            disabled: true,
+            class: "form-checkbox rounded",
+            checked: row.original.versioning
+        }, '')
     }),
     columnHelper.accessor('storeStrategy', {
         header: 'Strategy',
@@ -243,7 +257,12 @@ const columns = [
     }),
     columnHelper.accessor('compress', {
         header: 'Compress',
-        cell: props => props.getValue()
+        cell: ({row})=> h('input', {
+            type: "checkbox",
+            disabled: true,
+            class: "form-checkbox rounded",
+            checked: row.original.compress
+        }, '')
     }),
     columnHelper.accessor('createTime', {
         header: 'Created At',
@@ -256,7 +275,9 @@ const columns = [
     columnHelper.display({
         id: 'action',
         header: 'Actions',
-        cell: ({row}) => h('p', [
+        cell: ({row}) => h('div', {
+            class: 'overflow-x-scroll w-24'
+        }, [
             h('button', {
                 class: 'underline text-indigo-500 hover:text-indigo-400 text-sm ml-1'
             }, t('upload')),
@@ -327,11 +348,11 @@ tbody td {
 en:
   no-data: 'Empty Data Table'
   upload: 'Upload'
-  objects: 'See Objects'
+  objects: 'Objects'
   detail: 'Detail'
   delete: 'Delete'
   search-by-name: 'Search By Name Prefix'
-  danger-notifacation: ''
+  danger-notifacation: 'This is a dangerous operation that will cause all objects under the bucket inaccessible, recreating it with the same name will restore it, are you sure continue?'
   is-comfirm-to-delete: 'Do you comfirm to delete?'
   comfirm-delete: 'Comfirm Delete'
   add-bucket: 'Add New Bucket'

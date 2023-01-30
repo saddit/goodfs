@@ -16,6 +16,6 @@ type Bucket struct {
 	StoreStrategy  int8     `json:"storeStrategy"`           // StoreStrategy if not zero, it will apply to ever objects under this bucket
 	CreateTime     int64    `json:"createTime"`              // CreateTime is bucket created time
 	UpdateTime     int64    `json:"updateTime"`              // UpdateTime is last updating time
-	Name           string   `json:"name" binding:"requried"` // Name is the bucket's name
+	Name           string   `json:"name" binding:"required"` // Name is the bucket's name
 	Policies       []string `json:"policies"`                // Policies is the iam polices for this bucket (No support yet)
 }
