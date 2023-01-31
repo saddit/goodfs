@@ -1,5 +1,17 @@
 import axios from "axios";
 
+async function addBucket(b: Bucket) {
+    await axios.post("/metadata/create_bucket", b)
+}
+
+async function updateBucket(b: Bucket) {
+    await axios.put("/metadata/update_bucket", b)
+}
+
+async function removeBucket(name: string) {
+    await axios.delete(`/metadata/delete_bucket?name=${name}`)
+}
+
 async function bucketPage(req: BucketReq): Promise<PageResult<Bucket>> {
     let resp = await axios.get("/metadata/buckets", {
         params: req
@@ -61,6 +73,10 @@ async function leaveCluster(servId: string) {
 }
 
 export {
+    bucketPage,
+    addBucket,
+    updateBucket,
+    removeBucket,
     metadataPage,
     versionPage,
     slotsDetail,

@@ -1,15 +1,16 @@
 import axios from "axios";
 
-async function upload(file: File) {
+async function upload(file: File, bucket: string) {
     let form = new FormData()
     form.append("file", file, file.name)
+    form.append("bucket", bucket)
     await axios.put("/objects/upload", form, {
         timeout: 0
     })
 }
 
-async function download(name: string, version: number) {
-    let response = await axios.get(`/objects/download/${name}?version=${version}`, {
+async function download(name: string, bucket: string, version: number) {
+    let response = await axios.get(`/objects/download/${name}?version=${version}&bucket=${bucket}`, {
         responseType: 'blob', // important
         timeout: 0
     })

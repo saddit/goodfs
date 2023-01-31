@@ -1,14 +1,15 @@
 package http
 
 import (
+	"adminserver/internal/entity"
 	"adminserver/internal/usecase/logic"
 	"adminserver/internal/usecase/pool"
+	"adminserver/internal/usecase/webapi"
 	"common/response"
 	"common/util"
+
 	"github.com/gin-gonic/gin"
 )
-
-// TODO: bucket crud
 
 type MetadataController struct {
 }
@@ -25,6 +26,9 @@ func (mc *MetadataController) Register(r gin.IRouter) {
 		GET("/slots_detail", mc.SlotsDetail).
 		GET("/peers", mc.Peers).
 		GET("/buckets", mc.BucketList).
+		POST("/create_bucket", mc.CreateBucket).
+		PUT("/update_bucket", mc.UpdateBucket).
+		DELETE("/delete_bucket/:name", mc.DeleteBucket).
 		POST("/leave_cluster", mc.LeaveCluster).
 		POST("/join_leader", mc.JoinLeader).
 		GET("/config/:serverId", mc.GetConfig)
@@ -166,6 +170,44 @@ func (mc *MetadataController) GetConfig(c *gin.Context) {
 		return
 	}
 	if _, err = c.Writer.Write(jsonData); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
+}
+
+func (mc *MetadataController) CreateBucket(c *gin.Context) {
+	var b entity.Bucket
+	if err := c.ShouldBindJSON(&b); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	err := webapi.CreateBucket(logic.SelectApiServer(), &b, GetAuthToken(c))
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
+}
+
+func (mc *MetadataController) UpdateBucket(c *gin.Context) {
+	var b entity.Bucket
+	if err := c.ShouldBindJSON(&b); err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	err := webapi.UpdateBucket(logic.SelectApiServer(), &b, GetAuthToken(c))
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	response.Ok(c)
+}
+
+func (mc *MetadataController) DeleteBucket(c *gin.Context) {
+	name := c.Param("name")
+	err := webapi.DeleteBucket(logic.SelectApiServer(), name, GetAuthToken(c))
+	if err != nil {
 		response.FailErr(err, c)
 		return
 	}

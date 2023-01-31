@@ -31,6 +31,7 @@ declare interface Bucket {
 
 declare interface Metadata {
     name: string
+    bucket: string
     createTime: number
     updateTime: number
 }

@@ -3,6 +3,7 @@ package repo
 import (
 	"common/graceful"
 	"common/util"
+	"errors"
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
@@ -78,6 +79,10 @@ func (b *BucketRepo) List(prefix string, size int) ([]*entity.Bucket, int, error
 	var total int
 	list := make([]*entity.Bucket, 0, size)
 	err := b.db.View(b.logic.List(prefix, size, &list, &total))
+	// ignore not found err.
+	if errors.Is(err, usecase.ErrNotFound) {
+		err = nil
+	}
 	go func() {
 		defer graceful.Recover()
 		for _, item := range list {

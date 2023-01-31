@@ -4,6 +4,7 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase/pool"
 	"bytes"
+	"common/pb"
 	"common/performance"
 	"common/request"
 	"common/response"
@@ -11,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -183,6 +185,22 @@ func DelVersion(ip, name string, verNum int32) error {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
 	return nil
+}
+
+func VersionsByHash(ip, hash string) ([]*pb.Version, error) {
+	resp, err := pool.Http.Get(fmt.Sprintf("http://%s/version/list?hash=%s", ip, hash))
+	if err != nil {
+		return nil, err
+	}
+	bt, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var res []*pb.Version
+	if err = json.Unmarshal(bt, &res); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func metaRest(ip, name string) string {

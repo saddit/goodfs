@@ -237,9 +237,15 @@ func GetMetadataBucket(tx *bolt.Tx) *bolt.Bucket {
 			logs.Std().Error(err)
 			return nil
 		}
+		root.FillPercent = 0.9
 		return root
 	} else {
-		return tx.Bucket(util.StrToBytes(MetadataBucketRoot))
+		b := tx.Bucket(util.StrToBytes(MetadataBucketRoot))
+		if b == nil {
+			return b
+		}
+		b.FillPercent = 0.9
+		return b
 	}
 }
 
@@ -275,7 +281,10 @@ func getVersionRoot(tx *bolt.Tx) *bolt.Bucket {
 // GetVersionBucket get version bucket for given name
 func GetVersionBucket(tx *bolt.Tx, name string) *bolt.Bucket {
 	if root := getVersionRoot(tx); root != nil {
-		return root.Bucket(util.StrToBytes(name))
+		if b := root.Bucket(util.StrToBytes(name)); b != nil {
+			b.FillPercent = 0.9
+			return b
+		}
 	}
 	return nil
 }

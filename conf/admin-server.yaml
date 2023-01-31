@@ -1,4 +1,5 @@
 port: 80
+enabled-api-tls: true
 discovery:
   group: "goodfs"
 etcd:
