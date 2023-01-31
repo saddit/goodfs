@@ -11,6 +11,7 @@ import (
 	"common/response"
 	"common/util"
 	"common/util/crypto"
+	"fmt"
 
 	"apiserver/internal/usecase/logic"
 	"io"
@@ -155,7 +156,8 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		return
 	}
 	if curSize != req.Range.FirstBytes().First {
-		g.Status(http.StatusRequestedRangeNotSatisfiable)
+		response.Exec(g).
+			Fail(http.StatusRequestedRangeNotSatisfiable, fmt.Sprintf("current size is %d, but range is %v", curSize, req.Range))
 		return
 	}
 	// copy from request body
@@ -167,7 +169,8 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 	curSize += n
 	if curSize < stream.Size {
 		// not read enough, see as interrupted
-		response.Exec(g).Status(http.StatusPartialContent)
+		response.Exec(g).Status(http.StatusPartialContent).
+			Header(gin.H{"Content-Length": curSize})
 		return
 	}
 	// if over the intended size, its invalid
