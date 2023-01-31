@@ -29,7 +29,7 @@ object:
     loss-tolerance-rate: 0.1
     copy-async: true
 auth:
-  enable: true
+  enable: false
   password:
     enable: true
     username: admin
