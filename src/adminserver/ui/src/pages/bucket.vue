@@ -50,73 +50,78 @@
       <div class="mt-6 grid grid-cols-3 items-center gap-y-4 gap-x-1 w-full">
         <!-- row: name -->
         <span>{{ t('field-name') }}</span>
-        <input type="text" class="col-span-2 rounded focus:ring-indigo-500 form-input" v-model="operatingBucket.name" />
-    
+        <input type="text" class="col-span-2 input-text-pri" v-model="operatingBucket.name"/>
+
         <!-- row: store strategy -->
         <span>{{ t('field-store-strategy') }}</span>
-        <select class="form-select col-span-2 rounded focus:ring-indigo-500" v-model="operatingBucket.storeStrategy">
-          <option v-for="i,v in $cst.storeStrategy" :value="v">{{ i }}</option>
+        <select class="col-span-2 select-pri" v-model="operatingBucket.storeStrategy">
+          <option v-for="(v,idx) in $cst.storeStrategy" :value="idx">{{ v }}</option>
         </select>
 
         <!-- optional area: strategy params -->
         <template v-if="operatingBucket.storeStrategy > 0">
-        <!-- row: data shards -->
-        <span>{{ t('field-data-shards') }}</span>
-        <input type="number" class="rounded focus:ring-indigo-500 form-input" v-model="operatingBucket.dataShards" />
-        <span></span>
+          <!-- row: data shards -->
+          <span>{{ t('field-data-shards') }}</span>
+          <input type="number" class="input-text-pri" v-model="operatingBucket.dataShards"/>
+          <span></span>
 
-        <!-- row: parity shards -->
-        <template v-if="operatingBucket.storeStrategy == $cst.ssRS">
-        <span>{{ t('field-parity-shards') }}</span>
-        <input type="number" class="rounded focus:ring-indigo-500 form-input" v-model="operatingBucket.parityShards" />
-        <span></span>
-        </template>
+          <!-- row: parity shards -->
+          <template v-if="operatingBucket.storeStrategy == $cst.ssRS">
+            <span>{{ t('field-parity-shards') }}</span>
+            <input type="number" class="input-text-pri"
+                   v-model="operatingBucket.parityShards"/>
+            <span></span>
+          </template>
         </template>
 
         <!-- row: enable versioning -->
         <span></span>
         <div class="col-span-2">
-          <input type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500 form-checkbox" v-model="operatingBucket.versioning" />
+          <input type="checkbox" class="checkbox-pri"
+                 v-model="operatingBucket.versioning"/>
           <span class="ml-2">{{ t('field-versioning') }}</span>
         </div>
 
         <!-- optional area: versioning-->
         <template v-if="operatingBucket.versioning">
-        <span>{{ t('field-version-remains') }}</span>
-        <input type="number" class="rounded focus:ring-indigo-500 form-input" v-model="operatingBucket.versionRemains" />
-        <span></span>
+          <span>{{ t('field-version-remains') }}</span>
+          <input type="number" class="input-text-pri"
+                 v-model="operatingBucket.versionRemains"/>
+          <span></span>
         </template>
 
         <!-- row: enable compress -->
         <span></span>
         <div class="col-span-2">
-          <input type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500 form-checkbox" v-model="operatingBucket.compress" />
+          <input type="checkbox" class="checkbox-pri"
+                 v-model="operatingBucket.compress"/>
           <span class="ml-2">{{ t('field-compress') }}</span>
         </div>
 
         <!-- row: is readonly -->
         <span></span>
         <div class="col-span-2">
-          <input type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500 form-checkbox" v-model="operatingBucket.readonly" />
+          <input type="checkbox" class="checkbox-pri"
+                 v-model="operatingBucket.readonly"/>
           <span class="ml-2">{{ t('field-readonly') }}</span>
         </div>
 
         <!-- row: buttons -->
         <span></span>
         <button class="btn-pri-sm" @click="operateType == 1 ? addBucket() : updateBucket()">{{ t('btn-ok') }}</button>
-        <button class="btn-normal-sm" @click="isOperating = false">{{ t('btn-cancel') }}</button> 
+        <button class="btn-normal-sm" @click="isOperating = false">{{ t('btn-cancel') }}</button>
       </div>
     </template>
   </ModalTemplate>
-  <!-- delete comfirm dialog -->
-  <ModalTemplate v-model="isDeleting" :title="t('is-comfirm-to-delete')">
-    <tempate #panel>
-      <div class="break-words min-h-28 p-4 text-sm text-orange-500">{{ t('danger-notifacation') }}</div>
-      <div class="inline-flex space-x-4">
-        <button class="btn-revert-sm" @click="removeBucket()">{{ t('comfirm-delete') }}</button>
-        <button class="btn-normal-sm" @click="isDeleting = false">{{ t('btn-cancel') }}</button> 
+  <!-- delete confirm dialog -->
+  <ModalTemplate v-model="isDeleting" :title="t('is-confirm-to-delete')">
+    <template #panel>
+      <div class="break-words min-h-28 p-4 text-sm text-orange-500">{{ t('danger-notification') }}</div>
+      <div class="inline-flex justify-end w-full space-x-6 sm:space-x-4">
+        <button class="btn-revert sm:btn-revert-sm" @click="removeBucket()">{{ t('confirm-delete') }}</button>
+        <button class="btn-normal sm:btn-normal-sm" @click="isDeleting = false">{{ t('btn-cancel') }}</button>
       </div>
-    </tempate>
+    </template>
   </ModalTemplate>
 </template>
 
@@ -136,10 +141,10 @@ const operatingBucket = ref<Bucket>({} as Bucket)
 const operateType = ref(0)
 
 const isDeleting = computed({
-    get: ()=>{
+    get: () => {
         return operateType.value == opDel
     },
-    set: (v)=>{
+    set: (v) => {
         if (v) {
             operateType.value = opDel
             return
@@ -149,10 +154,10 @@ const isDeleting = computed({
 })
 
 const isOperating = computed({
-    get: ()=>{
+    get: () => {
         return operateType.value == opAdd || operateType.value == opUpdate
     },
-    set: (v)=>{
+    set: (v) => {
         if (v) {
             return
         }
@@ -160,8 +165,10 @@ const isOperating = computed({
     }
 })
 
+const router = useRouter()
+
 function routeToMetadata(name: string) {
-    useRouter().push({
+    router.push({
         path: '/metadata',
         query: {
             'bucket': name
@@ -173,7 +180,7 @@ function queryBuckets() {
     api.metadata.bucketPage(dataReq).then(res => {
         dataReq.total = res.total
         dataList.value = res.list
-    }).catch((err:Error)=>{
+    }).catch((err: Error) => {
         useToast().error(err.message)
     })
 }
@@ -223,14 +230,14 @@ async function removeBucket() {
     }
 }
 
-watch(()=>dataReq.page, ()=>{
+watch(() => dataReq.page, () => {
     queryBuckets()
 })
-watch(()=>dataReq.pageSize, ()=>{
+watch(() => dataReq.pageSize, () => {
     queryBuckets()
 })
 
-onBeforeMount(()=>{
+onBeforeMount(() => {
     queryBuckets()
 })
 
@@ -244,10 +251,10 @@ const columns = [
     }),
     columnHelper.accessor('versioning', {
         header: 'Versioning',
-        cell: ({row})=> h('input', {
+        cell: ({row}) => h('input', {
             type: "checkbox",
             disabled: true,
-            class: "form-checkbox rounded",
+            class: "checkbox-pri",
             checked: row.original.versioning
         }, '')
     }),
@@ -257,10 +264,10 @@ const columns = [
     }),
     columnHelper.accessor('compress', {
         header: 'Compress',
-        cell: ({row})=> h('input', {
+        cell: ({row}) => h('input', {
             type: "checkbox",
             disabled: true,
-            class: "form-checkbox rounded",
+            class: "checkbox-pri",
             checked: row.original.compress
         }, '')
     }),
@@ -276,25 +283,25 @@ const columns = [
         id: 'action',
         header: 'Actions',
         cell: ({row}) => h('div', {
-            class: 'overflow-x-scroll w-24'
+            class: 'overflow-x-auto inline-flex justify-center w-full space-x-4 md:space-x-2 sm:space-x-1'
         }, [
             h('button', {
-                class: 'underline text-indigo-500 hover:text-indigo-400 text-sm ml-1'
+                class: 'underline text-indigo-500 hover:text-indigo-400 sm:text-sm'
             }, t('upload')),
             h('button', {
-                class: 'underline text-indigo-500 hover:text-indigo-400 text-sm ml-1',
-                onClick: ()=> routeToMetadata(row.original.name)
+                class: 'underline text-indigo-500 hover:text-indigo-400 sm:text-sm',
+                onClick: () => routeToMetadata(row.original.name)
             }, t('objects')),
             h('button', {
-                class: 'underline text-indigo-500 hover:text-indigo-400 text-sm',
-                onClick: ()=> {
+                class: 'underline text-indigo-500 hover:text-indigo-400 sm:text-sm',
+                onClick: () => {
                     operatingBucket.value = row.original
                     operateType.value = opUpdate
                 }
             }, t('detail')),
             h('button', {
                 class: 'underline text-indigo-500 hover:text-indigo-400 text-sm',
-                onClick: ()=> { 
+                onClick: () => {
                     operatingBucket.value = {name: row.original.name} as Bucket
                     operateType.value = opDel
                 }
@@ -352,9 +359,9 @@ en:
   detail: 'Detail'
   delete: 'Delete'
   search-by-name: 'Search By Name Prefix'
-  danger-notifacation: 'This is a dangerous operation that will cause all objects under the bucket inaccessible, recreating it with the same name will restore it, are you sure continue?'
-  is-comfirm-to-delete: 'Do you comfirm to delete?'
-  comfirm-delete: 'Comfirm Delete'
+  danger-notification: 'This is a dangerous operation that will cause all objects under the bucket inaccessible, recreating it with the same name will restore it, are you sure continue?'
+  is-confirm-to-delete: 'Do you confirm to delete?'
+  confirm-delete: 'Continue'
   add-bucket: 'Add New Bucket'
   field-compress: 'Enable data compression'
   field-versioning: 'Enable multi-version for objects'
@@ -371,9 +378,9 @@ zh:
   detail: '详情'
   delete: '移除'
   search-by-name: '根据名称前缀查找'
-  danger-notifacation: '这是一个危险操作，会导致分区下的所有对象无法正常访问，重新创建同名分区可恢复，你确定要这么做吗？'
-  is-comfirm-to-delete: '确认删除吗？'
-  comfirm-delete: '确认删除'
+  danger-notification: '这是一个危险操作，会导致分区下的所有对象无法正常访问，重新创建同名分区可恢复，你确定要这么做吗？'
+  is-confirm-to-delete: '确认删除吗？'
+  confirm-delete: '确认删除'
   add-bucket: '新建分区'
   field-compress: '启用数据压缩'
   field-versioning: '开启对象多版本机制'

@@ -1,8 +1,9 @@
 import axios from "axios";
 
-async function upload(file: File) {
+async function upload(file: File, bucket: string) {
     let form = new FormData()
     form.append("file", file, file.name)
+    form.append("bucket", bucket)
     await axios.put("/objects/upload", form, {
         timeout: 0
     })

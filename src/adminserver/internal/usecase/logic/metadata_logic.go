@@ -97,7 +97,7 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, e
 }
 
 func (m *Metadata) VersionPaging(cond MetadataCond, token string) ([]byte, int, error) {
-	return webapi.ListVersion(SelectApiServer(), cond.Bucket, cond.Name, cond.Page, cond.PageSize, token)
+	return webapi.ListVersion(SelectApiServer(), cond.Name, cond.Bucket, cond.Page, cond.PageSize, token)
 }
 
 func (m *Metadata) BucketPaging(cond *BucketCond) ([]*entity.Bucket, int, error) {

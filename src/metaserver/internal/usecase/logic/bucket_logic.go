@@ -29,6 +29,7 @@ func (b *BucketCrud) getBucketBucket(tx *bolt.Tx) (*bolt.Bucket, error) {
 	if bk == nil {
 		return nil, usecase.ErrNotFound
 	}
+	bk.FillPercent = 0.9
 	return bk, nil
 }
 

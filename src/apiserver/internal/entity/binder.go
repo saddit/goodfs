@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
-var FullBindings = []any{binding.Uri, binding.Query, binding.JSON}
+var FullBindings = []any{binding.Uri, binding.Query, binding.Header, binding.JSON}
 
 func Bind(c *gin.Context, b any, json bool) error {
 	if json {

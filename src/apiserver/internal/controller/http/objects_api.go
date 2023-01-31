@@ -4,7 +4,6 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
 	"common/datasize"
-	"common/logs"
 	"common/response"
 	"common/util"
 	"github.com/gin-gonic/gin"
@@ -114,10 +113,6 @@ func (oc *ObjectsController) ValidatePut(g *gin.Context) {
 		req.Ext = ext
 	} else {
 		req.Ext = "bytes"
-	}
-	if loc, ok := oc.objectService.LocateObject(req.Hash); ok {
-		logs.Std().Debugf("find locates for %s: %s", req.Hash, loc)
-		req.Locate = loc
 	}
 	g.Set("PutReq", &req)
 }

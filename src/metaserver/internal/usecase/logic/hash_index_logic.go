@@ -62,5 +62,10 @@ func GetIndexBucket(tx *bolt.Tx, indexName string) *bolt.Bucket {
 		res, _ := tx.CreateBucketIfNotExists(bt)
 		return res
 	}
-	return tx.Bucket(bt)
+	b := tx.Bucket(bt)
+	if b == nil {
+		return nil
+	}
+	b.FillPercent = 0.9
+	return b
 }
