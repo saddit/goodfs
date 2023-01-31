@@ -173,7 +173,9 @@ func TestGetPeersInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, kv := range resp.Kvs {
-		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
+		var i entity.PeerInfo
+		_ = util.DecodeMsgp(&i, kv.Value)
+		t.Logf("key=%s, value=%+v", kv.Key, i)
 	}
 }
 

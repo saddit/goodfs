@@ -34,13 +34,13 @@ func (Peers) GetPeers() ([]*entity.PeerInfo, error) {
 }
 
 func (Peers) Register() error {
-	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Cluster.ID)
+	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Registry.ServerID)
 	info := &entity.PeerInfo{
 		Location: util.GetHost(),
 		HttpPort: pool.Config.Port,
 		GrpcPort: pool.Config.Cluster.Port,
 		GroupID:  pool.Config.Cluster.GroupID,
-		ServerID: pool.Config.Cluster.ID,
+		ServerID: pool.Config.Registry.ServerID,
 	}
 	bt, err := util.EncodeMsgp(info)
 	if err != nil {
@@ -56,7 +56,7 @@ func (p Peers) MustRegister() Peers {
 }
 
 func (Peers) Unregister() error {
-	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Cluster.ID)
+	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Registry.ServerID)
 	_, err := pool.Etcd.Delete(context.Background(), key)
 	return err
 }

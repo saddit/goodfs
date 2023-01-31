@@ -61,7 +61,8 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, e
 		dg.Add(1)
 		go func(loc string) {
 			defer dg.Done()
-			data, total, err := webapi.ListMetadata(loc, fmt.Sprint(cond.Bucket, "/", cond.Name), cond.Page*cond.PageSize)
+			key := util.IfElse(cond.Bucket == "", cond.Name, fmt.Sprint(cond.Bucket, "/", cond.Name))
+			data, total, err := webapi.ListMetadata(loc, key, cond.Page*cond.PageSize)
 			if err != nil {
 				dg.Error(err)
 				return
@@ -245,11 +246,11 @@ func (m *Metadata) GetPeers(servId string) ([]*entity.ServerInfo, error) {
 		return nil, err
 	}
 	infoList := make([]*entity.ServerInfo, 0, len(res))
-	for _, mp := range res {
+	for _, d := range res {
 		infoList = append(infoList, &entity.ServerInfo{
-			ServerID: mp["serverId"],
-			HttpAddr: net.JoinHostPort(mp["location"], mp["httpPort"]),
-			RpcAddr:  net.JoinHostPort(mp["location"], mp["grpcPort"]),
+			ServerID: d["serverId"],
+			HttpAddr: net.JoinHostPort(d["location"], d["httpPort"]),
+			RpcAddr:  net.JoinHostPort(d["location"], d["grpcPort"]),
 		})
 	}
 	return infoList, nil

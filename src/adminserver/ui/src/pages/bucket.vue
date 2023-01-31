@@ -41,13 +41,12 @@
     </tr>
     </tbody>
   </table>
-  <!-- FIXME: bug when click next page -->
   <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
               v-model="dataReq.page"/>
   <!-- add or update dialog -->
   <ModalTemplate v-model="isOperating" title="Bucket" v-if="operateType > 0">
     <template #panel>
-      <div class="mt-6 grid grid-cols-3 items-center gap-y-4 gap-x-1 w-full">
+      <div class="mt-6 grid grid-cols-3 items-center gap-y-4 gap-x-1 max-w-lg sm:max-w-md">
         <!-- row: name -->
         <span>{{ t('field-name') }}</span>
         <input type="text" class="col-span-2 input-text-pri" v-model="operatingBucket.name"/>
@@ -103,7 +102,8 @@
         <div class="col-span-2">
           <input type="checkbox" class="checkbox-pri"
                  v-model="operatingBucket.readonly"/>
-          <span class="ml-2">{{ t('field-readonly') }}</span>
+          <span class="ml-2">{{ t('field-readonly') }}<span
+              class="text-xs text-red-500 ml-1">({{ t('update-hint') }})</span></span>
         </div>
 
         <!-- row: buttons -->
@@ -116,10 +116,12 @@
   <!-- delete confirm dialog -->
   <ModalTemplate v-model="isDeleting" :title="t('is-confirm-to-delete')">
     <template #panel>
-      <div class="break-words min-h-28 p-4 text-sm text-orange-500">{{ t('danger-notification') }}</div>
-      <div class="inline-flex justify-end w-full space-x-6 sm:space-x-4">
-        <button class="btn-revert sm:btn-revert-sm" @click="removeBucket()">{{ t('confirm-delete') }}</button>
-        <button class="btn-normal sm:btn-normal-sm" @click="isDeleting = false">{{ t('btn-cancel') }}</button>
+      <div>
+        <div class="break-words max-w-md min-h-28 p-4 text-sm text-orange-500">{{ t('danger-notification') }}</div>
+        <div class="inline-flex justify-end w-full space-x-6 sm:space-x-4">
+          <button class="btn-revert sm:btn-revert-sm" @click="removeBucket()">{{ t('confirm-delete') }}</button>
+          <button class="btn-normal sm:btn-normal-sm" @click="isDeleting = false">{{ t('btn-cancel') }}</button>
+        </div>
       </div>
     </template>
   </ModalTemplate>
@@ -162,6 +164,7 @@ const isOperating = computed({
             return
         }
         operateType.value = opNone
+        operatingBucket.value = {} as Bucket
     }
 })
 
@@ -254,12 +257,19 @@ const columns = [
     }),
     columnHelper.accessor('versioning', {
         header: 'Versioning',
-        cell: ({row}) => h('input', {
-            type: "checkbox",
-            disabled: true,
-            class: "checkbox-pri",
-            checked: row.original.versioning
-        }, '')
+        cell: ({row}) => h('p', {
+            class: 'inline-flex items-center'
+        }, [
+            h('input', {
+                type: "checkbox",
+                disabled: true,
+                class: "checkbox-pri",
+                checked: row.original.versioning
+            }, ''),
+            row.original.versioning ? h('span', {
+                class: 'text-sm ml-1 text-indigo-500'
+            }, `${row.original.versionRemains}`) : h('span')
+        ])
     }),
     columnHelper.accessor('storeStrategy', {
         header: 'Strategy',
@@ -282,15 +292,21 @@ const columns = [
         header: 'Updated At',
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
+    columnHelper.accessor('readonly', {
+        header: 'Readonly',
+        cell: ({row}) => h('input', {
+            type: "checkbox",
+            disabled: true,
+            class: "checkbox-pri",
+            checked: row.original.readonly
+        }, '')
+    }),
     columnHelper.display({
         id: 'action',
         header: 'Actions',
         cell: ({row}) => h('div', {
             class: 'overflow-x-auto inline-flex justify-center w-full space-x-4 md:space-x-2 sm:space-x-1'
         }, [
-            h('button', {
-                class: 'underline text-indigo-500 hover:text-indigo-400 sm:text-sm'
-            }, t('upload')),
             h('button', {
                 class: 'underline text-indigo-500 hover:text-indigo-400 sm:text-sm',
                 onClick: () => routeToMetadata(row.original.name)
@@ -366,9 +382,10 @@ en:
   is-confirm-to-delete: 'Do you confirm to delete?'
   confirm-delete: 'Continue'
   add-bucket: 'Add New Bucket'
+  update-hint: "Affect existed objects"
   field-compress: 'Enable data compression'
   field-versioning: 'Enable multi-version for objects'
-  field-readonly: 'Only allow to read from this bucket'
+  field-readonly: 'Set to readonly'
   field-name: 'Bucket Name'
   field-version-remains: 'Maximum Remains'
   field-store-strategy: 'Store Strategy'
@@ -385,9 +402,10 @@ zh:
   is-confirm-to-delete: '确认删除吗？'
   confirm-delete: '确认删除'
   add-bucket: '新建分区'
+  update-hint: "影响已上传的对象"
   field-compress: '启用数据压缩'
   field-versioning: '开启对象多版本机制'
-  field-readonly: '此分区内的对象只允许读取操作'
+  field-readonly: '设为只读'
   field-name: '分区名称'
   field-version-remains: '最多保留版本数'
   field-store-strategy: '存储策略'
