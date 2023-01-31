@@ -77,7 +77,7 @@ func (o *ObjectService) LocateObject(hash string, shardNum int) ([]string, bool)
 	}
 	// to receive locates
 	tt := time.NewTicker(pool.Config.LocateTimeout)
-	tt.Stop()
+	defer tt.Stop()
 
 	var cnt int
 	for cnt < len(locates) {

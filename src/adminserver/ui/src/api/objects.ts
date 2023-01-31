@@ -9,8 +9,8 @@ async function upload(file: File, bucket: string) {
     })
 }
 
-async function download(name: string, version: number) {
-    let response = await axios.get(`/objects/download/${name}?version=${version}`, {
+async function download(name: string, bucket: string, version: number) {
+    let response = await axios.get(`/objects/download/${name}?version=${version}&bucket=${bucket}`, {
         responseType: 'blob', // important
         timeout: 0
     })

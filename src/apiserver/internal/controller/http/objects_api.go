@@ -68,11 +68,11 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 	}
 	// get object stream
 	stream, err := oc.objectService.GetObject(metaData, metaData.Versions[0])
-	defer util.CloseAndLog(stream)
 	if err != nil {
 		response.FailErr(err, c).Abort()
 		return
 	}
+	defer util.CloseAndLog(stream)
 	// try seek
 	if tp, ok := req.Range.GetFirstBytes(); ok {
 		if _, err = stream.Seek(tp.First, io.SeekCurrent); err != nil {

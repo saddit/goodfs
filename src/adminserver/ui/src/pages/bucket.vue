@@ -195,6 +195,7 @@ async function addBucket() {
         useToast().success(t('req-success'))
         operateType.value = opNone
         operatingBucket.value = {} as Bucket
+        queryBuckets()
     } catch (e: any) {
         useToast().error(e.message)
     }
@@ -210,6 +211,7 @@ async function updateBucket() {
         useToast().success(t('req-success'))
         operateType.value = opNone
         operatingBucket.value = {} as Bucket
+        queryBuckets()
     } catch (e: any) {
         useToast().error(e.message)
     }
@@ -225,6 +227,7 @@ async function removeBucket() {
         useToast().success(t('req-success'))
         operateType.value = opNone
         operatingBucket.value = {} as Bucket
+        queryBuckets()
     } catch (e: any) {
         useToast().error(e.message)
     }

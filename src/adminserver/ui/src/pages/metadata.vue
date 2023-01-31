@@ -194,8 +194,8 @@ function makeTableHeader(title: string, order: OrderType, req: MetadataReq) {
     }, [h('span', title), orderByVNode(req, order)])
 }
 
-function downloadObject(name: string, version: number) {
-    api.objects.download(name, version).catch((err: Error) => {
+function downloadObject(name: string, bucket: string, version: number) {
+    api.objects.download(name, bucket, version).catch((err: Error) => {
         useToast().error(err.message)
     })
 }
@@ -271,7 +271,7 @@ const versionColumns = [
             }, 'Checksum'),
             h('button', {
                 class: 'underline text-indigo-500 hover:text-indigo-400 text-sm ml-1',
-                onClick: () => downloadObject(versionReq.name, row.original.sequence)
+                onClick: () => downloadObject(versionReq.name, versionReq.bucket, row.original.sequence)
             }, 'Download')
         ])
     }),
