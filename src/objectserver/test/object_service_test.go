@@ -93,7 +93,7 @@ func TestWriteWithSize(t *testing.T) {
 		bt[i] = 'A'
 	}
 	buffer = bytes.NewBuffer(bt)
-	n, err := WriteFileWithSize("./new_file", 0, buffer)
+	n, err := WriteFileWithSize("./new_file", 0, buffer, 8<<10)
 	if err != nil {
 		t.Error(err)
 		return
@@ -105,7 +105,7 @@ func TestWriteWithSize(t *testing.T) {
 		bt[i] = 'B'
 	}
 	buffer = bytes.NewBuffer(bt)
-	n, err = WriteFileWithSize("./new_file", int64(fstSize), buffer)
+	n, err = WriteFileWithSize("./new_file", int64(fstSize), buffer, 8<<10)
 	if err != nil {
 		t.Error(err)
 		return

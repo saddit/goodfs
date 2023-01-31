@@ -5,6 +5,7 @@ import (
 	"common/util"
 	"github.com/klauspost/reedsolomon"
 	"io"
+	"sync/atomic"
 )
 
 type rsEncoder struct {
@@ -44,7 +45,7 @@ func (e *rsEncoder) Write(bt []byte) (int, error) {
 		}
 		e.cache = append(e.cache, bt[cur:cur+next]...)
 		if len(e.cache) == e.rsConfig.BlockSize() {
-			if err := e.Flush(); err != nil {
+			if _, err := e.Flush(); err != nil {
 				return cur, err
 			}
 		}
@@ -54,32 +55,35 @@ func (e *rsEncoder) Write(bt []byte) (int, error) {
 	return len(bt), nil
 }
 
-func (e *rsEncoder) Flush() error {
+func (e *rsEncoder) Flush() (int, error) {
 	if len(e.cache) == 0 {
-		return nil
+		return 0, nil
 	}
 	defer func() { e.cache = e.cache[:0] }()
 
 	shards, err := e.enc.Split(e.cache)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	err = e.enc.Encode(shards)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
+	var size int32
 	dg := util.NewDoneGroup()
 	defer dg.Close()
 	for i, v := range shards {
 		dg.Todo()
-		go func(idx int,val []byte) {
+		go func(idx int, val []byte) {
 			defer dg.Done()
-			if _, err := e.writers[idx].Write(val); err != nil {
-				dg.Error(err)
+			n, inner := e.writers[idx].Write(val)
+			if inner != nil {
+				dg.Error(inner)
 				return
 			}
-		}(i,v)
+			atomic.AddInt32(&size, int32(n))
+		}(i, v)
 	}
-	return dg.WaitUntilError()
+	return int(size), dg.WaitUntilError()
 }
