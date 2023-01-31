@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"common/datasize"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
@@ -11,7 +12,7 @@ import (
 // SHA256IO sha256算法对二进制流进行计算
 func SHA256IO(reader io.Reader) string {
 	crypto := sha256.New()
-	if _, e := io.CopyBuffer(crypto, reader, make([]byte, 4096)); e == nil {
+	if _, e := io.CopyBuffer(crypto, reader, make([]byte, 4*datasize.MB)); e == nil {
 		b := crypto.Sum(make([]byte, 0, crypto.Size()))
 		return hex.EncodeToString(b)
 	}

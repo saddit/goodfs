@@ -49,8 +49,13 @@ func NewObjectService(s IMetaService, b repo.IBucketRepo, etcd *clientv3.Client)
 	return &ObjectService{s, b, etcd}
 }
 
+// UniqueHash generate unique identify for an object
+func (o *ObjectService) UniqueHash(digest string, ss entity.ObjectStrategy, ds, ps int, compress bool) string {
+	return crypto.SHA256(util.StrToBytes(fmt.Sprint(digest, ss, ds, ps, compress)))
+}
+
 // LocateObject locate object shards by hash. send "hash.idx#key" expect "ip#idx"
-func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
+func (o *ObjectService) LocateObject(hash string, shardNum int) ([]string, bool) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// generate a unique id as key for receive locates
@@ -62,7 +67,7 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	// remove this key after all
 	defer o.etcd.Delete(ctx, tempId)
 	wt := o.etcd.Watch(ctx, tempId)
-	locates := make([]string, pool.Config.Object.ReedSolomon.AllShards())
+	locates := make([]string, shardNum)
 	for i := 0; i < pool.Config.Object.ReedSolomon.AllShards(); i++ {
 		val := fmt.Sprintf("%s.%d#%s", hash, i, tempId)
 		_, err := o.etcd.Put(ctx, cst.EtcdPrefix.LocationSubKey, val)
@@ -73,28 +78,31 @@ func (o *ObjectService) LocateObject(hash string) ([]string, bool) {
 	// to receive locates
 	tt := time.NewTicker(pool.Config.LocateTimeout)
 	defer tt.Stop()
+
 	var cnt int
-	for {
+	for cnt < len(locates) {
 		select {
 		case resp, ok := <-wt:
 			if !ok {
-				logs.Std().Error("etcd watching locate-key err, channel closed")
+				logs.Std().Warn("etcd watching locate-key stopped")
+				return nil, false
+			}
+			if resp.Canceled {
+				logs.Std().Errorf("etcd watching locate-key abort: %s", resp.Err())
 				return nil, false
 			}
 			for _, event := range resp.Events {
 				ip, idx := getLocateResp(string(event.Kv.Value))
 				logs.Std().Debugf("located success for index %d of %s at %s", idx, hash, ip)
 				locates[idx] = ip
-				cnt += 1
-			}
-			if len(locates) == cnt {
-				return locates, true
+				cnt++
 			}
 		case <-tt.C:
 			logs.Std().Warnf("locate object %s timeout!", hash)
 			return nil, false
 		}
 	}
+	return locates, true
 }
 
 // StoreObject store object to data server
@@ -132,24 +140,29 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (vn
 		return 0, response.NewError(400, "bucket is readonly")
 	}
 
+	// pre-processing the version info
 	ver := md.Versions[0]
+	// check bucket configuration and change version info
 	FillVersionConfig(ver, bucket)
-	provider := NewStreamProvider(&StreamOption{
-		Bucket:   bucket.Name,
-		Hash:     ver.Hash,
-		Name:     metadata.Name,
-		Size:     ver.Size,
-		Compress: ver.Compress,
-	}, ver)
+	// generate unique hash as this version hash
+	ver.Hash = o.UniqueHash(ver.Hash, ver.StoreStrategy, ver.DataShards, ver.ParityShards, ver.Compress)
+	// filter duplicate
+	var ok bool
+	ver.Locate, ok = o.LocateObject(ver.Hash, ver.DataShards+ver.ParityShards)
+
 	// if object not exists, upload to data server
-	if len(req.Locate) == 0 {
-		if ver.Locate, err = streamToDataServer(req, ver, provider); err != nil {
+	if !ok {
+		if ver.Locate, err = streamToDataServer(req, ver, NewStreamProvider(&StreamOption{
+			Bucket:   bucket.Name,
+			Hash:     ver.Hash, // store to data-server with version hash
+			Name:     md.Name,
+			Size:     ver.Size,
+			Compress: ver.Compress,
+		}, ver)); err != nil {
 			return -1, fmt.Errorf("stream to data server err: %w", err)
 		}
-	} else {
-		// otherwise save locates
-		ver.Locate = req.Locate
 	}
+
 	// save metadata
 	if metadata == nil {
 		return o.metaService.SaveMetadata(md)
@@ -180,6 +193,7 @@ func streamToDataServer(req *entity.PutReq, meta *entity.Version, provider Strea
 	if pool.Config.Checksum {
 		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 8*cst.OS.PageSize), stream)
 		hash := crypto.SHA256IO(reader)
+		// compare to request hash which is real object checksum, not version hash.
 		if hash != req.Hash {
 			logs.Std().Infof("Digest of %v validation failure\n", req.Name)
 			if err = stream.Commit(false); err != nil {

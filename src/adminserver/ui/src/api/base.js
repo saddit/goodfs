@@ -2,7 +2,7 @@ import axios from "axios";
 import {ApiError} from "@/api/error";
 
 axios.defaults.baseURL = window.baseUrl
-axios.defaults.timeout = 2500
+axios.defaults.timeout = 0
 
 // Add a request interceptor
 axios.interceptors.request.use(function (config) {

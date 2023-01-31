@@ -22,8 +22,10 @@ export const statTypeCpu = "cpu"
 export const apiServerNo = 0
 export const metaServerNo = 1
 export const dataServerNo = 2
+export const ssRS = 1 // storeStrategy: ReedSolomon
+export const ssMR = 2 // storeStrategy: MultiReplication
 export const storeStrategy = [
-    'Unknown',
+    'Default',
     'ReedSolomon',
     'MultiReplication'
 ]

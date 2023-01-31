@@ -4,7 +4,6 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
 	"common/datasize"
-	"common/logs"
 	"common/response"
 	"common/util"
 	"github.com/gin-gonic/gin"
@@ -69,11 +68,11 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 	}
 	// get object stream
 	stream, err := oc.objectService.GetObject(metaData, metaData.Versions[0])
-	defer util.CloseAndLog(stream)
 	if err != nil {
 		response.FailErr(err, c).Abort()
 		return
 	}
+	defer util.CloseAndLog(stream)
 	// try seek
 	if tp, ok := req.Range.GetFirstBytes(); ok {
 		if _, err = stream.Seek(tp.First, io.SeekCurrent); err != nil {
@@ -114,10 +113,6 @@ func (oc *ObjectsController) ValidatePut(g *gin.Context) {
 		req.Ext = ext
 	} else {
 		req.Ext = "bytes"
-	}
-	if loc, ok := oc.objectService.LocateObject(req.Hash); ok {
-		logs.Std().Debugf("find locates for %s: %s", req.Hash, loc)
-		req.Locate = loc
 	}
 	g.Set("PutReq", &req)
 }

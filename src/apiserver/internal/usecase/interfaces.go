@@ -15,7 +15,8 @@ type (
 		RemoveVersion(name, bucket string, version int32) error
 	}
 	IObjectService interface {
-		LocateObject(hash string) ([]string, bool)
+		UniqueHash(digest string, ss entity.ObjectStrategy, ds, ps int, compress bool) string
+		LocateObject(hash string, shardNum int) ([]string, bool)
 		StoreObject(req *entity.PutReq, md *entity.Metadata) (int32, error)
 		GetObject(meta *entity.Metadata, ver *entity.Version) (io.ReadSeekCloser, error)
 	}

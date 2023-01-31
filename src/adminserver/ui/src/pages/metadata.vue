@@ -1,106 +1,104 @@
 <template>
   <div class="w-full h-full overflow-y-auto">
-    <div class="p-2 w-fit mx-auto mt-10 flex flex-col items-center">
+    <div class="px-4 mt-10 flex flex-col items-center">
       <!-- metadata table -->
-      <div>
-        <div class="flex items-center">
-          <MagnifyingGlassIcon class="w-6 h-6 mr-2 text-indigo-600"/>
-          <input type="text"
-                 @change="e => searchData(e.target)"
-                 class="text-input-pri"
-                 :placeholder="t('search-by-name')"/>
-          <!-- TODO: beautify -->
-          <input type="file" class="ml-8" @change="uploadObject" />
-        </div>
-        <table class="mt-4">
-          <thead>
-          <tr
-              v-for="headerGroup in dataTable.getHeaderGroups()"
-              :key="headerGroup.id"
-          >
-            <th
-                v-for="header in headerGroup.headers"
-                :key="header.id"
-                :colSpan="header.colSpan"
-            >
-              <FlexRender
-                  v-if="!header.isPlaceholder"
-                  :render="header.column.columnDef.header"
-                  :props="header.getContext()"
-              />
-            </th>
-          </tr>
-          </thead>
-          <tbody>
-          <template v-if="dataList.length > 0">
-            <tr v-for="row in dataTable.getRowModel().rows" :key="row.id">
-              <td v-for="cell in row.getVisibleCells()" :key="cell.id">
-                <FlexRender
-                    :render="cell.column.columnDef.cell"
-                    :props="cell.getContext()"
-                />
-              </td>
-            </tr>
-          </template>
-          <tr v-else>
-            <td colspan="4" class="text-center">{{ t('no-data') }}</td>
-          </tr>
-          </tbody>
-        </table>
-        <!-- FIXME: bug when click next page -->
-        <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
-                    v-model="dataReq.page"/>
+      <div class="flex w-full items-center justify-start">
+        <MagnifyingGlassIcon class="w-6 h-6 mr-2 text-indigo-600"/>
+        <input type="text"
+               @change="e => searchData(e.target)"
+               class="text-input-pri"
+               :placeholder="t('search-by-name')"/>
+        <!-- TODO: beautify -->
+        <input v-if="dataReq.bucket" type="file" class="ml-8" @change="uploadObject"/>
       </div>
+      <table class="mt-4 w-full">
+        <thead>
+        <tr
+            v-for="headerGroup in dataTable.getHeaderGroups()"
+            :key="headerGroup.id"
+        >
+          <th
+              v-for="header in headerGroup.headers"
+              :key="header.id"
+              :colSpan="header.colSpan"
+          >
+            <FlexRender
+                v-if="!header.isPlaceholder"
+                :render="header.column.columnDef.header"
+                :props="header.getContext()"
+            />
+          </th>
+        </tr>
+        </thead>
+        <tbody>
+        <template v-if="dataList.length > 0">
+          <tr v-for="row in dataTable.getRowModel().rows" :key="row.id">
+            <td v-for="cell in row.getVisibleCells()" :key="cell.id">
+              <FlexRender
+                  :render="cell.column.columnDef.cell"
+                  :props="cell.getContext()"
+              />
+            </td>
+          </tr>
+        </template>
+        <tr v-else>
+          <td colspan="4" class="text-center">{{ t('no-data') }}</td>
+        </tr>
+        </tbody>
+      </table>
+      <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
+                  v-model="dataReq.page"/>
       <!-- version table -->
-      <div>
-        <table v-if="showVersionTb" class="mt-8">
-          <thead>
-          <tr
-              v-for="headerGroup in versionTable.getHeaderGroups()"
-              :key="headerGroup.id"
-          >
-            <th
-                v-for="header in headerGroup.headers"
-                :key="header.id"
-                :colSpan="header.colSpan"
+      <ModalTemplate v-model="showVersionTb" title="Versions">
+        <template #panel>
+          <table class="m-1">
+            <thead>
+            <tr
+                v-for="headerGroup in versionTable.getHeaderGroups()"
+                :key="headerGroup.id"
             >
-              <FlexRender
-                  v-if="!header.isPlaceholder"
-                  :render="header.column.columnDef.header"
-                  :props="header.getContext()"
-              />
-            </th>
-          </tr>
-          </thead>
-          <tbody>
-          <template v-if="versionList.length > 0">
-            <tr v-for="row in versionTable.getRowModel().rows" :key="row.id">
-              <td v-for="cell in row.getVisibleCells()" :key="cell.id">
+              <th
+                  v-for="header in headerGroup.headers"
+                  :key="header.id"
+                  :colSpan="header.colSpan"
+              >
                 <FlexRender
-                    :render="cell.column.columnDef.cell"
-                    :props="cell.getContext()"
+                    v-if="!header.isPlaceholder"
+                    :render="header.column.columnDef.header"
+                    :props="header.getContext()"
                 />
-              </td>
+              </th>
             </tr>
-          </template>
-          <tr v-else>
-            <td :colspan="7" class="text-center">{{ t('no-data') }}</td>
-          </tr>
-          </tbody>
-        </table>
-        <Pagination class="my-4" :max-num="5" :total="versionReq.total" :page-size="versionReq.pageSize"
-                    v-model="versionReq.page"/>
-      </div>
+            </thead>
+            <tbody>
+            <template v-if="versionList.length > 0">
+              <tr v-for="row in versionTable.getRowModel().rows" :key="row.id">
+                <td v-for="cell in row.getVisibleCells()" :key="cell.id">
+                  <FlexRender
+                      :render="cell.column.columnDef.cell"
+                      :props="cell.getContext()"
+                  />
+                </td>
+              </tr>
+            </template>
+            <tr v-else>
+              <td :colspan="7" class="text-center">{{ t('no-data') }}</td>
+            </tr>
+            </tbody>
+          </table>
+          <Pagination class="my-4" :max-num="5" :total="versionReq.total" :page-size="versionReq.pageSize"
+                      v-model="versionReq.page"/>
+        </template>
+      </ModalTemplate>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import {createColumnHelper, FlexRender, getCoreRowModel, useVueTable} from '@tanstack/vue-table'
-import {ArrowLongDownIcon, ArrowLongUpIcon, MagnifyingGlassIcon} from '@heroicons/vue/20/solid'
-import type {RouteParamValue} from "vue-router";
+import {MagnifyingGlassIcon} from '@heroicons/vue/20/solid'
 
-const defPage: Pageable = {page: 1, total: 0, pageSize: 10, orderBy: 'create_time', desc: false}
+const defPage: Pageable = {page: 1, total: 0, pageSize: 10}
 
 const dataList = ref<Metadata[]>([])
 const versionList = ref<Version[]>([])
@@ -126,9 +124,9 @@ function queryMetadata() {
         })
 }
 
-function queryVersion(name: string) {
+function queryVersion(name: string, bucket: string) {
     versionReq.name = name
-    versionReq.bucket = dataReq.bucket
+    versionReq.bucket = bucket
     api.metadata.versionPage(versionReq)
         .then(res => {
             versionList.value = res.list
@@ -140,39 +138,19 @@ function queryVersion(name: string) {
         })
 }
 
-function changeDataSort(req: MetadataReq, name: OrderType) {
-    if (req.orderBy == name) {
-        if (req.desc) {
-            req.orderBy = defPage.orderBy
-            req.desc = defPage.desc
-            return
-        }
-        req.desc = true
-        return
-    }
-    req.orderBy = name
-    req.desc = false
-}
-
 watch(() => dataReq.page, () => {
     queryMetadata()
 })
 watch(() => dataReq.pageSize, () => {
     queryMetadata()
 })
-watch(() => dataReq.orderBy, () => {
-    queryMetadata()
-})
-watch(() => dataReq.desc, () => {
-    queryMetadata()
-})
 
 watch(() => versionReq.page, () => {
-    queryVersion(versionReq.name)
+    queryVersion(versionReq.name, versionReq.bucket)
 })
 
 watch(() => versionReq.pageSize, () => {
-    queryVersion(versionReq.name)
+    queryVersion(versionReq.name, versionReq.bucket)
 })
 
 onBeforeMount(() => {
@@ -183,22 +161,8 @@ onBeforeMount(() => {
 const dataColumnHelper = createColumnHelper<Metadata>()
 const versionColumnHelper = createColumnHelper<Version>()
 
-function orderByVNode(req: MetadataReq, expect: OrderType) {
-    if (req.orderBy == expect) {
-        return req.desc ? h(ArrowLongDownIcon, {class: 'w-4 h-4'}) : h(ArrowLongUpIcon, {class: 'w-4 h-4'})
-    }
-    return h('span', '')
-}
-
-function makeTableHeader(title: string, order: OrderType, req: MetadataReq) {
-    return h('p', {
-        class: 'cursor-pointer select-none flex items-center',
-        onClick: () => changeDataSort(req, order)
-    }, [h('span', title), orderByVNode(req, order)])
-}
-
-function downloadObject(name: string, version: number) {
-    api.objects.download(name, version).catch((err: Error) => {
+function downloadObject(name: string, bucket: string, version: number) {
+    api.objects.download(name, bucket, version).catch((err: Error) => {
         useToast().error(err.message)
     })
 }
@@ -208,7 +172,7 @@ function uploadObject(event: any) {
         return
     }
     let file: File = event.target.files[0]
-    api.objects.upload(file).then(() => {
+    api.objects.upload(file, dataReq.bucket).then(() => {
         useToast().success("Upload Success!")
         queryMetadata()
     }).catch((err: Error) => {
@@ -218,15 +182,19 @@ function uploadObject(event: any) {
 
 const dataColumns = [
     dataColumnHelper.accessor('name', {
-        header: () => makeTableHeader('Name', 'name', dataReq),
+        header: 'Name',
+        cell: props => props.getValue()
+    }),
+    dataColumnHelper.accessor('bucket', {
+        header: 'Bucket',
         cell: props => props.getValue()
     }),
     dataColumnHelper.accessor('createTime', {
-        header: () => makeTableHeader('Created At', 'create_time', dataReq),
+        header: 'Created At',
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
     dataColumnHelper.accessor('updateTime', {
-        header: () => makeTableHeader('Updated At', 'update_time', dataReq),
+        header: 'Updated At',
         cell: props => new Date(props.getValue()).toLocaleString()
     }),
     dataColumnHelper.display({
@@ -234,7 +202,7 @@ const dataColumns = [
         header: 'Actions',
         cell: ({row}) => h('button', {
             class: 'btn-action',
-            onClick: () => queryVersion(row.original.name)
+            onClick: () => queryVersion(row.original.name, row.original.bucket)
         }, t('see-version'))
     }),
 ]
@@ -274,7 +242,7 @@ const versionColumns = [
             }, 'Checksum'),
             h('button', {
                 class: 'underline text-indigo-500 hover:text-indigo-400 text-sm ml-1',
-                onClick: () => downloadObject(versionReq.name, row.original.sequence)
+                onClick: () => downloadObject(versionReq.name, versionReq.bucket, row.original.sequence)
             }, 'Download')
         ])
     }),

@@ -58,7 +58,7 @@
   <!-- Raft cmd dialog -->
   <ModalTemplate v-model="openRaftCmdDialog" :title="t('raft-cmd')" @close="closeRaftCmdDialog">
     <template #panel>
-      <div class="mt-6 grid grid-cols-3 items-center gap-y-4 gap-x-1">
+      <div class="mt-6 w-[28rem] grid grid-cols-3 items-center gap-y-4 gap-x-1">
         <span>{{ t('select-master') }}</span>
         <SelectBox class="col-span-2" v-model="selectedRaftMaster"
                    :value="(v: ServerInfo) => v.serverId"
@@ -269,7 +269,7 @@ en:
   start-migrate: "Migration"
   tool-box: 'Tool Box'
   raft-cmd: 'Cluster Cmd'
-  select-master: 'Select leader'
+  select-master: 'Select Leader'
   remove: 'Leave'
   invite: 'Invite'
   input-serv-id: 'Please input server id'
@@ -283,7 +283,7 @@ zh:
   start-migrate: '数据迁移'
   tool-box: '工具箱'
   raft-cmd: '集群管理'
-  select-master: '选择集群领导'
+  select-master: '选择主节点'
   remove: '脱离'
   invite: '加入'
   input-serv-id: '请输入 server id'
