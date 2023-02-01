@@ -16,7 +16,7 @@ type rsEncoder struct {
 }
 
 func NewEncoder(wrs []io.WriteCloser, rsCfg *config.RsConfig) *rsEncoder {
-	enc, _ := reedsolomon.New(rsCfg.DataShards, rsCfg.ParityShards)
+	enc, _ := reedsolomon.New(rsCfg.DataShards, rsCfg.ParityShards, reedsolomon.WithAutoGoroutines(rsCfg.BlockPerShard))
 	return &rsEncoder{
 		writers:  wrs,
 		enc:      enc,
@@ -65,15 +65,36 @@ func (e *rsEncoder) Flush() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	err = e.enc.Encode(shards)
-	if err != nil {
-		return 0, err
-	}
 
 	var size int32
 	dg := util.NewDoneGroup()
 	defer dg.Close()
-	for i, v := range shards {
+	
+	// encode async
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		if err := e.enc.Encode(shards); err != nil {
+			dg.Error(err)
+			return
+		}
+		// write parity shards after encode
+		for i, v := range shards[e.rsConfig.DataShards:] {
+			dg.Todo()
+			go func(idx int, val []byte) {
+				defer dg.Done()
+				n, inner := e.writers[idx].Write(val)
+				if inner != nil {
+					dg.Error(inner)
+					return
+				}
+				atomic.AddInt32(&size, int32(n))
+			}(i + e.rsConfig.DataShards, v)
+		}
+	}()
+
+	// write data shards without waitting encode
+	for i, v := range shards[:e.rsConfig.DataShards] {
 		dg.Todo()
 		go func(idx int, val []byte) {
 			defer dg.Done()
@@ -85,5 +106,6 @@ func (e *rsEncoder) Flush() (int, error) {
 			atomic.AddInt32(&size, int32(n))
 		}(i, v)
 	}
+	
 	return int(size), dg.WaitUntilError()
 }

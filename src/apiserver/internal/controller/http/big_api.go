@@ -90,6 +90,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 			Bucket:  req.Bucket,
 			Version: verNum,
 		}, g)
+		return
 	}
 	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, conf.AllShards())
 	if len(ips) == 0 {
