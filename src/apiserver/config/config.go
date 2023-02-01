@@ -57,7 +57,7 @@ type ReplicationConfig struct {
 	CopiesCount       int               `yaml:"copies-count" env:"COPIES_COUNT" env-default:"3"`
 	BlockSize         datasize.DataSize `yaml:"block-size" env:"BLOCK_SIZE" env-default:"32KB"` // Auto aligned to power of 4KB
 	LossToleranceRate float32           `yaml:"loss-tolerance-rate" env:"LOSS_TOLERANCE_RATE" env-default:"0"`
-	CopyAsync         bool              `yaml:"copy-async" env:"COPY_ASYNC" env-default:"false"`
+	CopyAsync         bool              `yaml:"copy-async" env:"COPY_ASYNC" env-default:"true"`
 }
 
 func (rp *ReplicationConfig) AtLeastCopiesNum() int {
@@ -70,9 +70,10 @@ func (rp *ReplicationConfig) ToleranceLossNum() int {
 }
 
 type RsConfig struct {
-	DataShards    int `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`
-	ParityShards  int `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`
-	BlockPerShard int `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"` // Auto aligned to power of 4KB
+	DataShards    int  `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`
+	ParityShards  int  `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`
+	BlockPerShard int  `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"8192"` // Auto aligned to power of 4KB
+	RewriteAsync  bool `yaml:"rewrite-async" env:"REWRITE_ASYNC" env-default:"true"`
 }
 
 func (r *RsConfig) AllShards() int {
@@ -81,6 +82,10 @@ func (r *RsConfig) AllShards() int {
 
 func (r *RsConfig) BlockSize() int {
 	return r.BlockPerShard * r.DataShards
+}
+
+func (r *RsConfig) FullSize() int {
+	return r.BlockPerShard * r.AllShards()
 }
 
 func (r *RsConfig) ShardSize(totalSize int64) int {

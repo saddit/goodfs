@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"common/response"
+	"errors"
 	"net/http"
 )
 
@@ -12,4 +13,5 @@ var (
 	ErrBadRequest         = response.NewError(http.StatusBadRequest, "bad Request")
 	ErrInvalidFile        = response.NewError(http.StatusBadRequest, "invalid file")
 	ErrNeedUpdateMeta     = response.NewError(http.StatusBadRequest, "metadata has changed unavailable server's location")
+	ErrOverRead           = errors.New("read to much data")
 )
