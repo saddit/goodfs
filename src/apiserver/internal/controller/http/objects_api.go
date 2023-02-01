@@ -103,7 +103,7 @@ func (oc *ObjectsController) ValidatePut(g *gin.Context) {
 		return
 	}
 	if req.Store == 0 {
-		if g.Request.ContentLength > int64(datasize.MB*16) {
+		if g.Request.ContentLength > int64(datasize.KB*64) {
 			req.Store = entity.ECReedSolomon
 		} else {
 			req.Store = entity.MultiReplication
