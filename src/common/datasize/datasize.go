@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var suffixRegex = regexp.MustCompile(`([.\d]+)(B|KB|MB|GB|TB|PB)`)
+var suffixRegex = regexp.MustCompile(`^(\d+)(B|KB|MB|GB|TB|PB)?$`)
 
 type DataSize uint64
 
@@ -64,6 +64,7 @@ type unit struct {
 }
 
 var units = []unit{
+	{"", Byte},
 	{"B", Byte},
 	{"KB", KB},
 	{"MB", MB},
