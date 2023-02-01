@@ -12,15 +12,15 @@ import (
 )
 
 type rsDecoder struct {
+	enc          reedsolomon.Encoder
+	rsCfg        config.RsConfig
 	readers      []io.Reader
 	writers      []io.Writer
-	enc          reedsolomon.Encoder
-	size         int64
 	cache        []byte
 	shardsBuffer []byte
 	cursor       int
 	total        int64
-	rsCfg        config.RsConfig
+	size         int64
 }
 
 func NewDecoder(readers []io.Reader, writes []io.Writer, size int64, rsCfg *config.RsConfig) *rsDecoder {
@@ -31,7 +31,7 @@ func NewDecoder(readers []io.Reader, writes []io.Writer, size int64, rsCfg *conf
 		writers:      writes,
 		enc:          enc,
 		size:         size,
-		cache:        buf[:0],		// cahce and shardsBuffer use same area to reduce memory allocs and usage
+		cache:        buf[:0], // let cache and shardsBuffer using same address to reduce memory allocate and usage
 		shardsBuffer: buf,
 		rsCfg:        *rsCfg,
 	}

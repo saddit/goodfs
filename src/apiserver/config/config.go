@@ -2,7 +2,6 @@ package config
 
 import (
 	"apiserver/internal/usecase/componet/auth"
-	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/logs"
@@ -34,12 +33,14 @@ type Config struct {
 }
 
 func (c *Config) initialize() {
-	// aligned to 4KB
-	if i := c.Object.ReedSolomon.BlockPerShard % cst.OS.PageSize; i > 0 {
-		c.Object.ReedSolomon.BlockPerShard = c.Object.ReedSolomon.BlockPerShard - i + cst.OS.PageSize
+	// aligned (DataShards * BlockPerShard) to 64KB
+	if i := c.Object.ReedSolomon.BlockPerShard * c.Object.ReedSolomon.DataShards % (64 << 10); i > 0 {
+		c.Object.ReedSolomon.BlockPerShard = (c.Object.ReedSolomon.BlockPerShard*c.Object.ReedSolomon.DataShards - i + (64 << 10)) / c.Object.ReedSolomon.DataShards
+		logs.Std().Warnf("aligned object.reedsolomon.block-per-shard to %d", c.Object.ReedSolomon.BlockPerShard)
 	}
-	if i := int(c.Object.Replication.BlockSize) % cst.OS.PageSize; i > 0 {
-		c.Object.Replication.BlockSize = datasize.DataSize(int(c.Object.Replication.BlockSize) - i + cst.OS.PageSize)
+	if i := c.Object.Replication.BlockSize % (4 * datasize.KB); i > 0 {
+		c.Object.Replication.BlockSize = c.Object.Replication.BlockSize - i + 4*datasize.KB
+		logs.Std().Warnf("aligned object.replication.block-size to %d", c.Object.Replication.BlockSize)
 	}
 }
 
@@ -70,10 +71,10 @@ func (rp *ReplicationConfig) ToleranceLossNum() int {
 }
 
 type RsConfig struct {
-	DataShards    int  `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`
-	ParityShards  int  `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`
-	BlockPerShard int  `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"16384"` // Auto aligned to power of 4KB
-	RewriteAsync  bool `yaml:"rewrite-async" env:"REWRITE_ASYNC" env-default:"true"`
+	DataShards    int  `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`             // DataShards shards number of data part
+	ParityShards  int  `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`         // ParityShards shards number of parity part
+	BlockPerShard int  `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"16384"` // BlockPerShard auto increase to make (DataShards * BlockPerShard) is multiple of 16KB
+	RewriteAsync  bool `yaml:"rewrite-async" env:"REWRITE_ASYNC" env-default:"true"`      // RewriteAsync store lost shard asynchronously
 }
 
 func (r *RsConfig) AllShards() int {

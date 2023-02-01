@@ -60,7 +60,7 @@ func (o *ObjectService) LocateObject(hash string, shardNum int) ([]string, bool)
 	defer cancel()
 	// generate a unique id as key for receive locates
 	tempId := uuid.NewString()
-	if _, err := o.etcd.Put(ctx, tempId, ""); err != nil {
+	if _, err := o.etcd.Put(ctx, tempId, "LOCK"); err != nil {
 		logs.Std().Error(err)
 		return nil, false
 	}
@@ -68,7 +68,7 @@ func (o *ObjectService) LocateObject(hash string, shardNum int) ([]string, bool)
 	defer o.etcd.Delete(ctx, tempId)
 	wt := o.etcd.Watch(ctx, tempId)
 	locates := make([]string, shardNum)
-	for i := 0; i < pool.Config.Object.ReedSolomon.AllShards(); i++ {
+	for i := 0; i < shardNum; i++ {
 		val := fmt.Sprintf("%s.%d#%s", hash, i, tempId)
 		_, err := o.etcd.Put(ctx, cst.EtcdPrefix.LocationSubKey, val)
 		if err != nil {

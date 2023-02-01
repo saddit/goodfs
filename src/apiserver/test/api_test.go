@@ -34,12 +34,17 @@ func TestBigUpload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if resp.StatusCode == http.StatusOK {
+		bt, _ := io.ReadAll(resp.Body)
+		t.Logf("finish upload since file duplicate:\n %s", string(bt))
+		return
+	}
 	if resp.StatusCode != http.StatusCreated {
 		bt, _ := io.ReadAll(resp.Body)
 		t.Fatal(string(bt))
 	}
 	uploadPath := resp.Header.Get("Location")
-	minPartSize := datasize.MustParse(resp.Header.Get("Min-Part-Size")+"B") * 2
+	minPartSize := datasize.MustParse(resp.Header.Get("Min-Part-Size")) * 2
 	var cursor datasize.DataSize
 	//// first time: upload 3.5 MB and abort
 	for cursor < datasize.MB*3+datasize.KB*512 {

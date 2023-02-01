@@ -55,6 +55,9 @@ func (d DataSize) String() string {
 		i = len(units) - 1
 	}
 	num := float64(d) / math.Pow(Step, float64(i)) * exceed
+	if i == 0 {
+		i = 1
+	}
 	return fmt.Sprintf("%.0f%s", num, units[i].name)
 }
 
