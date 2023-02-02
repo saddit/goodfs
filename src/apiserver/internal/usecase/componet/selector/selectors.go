@@ -23,8 +23,8 @@ func NewSelector(str string) Selector {
 	switch strings.ToLower(str) {
 	case string(Random):
 		sec = &RandomSelector{}
-	case string(MaxFreeDisk):
-		sec = &MaxFreeDiskSelector{}
+	case string(SpaceFirst):
+		sec = &FreeSpaceFirst{}
 	default:
 		log.Panicf("Not allowed selector strategy: %v", str)
 	}

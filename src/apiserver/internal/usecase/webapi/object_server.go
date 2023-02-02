@@ -186,6 +186,30 @@ func PutObject(ip, id string, compress bool, body io.Reader) error {
 	return nil
 }
 
+func PingObject(ip string) error {
+	resp, err := pool.Http.Get(fmt.Sprint("http://", ip, "/ping"))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return nil
+}
+
+func StatObject(ip string) (capacity int64, err error) {
+	resp, err := pool.Http.Get(fmt.Sprint("http://", ip, "/stat"))
+	if err != nil {
+		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		err = response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+		return
+	}
+	capacity = util.ToInt64(resp.Header.Get("Capacity"))
+	return
+}
+
 func objectRest(ip, id string) string {
 	return fmt.Sprintf("http://%s/objects/%s", ip, id)
 }

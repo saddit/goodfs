@@ -40,12 +40,15 @@ func (cv *CallbackValidator) Middleware(c *gin.Context) (bool, error) {
 	if !cv.cfg.Enable {
 		return false, nil
 	}
-	sp := strings.Split(c.Request.Host, ".")
-	if len(sp) == 0 {
-		return false, response.NewError(http.StatusBadRequest, "Host does not contains bucket")
+	var bucket string
+	idx := strings.IndexByte(c.Request.Host, '.')
+	if idx > 0 {
+		bucket = c.Request.Host[:idx]
+	} else if bucket = c.GetHeader("Bucket"); bucket == "" {
+		return false, response.NewError(http.StatusBadRequest, "Host or Header does not contains bucket")
 	}
 	token := &credential.CallbackToken{
-		Bucket:   sp[0],
+		Bucket:   bucket,
 		Region:   c.GetHeader("Region"),
 		FileName: c.Param("name"),
 		Version:  util.ToInt(c.Query("version")),

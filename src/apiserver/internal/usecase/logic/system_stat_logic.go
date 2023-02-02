@@ -53,9 +53,9 @@ func (d SystemStatLogic) Save() error {
 		return err
 	}
 	bt, err := util.EncodeMsgp(&system.Info{
-		DiskInfo:  disk.Info{},
-		MemStatus: memStat,
-		CpuStatus: cpuStat,
+		DiskInfo:  &disk.Info{},
+		MemStatus: &memStat,
+		CpuStatus: &cpuStat,
 	})
 	if err != nil {
 		return err
