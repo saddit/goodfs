@@ -16,17 +16,16 @@ import (
 // CallbackValidator send a http request to validte access, will cost 40ms+ delay
 type CallbackValidator struct {
 	cfg *CallbackConfig
-	cli *http.Client
 }
 
-func NewCallbackValidator(cli *http.Client, cfg *CallbackConfig) *CallbackValidator {
-	return &CallbackValidator{cfg: cfg, cli: cli}
+func NewCallbackValidator(cfg *CallbackConfig) *CallbackValidator {
+	return &CallbackValidator{cfg: cfg}
 }
 
 func (cv *CallbackValidator) Verify(token Credential) error {
 	body := bytes.NewBuffer([]byte(token.GetUsername()))
 	uri := fmt.Sprint(cv.cfg.Url, "?", url.Values(token.GetExtra()).Encode())
-	resp, err := cv.cli.Post(uri, "application/json", body)
+	resp, err := http.Post(uri, "application/json", body)
 	if err != nil {
 		return err
 	}

@@ -26,7 +26,6 @@ func Run(cfg *Config) {
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry).MustRegister().Unregister()
 	// system-info auto saving
 	defer logic.NewSystemStatLogic().StartAutoSave()()
-	defer objService.WatchingObjectServerStat()()
 	//start api server
 	graceful.ListenAndServe(
 		nil,

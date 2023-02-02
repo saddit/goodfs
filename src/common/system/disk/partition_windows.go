@@ -6,7 +6,7 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 )
 
-// DeviceMountPoint returns the map of device (volume) name to it's mount-point
+// DeviceMountPoints returns the map of device (volume) name to it's mount-point
 func DeviceMountPoints() (map[string][]string, error) {
 	parts, err := disk.Partitions(false)
 	if err != nil {
@@ -14,7 +14,7 @@ func DeviceMountPoints() (map[string][]string, error) {
 	}
 	mp := make(map[string][]string, len(parts))
 	for _, part := range parts {
-		mp[name] = append(mp[name], part.Mountpoint)
+		mp[part.Device] = append(mp[part.Device], part.Mountpoint)
 	}
 	return mp, nil
 }

@@ -21,7 +21,6 @@ package disk
 
 import (
 	"common/datasize"
-	"errors"
 	"fmt"
 	"os"
 	"syscall"
@@ -33,7 +32,6 @@ import (
 var (
 	Root = `\`
 )
-
 
 var (
 	kernel32 = windows.NewLazySystemDLL("kernel32.dll")

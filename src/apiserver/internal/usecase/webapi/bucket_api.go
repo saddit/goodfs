@@ -2,24 +2,37 @@ package webapi
 
 import (
 	"apiserver/internal/entity"
-	"apiserver/internal/usecase/pool"
-	"common/performance"
 	"common/request"
 	"common/response"
 	"common/util"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 )
 
+var (
+	dialer = &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 1 * time.Minute,
+	}
+	httpClient = http.Client{Transport: &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialer.DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          200,
+		IdleConnTimeout:       2 * time.Minute,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}}
+)
+
 func GetBucket(ip, name string) (*entity.Bucket, error) {
-	ts := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(ts)) }()
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/bucket/%s", ip, name), nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := pool.Http.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -30,13 +43,11 @@ func GetBucket(ip, name string) (*entity.Bucket, error) {
 }
 
 func PutBucket(ip string, data *entity.Bucket) error {
-	ts := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(ts)) }()
 	req, err := request.JsonReq(http.MethodPut, fmt.Sprintf("http://%s/bucket/%s", ip, data.Name), data)
 	if err != nil {
 		return err
 	}
-	resp, err := pool.Http.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -47,13 +58,11 @@ func PutBucket(ip string, data *entity.Bucket) error {
 }
 
 func PostBucket(ip string, data *entity.Bucket) error {
-	ts := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(ts)) }()
 	req, err := request.JsonReq(http.MethodPost, fmt.Sprintf("http://%s/bucket", ip), data)
 	if err != nil {
 		return err
 	}
-	resp, err := pool.Http.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -64,13 +73,11 @@ func PostBucket(ip string, data *entity.Bucket) error {
 }
 
 func DeleteBucket(ip, name string) error {
-	ts := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(ts)) }()
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://%s/bucket/%s", ip, name), nil)
 	if err != nil {
 		return err
 	}
-	resp, err := pool.Http.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -81,13 +88,11 @@ func DeleteBucket(ip, name string) error {
 }
 
 func ListBucket(ip, name, prefix string, size int) error {
-	ts := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(ts)) }()
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/bucket/%s?page_size=%d&prefix=%s", ip, name, prefix, size), nil)
 	if err != nil {
 		return err
 	}
-	resp, err := pool.Http.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
