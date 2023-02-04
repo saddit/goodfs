@@ -42,7 +42,12 @@ func NewLocalStore(path string) Store {
 	return AvgSumStore(underlying)
 }
 
-func (ls *LocalStore) getBucket(tx *bolt.Tx, rootName []byte, name string) (*bolt.Bucket, error) {
+func (ls *LocalStore) getBucket(tx *bolt.Tx, rootName []byte, name string) (b *bolt.Bucket, e error) {
+	defer func() {
+		if e == nil {
+			b.FillPercent = 0.9
+		}
+	}()
 	if tx.Writable() {
 		root, err := tx.CreateBucketIfNotExists(rootName)
 		if err != nil {
