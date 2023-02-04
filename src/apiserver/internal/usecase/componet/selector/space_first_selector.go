@@ -5,6 +5,7 @@ import (
 	"common/logs"
 	"common/util"
 	"common/util/slices"
+	"math"
 	"sync"
 	"time"
 )
@@ -29,6 +30,8 @@ func (s *FreeSpaceFirst) fetchSpaceInfo(ds []string) {
 		hd, err := webapi.StatObject(ip)
 		if err != nil {
 			logs.Std().Errorf("update space info of %s err: %s", ip, err)
+			// ip is unreachable remove from origin
+			delete(spaceUsedMap, ip)
 			continue
 		}
 		spaceUsedMap[ip] = util.ToInt64(hd.Get("Capacity"))
@@ -37,11 +40,20 @@ func (s *FreeSpaceFirst) fetchSpaceInfo(ds []string) {
 }
 
 func (s *FreeSpaceFirst) Pop(ds []string) ([]string, string) {
-	if time.Since(spaceUpdatedAt) > 5*time.Minute {
+	if time.Since(spaceUpdatedAt) > 1*time.Minute {
 		s.fetchSpaceInfo(ds)
 	}
-	idx := slices.ExtremalIndex(ds, func(max, b string) bool {
-		return spaceUsedMap[b] < spaceUsedMap[max]
+	idx := slices.ExtremalIndex(ds, func(min, b string) bool {
+		minUsed, ok := spaceUsedMap[min]
+		if !ok {
+			minUsed = math.MaxInt64
+		}
+		bUsed, ok := spaceUsedMap[b]
+		if !ok {
+			// skip if b is unreachable
+			return false
+		}
+		return bUsed < minUsed
 	})
 	res := ds[idx]
 	ds[0], ds[idx] = ds[idx], ds[0]
@@ -49,11 +61,20 @@ func (s *FreeSpaceFirst) Pop(ds []string) ([]string, string) {
 }
 
 func (s *FreeSpaceFirst) Select(ds []string) string {
-	if time.Since(spaceUpdatedAt) > 5*time.Minute {
+	if time.Since(spaceUpdatedAt) > 1*time.Minute {
 		s.fetchSpaceInfo(ds)
 	}
-	return slices.Extremal(ds, func(max, b string) bool {
-		return spaceUsedMap[b] < spaceUsedMap[max]
+	return slices.Extremal(ds, func(min, b string) bool {
+		minUsed, ok := spaceUsedMap[min]
+		if !ok {
+			minUsed = math.MaxInt64
+		}
+		bUsed, ok := spaceUsedMap[b]
+		if !ok {
+			// skip if b is unreachable
+			return false
+		}
+		return bUsed < minUsed
 	})
 }
 
