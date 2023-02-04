@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -165,11 +164,11 @@ func DelVersion(ip, name string, verNum int32) error {
 }
 
 func VersionsByHash(ip, hash string) ([]*pb.Version, error) {
-	resp, err := pool.Http.Get(fmt.Sprintf("http://%s/version/list?hash=%s", ip, hash))
+	resp, err := httpClient.Get(fmt.Sprintf("http://%s/version/list?hash=%s", ip, hash))
 	if err != nil {
 		return nil, err
 	}
-	bt, err := ioutil.ReadAll(resp.Body)
+	bt, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
