@@ -13,6 +13,7 @@ import (
 )
 
 func DeleteTmpObject(locate, id string) error {
+	defer perform(true)()
 	req, err := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
 	if err != nil {
 		return err
@@ -28,6 +29,7 @@ func DeleteTmpObject(locate, id string) error {
 }
 
 func PostTmpObject(ip, name string, size int64) (string, error) {
+	defer perform(true)()
 	req, _ := http.NewRequest(http.MethodPost, tempRest(ip, name), nil)
 	req.Header.Add("Size", fmt.Sprint(size))
 	resp, e := httpClient.Do(req)
@@ -45,6 +47,7 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 }
 
 func PatchTmpObject(ip, id string, body io.Reader) error {
+	defer perform(true)()
 	req, _ := http.NewRequest(http.MethodPatch, tempRest(ip, id), body)
 	keepAlive(req)
 	resp, e := httpClient.Do(req)
@@ -65,6 +68,7 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 }
 
 func PutTmpObject(ip, id string, compress bool) error {
+	defer perform(true)()
 	form := make(url.Values)
 	form.Set("compress", fmt.Sprintf("%t", compress))
 	req, _ := http.NewRequest(http.MethodPut, fmt.Sprint(tempRest(ip, id), "?", form.Encode()), nil)
@@ -87,6 +91,7 @@ func PutTmpObject(ip, id string, compress bool) error {
 }
 
 func HeadTmpObject(ip, id string) (int64, error) {
+	defer perform(false)()
 	resp, e := http.Head(tempRest(ip, id))
 	if e != nil {
 		return 0, e
@@ -113,6 +118,7 @@ func HeadTmpObject(ip, id string) (int64, error) {
 }
 
 func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
+	defer perform(false)()
 	req, err := http.NewRequest(http.MethodGet, tempRest(ip, name), nil)
 	if err != nil {
 		return nil, err
@@ -122,6 +128,7 @@ func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
 }
 
 func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Response, error) {
+	defer perform(false)()
 	form := url.Values{}
 	form.Set("compress", fmt.Sprintf("%t", compress))
 	req, err := request.UrlValuesEncode(objectRest(ip, name), &form)
@@ -134,6 +141,7 @@ func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Re
 }
 
 func HeadObject(ip, id string) error {
+	defer perform(false)()
 	resp, err := http.Head(objectRest(ip, id))
 	if err != nil {
 		return err
@@ -148,6 +156,7 @@ func HeadObject(ip, id string) error {
 }
 
 func PutObject(ip, id string, compress bool, body io.Reader) error {
+	defer perform(true)()
 	form := url.Values{}
 	form.Set("compress", fmt.Sprint(compress))
 	req, err := http.NewRequest(http.MethodPut, fmt.Sprint(objectRest(ip, id), "?", form.Encode()), body)
@@ -166,6 +175,7 @@ func PutObject(ip, id string, compress bool, body io.Reader) error {
 }
 
 func PingObject(ip string) error {
+	defer perform(false)()
 	resp, err := httpClient.Get(fmt.Sprint("http://", ip, "/ping"))
 	if err != nil {
 		return err
@@ -177,6 +187,7 @@ func PingObject(ip string) error {
 }
 
 func StatObject(ip string) (hd http.Header, err error) {
+	defer perform(false)()
 	resp, err := httpClient.Get(fmt.Sprint("http://", ip, "/stat"))
 	if err != nil {
 		return
@@ -198,5 +209,5 @@ func tempRest(ip, id string) string {
 }
 
 func keepAlive(req *http.Request) {
-	req.Header.Set("Keep-Alive", "timeout=10, max=10000")
+	req.Header.Set("Keep-Alive", "timeout=62, max=10000")
 }

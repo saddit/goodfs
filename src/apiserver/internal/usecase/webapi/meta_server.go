@@ -15,6 +15,7 @@ import (
 )
 
 func GetMetadata(ip, name string, verNum int32, withExtra bool) (*entity.Metadata, error) {
+	defer perform(false)()
 	resp, err := httpClient.Get(fmt.Sprintf("%s?version=%d&with_extra=%t", metaRest(ip, name), verNum, withExtra))
 	if err != nil {
 		return nil, err
@@ -26,6 +27,7 @@ func GetMetadata(ip, name string, verNum int32, withExtra bool) (*entity.Metadat
 }
 
 func PostMetadata(ip string, data entity.Metadata) error {
+	defer perform(true)()
 	data.Versions = nil
 	bt, err := json.Marshal(&data)
 	if err != nil {
@@ -42,6 +44,7 @@ func PostMetadata(ip string, data entity.Metadata) error {
 }
 
 func PutMetadata(ip string, data entity.Metadata) error {
+	defer perform(true)()
 	data.Versions = nil
 	bt, err := json.Marshal(&data)
 	if err != nil {
@@ -63,6 +66,7 @@ func PutMetadata(ip string, data entity.Metadata) error {
 }
 
 func DelMetadata(ip, name string) error {
+	defer perform(true)()
 	req, err := request.GetDeleteReq(metaRest(ip, name))
 	if err != nil {
 		return err
@@ -78,6 +82,7 @@ func DelMetadata(ip, name string) error {
 }
 
 func ListMetadata(ip, prefix string, pageSize int) ([]*entity.Metadata, error) {
+	defer perform(false)()
 	resp, err := httpClient.Get(metadataListRest(ip, prefix, pageSize))
 	if err != nil {
 		return nil, err
@@ -89,6 +94,7 @@ func ListMetadata(ip, prefix string, pageSize int) ([]*entity.Metadata, error) {
 }
 
 func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
+	defer perform(false)()
 	resp, err := httpClient.Get(versionNumRest(ip, name, verNum))
 	if err != nil {
 		return nil, err
@@ -100,6 +106,7 @@ func GetVersion(ip, name string, verNum int32) (*entity.Version, error) {
 }
 
 func ListVersion(ip, id string, page, pageSize int) ([]byte, int, error) {
+	defer perform(false)()
 	resp, err := httpClient.Get(versionListRest(ip, id, page, pageSize))
 	if err != nil {
 		return nil, 0, err
@@ -114,6 +121,7 @@ func ListVersion(ip, id string, page, pageSize int) ([]byte, int, error) {
 }
 
 func PostVersion(ip, id string, body *entity.Version) (uint64, error) {
+	defer perform(true)()
 	bt, err := json.Marshal(body)
 	if err != nil {
 		return 0, err
@@ -129,6 +137,7 @@ func PostVersion(ip, id string, body *entity.Version) (uint64, error) {
 }
 
 func PutVersion(ip, id string, body *entity.Version) error {
+	defer perform(true)()
 	bt, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -149,6 +158,7 @@ func PutVersion(ip, id string, body *entity.Version) error {
 
 // DelVersion verNum < 0 will delete all version
 func DelVersion(ip, name string, verNum int32) error {
+	defer perform(true)()
 	req, err := request.GetDeleteReq(versionNumRest(ip, name, verNum))
 	if err != nil {
 		return err
@@ -164,6 +174,7 @@ func DelVersion(ip, name string, verNum int32) error {
 }
 
 func VersionsByHash(ip, hash string) ([]*pb.Version, error) {
+	defer perform(false)()
 	resp, err := httpClient.Get(fmt.Sprintf("http://%s/version/list?hash=%s", ip, hash))
 	if err != nil {
 		return nil, err

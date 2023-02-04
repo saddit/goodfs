@@ -3,6 +3,7 @@ package pool
 import (
 	"apiserver/config"
 	"apiserver/internal/usecase/componet/selector"
+	"apiserver/internal/usecase/webapi"
 	"common/logs"
 	"common/performance"
 	"common/registry"
@@ -81,4 +82,5 @@ func initPerform(cfg *performance.Config, logCfg *logs.Config, regCfg *registry.
 		}))
 	}
 	Perform = performance.NewCollector(cfg)
+	webapi.SetPerformanceCollector(Perform)
 }
