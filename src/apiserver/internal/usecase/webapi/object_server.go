@@ -176,7 +176,7 @@ func PingObject(ip string) error {
 	return nil
 }
 
-func StatObject(ip string) (capacity int64, err error) {
+func StatObject(ip string) (hd http.Header, err error) {
 	resp, err := httpClient.Get(fmt.Sprint("http://", ip, "/stat"))
 	if err != nil {
 		return
@@ -185,7 +185,7 @@ func StatObject(ip string) (capacity int64, err error) {
 		err = response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 		return
 	}
-	capacity = util.ToInt64(resp.Header.Get("Capacity"))
+	hd = resp.Header
 	return
 }
 

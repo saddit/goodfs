@@ -3,6 +3,7 @@ package selector
 import (
 	"apiserver/internal/usecase/webapi"
 	"common/logs"
+	"common/util"
 	"common/util/slices"
 	"sync"
 	"time"
@@ -25,12 +26,12 @@ func (s *FreeSpaceFirst) fetchSpaceInfo(ds []string) {
 	}
 	defer spaceLock.Unlock()
 	for _, ip := range ds {
-		size, err := webapi.StatObject(ip)
+		hd, err := webapi.StatObject(ip)
 		if err != nil {
 			logs.Std().Errorf("update space info of %s err: %s", ip, err)
 			continue
 		}
-		spaceUsedMap[ip] = size
+		spaceUsedMap[ip] = util.ToInt64(hd.Get("Capacity"))
 	}
 	spaceUpdatedAt = time.Now()
 }

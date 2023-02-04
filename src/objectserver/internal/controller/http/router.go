@@ -2,11 +2,10 @@ package http
 
 import (
 	"common/logs"
-	"common/util"
 	"net/http"
 	"objectserver/internal/controller/http/objects"
+	"objectserver/internal/controller/http/stat"
 	"objectserver/internal/controller/http/temp"
-	"objectserver/internal/db"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +14,7 @@ type Server struct {
 	*http.Server
 }
 
-func NewHttpServer(addr string, capDB *db.ObjectCapacity) *Server {
+func NewHttpServer(addr string) *Server {
 	r := gin.New()
 	r.Use(gin.LoggerWithWriter(logs.Std().Out), gin.RecoveryWithWriter(logs.Std().Out))
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get)
@@ -30,8 +29,8 @@ func NewHttpServer(addr string, capDB *db.ObjectCapacity) *Server {
 	r.GET("/temp/:name", temp.FilterExpired, temp.Get)
 	r.PUT("/temp/:name", temp.FilterExpired, temp.Put)
 
-	r.GET("/ping", func(c *gin.Context) { c.Status(http.StatusOK) })
-	r.GET("/stat", func(c *gin.Context) { c.Header("Capacity", util.ToString(capDB.Capacity())) })
+	r.GET("/ping", stat.Ping)
+	r.GET("/stat", stat.StatInfo)
 	return &Server{&http.Server{Addr: addr, Handler: r}}
 }
 
