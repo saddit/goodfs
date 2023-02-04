@@ -55,9 +55,6 @@ func (d DataSize) String() string {
 		i = len(units) - 1
 	}
 	num := float64(d) / math.Pow(Step, float64(i)) * exceed
-	if i == 0 {
-		i = 1
-	}
 	return fmt.Sprintf("%.0f%s", num, units[i].name)
 }
 
@@ -67,7 +64,6 @@ type unit struct {
 }
 
 var units = []unit{
-	{"", Byte},
 	{"B", Byte},
 	{"KB", KB},
 	{"MB", MB},
@@ -94,11 +90,15 @@ func Parse(s string) (DataSize, error) {
 	if e != nil {
 		return 0, e
 	}
-	if unit, ok := unitNameMap[res[0][2]]; ok {
-		if IsExceedLimit(num, unit) {
+	// if it has not unit, see as bytes
+	if res[0][2] == "" {
+		return DataSize(num), nil
+	}
+	if u, ok := unitNameMap[res[0][2]]; ok {
+		if IsExceedLimit(num, u) {
 			return 0, fmt.Errorf("data size '%dPB' exceed limit 1024PB", num)
 		}
-		return DataSize(num) * unit, nil
+		return DataSize(num) * u, nil
 	}
 	return 0, fmt.Errorf("data size doesn't support unit '%v'", res[0][2])
 }

@@ -1,6 +1,6 @@
 module objectserver
 
-go 1.18
+go 1.20
 
 require (
 	github.com/allegro/bigcache v1.2.1
