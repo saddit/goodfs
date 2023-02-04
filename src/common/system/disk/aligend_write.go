@@ -31,11 +31,12 @@ func NewAlignedReader(rd io.Reader) *AlignedReader {
 }
 
 func (ar *AlignedReader) Read(p []byte) (n int, err error) {
-	n, err = ar.Reader.Read(p)
-	if err != nil && io.EOF != err{
-		return
+	length := len(p)
+	n, err = io.ReadFull(ar.Reader, p)
+	if err == io.ErrUnexpectedEOF {
+		err = io.EOF
 	}
-	n = math.MinInt(len(p), AlignedSize(n))
+	n = math.MinInt(length, AlignedSize(n))
 	return
 }
 

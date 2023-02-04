@@ -1,6 +1,7 @@
 package http
 
 import (
+	"apiserver/config"
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/pool"
@@ -10,6 +11,7 @@ import (
 	"common/response"
 	"common/util"
 	"common/util/crypto"
+	"fmt"
 
 	"apiserver/internal/usecase/logic"
 	"io"
@@ -30,14 +32,19 @@ func NewBigObjectsController(obj usecase.IObjectService, meta usecase.IMetaServi
 }
 
 func (bc *BigObjectsController) Register(r gin.IRoutes) {
-	r.POST("/big/:name", bc.FilterDuplicates, bc.Post)
+	r.POST("/big/:name", bc.Post)
 	r.HEAD("/big/:token", bc.Head)
 	r.PATCH("/big/:token", bc.Patch)
 }
 
 // Post prepare a resumable uploading
 func (bc *BigObjectsController) Post(g *gin.Context) {
-	req := g.Value("BigPostReq").(*entity.BigPostReq)
+	var req entity.BigPostReq
+	if err := req.Bind(g); err != nil {
+		response.BadRequestErr(err, g).Abort()
+		return
+	}
+	req.Ext = util.GetFileExtOrDefault(req.Name, false, "bytes")
 	bucket, err := bc.bucketRepo.Get(req.Bucket)
 	if err != nil {
 		response.FailErr(err, g)
@@ -47,6 +54,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		response.BadRequestMsg("bucket is readonly", g)
 		return
 	}
+	// configure by bucket config
 	conf := pool.Config.Object.ReedSolomon
 	// if bucket enforce compress
 	if bucket.Compress {
@@ -57,13 +65,40 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		conf.DataShards = bucket.DataShards
 		conf.ParityShards = bucket.ParityShards
 	}
+	// generate a unique hash as version hash
+	uniqueHash := bc.objectService.UniqueHash(req.Hash, entity.ECReedSolomon, conf.DataShards, conf.ParityShards, req.Compress)
+	// filter duplicate
+	locates, ok := bc.objectService.LocateObject(uniqueHash, conf.AllShards())
+	if ok {
+		// finish upload
+		object := &entity.Version{
+			Hash:          uniqueHash,
+			Size:          req.Size,
+			Locate:        locates,
+			DataShards:    conf.DataShards,
+			ParityShards:  conf.ParityShards,
+			ShardSize:     conf.ShardSize(req.Size),
+			StoreStrategy: entity.ECReedSolomon,
+		}
+		verNum, err := bc.finishUpload(req.Name, req.Bucket, object, &conf)
+		if err != nil {
+			response.FailErr(err, g)
+			return
+		}
+		response.OkJson(&entity.PutResp{
+			Name:    req.Name,
+			Bucket:  req.Bucket,
+			Version: verNum,
+		}, g)
+		return
+	}
 	ips := logic.NewDiscovery().SelectDataServer(pool.Balancer, conf.AllShards())
 	if len(ips) == 0 {
 		response.ServiceUnavailableMsg("no available servers", g)
 		return
 	}
 	stream, e := service.NewRSResumablePutStream(&service.StreamOption{
-		Hash:     req.Hash,
+		Hash:     uniqueHash,
 		Name:     req.Name,
 		Size:     req.Size,
 		Bucket:   req.Bucket,
@@ -122,33 +157,45 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 		return
 	}
 	if curSize != req.Range.FirstBytes().First {
-		g.Status(http.StatusRequestedRangeNotSatisfiable)
+		response.Exec(g).
+			Fail(http.StatusRequestedRangeNotSatisfiable, fmt.Sprintf("current size is %d, but range is %v", curSize, req.Range))
 		return
 	}
-	bufSize := int64(stream.Config.BlockSize())
-	for curSize < stream.Size {
-		n, err := io.CopyN(stream, g.Request.Body, bufSize)
-		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
-			response.FailErr(err, g)
-			return
-		}
-		curSize += n
-		if curSize < stream.Size {
-			if n != bufSize {
-				// not read enough, see as interrupted
-				response.Exec(g).Status(http.StatusPartialContent)
-				return
-			}
-		}
+	// copy from request body
+	n, err := io.Copy(stream, g.Request.Body)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		response.FailErr(err, g)
+		return
 	}
-	// over the intended size, its invalid
+	curSize += n
+	if curSize < stream.Size {
+		// not read enough, see as interrupted
+		response.Exec(g).Status(http.StatusPartialContent).
+			Header(gin.H{"Content-Length": curSize})
+		return
+	}
+	// if over the intended size, its invalid
 	if curSize > stream.Size {
 		util.LogErr(stream.Commit(false))
 		response.Exec(g).Fail(http.StatusForbidden, "file exceed the intended size")
 		return
 	}
-	verNum, err := bc.finishUpload(stream)
+	// if curSize equals expected size
+	verNum, err := bc.finishUpload(stream.Name, stream.Bucket, &entity.Version{
+		Hash:          stream.Hash,
+		Size:          stream.Size,
+		Locate:        stream.Locates,
+		DataShards:    stream.Config.DataShards,
+		ParityShards:  stream.Config.ParityShards,
+		ShardSize:     stream.Config.ShardSize(stream.Size),
+		StoreStrategy: entity.ECReedSolomon,
+	}, stream.Config)
 	if err != nil {
+		util.LogErr(stream.Commit(false))
+		response.FailErr(err, g)
+		return
+	}
+	if err = stream.Commit(true); err != nil {
 		response.FailErr(err, g)
 		return
 	}
@@ -159,17 +206,16 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 	}, g)
 }
 
-func (bc *BigObjectsController) finishUpload(stream *service.RSResumablePutStream) (verNum int32, err error) {
+func (bc *BigObjectsController) finishUpload(metaName, bucketName string, v *entity.Version, conf *config.RsConfig) (verNum int32, err error) {
 	// validate digest
 	if pool.Config.Checksum {
 		getStream := service.NewRSTempStream(&service.StreamOption{
-			Hash:    stream.Hash,
-			Size:    stream.Size,
-			Locates: stream.Locates,
-		}, stream.Config)
+			Hash:    v.Hash,
+			Size:    v.Size,
+			Locates: v.Locate,
+		}, conf)
 		hash := crypto.SHA256IO(getStream)
-		if hash != stream.Hash {
-			util.LogErr(stream.Commit(false))
+		if hash != v.Hash {
 			err = response.NewError(http.StatusForbidden, "signature authentication failure")
 			return
 		}
@@ -182,7 +228,7 @@ func (bc *BigObjectsController) finishUpload(stream *service.RSResumablePutStrea
 	go func() {
 		defer dg.Done()
 		var inner error
-		metadata, inner = bc.metaService.GetMetadata(stream.Name, stream.Bucket, int32(entity.VerModeNot), true)
+		metadata, inner = bc.metaService.GetMetadata(metaName, bucketName, int32(entity.VerModeNot), true)
 		if err != nil && !response.CheckErrStatus(404, inner) {
 			dg.Error(inner)
 		}
@@ -193,7 +239,7 @@ func (bc *BigObjectsController) finishUpload(stream *service.RSResumablePutStrea
 	go func() {
 		defer dg.Done()
 		var inner error
-		bucket, inner = bc.bucketRepo.Get(stream.Bucket)
+		bucket, inner = bc.bucketRepo.Get(bucketName)
 		if inner != nil {
 			dg.Error(inner)
 		}
@@ -202,18 +248,9 @@ func (bc *BigObjectsController) finishUpload(stream *service.RSResumablePutStrea
 	if err = dg.WaitUntilError(); err != nil {
 		return
 	}
-	// update metadata
-	verData := &entity.Version{
-		Hash:          stream.Hash,
-		Size:          stream.Size,
-		Locate:        stream.Locates,
-		DataShards:    stream.Config.DataShards,
-		ParityShards:  stream.Config.ParityShards,
-		ShardSize:     stream.Config.ShardSize(stream.Size),
-		StoreStrategy: entity.ECReedSolomon,
-	}
 	if metadata != nil {
-		verNum, err = bc.metaService.AddVersion(stream.Name, stream.Bucket, verData)
+		// update metadata
+		verNum, err = bc.metaService.AddVersion(metadata.Name, metadata.Bucket, v)
 		if err != nil {
 			return
 		}
@@ -221,56 +258,20 @@ func (bc *BigObjectsController) finishUpload(stream *service.RSResumablePutStrea
 			go func() {
 				defer graceful.Recover()
 				// if not err, delete first version
-				inner := bc.metaService.RemoveVersion(stream.Name, stream.Bucket, int32(metadata.FirstVersion))
+				inner := bc.metaService.RemoveVersion(metadata.Name, metadata.Bucket, int32(metadata.FirstVersion))
 				util.LogErrWithPre("remove first version err", inner)
 			}()
 		}
 	} else {
-		// update metadata
+		// add metadata
 		verNum, err = bc.metaService.SaveMetadata(&entity.Metadata{
-			Name:     stream.Name,
-			Bucket:   stream.Bucket,
-			Versions: []*entity.Version{verData},
+			Name:     metaName,
+			Bucket:   bucketName,
+			Versions: []*entity.Version{v},
 		})
 		if err != nil {
 			return
 		}
 	}
-	// commit upload
-	err = stream.Commit(true)
 	return
-}
-
-func (bc *BigObjectsController) FilterDuplicates(g *gin.Context) {
-	var req entity.BigPostReq
-	if err := req.Bind(g); err != nil {
-		response.BadRequestErr(err, g).Abort()
-		return
-	}
-	req.Ext = util.GetFileExtOrDefault(req.Name, false, "bytes")
-	g.Set("BigPostReq", &req)
-	if ips, ok := bc.objectService.LocateObject(req.Hash); ok {
-		ver, err := bc.objectService.StoreObject(&entity.PutReq{
-			Name:   req.Name,
-			Hash:   req.Hash,
-			Bucket: req.Bucket,
-			Ext:    req.Ext,
-			Locate: ips,
-		}, &entity.Metadata{
-			Name: req.Name,
-			Versions: []*entity.Version{{
-				Size: req.Size,
-				Hash: req.Hash,
-			}},
-		})
-		if err != nil {
-			response.FailErr(err, g).Abort()
-			return
-		}
-		response.OkJson(&entity.PutResp{
-			Name:    req.Name,
-			Bucket:  req.Bucket,
-			Version: ver,
-		}, g).Abort()
-	}
 }

@@ -186,7 +186,7 @@ func DeleteFile(path, name string) (int64, error) {
 
 // WriteFileWithSize will append data to file using provided curSize to remove padding of data
 // and work with DIO keeping read data aligned to multiple of 4KB
-func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (int64, error) {
+func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader, bufSize int) (int64, error) {
 	file, err := disk.OpenFileDirectIO(fullPath, os.O_RDWR|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
 		return 0, err
@@ -222,18 +222,23 @@ func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader) (in
 		}
 	}
 	// write file and aligned to power of 4KB
-	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(8*cst.OS.PageSize))
+	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(bufSize))
 }
 
-// WriteFile will append data to file and work with DIO. make sure size of each write is a multiple of 4096 (except last)
-func WriteFile(fullPath string, fileStream io.Reader) (int64, error) {
+// AppendFileAligned will append data to file and work with DIO. make sure size of each write is a multiple of 4096 (except last)
+func AppendFileAligned(fullPath string, fileStream io.Reader, bufSize int) (int64, error) {
 	file, err := disk.OpenFileDirectIO(fullPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
 		return 0, err
 	}
 	defer file.Close()
-	// write file and aligned to power of 4KB
-	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(8*cst.OS.PageSize))
+	// write file and aligned to power of 4KB.
+	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(bufSize))
+}
+
+// WriteFile will append data to file and work with DIO. make sure size of each write is a multiple of 4096 (except last)
+func WriteFile(fullPath string, fileStream io.Reader) (int64, error) {
+	return AppendFileAligned(fullPath, fileStream, 2*cst.OS.PageSize)
 }
 
 // GetFileCompress read s2-compressed file and work with COW
@@ -255,19 +260,24 @@ func GetFileCompress(fullPath string, offset, size int64, writer io.Writer) erro
 	return err
 }
 
-// WriteFileCompress append data to file compressing by s2 and work with COW
-func WriteFileCompress(fullPath string, fileStream io.Reader) (int64, error) {
+// AppendFileCompress append data to file compressing by s2 and work with COW
+func AppendFileCompress(fullPath string, fileStream io.Reader, bufSize int) (int64, error) {
 	file, err := os.OpenFile(fullPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
 		return 0, err
 	}
 	defer file.Close()
 	wt := s2.NewWriter(file, s2.WriterBetterCompression())
-	n, err := io.CopyBuffer(wt, fileStream, make([]byte, 8*cst.OS.PageSize))
+	n, err := io.CopyBuffer(wt, fileStream, make([]byte, bufSize))
 	if err != nil {
 		return n, err
 	}
 	return n, wt.Close()
+}
+
+// WriteFileCompress append data to file compressing by s2 and work with COW
+func WriteFileCompress(fullPath string, fileStream io.Reader) (int64, error) {
+	return AppendFileCompress(fullPath, fileStream, 2*cst.OS.PageSize)
 }
 
 // CommitFile move the temp file to storage path with a new name

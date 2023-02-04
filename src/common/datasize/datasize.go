@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var suffixRegex = regexp.MustCompile(`([.\d]+)(B|KB|MB|GB|TB|PB)`)
+var suffixRegex = regexp.MustCompile(`^(\d+)(B|KB|MB|GB|TB|PB)?$`)
 
 type DataSize uint64
 
@@ -90,11 +90,15 @@ func Parse(s string) (DataSize, error) {
 	if e != nil {
 		return 0, e
 	}
-	if unit, ok := unitNameMap[res[0][2]]; ok {
-		if IsExceedLimit(num, unit) {
+	// if it has not unit, see as bytes
+	if res[0][2] == "" {
+		return DataSize(num), nil
+	}
+	if u, ok := unitNameMap[res[0][2]]; ok {
+		if IsExceedLimit(num, u) {
 			return 0, fmt.Errorf("data size '%dPB' exceed limit 1024PB", num)
 		}
-		return DataSize(num) * unit, nil
+		return DataSize(num) * u, nil
 	}
 	return 0, fmt.Errorf("data size doesn't support unit '%v'", res[0][2])
 }

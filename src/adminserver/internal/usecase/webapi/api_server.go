@@ -100,7 +100,7 @@ func CreateBucket(ip string, b *entity.Bucket, token string) error {
 }
 
 func UpdateBucket(ip string, b *entity.Bucket, token string) error {
-	req, err := request.JsonReq(http.MethodPut, fmt.Sprintf("%s://%s/v1/bucket/%s", GetSchema(), b.Name, ip), b)
+	req, err := request.JsonReq(http.MethodPut, fmt.Sprintf("%s://%s/v1/bucket/%s", GetSchema(), ip, b.Name), b)
 	if err != nil {
 		return err
 	}

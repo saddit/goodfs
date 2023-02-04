@@ -2,6 +2,7 @@ package temp
 
 import (
 	"common/cache"
+	"common/cst"
 	"common/response"
 	"common/util"
 	xmath "common/util/math"
@@ -25,7 +26,8 @@ func Patch(g *gin.Context) {
 		return
 	}
 	// only allow last chuck may not be power of 4KB
-	if _, err := service.WriteFile(ti.FullPath, g.Request.Body); err != nil {
+	// for reading from network-io, using too big buffer is not wise.
+	if _, err := service.AppendFileAligned(ti.FullPath, g.Request.Body, 2*cst.OS.PageSize); err != nil {
 		response.FailErr(err, g)
 		return
 	}

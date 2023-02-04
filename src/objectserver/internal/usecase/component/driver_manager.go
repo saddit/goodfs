@@ -105,7 +105,7 @@ func (dm *DriverManager) FindMountPath(path string) (string, error) {
 	for _, d := range dm.drivers {
 		fullPath := filepath.Join(d.MountPoint, path)
 		if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
-			return path, nil
+			return fullPath, nil
 		}
 	}
 	return "", os.ErrNotExist

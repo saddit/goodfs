@@ -33,7 +33,6 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService, b repo.IBucket
 	{
 		NewObjectsController(o, m).Register(authRoute)
 		NewBigObjectsController(o, m, b).Register(authRoute)
-		NewLocateController(o).Register(authRoute)
 		NewMetadataController(m).Register(authRoute)
 		NewSecurityController().Register(authRoute)
 		NewBucketController(b).Register(authRoute)
