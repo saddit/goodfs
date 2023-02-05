@@ -29,6 +29,7 @@ type RaftWrapper struct {
 	Enabled             bool
 	isLeader            bool
 	leaderChangedEvents []IRaftLeaderChanged
+	closeRaftStore      func()
 }
 
 func NewDisabledRaft() *RaftWrapper {
@@ -50,7 +51,7 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM) *RaftWrapper {
 		Level:  hclog.LevelFromString(c.LogLevel),
 		Output: logs.Std().Out,
 	})
-	ldb, sdb, fss := newRaftStore(baseDir)
+	ldb, sdb, fss, closeFn := newRaftStore(baseDir)
 
 	r, err := raft.NewRaft(c, fsm, ldb, sdb, fss, manager.Transport())
 	if err != nil {
@@ -84,19 +85,20 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM) *RaftWrapper {
 	}
 
 	rw := &RaftWrapper{
-		Raft:    r,
-		Manager: manager,
-		ID:      cfg.ID,
-		Address: util.GetHostPort(cfg.Port),
-		Enabled: true,
+		Raft:           r,
+		Manager:        manager,
+		ID:             cfg.ID,
+		Address:        util.GetHostPort(cfg.Port),
+		Enabled:        true,
+		closeRaftStore: closeFn,
 	}
 	rw.subscribeLeaderCh()
 
 	return rw
 }
 
-//newRaftStore init storage
-func newRaftStore(baseDir string) (raft.LogStore, raft.StableStore, raft.SnapshotStore) {
+// newRaftStore init storage
+func newRaftStore(baseDir string) (raft.LogStore, raft.StableStore, raft.SnapshotStore, func()) {
 	if err := os.MkdirAll(baseDir, cst.OS.ModeUser); err != nil {
 		panic(err)
 	}
@@ -116,7 +118,14 @@ func newRaftStore(baseDir string) (raft.LogStore, raft.StableStore, raft.Snapsho
 		panic(fmt.Errorf(`raft.NewFileSnapshotStore(%q, ...): %v`, baseDir, err))
 	}
 
-	return ldb, sdb, fss
+	return ldb, sdb, fss, func() {
+		defer func() {
+			util.LogErr(sdb.Close())
+		}()
+		defer func() {
+			util.LogErr(ldb.Close())
+		}()
+	}
 }
 
 func (rw *RaftWrapper) subscribeLeaderCh() {
@@ -180,6 +189,7 @@ func (rw *RaftWrapper) Close() error {
 	if !rw.Enabled {
 		return nil
 	}
+	defer rw.closeRaftStore()
 	raftLog.Info("shutdown raft..")
 	return rw.Raft.Shutdown().Error()
 }
