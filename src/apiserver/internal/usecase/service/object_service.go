@@ -60,10 +60,6 @@ func (o *ObjectService) LocateObject(hash string, shardNum int) ([]string, bool)
 	defer cancel()
 	// generate a unique id as key for receive locates
 	tempId := uuid.NewString()
-	if _, err := o.etcd.Put(ctx, tempId, "LOCK"); err != nil {
-		logs.Std().Error(err)
-		return nil, false
-	}
 	// remove this key after all
 	defer o.etcd.Delete(ctx, tempId)
 	wt := o.etcd.Watch(ctx, tempId)
