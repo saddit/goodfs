@@ -30,7 +30,7 @@ func NewHttpServer(addr string) *Server {
 	r.PUT("/temp/:name", temp.FilterExpired, temp.Put)
 
 	r.GET("/ping", stat.Ping)
-	r.GET("/stat", stat.StatInfo)
+	r.GET("/stat", stat.Info)
 	return &Server{&http.Server{Addr: addr, Handler: r}}
 }
 

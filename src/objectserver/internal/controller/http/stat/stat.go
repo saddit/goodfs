@@ -13,13 +13,12 @@ func Ping(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func StatInfo(c *gin.Context) {
+func Info(c *gin.Context) {
 	hd := gin.H{
 		"Capacity": pool.ObjectCap.Capacity(),
 	}
 	if info, err := disk.GetAverageIOStats(); err == nil {
 		hd["Weighted-IO"] = info.WeightedIO
-		hd["IO-Time"] = info.IoTime
 	}
 	response.OkHeader(hd, c)
 }
