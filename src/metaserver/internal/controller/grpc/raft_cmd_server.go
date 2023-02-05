@@ -29,7 +29,7 @@ func NewRaftCmdServer(r *raftimpl.RaftWrapper) pb.RaftCmdServer {
 	return &RaftCmdServerImpl{rf: r}
 }
 
-func (rcs *RaftCmdServerImpl) Bootstrap(ctx context.Context, req *pb.BootstrapReq) (*pb.Response, error) {
+func (rcs *RaftCmdServerImpl) Bootstrap(_ context.Context, req *pb.BootstrapReq) (*pb.Response, error) {
 	// init voter
 	var raftCfg raft.Configuration
 	if len(req.GetServices()) > 0 {
@@ -109,6 +109,7 @@ func (rcs *RaftCmdServerImpl) LeaveCluster(ctx context.Context, _ *pb.EmptyReq) 
 		if err := rcs.rf.Raft.LeadershipTransfer().Error(); err != nil {
 			return nil, fmt.Errorf("transfer leader error: %w", err)
 		}
+		return okResp, nil
 	}
 	leaderAddr := rcs.rf.LeaderAddress()
 	cc, err := grpc.Dial(leaderAddr, grpc.WithInsecure())

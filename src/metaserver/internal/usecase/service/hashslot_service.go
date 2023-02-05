@@ -59,7 +59,7 @@ func (h *HashSlotService) OnLeaderChanged(isLeader bool) {
 			info = &hashslot.SlotInfo{Slots: h.Cfg.Slots, GroupID: h.Cfg.StoreID}
 			logs.Std().Infof("no exist slots, init from config: id=%s, slots=%s", info.GroupID, info.Slots)
 		}
-		if err := logic.NewHashSlot().SaveToEtcd(h.Cfg.StoreID, info); err != nil {
+		if err = logic.NewHashSlot().SaveToEtcd(h.Cfg.StoreID, info); err != nil {
 			logs.Std().Error(err)
 			return
 		}
@@ -223,7 +223,7 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 }
 
 // AutoMigrate migrate data
-//TODO(perf): multi goroutine
+// TODO(perf): multi goroutine
 func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) error {
 	if ok, host, _ := h.Store.GetMigrateTo(); !ok || host != toLoc.GetHost() {
 		return fmt.Errorf("no ready to migrate to %s", toLoc.GetHost())

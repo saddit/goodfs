@@ -27,4 +27,5 @@ type RaftData struct {
 	Version  *Version  `msg:"version" json:"version,omitempty"`
 	Metadata *Metadata `msg:"metadata" json:"metadata,omitempty"`
 	Bucket   *Bucket   `msg:"bucket" json:"bucket,omitempty"`
+	Batch    bool      `msg:"-" json:"-"`
 }

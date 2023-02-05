@@ -1,6 +1,6 @@
 module metaserver
 
-go 1.18
+go 1.20
 
 require (
 	github.com/Jille/raft-grpc-transport v1.1.1

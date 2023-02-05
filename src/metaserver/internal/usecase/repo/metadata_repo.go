@@ -111,7 +111,7 @@ func (m *MetadataRepo) AddVersionWithSequence(id string, data *entity.Version) e
 	}
 	go func() {
 		defer graceful.Recover()
-		err := m.Cache.AddVersion(id, data)
+		err := m.Cache.AddVersionWithSequence(id, data)
 		util.LogErrWithPre("metadata cache", err)
 	}()
 	return nil
@@ -338,4 +338,32 @@ func (m *MetadataRepo) GetExtra(id string) (*entity.Extra, error) {
 	var i entity.Extra
 	err := m.MainDB.View(logic.GetExtra(id, &i))
 	return &i, err
+}
+
+const lastAppliedIndexKey = "go.dfs.metadata.special.lastAppliedIndexKey"
+
+func (m *MetadataRepo) LastAppliedIndex() (uint64, error) {
+	var r uint64
+	err := m.MainDB.View(func(tx *bolt.Tx) error {
+		specBuc := tx.Bucket(util.StrToBytes(lastAppliedIndexKey))
+		if specBuc == nil {
+			return nil
+		}
+		r = specBuc.Sequence()
+		return nil
+	})
+	return r, err
+}
+
+func (m *MetadataRepo) ApplyIndex(i uint64) error {
+	return m.MainDB.View(func(tx *bolt.Tx) error {
+		specBuc, err := tx.CreateBucketIfNotExists(util.StrToBytes(lastAppliedIndexKey))
+		if err != nil {
+			return err
+		}
+		if i > specBuc.Sequence() {
+			return specBuc.SetSequence(i)
+		}
+		return nil
+	})
 }

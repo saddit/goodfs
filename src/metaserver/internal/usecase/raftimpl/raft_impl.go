@@ -103,29 +103,17 @@ func newRaftStore(baseDir string) (raft.LogStore, raft.StableStore, raft.Snapsho
 		panic(err)
 	}
 
-	ldb, err := boltdb.NewBoltStore(filepath.Join(baseDir, "logs.dat"))
+	rdb, err := boltdb.NewBoltStore(filepath.Join(baseDir, "raft-store.dat"))
 	if err != nil {
 		panic(fmt.Errorf(`boltdb.NewBoltStore(%q): %v`, filepath.Join(baseDir, "logs.dat"), err))
 	}
 
-	sdb, err := boltdb.NewBoltStore(filepath.Join(baseDir, "stable.dat"))
-	if err != nil {
-		panic(fmt.Errorf(`boltdb.NewBoltStore(%q): %v`, filepath.Join(baseDir, "stable.dat"), err))
-	}
-
-	fss, err := raft.NewFileSnapshotStore(baseDir, 3, os.Stderr)
+	fss, err := raft.NewFileSnapshotStore(baseDir, 2, logs.Std().Out)
 	if err != nil {
 		panic(fmt.Errorf(`raft.NewFileSnapshotStore(%q, ...): %v`, baseDir, err))
 	}
 
-	return ldb, sdb, fss, func() {
-		defer func() {
-			util.LogErr(sdb.Close())
-		}()
-		defer func() {
-			util.LogErr(ldb.Close())
-		}()
-	}
+	return rdb, rdb, fss, func() { util.LogErr(rdb.Close()) }
 }
 
 func (rw *RaftWrapper) subscribeLeaderCh() {
