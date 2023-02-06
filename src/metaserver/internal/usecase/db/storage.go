@@ -76,13 +76,15 @@ func (s *Storage) checkPath(path string) error {
 	dir := filepath.Dir(path)
 	_, err := os.Stat(dir)
 	if err != nil && os.IsNotExist(err) {
-		return os.Mkdir(dir, cst.OS.ModeUser)
+		return os.MkdirAll(dir, cst.OS.ModeUser)
 	}
 	return err
 }
 
 func (s *Storage) Open(path string) error {
-	s.checkPath(path)
+	if err := s.checkPath(path); err != nil {
+		return err
+	}
 	cur, err := bolt.Open(path, cst.OS.ModeUser, &bolt.Options{
 		Timeout:      12 * time.Second,
 		NoGrowSync:   false,

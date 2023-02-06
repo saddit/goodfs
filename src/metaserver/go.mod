@@ -1,6 +1,6 @@
 module metaserver
 
-go 1.20
+go 1.19
 
 require (
 	github.com/Jille/raft-grpc-transport v1.1.1
@@ -56,7 +56,7 @@ require (
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-msgpack v1.1.5 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
-	github.com/hashicorp/raft v1.3.9
+	github.com/hashicorp/raft v1.3.11
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect

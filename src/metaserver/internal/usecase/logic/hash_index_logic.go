@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bytes"
 	"common/util"
 	"fmt"
 	"metaserver/internal/usecase"
@@ -53,6 +54,25 @@ func (HashIndexLogic) GetIndex(hash string, res *[]string) usecase.TxFunc {
 			return nil
 		})
 		return err
+	}
+}
+
+func (HashIndexLogic) GetIndexPrefix(hash string, prefix []byte, res *[][]byte) usecase.TxFunc {
+	*res = [][]byte{}
+	return func(tx *bolt.Tx) error {
+		buk := GetIndexBucket(tx, HashIndexName)
+		if buk == nil {
+			return nil
+		}
+		hashBuk := buk.Bucket(util.StrToBytes(hash))
+		if hashBuk == nil {
+			return nil
+		}
+		cur := hashBuk.Cursor()
+		for k, v := cur.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = cur.Next() {
+			*res= append(*res, v)
+		}
+		return nil
 	}
 }
 

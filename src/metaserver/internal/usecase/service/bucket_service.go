@@ -4,6 +4,7 @@ import (
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
+	"time"
 )
 
 type BucketService struct {
@@ -19,6 +20,8 @@ func (b *BucketService) Create(bucket *entity.Bucket) error {
 	if bucket == nil {
 		return usecase.ErrNilData
 	}
+	bucket.CreateTime = time.Now().UnixMilli()
+	bucket.UpdateTime = bucket.CreateTime
 	if ok, resp := b.ApplyRaft(&entity.RaftData{
 		Type:   entity.LogInsert,
 		Dest:   entity.DestBucket,
@@ -51,6 +54,7 @@ func (b *BucketService) Update(bucket *entity.Bucket) error {
 	if bucket == nil {
 		return usecase.ErrNilData
 	}
+	bucket.UpdateTime = time.Now().UnixMilli()
 	if ok, resp := b.ApplyRaft(&entity.RaftData{
 		Type:   entity.LogUpdate,
 		Dest:   entity.DestBucket,

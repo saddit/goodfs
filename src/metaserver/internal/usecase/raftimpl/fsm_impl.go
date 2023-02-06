@@ -104,15 +104,13 @@ func (f *FSMImpl) Apply(lg *raft.Log) (r any) {
 	if err != nil {
 		return err
 	}
-
+	fsmLog.Debugf("apply log index %d and recorded index is %d", lg.Index, lst)
 	if lst >= lg.Index {
 		return nil
 	}
 
 	defer func() {
-		if !util.InstanceOf[error](r) {
-			util.LogErr(f.snapshot.ApplyIndex(lg.Index))
-		}
+		util.LogErrWithPre("fsm record apply index", f.snapshot.ApplyIndex(lg.Index))
 	}()
 
 	var data entity.RaftData
@@ -154,6 +152,7 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 			res[i] = fmt.Errorf("drop recieved fsmLog type %v", lg.Type)
 			continue
 		}
+		fsmLog.Debugf("apply log index %d and recorded index is %d", lg.Index, lst)
 		if lst >= lg.Index {
 			continue
 		}
@@ -176,7 +175,7 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 			res[i] = ErrNotFound
 		}
 
-		if lg.Index > maxIndex && res[i] == nil {
+		if lg.Index > maxIndex {
 			maxIndex = lg.Index
 		}
 	}
@@ -189,7 +188,7 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 			}
 		}
 	} else {
-		util.LogErr(f.snapshot.ApplyIndex(maxIndex))
+		util.LogErrWithPre("fsm record apply index", f.snapshot.ApplyIndex(maxIndex))
 	}
 	return res
 }

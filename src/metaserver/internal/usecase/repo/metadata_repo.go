@@ -356,7 +356,7 @@ func (m *MetadataRepo) LastAppliedIndex() (uint64, error) {
 }
 
 func (m *MetadataRepo) ApplyIndex(i uint64) error {
-	return m.MainDB.View(func(tx *bolt.Tx) error {
+	return m.MainDB.Update(func(tx *bolt.Tx) error {
 		specBuc, err := tx.CreateBucketIfNotExists(util.StrToBytes(lastAppliedIndexKey))
 		if err != nil {
 			return err

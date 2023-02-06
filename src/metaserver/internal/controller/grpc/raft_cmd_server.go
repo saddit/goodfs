@@ -42,6 +42,9 @@ func (rcs *RaftCmdServerImpl) Bootstrap(_ context.Context, req *pb.BootstrapReq)
 			})
 		}
 	} else {
+		if len(pool.Config.Cluster.Nodes) == 0 {
+			pool.Config.Cluster.Nodes = append(pool.Config.Cluster.Nodes, fmt.Sprint(pool.Config.Cluster, ",", pool.GrpcHostPort))
+		}
 		raftCfg.Servers = make([]raft.Server, len(pool.Config.Cluster.Nodes))
 		for i, v := range pool.Config.Cluster.Nodes {
 			idAndAddr := strings.Split(v, ",")
