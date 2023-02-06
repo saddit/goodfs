@@ -19,7 +19,8 @@ func Run(cfg *config.Config) {
 	// init services
 	metaRepo := repo.NewMetadataRepo(pool.Storage, repo.NewMetadataCacheRepo(pool.Cache))
 	bucketRepo := repo.NewBucketRepo(pool.Storage, repo.NewBucketCacheRepo(pool.Cache))
-	raftWrapper := raftimpl.NewRaft(cfg.Cluster, raftimpl.NewFSM(metaRepo, bucketRepo))
+	fsm := raftimpl.NewFSM(metaRepo, repo.NewBatchRepo(pool.Storage), bucketRepo, repo.NewBatchBucketRepo(pool.Storage), metaRepo)
+	raftWrapper := raftimpl.NewRaft(cfg.Cluster, fsm)
 	bucketServ := service.NewBucketService(bucketRepo, raftWrapper)
 	metaService := service.NewMetadataService(
 		metaRepo,

@@ -142,9 +142,10 @@ func initCache(cfg *config.CacheConfig) {
 func initEtcd(cfg *etcd.Config) {
 	var e error
 	if Etcd, e = clientv3.New(clientv3.Config{
-		Endpoints: cfg.Endpoint,
-		Username:  cfg.Username,
-		Password:  cfg.Password,
+		Endpoints:           cfg.Endpoint,
+		Username:            cfg.Username,
+		Password:            cfg.Password,
+		PermitWithoutStream: true,
 	}); e != nil {
 		panic(e)
 	}

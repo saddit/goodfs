@@ -1,6 +1,7 @@
 package repo
 
 import (
+	bolt "go.etcd.io/bbolt"
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
@@ -54,4 +55,22 @@ func (br *BatchMetaRepo) UpdateMetadata(name string, data *entity.Metadata) erro
 
 func (br *BatchMetaRepo) RemoveMetadata(name string) error {
 	return br.Storage.DB().Batch(logic.RemoveMeta(name))
+}
+
+func (br *BatchMetaRepo) AddVersionWithSequence(id string, data *entity.Version) error {
+	if data == nil {
+		return usecase.ErrNilData
+	}
+	return br.Storage.DB().Batch(logic.AddVerWithSequence(id, data))
+}
+
+func (br *BatchMetaRepo) RemoveAllVersion(id string) error {
+	return br.Storage.DB().Batch(func(tx *bolt.Tx) error {
+		// delete bucket
+		if err := logic.RemoveVersionBucket(tx, id); err != nil {
+			return err
+		}
+		// create an empty bucket
+		return logic.CreateVersionBucket(tx, id)
+	})
 }

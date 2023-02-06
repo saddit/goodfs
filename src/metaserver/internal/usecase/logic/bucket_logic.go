@@ -7,7 +7,6 @@ import (
 	bolt "go.etcd.io/bbolt"
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
-	"time"
 )
 
 const (
@@ -74,8 +73,6 @@ func (b *BucketCrud) Create(data *entity.Bucket) usecase.TxFunc {
 		if root.Get(key) != nil {
 			return usecase.ErrExists
 		}
-		data.CreateTime = time.Now().UnixMilli()
-		data.UpdateTime = data.CreateTime
 		v, err := util.EncodeMsgp(data)
 		if err != nil {
 			return err
@@ -103,12 +100,11 @@ func (b *BucketCrud) Update(data *entity.Bucket) usecase.TxFunc {
 		if err := b.Get(data.Name, &origin)(tx); err != nil {
 			return err
 		}
-		if data.UpdateTime < origin.UpdateTime {
+		if data.UpdateTime <= origin.UpdateTime {
 			return usecase.ErrOldData
 		}
 		root, _ := b.getBucketBucket(tx)
 		// update content
-		data.UpdateTime = time.Now().UnixMilli()
 		data.CreateTime = origin.CreateTime
 		v, err := util.EncodeMsgp(data)
 		if err != nil {

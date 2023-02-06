@@ -45,9 +45,10 @@ func initEtcd(cfg *config.Config) {
 	// init etcd
 	var err error
 	Etcd, err = clientv3.New(clientv3.Config{
-		Endpoints: cfg.Etcd.Endpoint,
-		Username:  cfg.Etcd.Username,
-		Password:  cfg.Etcd.Password,
+		Endpoints:           cfg.Etcd.Endpoint,
+		Username:            cfg.Etcd.Username,
+		Password:            cfg.Etcd.Password,
+		PermitWithoutStream: true,
 	})
 	if err != nil {
 		panic(err)
@@ -82,11 +83,11 @@ func initPerform(cfg *performance.Config, logCfg *logs.Config, regCfg *registry.
 		if localPath == "" {
 			localPath = os.TempDir()
 		}
-		performance.SetLocalStore(performance.NewLocalStore(filepath.Join(localPath, regCfg.ServerID + ".perf")))
+		performance.SetLocalStore(performance.NewLocalStore(filepath.Join(localPath, regCfg.ServerID+".perf")))
 	}
 	if cfg.Store == performance.Remote {
 		performance.SetRemoteStore(performance.NewEtcdStore(etcd, []string{
-			performance.ActionRead, 
+			performance.ActionRead,
 			performance.ActionWrite,
 		}))
 	}

@@ -56,9 +56,10 @@ func initLog(cfg *logs.Config) {
 func initEtcd(cfg *etcd.Config) {
 	var err error
 	Etcd, err = clientv3.New(clientv3.Config{
-		Endpoints: cfg.Endpoint,
-		Username:  cfg.Username,
-		Password:  cfg.Password,
+		Endpoints:           cfg.Endpoint,
+		Username:            cfg.Username,
+		Password:            cfg.Password,
+		PermitWithoutStream: true,
 	})
 	if err != nil {
 		panic(fmt.Errorf("create etcd client err: %v", err))

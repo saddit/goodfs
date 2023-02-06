@@ -42,6 +42,8 @@ type (
 		UpdateVersion(string, *entity.Version) error
 		RemoveMetadata(string) error
 		RemoveVersion(string, uint64) error
+		AddVersionWithSequence(string, *entity.Version) error
+		RemoveAllVersion(string) error
 	}
 
 	ReadableRepo interface {
@@ -71,6 +73,8 @@ type (
 	SnapshotManager interface {
 		Snapshot() (SnapshotTx, error)
 		Restore(io.Reader) error
+		LastAppliedIndex() (uint64, error)
+		ApplyIndex(i uint64) error
 	}
 
 	RaftApply interface {
@@ -80,9 +84,6 @@ type (
 	IMetadataRepo interface {
 		WritableRepo
 		ReadableRepo
-		SnapshotManager
-		AddVersionWithSequence(string, *entity.Version) error
-		RemoveAllVersion(string) error
 		GetLastVersionNumber(id string) uint64
 		GetFirstVersionNumber(id string) uint64
 		ForeachVersionBytes(string, func([]byte) bool)
@@ -121,13 +122,22 @@ type (
 		WritableRepo
 	}
 
-	BucketRepo interface {
-		Foreach(func(k []byte, v []byte) error) error
-		Get(name string) (*entity.Bucket, error)
-		GetBytes(name string) ([]byte, error)
+	BucketWritableRepo interface {
 		Create(bucket *entity.Bucket) error
 		Remove(name string) error
 		Update(bucket *entity.Bucket) error
+	}
+
+	BatchBucketRepo interface {
+		BucketWritableRepo
+		Sync() error
+	}
+
+	BucketRepo interface {
+		BucketWritableRepo
+		Foreach(func(k []byte, v []byte) error) error
+		Get(name string) (*entity.Bucket, error)
+		GetBytes(name string) ([]byte, error)
 		List(prefix string, size int) ([]*entity.Bucket, int, error)
 	}
 

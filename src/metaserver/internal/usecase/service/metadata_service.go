@@ -8,6 +8,7 @@ import (
 	usecase "metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
 	"strings"
+	"time"
 )
 
 type MetadataService struct {
@@ -22,6 +23,8 @@ func NewMetadataService(repo usecase.IMetadataRepo, batch usecase.IBatchMetaRepo
 }
 
 func (m *MetadataService) AddMetadata(id string, data *entity.Metadata) error {
+	data.CreateTime = time.Now().UnixMilli()
+	data.UpdateTime = data.CreateTime
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogInsert,
 		Dest:     entity.DestMetadata,
@@ -38,6 +41,7 @@ func (m *MetadataService) AddMetadata(id string, data *entity.Metadata) error {
 }
 
 func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, error) {
+	data.Ts = time.Now().UnixMilli()
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:    entity.LogInsert,
 		Dest:    entity.DestVersion,
@@ -76,6 +80,7 @@ func (m *MetadataService) ReceiveVersion(name string, data *entity.Version) erro
 }
 
 func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) error {
+	data.UpdateTime = time.Now().UnixMilli()
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogUpdate,
 		Dest:     entity.DestMetadata,
@@ -92,6 +97,7 @@ func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) err
 }
 
 func (m *MetadataService) UpdateVersion(name string, ver int, data *entity.Version) error {
+	data.Ts = time.Now().UnixMilli()
 	data.Sequence = uint64(ver)
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogUpdate,
@@ -249,6 +255,7 @@ func (m *MetadataService) UpdateLocates(name string, version int, locates []stri
 	if err != nil {
 		return err
 	}
+	ver.Ts = time.Now().UnixMilli()
 	ver.Locate = locates
 	return m.UpdateVersion(name, version, ver)
 }
