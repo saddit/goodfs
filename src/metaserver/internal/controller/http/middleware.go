@@ -37,6 +37,7 @@ func CheckKeySlot(c *gin.Context) {
 			response.Exec(c).
 				Header(gin.H{"Location": other}).
 				Fail(http.StatusSeeOther, "see other")
+			c.Abort()
 			return
 		}
 	}

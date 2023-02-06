@@ -123,17 +123,21 @@ func (e *EtcdDiscovery) GetServiceByAddr(name, addr string, rpc bool) (id string
 }
 
 func (e *EtcdDiscovery) GetServiceMappingWith(name string, rpc bool, master bool) map[string]string {
-	s := util.IfElse(master, "master", "slave")
-	c := util.IfElse(master, "slave", "master")
 	service := util.IfElse(rpc, e.rpcService, e.httpService)
 	if sl, ok := service[name]; ok {
 		res := make(map[string]string, len(sl.data))
 		for k, v := range sl.copy() {
-			sp := strings.Split(v, "/")
-			sp = strings.Split(sp[len(sp)-1], "_")
-			// if it doesn't have any suffix means standalone
-			if strings.HasSuffix(v, s) || !strings.HasSuffix(v, c) {
-				res[sp[0]] = k
+			idx := strings.LastIndexByte(v, '/')
+			if idx < 0 {
+				continue
+			}
+			sid, role, contains := strings.Cut(v[idx+1:], "_")
+			if master {
+				if !contains || role == "master" {
+					res[sid] = k
+				}
+			} else if role == "slave" {
+				res[sid] = k
 			}
 		}
 		return res
@@ -143,7 +147,7 @@ func (e *EtcdDiscovery) GetServiceMappingWith(name string, rpc bool, master bool
 
 func (e *EtcdDiscovery) GetServicesWith(name string, rpc bool, master bool) []string {
 	mp := e.GetServiceMappingWith(name, rpc, master)
-	arr := make([]string, len(mp))
+	arr := make([]string, 0, len(mp))
 	for _, v := range mp {
 		arr = append(arr, v)
 	}

@@ -120,3 +120,11 @@ func (m *MetadataCacheRepo) RemoveVersion(s string, u uint64) error {
 	m.cache.Delete(fmt.Sprint(MetaCachePrefix, s, logic.Sep, u))
 	return nil
 }
+
+func (m *MetadataCacheRepo) RemoveAllVersion(string) error {
+	panic("not impl RemoveAllVersion")
+}
+
+func (m *MetadataCacheRepo) AddVersionWithSequence(s string, version *entity.Version) error {
+	return m.AddVersion(s, version)
+}

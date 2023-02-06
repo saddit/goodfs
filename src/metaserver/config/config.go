@@ -39,7 +39,7 @@ func (c *Config) initialize(filePath string) {
 	c.filePath, _ = filepath.Abs(filePath)
 	c.persistLock = &sync.Mutex{}
 	if c.DataDir == "" {
-		c.DataPath = os.TempDir()
+		c.DataDir = os.TempDir()
 	}
 	c.DataPath = filepath.Join(c.DataDir, c.Registry.ServerID)
 	c.Cluster.StoreDir = c.DataPath
