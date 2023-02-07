@@ -40,9 +40,10 @@ func initEtcd(cfg *config.Config) {
 	// init etcd
 	var err error
 	Etcd, err = clientv3.New(clientv3.Config{
-		Endpoints: cfg.Etcd.Endpoint,
-		Username:  cfg.Etcd.Username,
-		Password:  cfg.Etcd.Password,
+		Endpoints:           cfg.Etcd.Endpoint,
+		Username:            cfg.Etcd.Username,
+		Password:            cfg.Etcd.Password,
+		PermitWithoutStream: true,
 	})
 	if err != nil {
 		panic(err)

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
-	"time"
-
 	"common/util"
 
 	bolt "go.etcd.io/bbolt"
@@ -40,8 +38,6 @@ func AddMeta(id string, data *entity.Metadata) TxFunc {
 		if root.Get(key) != nil {
 			return ErrExists
 		}
-		data.CreateTime = time.Now().UnixMilli()
-		data.UpdateTime = data.CreateTime
 		// encode data
 		bt, err := util.EncodeMsgp(data)
 		if err != nil {
@@ -82,12 +78,11 @@ func UpdateMeta(id string, data *entity.Metadata) TxFunc {
 		if err := getMeta(root, id, &origin); err != nil {
 			return err
 		}
-		if data.UpdateTime < origin.UpdateTime {
+		if data.UpdateTime <= origin.UpdateTime {
 			return ErrOldData
 		}
-		// update data
-		data.UpdateTime = time.Now().UnixMilli()
 		data.Bucket = origin.Bucket
+		data.CreateTime = origin.CreateTime
 		bt, err := util.EncodeMsgp(data)
 		if err != nil {
 			return err
@@ -137,7 +132,6 @@ func AddVerWithSequence(name string, data *entity.Version) TxFunc {
 			if bucket.Get(key) != nil {
 				return ErrExists
 			}
-			data.Ts = time.Now().UnixMilli()
 			bt, err := util.EncodeMsgp(data)
 			if err != nil {
 				return err
@@ -159,7 +153,6 @@ func AddVer(name string, data *entity.Version) TxFunc {
 			if bucket.Get(key) != nil {
 				return ErrExists
 			}
-			data.Ts = time.Now().UnixMilli()
 			bt, err := util.EncodeMsgp(data)
 			if err != nil {
 				return err
@@ -202,13 +195,12 @@ func UpdateVer(id string, data *entity.Version) TxFunc {
 				return err
 			}
 			// validate timestamp
-			if data.Ts < origin.Ts {
+			if data.Ts <= origin.Ts {
 				return ErrOldData
 			}
 			// those updating are not allowed
 			data.Sequence = origin.Sequence
 			data.Hash = origin.Hash
-			data.Ts = time.Now().UnixMilli()
 			// encode to bytes
 			bt, err := util.EncodeMsgp(data)
 			if err != nil {

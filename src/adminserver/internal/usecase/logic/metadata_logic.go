@@ -47,7 +47,7 @@ func NewMetadata() *Metadata {
 }
 
 func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, error) {
-	servers := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
+	servers := pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, false, true)
 	lst := make([]*entity.Metadata, 0, len(servers)*cond.Page*cond.PageSize)
 	if len(servers) == 0 {
 		logs.Std().Warn("not found any metadata server")
@@ -102,7 +102,7 @@ func (m *Metadata) VersionPaging(cond MetadataCond, token string) ([]byte, int, 
 }
 
 func (m *Metadata) BucketPaging(cond *BucketCond) ([]*entity.Bucket, int, error) {
-	servers := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
+	servers := pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, false, true)
 	lst := make([]*entity.Bucket, 0, len(servers)*cond.Page*cond.PageSize)
 	if len(servers) == 0 {
 		logs.Std().Warn("not found any metadata server")
