@@ -20,11 +20,13 @@ type Selector interface {
 func NewSelector(str string) Selector {
 	var sec Selector
 
-	switch strings.ToLower(str) {
-	case string(Random):
+	switch SelectStrategy(strings.ToLower(str)) {
+	case Random:
 		sec = &RandomSelector{}
-	case string(MaxFreeDisk):
-		sec = &MaxFreeDiskSelector{}
+	case SpaceFirst:
+		sec = &FreeSpaceFirst{}
+	case IOFirst:
+		sec = &WeightedIOFirst{}
 	default:
 		log.Panicf("Not allowed selector strategy: %v", str)
 	}

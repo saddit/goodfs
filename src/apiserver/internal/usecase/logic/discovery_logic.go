@@ -27,7 +27,7 @@ func (Discovery) GetMetaServers(master bool) []string {
 
 func (Discovery) SelectMetaByGroupID(gid string, defLoc string) string {
 	if cache, ok := groupIPCache[gid]; ok && time.Now().Unix()-cache.updatedAt < expiredDuration {
-		return selector.NewIPSelector(pool.Balancer, cache.ips).Select()
+		return selector.NewIPSelector(&selector.RandomSelector{}, cache.ips).Select()
 	}
 	resp, err := pool.Etcd.Get(context.Background(), cst.EtcdPrefix.FmtPeersInfo(gid, ""), clientv3.WithPrefix())
 	if err != nil || len(resp.Kvs) == 0 {
@@ -50,7 +50,7 @@ func (Discovery) SelectMetaByGroupID(gid string, defLoc string) string {
 		return defLoc
 	}
 	groupIPCache[gid] = &ipCache{ips, time.Now().Unix()}
-	return selector.NewIPSelector(pool.Balancer, ips).Select()
+	return selector.NewIPSelector(&selector.RandomSelector{}, ips).Select()
 }
 
 func (d Discovery) SelectDataServer(sel selector.Selector, size int) []string {

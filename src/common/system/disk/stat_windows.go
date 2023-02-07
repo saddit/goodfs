@@ -21,7 +21,6 @@ package disk
 
 import (
 	"common/datasize"
-	"errors"
 	"fmt"
 	"os"
 	"syscall"
@@ -33,7 +32,6 @@ import (
 var (
 	Root = `\`
 )
-
 
 var (
 	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
@@ -112,9 +110,4 @@ func GetInfo(path string) (info Info, err error) {
 	info.Ffree = uint64(lpNumberOfFreeClusters)
 
 	return info, nil
-}
-
-// GetAllDrivesIOStats returns IO stats of all drives found in the machine
-func GetAllDrivesIOStats() (info AllDrivesIOStats, err error) {
-	return nil, errors.New("operation unsupported")
 }

@@ -1,8 +1,6 @@
 package webapi
 
 import (
-	"apiserver/internal/usecase/pool"
-	"common/performance"
 	"common/request"
 	"common/response"
 	"common/util"
@@ -12,17 +10,15 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 )
 
 func DeleteTmpObject(locate, id string) error {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(true)()
 	req, err := http.NewRequest(http.MethodDelete, tempRest(locate, id), nil)
 	if err != nil {
 		return err
 	}
-	resp, err := pool.Http.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -33,11 +29,10 @@ func DeleteTmpObject(locate, id string) error {
 }
 
 func PostTmpObject(ip, name string, size int64) (string, error) {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(true)()
 	req, _ := http.NewRequest(http.MethodPost, tempRest(ip, name), nil)
 	req.Header.Add("Size", fmt.Sprint(size))
-	resp, e := pool.Http.Do(req)
+	resp, e := httpClient.Do(req)
 	if e != nil {
 		return "", e
 	}
@@ -52,11 +47,10 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 }
 
 func PatchTmpObject(ip, id string, body io.Reader) error {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(true)()
 	req, _ := http.NewRequest(http.MethodPatch, tempRest(ip, id), body)
 	keepAlive(req)
-	resp, e := pool.Http.Do(req)
+	resp, e := httpClient.Do(req)
 	if e != nil {
 		return e
 	}
@@ -74,13 +68,12 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 }
 
 func PutTmpObject(ip, id string, compress bool) error {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(true)()
 	form := make(url.Values)
 	form.Set("compress", fmt.Sprintf("%t", compress))
 	req, _ := http.NewRequest(http.MethodPut, fmt.Sprint(tempRest(ip, id), "?", form.Encode()), nil)
 	keepAlive(req)
-	resp, e := pool.Http.Do(req)
+	resp, e := httpClient.Do(req)
 	if e != nil {
 		return e
 	}
@@ -98,8 +91,7 @@ func PutTmpObject(ip, id string, compress bool) error {
 }
 
 func HeadTmpObject(ip, id string) (int64, error) {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(false)()
 	resp, e := http.Head(tempRest(ip, id))
 	if e != nil {
 		return 0, e
@@ -126,19 +118,17 @@ func HeadTmpObject(ip, id string) (int64, error) {
 }
 
 func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(false)()
 	req, err := http.NewRequest(http.MethodGet, tempRest(ip, name), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Size", util.ToString(size))
-	return pool.Http.Do(req)
+	return httpClient.Do(req)
 }
 
 func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Response, error) {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(false)()
 	form := url.Values{}
 	form.Set("compress", fmt.Sprintf("%t", compress))
 	req, err := request.UrlValuesEncode(objectRest(ip, name), &form)
@@ -147,12 +137,11 @@ func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Re
 	}
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
 	req.Header.Set("Size", util.ToString(size))
-	return pool.Http.Do(req)
+	return httpClient.Do(req)
 }
 
 func HeadObject(ip, id string) error {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionRead, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(false)()
 	resp, err := http.Head(objectRest(ip, id))
 	if err != nil {
 		return err
@@ -167,8 +156,7 @@ func HeadObject(ip, id string) error {
 }
 
 func PutObject(ip, id string, compress bool, body io.Reader) error {
-	st := time.Now()
-	defer func() { pool.Perform.PutAsync(performance.ActionWrite, performance.KindOfHTTP, time.Since(st)) }()
+	defer perform(true)()
 	form := url.Values{}
 	form.Set("compress", fmt.Sprint(compress))
 	req, err := http.NewRequest(http.MethodPut, fmt.Sprint(objectRest(ip, id), "?", form.Encode()), body)
@@ -176,7 +164,7 @@ func PutObject(ip, id string, compress bool, body io.Reader) error {
 		return err
 	}
 	keepAlive(req)
-	resp, err := pool.Http.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -184,6 +172,32 @@ func PutObject(ip, id string, compress bool, body io.Reader) error {
 		return fmt.Errorf("put object id=%v, return code=%v, %s", id, resp.Status, response.MessageFromJSONBody(resp.Body))
 	}
 	return nil
+}
+
+func PingObject(ip string) error {
+	defer perform(false)()
+	resp, err := httpClient.Get(fmt.Sprint("http://", ip, "/ping"))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	return nil
+}
+
+func StatObject(ip string) (hd http.Header, err error) {
+	defer perform(false)()
+	resp, err := httpClient.Get(fmt.Sprint("http://", ip, "/stat"))
+	if err != nil {
+		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		err = response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+		return
+	}
+	hd = resp.Header
+	return
 }
 
 func objectRest(ip, id string) string {
@@ -195,5 +209,5 @@ func tempRest(ip, id string) string {
 }
 
 func keepAlive(req *http.Request) {
-	req.Header.Set("Keep-Alive", "timeout=10, max=10000")
+	req.Header.Set("Keep-Alive", "timeout=62, max=10000")
 }

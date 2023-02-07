@@ -43,6 +43,10 @@ func (oc *ObjectCapacity) SubCap(i int64) {
 	oc.currentCap.Sub(uint64(i))
 }
 
+func (oc *ObjectCapacity) Capacity() int64 {
+	return int64(oc.currentCap.Load())
+}
+
 func (oc *ObjectCapacity) StartAutoSave(interval time.Duration) func() {
 	ctx, cancel := context.WithCancel(context.Background())
 	tk := time.NewTicker(interval)
