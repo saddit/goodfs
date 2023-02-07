@@ -9,9 +9,10 @@ import (
 //go:generate msgp -tests=false
 
 type Info struct {
-	DiskInfo  disk.Info  `json:"diskInfo" msg:",inline"`
-	MemStatus mem.Status `json:"memStatus" msg:",inline"`
-	CpuStatus cpu.Stat   `json:"cpuStatus" msg:",inline"`
+	DiskInfo  *disk.Info    `json:"diskInfo" msg:",inline"`
+	MemStatus *mem.Status   `json:"memStatus" msg:",inline"`
+	CpuStatus *cpu.Stat     `json:"cpuStatus" msg:",inline"`
+	IoStatus  *disk.IOStats `json:"ioStatus" msg:",inline"`
 }
 
 func NewInfo(diskPath string) (*Info, error) {
@@ -27,9 +28,14 @@ func NewInfo(diskPath string) (*Info, error) {
 	if err != nil {
 		return nil, err
 	}
+	ioStat, err := disk.GetAverageIOStats()
+	if err != nil {
+		return nil, err
+	}
 	return &Info{
-		diskInfo,
-		memStat,
-		cpuStat,
+		DiskInfo:  &diskInfo,
+		MemStatus: &memStat,
+		CpuStatus: &cpuStat,
+		IoStatus:  ioStat,
 	}, nil
 }

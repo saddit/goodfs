@@ -271,6 +271,10 @@ func ToUint64(str string) uint64 {
 	return i
 }
 
+func ToInt32(str string) int32 {
+	return int32(ToInt(str))
+}
+
 func UnmarshalPtrFromIO[T any](body io.ReadCloser) (*T, error) {
 	defer body.Close()
 	var data T

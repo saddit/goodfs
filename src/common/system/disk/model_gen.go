@@ -8,66 +8,23 @@ import (
 
 // DecodeMsg implements msgp.Decodable
 func (z *DevID) DecodeMsg(dc *msgp.Reader) (err error) {
-	var field []byte
-	_ = field
-	var zb0001 uint32
-	zb0001, err = dc.ReadMapHeader()
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	for zb0001 > 0 {
-		zb0001--
-		field, err = dc.ReadMapKeyPtr()
+	{
+		var zb0001 string
+		zb0001, err = dc.ReadString()
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
 		}
-		switch msgp.UnsafeString(field) {
-		case "Major":
-			z.Major, err = dc.ReadUint32()
-			if err != nil {
-				err = msgp.WrapError(err, "Major")
-				return
-			}
-		case "Minor":
-			z.Minor, err = dc.ReadUint32()
-			if err != nil {
-				err = msgp.WrapError(err, "Minor")
-				return
-			}
-		default:
-			err = dc.Skip()
-			if err != nil {
-				err = msgp.WrapError(err)
-				return
-			}
-		}
+		(*z) = DevID(zb0001)
 	}
 	return
 }
 
 // EncodeMsg implements msgp.Encodable
 func (z DevID) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 2
-	// write "Major"
-	err = en.Append(0x82, 0xa5, 0x4d, 0x61, 0x6a, 0x6f, 0x72)
+	err = en.WriteString(string(z))
 	if err != nil {
-		return
-	}
-	err = en.WriteUint32(z.Major)
-	if err != nil {
-		err = msgp.WrapError(err, "Major")
-		return
-	}
-	// write "Minor"
-	err = en.Append(0xa5, 0x4d, 0x69, 0x6e, 0x6f, 0x72)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint32(z.Minor)
-	if err != nil {
-		err = msgp.WrapError(err, "Minor")
+		err = msgp.WrapError(err)
 		return
 	}
 	return
@@ -76,53 +33,20 @@ func (z DevID) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z DevID) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 2
-	// string "Major"
-	o = append(o, 0x82, 0xa5, 0x4d, 0x61, 0x6a, 0x6f, 0x72)
-	o = msgp.AppendUint32(o, z.Major)
-	// string "Minor"
-	o = append(o, 0xa5, 0x4d, 0x69, 0x6e, 0x6f, 0x72)
-	o = msgp.AppendUint32(o, z.Minor)
+	o = msgp.AppendString(o, string(z))
 	return
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
 func (z *DevID) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var field []byte
-	_ = field
-	var zb0001 uint32
-	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	for zb0001 > 0 {
-		zb0001--
-		field, bts, err = msgp.ReadMapKeyZC(bts)
+	{
+		var zb0001 string
+		zb0001, bts, err = msgp.ReadStringBytes(bts)
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
 		}
-		switch msgp.UnsafeString(field) {
-		case "Major":
-			z.Major, bts, err = msgp.ReadUint32Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Major")
-				return
-			}
-		case "Minor":
-			z.Minor, bts, err = msgp.ReadUint32Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Minor")
-				return
-			}
-		default:
-			bts, err = msgp.Skip(bts)
-			if err != nil {
-				err = msgp.WrapError(err)
-				return
-			}
-		}
+		(*z) = DevID(zb0001)
 	}
 	o = bts
 	return
@@ -130,7 +54,7 @@ func (z *DevID) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z DevID) Msgsize() (s int) {
-	s = 1 + 6 + msgp.Uint32Size + 6 + msgp.Uint32Size
+	s = msgp.StringPrefixSize + len(string(z))
 	return
 }
 
@@ -152,106 +76,58 @@ func (z *IOStats) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
-		case "ReadIOs":
-			z.ReadIOs, err = dc.ReadUint64()
+		case "read_bytes":
+			err = z.ReadBytes.DecodeMsg(dc)
 			if err != nil {
-				err = msgp.WrapError(err, "ReadIOs")
+				err = msgp.WrapError(err, "ReadBytes")
 				return
 			}
-		case "ReadMerges":
-			z.ReadMerges, err = dc.ReadUint64()
+		case "write_bytes":
+			err = z.WriteBytes.DecodeMsg(dc)
 			if err != nil {
-				err = msgp.WrapError(err, "ReadMerges")
+				err = msgp.WrapError(err, "WriteBytes")
 				return
 			}
-		case "ReadSectors":
-			z.ReadSectors, err = dc.ReadUint64()
+		case "read_count":
+			z.ReadCount, err = dc.ReadUint64()
 			if err != nil {
-				err = msgp.WrapError(err, "ReadSectors")
+				err = msgp.WrapError(err, "ReadCount")
 				return
 			}
-		case "ReadTicks":
-			z.ReadTicks, err = dc.ReadUint64()
+		case "write_count":
+			z.WriteCount, err = dc.ReadUint64()
 			if err != nil {
-				err = msgp.WrapError(err, "ReadTicks")
+				err = msgp.WrapError(err, "WriteCount")
 				return
 			}
-		case "WriteIOs":
-			z.WriteIOs, err = dc.ReadUint64()
+		case "read_time":
+			z.ReadTime, err = dc.ReadUint64()
 			if err != nil {
-				err = msgp.WrapError(err, "WriteIOs")
+				err = msgp.WrapError(err, "ReadTime")
 				return
 			}
-		case "WriteMerges":
-			z.WriteMerges, err = dc.ReadUint64()
+		case "write_time":
+			z.WriteTime, err = dc.ReadUint64()
 			if err != nil {
-				err = msgp.WrapError(err, "WriteMerges")
+				err = msgp.WrapError(err, "WriteTime")
 				return
 			}
-		case "WriteSectors":
-			z.WriteSectors, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "WriteSectors")
-				return
-			}
-		case "WriteTicks":
-			z.WriteTicks, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "WriteTicks")
-				return
-			}
-		case "CurrentIOs":
+		case "current_ios":
 			z.CurrentIOs, err = dc.ReadUint64()
 			if err != nil {
 				err = msgp.WrapError(err, "CurrentIOs")
 				return
 			}
-		case "TotalTicks":
-			z.TotalTicks, err = dc.ReadUint64()
+		case "io_time":
+			z.IoTime, err = dc.ReadUint64()
 			if err != nil {
-				err = msgp.WrapError(err, "TotalTicks")
+				err = msgp.WrapError(err, "IoTime")
 				return
 			}
-		case "ReqTicks":
-			z.ReqTicks, err = dc.ReadUint64()
+		case "weighted_io":
+			z.WeightedIO, err = dc.ReadUint64()
 			if err != nil {
-				err = msgp.WrapError(err, "ReqTicks")
-				return
-			}
-		case "DiscardIOs":
-			z.DiscardIOs, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "DiscardIOs")
-				return
-			}
-		case "DiscardMerges":
-			z.DiscardMerges, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "DiscardMerges")
-				return
-			}
-		case "DiscardSectors":
-			z.DiscardSectors, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "DiscardSectors")
-				return
-			}
-		case "DiscardTicks":
-			z.DiscardTicks, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "DiscardTicks")
-				return
-			}
-		case "FlushIOs":
-			z.FlushIOs, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "FlushIOs")
-				return
-			}
-		case "FlushTicks":
-			z.FlushTicks, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "FlushTicks")
+				err = msgp.WrapError(err, "WeightedIO")
 				return
 			}
 		default:
@@ -267,89 +143,69 @@ func (z *IOStats) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *IOStats) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 17
-	// write "ReadIOs"
-	err = en.Append(0xde, 0x0, 0x11, 0xa7, 0x52, 0x65, 0x61, 0x64, 0x49, 0x4f, 0x73)
+	// map header, size 9
+	// write "read_bytes"
+	err = en.Append(0x89, 0xaa, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73)
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.ReadIOs)
+	err = z.ReadBytes.EncodeMsg(en)
 	if err != nil {
-		err = msgp.WrapError(err, "ReadIOs")
+		err = msgp.WrapError(err, "ReadBytes")
 		return
 	}
-	// write "ReadMerges"
-	err = en.Append(0xaa, 0x52, 0x65, 0x61, 0x64, 0x4d, 0x65, 0x72, 0x67, 0x65, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.ReadMerges)
-	if err != nil {
-		err = msgp.WrapError(err, "ReadMerges")
-		return
-	}
-	// write "ReadSectors"
-	err = en.Append(0xab, 0x52, 0x65, 0x61, 0x64, 0x53, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73)
+	// write "write_bytes"
+	err = en.Append(0xab, 0x77, 0x72, 0x69, 0x74, 0x65, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73)
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.ReadSectors)
+	err = z.WriteBytes.EncodeMsg(en)
 	if err != nil {
-		err = msgp.WrapError(err, "ReadSectors")
+		err = msgp.WrapError(err, "WriteBytes")
 		return
 	}
-	// write "ReadTicks"
-	err = en.Append(0xa9, 0x52, 0x65, 0x61, 0x64, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.ReadTicks)
-	if err != nil {
-		err = msgp.WrapError(err, "ReadTicks")
-		return
-	}
-	// write "WriteIOs"
-	err = en.Append(0xa8, 0x57, 0x72, 0x69, 0x74, 0x65, 0x49, 0x4f, 0x73)
+	// write "read_count"
+	err = en.Append(0xaa, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74)
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.WriteIOs)
+	err = en.WriteUint64(z.ReadCount)
 	if err != nil {
-		err = msgp.WrapError(err, "WriteIOs")
+		err = msgp.WrapError(err, "ReadCount")
 		return
 	}
-	// write "WriteMerges"
-	err = en.Append(0xab, 0x57, 0x72, 0x69, 0x74, 0x65, 0x4d, 0x65, 0x72, 0x67, 0x65, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.WriteMerges)
-	if err != nil {
-		err = msgp.WrapError(err, "WriteMerges")
-		return
-	}
-	// write "WriteSectors"
-	err = en.Append(0xac, 0x57, 0x72, 0x69, 0x74, 0x65, 0x53, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73)
+	// write "write_count"
+	err = en.Append(0xab, 0x77, 0x72, 0x69, 0x74, 0x65, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74)
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.WriteSectors)
+	err = en.WriteUint64(z.WriteCount)
 	if err != nil {
-		err = msgp.WrapError(err, "WriteSectors")
+		err = msgp.WrapError(err, "WriteCount")
 		return
 	}
-	// write "WriteTicks"
-	err = en.Append(0xaa, 0x57, 0x72, 0x69, 0x74, 0x65, 0x54, 0x69, 0x63, 0x6b, 0x73)
+	// write "read_time"
+	err = en.Append(0xa9, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x74, 0x69, 0x6d, 0x65)
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.WriteTicks)
+	err = en.WriteUint64(z.ReadTime)
 	if err != nil {
-		err = msgp.WrapError(err, "WriteTicks")
+		err = msgp.WrapError(err, "ReadTime")
 		return
 	}
-	// write "CurrentIOs"
-	err = en.Append(0xaa, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x49, 0x4f, 0x73)
+	// write "write_time"
+	err = en.Append(0xaa, 0x77, 0x72, 0x69, 0x74, 0x65, 0x5f, 0x74, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.WriteTime)
+	if err != nil {
+		err = msgp.WrapError(err, "WriteTime")
+		return
+	}
+	// write "current_ios"
+	err = en.Append(0xab, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x5f, 0x69, 0x6f, 0x73)
 	if err != nil {
 		return
 	}
@@ -358,84 +214,24 @@ func (z *IOStats) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "CurrentIOs")
 		return
 	}
-	// write "TotalTicks"
-	err = en.Append(0xaa, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x54, 0x69, 0x63, 0x6b, 0x73)
+	// write "io_time"
+	err = en.Append(0xa7, 0x69, 0x6f, 0x5f, 0x74, 0x69, 0x6d, 0x65)
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.TotalTicks)
+	err = en.WriteUint64(z.IoTime)
 	if err != nil {
-		err = msgp.WrapError(err, "TotalTicks")
+		err = msgp.WrapError(err, "IoTime")
 		return
 	}
-	// write "ReqTicks"
-	err = en.Append(0xa8, 0x52, 0x65, 0x71, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.ReqTicks)
-	if err != nil {
-		err = msgp.WrapError(err, "ReqTicks")
-		return
-	}
-	// write "DiscardIOs"
-	err = en.Append(0xaa, 0x44, 0x69, 0x73, 0x63, 0x61, 0x72, 0x64, 0x49, 0x4f, 0x73)
+	// write "weighted_io"
+	err = en.Append(0xab, 0x77, 0x65, 0x69, 0x67, 0x68, 0x74, 0x65, 0x64, 0x5f, 0x69, 0x6f)
 	if err != nil {
 		return
 	}
-	err = en.WriteUint64(z.DiscardIOs)
+	err = en.WriteUint64(z.WeightedIO)
 	if err != nil {
-		err = msgp.WrapError(err, "DiscardIOs")
-		return
-	}
-	// write "DiscardMerges"
-	err = en.Append(0xad, 0x44, 0x69, 0x73, 0x63, 0x61, 0x72, 0x64, 0x4d, 0x65, 0x72, 0x67, 0x65, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.DiscardMerges)
-	if err != nil {
-		err = msgp.WrapError(err, "DiscardMerges")
-		return
-	}
-	// write "DiscardSectors"
-	err = en.Append(0xae, 0x44, 0x69, 0x73, 0x63, 0x61, 0x72, 0x64, 0x53, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.DiscardSectors)
-	if err != nil {
-		err = msgp.WrapError(err, "DiscardSectors")
-		return
-	}
-	// write "DiscardTicks"
-	err = en.Append(0xac, 0x44, 0x69, 0x73, 0x63, 0x61, 0x72, 0x64, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.DiscardTicks)
-	if err != nil {
-		err = msgp.WrapError(err, "DiscardTicks")
-		return
-	}
-	// write "FlushIOs"
-	err = en.Append(0xa8, 0x46, 0x6c, 0x75, 0x73, 0x68, 0x49, 0x4f, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.FlushIOs)
-	if err != nil {
-		err = msgp.WrapError(err, "FlushIOs")
-		return
-	}
-	// write "FlushTicks"
-	err = en.Append(0xaa, 0x46, 0x6c, 0x75, 0x73, 0x68, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.FlushTicks)
-	if err != nil {
-		err = msgp.WrapError(err, "FlushTicks")
+		err = msgp.WrapError(err, "WeightedIO")
 		return
 	}
 	return
@@ -444,58 +240,42 @@ func (z *IOStats) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *IOStats) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 17
-	// string "ReadIOs"
-	o = append(o, 0xde, 0x0, 0x11, 0xa7, 0x52, 0x65, 0x61, 0x64, 0x49, 0x4f, 0x73)
-	o = msgp.AppendUint64(o, z.ReadIOs)
-	// string "ReadMerges"
-	o = append(o, 0xaa, 0x52, 0x65, 0x61, 0x64, 0x4d, 0x65, 0x72, 0x67, 0x65, 0x73)
-	o = msgp.AppendUint64(o, z.ReadMerges)
-	// string "ReadSectors"
-	o = append(o, 0xab, 0x52, 0x65, 0x61, 0x64, 0x53, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73)
-	o = msgp.AppendUint64(o, z.ReadSectors)
-	// string "ReadTicks"
-	o = append(o, 0xa9, 0x52, 0x65, 0x61, 0x64, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	o = msgp.AppendUint64(o, z.ReadTicks)
-	// string "WriteIOs"
-	o = append(o, 0xa8, 0x57, 0x72, 0x69, 0x74, 0x65, 0x49, 0x4f, 0x73)
-	o = msgp.AppendUint64(o, z.WriteIOs)
-	// string "WriteMerges"
-	o = append(o, 0xab, 0x57, 0x72, 0x69, 0x74, 0x65, 0x4d, 0x65, 0x72, 0x67, 0x65, 0x73)
-	o = msgp.AppendUint64(o, z.WriteMerges)
-	// string "WriteSectors"
-	o = append(o, 0xac, 0x57, 0x72, 0x69, 0x74, 0x65, 0x53, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73)
-	o = msgp.AppendUint64(o, z.WriteSectors)
-	// string "WriteTicks"
-	o = append(o, 0xaa, 0x57, 0x72, 0x69, 0x74, 0x65, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	o = msgp.AppendUint64(o, z.WriteTicks)
-	// string "CurrentIOs"
-	o = append(o, 0xaa, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x49, 0x4f, 0x73)
+	// map header, size 9
+	// string "read_bytes"
+	o = append(o, 0x89, 0xaa, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73)
+	o, err = z.ReadBytes.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "ReadBytes")
+		return
+	}
+	// string "write_bytes"
+	o = append(o, 0xab, 0x77, 0x72, 0x69, 0x74, 0x65, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73)
+	o, err = z.WriteBytes.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WriteBytes")
+		return
+	}
+	// string "read_count"
+	o = append(o, 0xaa, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74)
+	o = msgp.AppendUint64(o, z.ReadCount)
+	// string "write_count"
+	o = append(o, 0xab, 0x77, 0x72, 0x69, 0x74, 0x65, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74)
+	o = msgp.AppendUint64(o, z.WriteCount)
+	// string "read_time"
+	o = append(o, 0xa9, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x74, 0x69, 0x6d, 0x65)
+	o = msgp.AppendUint64(o, z.ReadTime)
+	// string "write_time"
+	o = append(o, 0xaa, 0x77, 0x72, 0x69, 0x74, 0x65, 0x5f, 0x74, 0x69, 0x6d, 0x65)
+	o = msgp.AppendUint64(o, z.WriteTime)
+	// string "current_ios"
+	o = append(o, 0xab, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x5f, 0x69, 0x6f, 0x73)
 	o = msgp.AppendUint64(o, z.CurrentIOs)
-	// string "TotalTicks"
-	o = append(o, 0xaa, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	o = msgp.AppendUint64(o, z.TotalTicks)
-	// string "ReqTicks"
-	o = append(o, 0xa8, 0x52, 0x65, 0x71, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	o = msgp.AppendUint64(o, z.ReqTicks)
-	// string "DiscardIOs"
-	o = append(o, 0xaa, 0x44, 0x69, 0x73, 0x63, 0x61, 0x72, 0x64, 0x49, 0x4f, 0x73)
-	o = msgp.AppendUint64(o, z.DiscardIOs)
-	// string "DiscardMerges"
-	o = append(o, 0xad, 0x44, 0x69, 0x73, 0x63, 0x61, 0x72, 0x64, 0x4d, 0x65, 0x72, 0x67, 0x65, 0x73)
-	o = msgp.AppendUint64(o, z.DiscardMerges)
-	// string "DiscardSectors"
-	o = append(o, 0xae, 0x44, 0x69, 0x73, 0x63, 0x61, 0x72, 0x64, 0x53, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73)
-	o = msgp.AppendUint64(o, z.DiscardSectors)
-	// string "DiscardTicks"
-	o = append(o, 0xac, 0x44, 0x69, 0x73, 0x63, 0x61, 0x72, 0x64, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	o = msgp.AppendUint64(o, z.DiscardTicks)
-	// string "FlushIOs"
-	o = append(o, 0xa8, 0x46, 0x6c, 0x75, 0x73, 0x68, 0x49, 0x4f, 0x73)
-	o = msgp.AppendUint64(o, z.FlushIOs)
-	// string "FlushTicks"
-	o = append(o, 0xaa, 0x46, 0x6c, 0x75, 0x73, 0x68, 0x54, 0x69, 0x63, 0x6b, 0x73)
-	o = msgp.AppendUint64(o, z.FlushTicks)
+	// string "io_time"
+	o = append(o, 0xa7, 0x69, 0x6f, 0x5f, 0x74, 0x69, 0x6d, 0x65)
+	o = msgp.AppendUint64(o, z.IoTime)
+	// string "weighted_io"
+	o = append(o, 0xab, 0x77, 0x65, 0x69, 0x67, 0x68, 0x74, 0x65, 0x64, 0x5f, 0x69, 0x6f)
+	o = msgp.AppendUint64(o, z.WeightedIO)
 	return
 }
 
@@ -517,106 +297,58 @@ func (z *IOStats) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
-		case "ReadIOs":
-			z.ReadIOs, bts, err = msgp.ReadUint64Bytes(bts)
+		case "read_bytes":
+			bts, err = z.ReadBytes.UnmarshalMsg(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "ReadIOs")
+				err = msgp.WrapError(err, "ReadBytes")
 				return
 			}
-		case "ReadMerges":
-			z.ReadMerges, bts, err = msgp.ReadUint64Bytes(bts)
+		case "write_bytes":
+			bts, err = z.WriteBytes.UnmarshalMsg(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "ReadMerges")
+				err = msgp.WrapError(err, "WriteBytes")
 				return
 			}
-		case "ReadSectors":
-			z.ReadSectors, bts, err = msgp.ReadUint64Bytes(bts)
+		case "read_count":
+			z.ReadCount, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "ReadSectors")
+				err = msgp.WrapError(err, "ReadCount")
 				return
 			}
-		case "ReadTicks":
-			z.ReadTicks, bts, err = msgp.ReadUint64Bytes(bts)
+		case "write_count":
+			z.WriteCount, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "ReadTicks")
+				err = msgp.WrapError(err, "WriteCount")
 				return
 			}
-		case "WriteIOs":
-			z.WriteIOs, bts, err = msgp.ReadUint64Bytes(bts)
+		case "read_time":
+			z.ReadTime, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "WriteIOs")
+				err = msgp.WrapError(err, "ReadTime")
 				return
 			}
-		case "WriteMerges":
-			z.WriteMerges, bts, err = msgp.ReadUint64Bytes(bts)
+		case "write_time":
+			z.WriteTime, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "WriteMerges")
+				err = msgp.WrapError(err, "WriteTime")
 				return
 			}
-		case "WriteSectors":
-			z.WriteSectors, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "WriteSectors")
-				return
-			}
-		case "WriteTicks":
-			z.WriteTicks, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "WriteTicks")
-				return
-			}
-		case "CurrentIOs":
+		case "current_ios":
 			z.CurrentIOs, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "CurrentIOs")
 				return
 			}
-		case "TotalTicks":
-			z.TotalTicks, bts, err = msgp.ReadUint64Bytes(bts)
+		case "io_time":
+			z.IoTime, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "TotalTicks")
+				err = msgp.WrapError(err, "IoTime")
 				return
 			}
-		case "ReqTicks":
-			z.ReqTicks, bts, err = msgp.ReadUint64Bytes(bts)
+		case "weighted_io":
+			z.WeightedIO, bts, err = msgp.ReadUint64Bytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "ReqTicks")
-				return
-			}
-		case "DiscardIOs":
-			z.DiscardIOs, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "DiscardIOs")
-				return
-			}
-		case "DiscardMerges":
-			z.DiscardMerges, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "DiscardMerges")
-				return
-			}
-		case "DiscardSectors":
-			z.DiscardSectors, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "DiscardSectors")
-				return
-			}
-		case "DiscardTicks":
-			z.DiscardTicks, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "DiscardTicks")
-				return
-			}
-		case "FlushIOs":
-			z.FlushIOs, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "FlushIOs")
-				return
-			}
-		case "FlushTicks":
-			z.FlushTicks, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "FlushTicks")
+				err = msgp.WrapError(err, "WeightedIO")
 				return
 			}
 		default:
@@ -633,7 +365,7 @@ func (z *IOStats) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *IOStats) Msgsize() (s int) {
-	s = 3 + 8 + msgp.Uint64Size + 11 + msgp.Uint64Size + 12 + msgp.Uint64Size + 10 + msgp.Uint64Size + 9 + msgp.Uint64Size + 12 + msgp.Uint64Size + 13 + msgp.Uint64Size + 11 + msgp.Uint64Size + 11 + msgp.Uint64Size + 11 + msgp.Uint64Size + 9 + msgp.Uint64Size + 11 + msgp.Uint64Size + 14 + msgp.Uint64Size + 15 + msgp.Uint64Size + 13 + msgp.Uint64Size + 9 + msgp.Uint64Size + 11 + msgp.Uint64Size
+	s = 1 + 11 + z.ReadBytes.Msgsize() + 12 + z.WriteBytes.Msgsize() + 11 + msgp.Uint64Size + 12 + msgp.Uint64Size + 10 + msgp.Uint64Size + 11 + msgp.Uint64Size + 12 + msgp.Uint64Size + 8 + msgp.Uint64Size + 12 + msgp.Uint64Size
 	return
 }
 

@@ -33,37 +33,26 @@ type Info struct {
 	Used   datasize.DataSize `msg:"used" json:"used"`
 	Files  uint64            `msg:"files" json:"files"`
 	Ffree  uint64            `msg:"f_free" json:"ffree"`
-	FSType string            `msg:"fs_type" json:"fsType"`
 	Major  uint32            `msg:"major" json:"major"`
 	Minor  uint32            `msg:"minor" json:"minor"`
+	FSType string            `msg:"fs_type" json:"fsType"`
 }
 
-// DevID is the drive major and minor ids
-type DevID struct {
-	Major uint32
-	Minor uint32
-}
+// DevID is the device name
+type DevID string
 
 // AllDrivesIOStats is map between drive devices and IO stats
-type AllDrivesIOStats map[DevID]IOStats
+type AllDrivesIOStats map[DevID]*IOStats
 
 // IOStats contains stats of a single drive
 type IOStats struct {
-	ReadIOs        uint64
-	ReadMerges     uint64
-	ReadSectors    uint64
-	ReadTicks      uint64
-	WriteIOs       uint64
-	WriteMerges    uint64
-	WriteSectors   uint64
-	WriteTicks     uint64
-	CurrentIOs     uint64
-	TotalTicks     uint64
-	ReqTicks       uint64
-	DiscardIOs     uint64
-	DiscardMerges  uint64
-	DiscardSectors uint64
-	DiscardTicks   uint64
-	FlushIOs       uint64
-	FlushTicks     uint64
+	ReadBytes  datasize.DataSize `json:"readBytes" msg:"read_bytes"`
+	WriteBytes datasize.DataSize `json:"writeBytes" msg:"write_bytes"`
+	ReadCount  uint64            `json:"readCount" msg:"read_count"`
+	WriteCount uint64            `json:"writeCount" msg:"write_count"`
+	ReadTime   uint64            `json:"readTime" msg:"read_time"`
+	WriteTime  uint64            `json:"writeTime" msg:"write_time"`
+	CurrentIOs uint64            `json:"currentIOs" msg:"current_ios"` // CurrentIOs only valid in linux.
+	IoTime     uint64            `json:"ioTime" msg:"io_time"`         // IoTime only valid in linux.
+	WeightedIO uint64            `json:"weightedIO" msg:"weighted_io"` // WeightedIO only valid in linux.
 }

@@ -1,6 +1,6 @@
 port: 8080
 checksum: false
-select-strategy: random
+select-strategy: space-first
 log:
   level: debug
   store-dir: e:/file/temp/log

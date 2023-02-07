@@ -13,7 +13,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-var log = logs.New("etcd-registry")
+var registryLog = logs.New("etcd-registry")
 
 type EtcdRegistry struct {
 	cli     *clientv3.Client
@@ -54,7 +54,7 @@ func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
 func (e *EtcdRegistry) GetServiceMapping(name string, rpc bool) map[string]string {
 	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.cfg.Group, name), clientv3.WithPrefix())
 	if err != nil {
-		log.Infof("get services: %s", err)
+		registryLog.Infof("get services: %s", err)
 		return map[string]string{}
 	}
 	res := make(map[string]string, len(resp.Kvs))
@@ -70,7 +70,7 @@ func (e *EtcdRegistry) GetServiceMapping(name string, rpc bool) map[string]strin
 func (e *EtcdRegistry) GetServices(name string, rpc bool) []string {
 	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.cfg.Group, name), clientv3.WithPrefix())
 	if err != nil {
-		log.Infof("get services: %s", err)
+		registryLog.Infof("get services: %s", err)
 		return []string{}
 	}
 	res := make([]string, 0, len(resp.Kvs))
@@ -127,16 +127,16 @@ func (e *EtcdRegistry) Register() error {
 	go func() {
 		defer graceful.Recover()
 		for resp := range keepAlive {
-			log.Tracef("keepalive %s success (%d)", e.Key(), resp.TTL)
+			registryLog.Tracef("keepalive %s success (%d)", e.Key(), resp.TTL)
 		}
-		log.Infof("stop keepalive %s", e.Key())
+		registryLog.Infof("stop keepalive %s", e.Key())
 	}()
-	log.Infof("registry %s success", e.Key())
+	registryLog.Infof("registry %s success", e.Key())
 	return nil
 }
 
 func (e *EtcdRegistry) Unregister() error {
-	log.Tracef("manual unregister %s", e.Key())
+	registryLog.Tracef("manual unregister %s", e.Key())
 	e.stopFn()
 	if e.leaseId != -1 {
 		ctx, cancel := context.WithTimeout(context.Background(), e.cfg.Timeout)

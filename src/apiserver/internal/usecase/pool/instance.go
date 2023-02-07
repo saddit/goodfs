@@ -3,23 +3,20 @@ package pool
 import (
 	"apiserver/config"
 	"apiserver/internal/usecase/componet/selector"
+	"apiserver/internal/usecase/webapi"
 	"common/logs"
 	"common/performance"
 	"common/registry"
 	"common/util"
-	"net/http"
-	"os"
-	"path/filepath"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"os"
+	"path/filepath"
 )
 
 var (
 	Config    *config.Config
 	Etcd      *clientv3.Client
-	Http      *http.Client
 	Balancer  selector.Selector
 	Discovery *registry.EtcdDiscovery
 	Perform   performance.Collector
@@ -28,7 +25,6 @@ var (
 func InitPool(cfg *config.Config) {
 	Config = cfg
 	initLog(&cfg.Log)
-	initHttp()
 	initEtcd(cfg)
 	initDiscovery(Etcd, cfg)
 	initBalancer(cfg)
@@ -36,7 +32,6 @@ func InitPool(cfg *config.Config) {
 }
 
 func Close() {
-	Http.CloseIdleConnections()
 	util.LogErr(Perform.Close())
 	util.LogErr(Etcd.Close())
 }
@@ -69,10 +64,6 @@ func initLog(cfg *logs.Config) {
 	}
 }
 
-func initHttp() {
-	Http = &http.Client{Timeout: 5 * time.Second}
-}
-
 func initBalancer(cfg *config.Config) {
 	Balancer = selector.NewSelector(cfg.SelectStrategy)
 }
@@ -92,4 +83,5 @@ func initPerform(cfg *performance.Config, logCfg *logs.Config, regCfg *registry.
 		}))
 	}
 	Perform = performance.NewCollector(cfg)
+	webapi.SetPerformanceCollector(Perform)
 }

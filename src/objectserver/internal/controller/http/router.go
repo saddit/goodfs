@@ -4,6 +4,7 @@ import (
 	"common/logs"
 	"net/http"
 	"objectserver/internal/controller/http/objects"
+	"objectserver/internal/controller/http/stat"
 	"objectserver/internal/controller/http/temp"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,8 @@ func NewHttpServer(addr string) *Server {
 	r.GET("/temp/:name", temp.FilterExpired, temp.Get)
 	r.PUT("/temp/:name", temp.FilterExpired, temp.Put)
 
-	r.GET("/ping", func(c *gin.Context) { c.Status(http.StatusOK) })
+	r.GET("/ping", stat.Ping)
+	r.GET("/stat", stat.Info)
 	return &Server{&http.Server{Addr: addr, Handler: r}}
 }
 

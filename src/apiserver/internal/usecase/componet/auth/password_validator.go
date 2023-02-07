@@ -32,9 +32,8 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 	}
 	resp, err := pv.cli.Get(context.Background(), cst.EtcdPrefix.ApiCredential)
 	if err != nil {
-		panic(err)
-	}
-	if len(resp.Kvs) != 0 || cfg.Username == "" || cfg.Password == "" {
+		logs.Std().Errorf("init PasswordValidator: %s", err)
+	} else if len(resp.Kvs) != 0 || cfg.Username == "" || cfg.Password == "" {
 		logs.Std().Info("exist credential, skip init admin credential")
 		return
 	}
@@ -47,7 +46,7 @@ func (pv *PasswordValidator) init(cfg *PasswordConfig) {
 	}
 	_, err = pv.cli.Put(context.Background(), cst.EtcdPrefix.ApiCredential, string(bt))
 	if err != nil {
-		panic(err)
+		logs.Std().Errorf("init PasswordValidator: %s", err)
 	}
 	logs.Std().Infof("password authenticator init success: username=%s", cfg.Username)
 }

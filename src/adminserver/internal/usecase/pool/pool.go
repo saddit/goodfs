@@ -26,9 +26,10 @@ func Init(cfg *config.Config) {
 }
 
 func Close() {
-	Http.CloseIdleConnections()
-	util.LogErr(Etcd.Close())
-	util.LogErr(StatDB.Close())
+	defer util.LogErr(StatDB.Close())
+	defer util.LogErr(Etcd.Close())
+	defer Http.CloseIdleConnections()
+	defer Discovery.Close()
 }
 
 func initHttpClient() {

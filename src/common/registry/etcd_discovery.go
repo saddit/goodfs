@@ -17,12 +17,22 @@ type EtcdDiscovery struct {
 	group       string
 	httpService map[string]*serviceList
 	rpcService  map[string]*serviceList
+	context     context.Context
+	Close       func()
 }
 
 func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 	hs := make(map[string]*serviceList)
 	rs := make(map[string]*serviceList)
-	d := &EtcdDiscovery{cli, cfg.Group, hs, rs}
+	ctx, cancel := context.WithCancel(context.Background())
+	d := &EtcdDiscovery{
+		cli:         cli,
+		group:       cfg.Group,
+		httpService: hs,
+		rpcService:  rs,
+		context:     ctx,
+		Close:       cancel,
+	}
 	for _, s := range cfg.Services {
 		d.initService(s)
 	}
@@ -40,7 +50,7 @@ func (e *EtcdDiscovery) initService(serv string) {
 		defer cancel()
 		res, err := e.cli.Get(ctx, prefix, clientv3.WithPrefix())
 		if err != nil {
-			log.Warnf("discovery init service %s error: %s", prefix, err)
+			registryLog.Warnf("discovery init service %s error: %s", prefix, err)
 			return
 		}
 		// wrap kvs
@@ -55,26 +65,40 @@ func (e *EtcdDiscovery) initService(serv string) {
 		e.httpService[serv].replace(https)
 		e.rpcService[serv].replace(rpcs)
 		// start watch change
-		ch := e.cli.Watch(context.Background(), prefix, clientv3.WithPrefix())
-		e.asyncWatch(serv, ch)
+		e.asyncWatch(serv, prefix)
 	}()
 }
 
-func (e *EtcdDiscovery) asyncWatch(serv string, ch clientv3.WatchChan) {
+func (e *EtcdDiscovery) asyncWatch(serv, prefix string) {
 	go func() {
 		defer graceful.Recover()
-		for res := range ch {
-			for _, event := range res.Events {
-				//Key will be like ${group}/${serv}/${id}_${slave/master}
-				key := string(event.Kv.Key)
-				addr := RegisterValue(event.Kv.Value)
-				switch event.Type {
-				case mvccpb.PUT:
-					e.addService(serv, addr, key)
-				case mvccpb.DELETE:
-					e.removeService(serv, addr)
+		for {
+			var success bool
+			ch := e.cli.Watch(e.context, prefix, clientv3.WithPrefix())
+			for res := range ch {
+				if res.Canceled {
+					registryLog.Errorf("dicovery for %s abort: %s", serv, res.Err())
+					success = false
+					break
+				}
+				for _, event := range res.Events {
+					// Key will be like ${group}/${serv}/${id}_${slave/master}
+					key := string(event.Kv.Key)
+					addr := RegisterValue(event.Kv.Value)
+					switch event.Type {
+					case mvccpb.PUT:
+						e.addService(serv, addr, key)
+					case mvccpb.DELETE:
+						e.removeService(serv, addr)
+					}
 				}
 			}
+			// break if canceled by context
+			if success {
+				break
+			}
+			// sleep 2 sec before retry
+			time.Sleep(2 * time.Second)
 		}
 	}()
 }

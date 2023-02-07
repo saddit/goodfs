@@ -16,17 +16,16 @@ import (
 // CallbackValidator send a http request to validte access, will cost 40ms+ delay
 type CallbackValidator struct {
 	cfg *CallbackConfig
-	cli *http.Client
 }
 
-func NewCallbackValidator(cli *http.Client, cfg *CallbackConfig) *CallbackValidator {
-	return &CallbackValidator{cfg: cfg, cli: cli}
+func NewCallbackValidator(cfg *CallbackConfig) *CallbackValidator {
+	return &CallbackValidator{cfg: cfg}
 }
 
 func (cv *CallbackValidator) Verify(token Credential) error {
 	body := bytes.NewBuffer([]byte(token.GetUsername()))
 	uri := fmt.Sprint(cv.cfg.Url, "?", url.Values(token.GetExtra()).Encode())
-	resp, err := cv.cli.Post(uri, "application/json", body)
+	resp, err := http.Post(uri, "application/json", body)
 	if err != nil {
 		return err
 	}
@@ -40,12 +39,15 @@ func (cv *CallbackValidator) Middleware(c *gin.Context) (bool, error) {
 	if !cv.cfg.Enable {
 		return false, nil
 	}
-	sp := strings.Split(c.Request.Host, ".")
-	if len(sp) == 0 {
-		return false, response.NewError(http.StatusBadRequest, "Host does not contains bucket")
+	var bucket string
+	idx := strings.IndexByte(c.Request.Host, '.')
+	if idx > 0 {
+		bucket = c.Request.Host[:idx]
+	} else if bucket = c.GetHeader("Bucket"); bucket == "" {
+		return false, response.NewError(http.StatusBadRequest, "Host or Header does not contains bucket")
 	}
 	token := &credential.CallbackToken{
-		Bucket:   sp[0],
+		Bucket:   bucket,
 		Region:   c.GetHeader("Region"),
 		FileName: c.Param("name"),
 		Version:  util.ToInt(c.Query("version")),
