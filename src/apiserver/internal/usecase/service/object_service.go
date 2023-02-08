@@ -51,6 +51,10 @@ func NewObjectService(s IMetaService, b repo.IBucketRepo, etcd *clientv3.Client)
 
 // UniqueHash generate unique identify for an object
 func (o *ObjectService) UniqueHash(digest string, ss entity.ObjectStrategy, ds, ps int, compress bool) string {
+	if ss == entity.MultiReplication {
+		// MultiReplication doesn't care about shards number
+		ds, ps = 0, 0
+	}
 	return crypto.SHA256(util.StrToBytes(fmt.Sprint(digest, ss, ds, ps, compress)))
 }
 
@@ -139,7 +143,7 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (vn
 	// pre-processing the version info
 	ver := md.Versions[0]
 	// check bucket configuration and change version info
-	FillVersionConfig(ver, bucket)
+	bucket.MakeVersion(ver, &pool.Config.Object)
 	// generate unique hash as this version hash
 	ver.Hash = o.UniqueHash(ver.Hash, ver.StoreStrategy, ver.DataShards, ver.ParityShards, ver.Compress)
 	// filter duplicate
@@ -244,33 +248,6 @@ func NewStreamProvider(opt *StreamOption, ver *entity.Version) StreamProvider {
 		cfg := pool.Config.Object.Replication
 		cfg.CopiesCount = ver.DataShards
 		return CpStreamProvider(opt, &cfg)
-	}
-}
-
-func FillVersionConfig(ver *entity.Version, bucket *entity.Bucket) {
-	if bucket.Compress {
-		ver.Compress = true
-	}
-	rsConf := pool.Config.Object.ReedSolomon
-	rpConf := pool.Config.Object.Replication
-
-	if bucket.StoreStrategy > 0 {
-		ver.StoreStrategy = bucket.StoreStrategy
-		rsConf.DataShards = bucket.DataShards
-		rsConf.ParityShards = bucket.ParityShards
-		rpConf.CopiesCount = bucket.DataShards
-	}
-
-	switch ver.StoreStrategy {
-	default:
-		fallthrough
-	case entity.ECReedSolomon:
-		ver.DataShards = rsConf.DataShards
-		ver.ParityShards = rsConf.ParityShards
-		ver.ShardSize = rsConf.ShardSize(ver.Size)
-	case entity.MultiReplication:
-		ver.DataShards = rpConf.CopiesCount
-		ver.ShardSize = int(ver.Size)
 	}
 }
 

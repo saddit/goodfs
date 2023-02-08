@@ -3,6 +3,7 @@ package service
 import (
 	"apiserver/config"
 	"common/util"
+	"errors"
 	"github.com/klauspost/reedsolomon"
 	"io"
 	"sync/atomic"
@@ -26,13 +27,13 @@ func NewEncoder(wrs []io.WriteCloser, rsCfg *config.RsConfig) *rsEncoder {
 }
 
 func (e *rsEncoder) Close() error {
-	var err error
+	var errs []error
 	for _, w := range e.writers {
-		if e := w.Close(); e != nil {
-			err = e
+		if inner := w.Close(); inner != nil {
+			errs = append(errs, inner)
 		}
 	}
-	return err
+	return errors.Join(errs...)
 }
 
 func (e *rsEncoder) Write(bt []byte) (int, error) {
@@ -69,7 +70,7 @@ func (e *rsEncoder) Flush() (int, error) {
 	var size int32
 	dg := util.NewDoneGroup()
 	defer dg.Close()
-	
+
 	// encode async
 	dg.Todo()
 	go func() {
@@ -89,7 +90,7 @@ func (e *rsEncoder) Flush() (int, error) {
 					return
 				}
 				atomic.AddInt32(&size, int32(n))
-			}(i + e.rsConfig.DataShards, v)
+			}(i+e.rsConfig.DataShards, v)
 		}
 	}()
 
@@ -106,6 +107,6 @@ func (e *rsEncoder) Flush() (int, error) {
 			atomic.AddInt32(&size, int32(n))
 		}(i, v)
 	}
-	
+
 	return int(size), dg.WaitUntilError()
 }
