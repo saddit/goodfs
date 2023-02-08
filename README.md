@@ -1,3 +1,5 @@
+[![Go](https://github.com/oss-go/goodfs/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/oss-go/goodfs/actions/workflows/go.yml)
+
 [Looking for English?](./docs/README_en.md)
 
 # GoodFS
