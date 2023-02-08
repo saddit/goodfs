@@ -54,17 +54,12 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		response.BadRequestMsg("bucket is readonly", g)
 		return
 	}
-	// configure by bucket config
-	conf := pool.Config.Object.ReedSolomon
 	// if bucket enforce compress
 	if bucket.Compress {
 		req.Compress = true
 	}
-	// if bucket enforce store strategy
-	if bucket.StoreStrategy == entity.ECReedSolomon {
-		conf.DataShards = bucket.DataShards
-		conf.ParityShards = bucket.ParityShards
-	}
+	// configure by bucket config
+	conf := bucket.MakeConf(&pool.Config.Object).ReedSolomon
 	// generate a unique hash as version hash
 	uniqueHash := bc.objectService.UniqueHash(req.Hash, entity.ECReedSolomon, conf.DataShards, conf.ParityShards, req.Compress)
 	// filter duplicate
@@ -74,6 +69,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		object := &entity.Version{
 			Hash:          uniqueHash,
 			Size:          req.Size,
+			Compress:      req.Compress,
 			Locate:        locates,
 			DataShards:    conf.DataShards,
 			ParityShards:  conf.ParityShards,

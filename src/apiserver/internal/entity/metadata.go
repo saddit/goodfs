@@ -1,5 +1,9 @@
 package entity
 
+import (
+	"apiserver/config"
+)
+
 type VerMode int32
 
 const (
@@ -65,4 +69,44 @@ type Bucket struct {
 	UpdateTime     int64          `json:"updateTime"`     // UpdateTime is last updating time
 	Name           string         `json:"name"`           // Name is the bucket's name
 	Policies       []string       `json:"policies"`       // Policies is the iam polices for this bucket (No support yet)
+}
+
+func (b *Bucket) MakeVersion(ver *Version, conf *config.ObjectConfig) {
+	if b.Compress {
+		ver.Compress = true
+	}
+	// copy of config
+	rsConf, rpConf := conf.ReedSolomon, conf.Replication
+
+	if b.StoreStrategy > 0 {
+		ver.StoreStrategy = b.StoreStrategy
+		rsConf.DataShards = b.DataShards
+		rsConf.ParityShards = b.ParityShards
+		rpConf.CopiesCount = b.DataShards
+	}
+
+	switch ver.StoreStrategy {
+	default:
+		fallthrough
+	case ECReedSolomon:
+		ver.DataShards = rsConf.DataShards
+		ver.ParityShards = rsConf.ParityShards
+		ver.ShardSize = rsConf.ShardSize(ver.Size)
+	case MultiReplication:
+		ver.DataShards = rpConf.CopiesCount
+		ver.ShardSize = int(ver.Size)
+	}
+}
+
+func (b *Bucket) MakeConf(conf *config.ObjectConfig) (cfg config.ObjectConfig) {
+	// copy of config
+	cfg = *conf
+	switch b.StoreStrategy {
+	case ECReedSolomon:
+		cfg.ReedSolomon.DataShards = b.DataShards
+		cfg.ReedSolomon.ParityShards = b.ParityShards
+	case MultiReplication:
+		cfg.Replication.CopiesCount = b.DataShards
+	}
+	return
 }
