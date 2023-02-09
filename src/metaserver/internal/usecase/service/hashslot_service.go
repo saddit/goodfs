@@ -229,6 +229,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	if ok, host, _ := h.Store.GetMigrateTo(); !ok || host != toLoc.GetHost() {
 		return fmt.Errorf("no ready to migrate to %s", toLoc.GetHost())
 	}
+	defer h.Store.FinishMigrateTo() // avoid status stick if PANIC
 	// connect to target
 	cc, err := grpc.Dial(fmt.Sprint(toLoc.Host, ":", toLoc.RpcPort), grpc.WithInsecure())
 	if err != nil {
@@ -245,10 +246,6 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	var errs []error
 	errs = append(errs, h.migrateMetadata(stream, delEdges)...)
 	errs = append(errs, h.migrateBuckets(stream, delEdges)...)
-	if err = h.Store.FinishMigrateTo(); err != nil {
-		errs = append(errs, err)
-		hsLog.Debugf("switch status to normal err: %s", err)
-	}
 	if len(errs) > 0 {
 		sb := strings.Builder{}
 		sb.WriteString("occurred errors:")
@@ -260,6 +257,9 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 		return errors.New("migrate partly fails, please retry again")
 	}
 	// all migrate success
+	if err = h.Store.FinishMigrateTo(); err != nil {
+		hsLog.Debugf("switch status to normal err: %s", err)
+	}
 	// remove slots from current slot-info
 	info, _, err := h.Store.Get(h.Cfg.StoreID)
 	if err != nil {

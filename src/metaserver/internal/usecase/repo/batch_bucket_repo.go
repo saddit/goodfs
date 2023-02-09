@@ -16,15 +16,15 @@ func NewBatchBucketRepo(db *db.Storage) *BatchBucketRepo {
 }
 
 func (b *BatchBucketRepo) Create(bucket *msg.Bucket) (err error) {
-	return b.db.DB().Batch(b.logic.Create(bucket))
+	return b.db.Batch(b.logic.Create(bucket))
 }
 
 func (b *BatchBucketRepo) Remove(name string) (err error) {
-	return b.db.DB().Batch(b.logic.Delete(name))
+	return b.db.Batch(b.logic.Delete(name))
 }
 
 func (b *BatchBucketRepo) Update(bucket *msg.Bucket) (err error) {
-	return b.db.DB().Batch(b.logic.Update(bucket))
+	return b.db.Batch(b.logic.Update(bucket))
 }
 
 func (b *BatchBucketRepo) Sync() error {

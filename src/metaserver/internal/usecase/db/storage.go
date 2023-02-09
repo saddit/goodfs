@@ -5,6 +5,7 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/util"
+	"fmt"
 	"io/fs"
 	"metaserver/internal/usecase"
 	"os"
@@ -58,6 +59,19 @@ func (s *Storage) Update(fn usecase.TxFunc) error {
 	return s.DB().Update(fn)
 }
 
+func (s *Storage) Batch(fn usecase.TxFunc) error {
+	if logs.IsDebug() {
+		start := time.Now()
+		defer func() {
+			dbLog.Debugf("batch-write tx spent %d ms\n%s", time.Since(start).Milliseconds(), graceful.GetLimitStacks(3, 3))
+		}()
+	}
+	if s.rdOnly.Load().(bool) {
+		return usecase.ErrReadOnly
+	}
+	return s.DB().Batch(fn)
+}
+
 func (s *Storage) Stop() error {
 	dbLog.Info("stop db...")
 	curDB := s.DB()
@@ -103,7 +117,9 @@ func (s *Storage) Open(path string) error {
 }
 
 func (s *Storage) Replace(replacePath string) (err error) {
-	s.rdOnly.Store(true)
+	if !s.rdOnly.CompareAndSwap(false, true) {
+		return fmt.Errorf("replace failed: storage is in readonly mode")
+	}
 	defer s.rdOnly.Store(false)
 
 	var newDB *bolt.DB
