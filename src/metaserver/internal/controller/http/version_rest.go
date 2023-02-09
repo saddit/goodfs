@@ -124,7 +124,7 @@ func (v *VersionController) UpdateLocates(c *gin.Context) {
 	body := struct {
 		Locate      string `json:"locate" binding:"required"`
 		Hash        string `json:"hash" binding:"required"`
-		LocateIndex int    `json:"locateIndex" binding:"required"`
+		LocateIndex int    `json:"locateIndex"`
 	}{}
 	if err := entity.BindAll(c, &body, entity.FullBindings...); err != nil {
 		response.BadRequestErr(err, c)

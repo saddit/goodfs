@@ -6,6 +6,7 @@ import (
 	"common/hashslot"
 	"common/proto/msg"
 	"common/registry"
+	"common/system"
 	"common/util"
 	"context"
 	"encoding/json"
@@ -192,5 +193,25 @@ func TestGetRegistry(t *testing.T) {
 	}
 	for _, kv := range resp.Kvs {
 		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
+	}
+}
+
+func TestGetSysInfo(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username:  "root",
+		Password:  "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := etcd.Get(context.Background(), cst.EtcdPrefix.SystemInfo, clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kv := range resp.Kvs {
+		var s system.Info
+		_ = util.DecodeMsgp(&s, kv.Value)
+		t.Logf("key=%s, value=%+v", kv.Key, s)
 	}
 }

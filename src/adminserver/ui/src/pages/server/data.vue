@@ -36,43 +36,45 @@ let migrateServId = ""
 const {t} = useI18n({inheritLocale: true})
 
 function updateInfo(state: any) {
-  if (infos.value.length > 0) {
-    return
-  }
-  let stats = state.serverStat.dataServer
-  for (let k in stats) {
-    let v = stats[k]
-    infos.value.push(v)
-    capInfo.value.used += v.sysInfo.diskInfo.used
-    capInfo.value.total += v.sysInfo.diskInfo.total
-    capInfo.value.free += v.sysInfo.diskInfo.free
-  }
+    let infoList: ServerInfo[] = []
+    let cap = {used: 0, total: 0, free: 0}
+    let stats = state.serverStat.dataServer
+    for (let k in stats) {
+        let v = stats[k]
+        infoList.push(v)
+        cap.used += v.sysInfo.diskInfo.used
+        cap.total += v.sysInfo.diskInfo.total
+        cap.free += v.sysInfo.diskInfo.free
+    }
+    infos.value = infoList
+    capInfo.value = cap
 }
 
 function openDialog(servId: string) {
-  migrateServId = servId
-  openMigrateDialog.value = true
+    migrateServId = servId
+    openMigrateDialog.value = true
 }
 
 async function clusterCmd(cmd: string) {
-  try {
-    if (cmd == 'join') {
-      await api.objects.join(migrateServId)
-    } else if (cmd == 'leave') {
-      await api.objects.leave(migrateServId)
+    try {
+        if (cmd == 'join') {
+            await api.objects.join(migrateServId)
+        } else if (cmd == 'leave') {
+            await api.objects.leave(migrateServId)
+        }
+        openMigrateDialog.value = false
+        useToast().success(t('req-success'))
+    } catch (err: any) {
+        useToast().error(err.message)
     }
-    useToast().success(t('req-success'))
-  } catch (err: any) {
-    useToast().error(err.message)
-  }
 }
 
 store.$subscribe((mutation, state) => {
-  updateInfo(state)
+    updateInfo(state)
 })
 
 onBeforeMount(() => {
-  updateInfo(store)
+    updateInfo(store)
 })
 </script>
 
