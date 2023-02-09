@@ -109,9 +109,101 @@ func GetPeers(ip string) ([]string, error) {
 	}
 	ctx := context.Background()
 	cli := pb.NewMetadataApiClient(conn)
-	resp, err := cli.GetPeers(ctx, &pb.EmptyReq{})
+	resp, err := cli.GetPeers(ctx, new(pb.Empty))
 	if err = ResolveErr(err); err != nil {
 		return nil, err
 	}
 	return resp.Data, nil
+}
+
+func UpdateVersion(ip, id string, body *entity.Version) error {
+	defer perform(true)()
+	conn, err := getConn(ip)
+	if err != nil {
+		return err
+	}
+	bt, err := util.EncodeMsgp(&msg.Version{
+		Compress:      body.Compress,
+		StoreStrategy: int8(body.StoreStrategy),
+		DataShards:    int32(body.DataShards),
+		ParityShards:  int32(body.ParityShards),
+		ShardSize:     int64(body.ShardSize),
+		Sequence:      uint64(body.Sequence),
+		Size:          body.Size,
+		Hash:          body.Hash,
+		Locate:        body.Locate,
+	})
+	_, err = pb.NewMetadataApiClient(conn).UpdateVersion(context.Background(), &pb.Metadata{
+		Id:      id,
+		Msgpack: bt,
+	})
+	return ResolveErr(err)
+}
+
+func SaveVersion(ip, id string, body *entity.Version) (int32, error) {
+	defer perform(true)()
+	conn, err := getConn(ip)
+	if err != nil {
+		return 0, err
+	}
+	bt, err := util.EncodeMsgp(&msg.Version{
+		Compress:      body.Compress,
+		StoreStrategy: int8(body.StoreStrategy),
+		DataShards:    int32(body.DataShards),
+		ParityShards:  int32(body.ParityShards),
+		ShardSize:     int64(body.ShardSize),
+		Size:          body.Size,
+		Hash:          body.Hash,
+		Locate:        body.Locate,
+	})
+	res, err := pb.NewMetadataApiClient(conn).SaveVersion(context.Background(), &pb.Metadata{
+		Id:      id,
+		Version: body.Sequence,
+		Msgpack: bt,
+	})
+	if err != nil {
+		return 0, ResolveErr(err)
+	}
+	return res.Data, nil
+}
+
+func SaveMetadata(ip, id string, body *entity.Metadata) error {
+	defer perform(true)()
+	conn, err := getConn(ip)
+	if err != nil {
+		return err
+	}
+	bt, err := util.EncodeMsgp(&msg.Metadata{
+		Name:   body.Name,
+		Bucket: body.Bucket,
+	})
+	_, err = pb.NewMetadataApiClient(conn).SaveMetadata(context.Background(), &pb.Metadata{
+		Id:      id,
+		Msgpack: bt,
+	})
+	return ResolveErr(err)
+}
+
+func SaveBucket(ip string, body *entity.Bucket) error {
+	defer perform(true)()
+	conn, err := getConn(ip)
+	if err != nil {
+		return err
+	}
+	bt, err := util.EncodeMsgp(&msg.Bucket{
+		Versioning:     body.Versioning,
+		Readonly:       body.Readonly,
+		Compress:       body.Compress,
+		StoreStrategy:  int8(body.StoreStrategy),
+		DataShards:     int32(body.DataShards),
+		ParityShards:   int32(body.ParityShards),
+		VersionRemains: int32(body.VersionRemains),
+		Name:           body.Name,
+		Policies:       body.Policies,
+	})
+	_, err = pb.NewMetadataApiClient(conn).SaveBucket(context.Background(), &pb.Metadata{
+		Id:      body.Name,
+		Msgpack: bt,
+	})
+	return ResolveErr(err)
 }

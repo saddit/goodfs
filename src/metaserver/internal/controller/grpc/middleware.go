@@ -96,10 +96,13 @@ func CheckRaftNonLeaderUnary(ctx context.Context, req interface{}, info *grpc.Un
 
 func CheckKeySlot(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	if req == nil {
-		return handler(ctx, req)
+		return nil, status.Error(codes.InvalidArgument, "request value can not be nil")
 	}
 	r, ok := req.(*pb.MetaReq)
 	if !ok {
+		if err := checkKeySlotMetadata(req); err != nil {
+			return nil, err
+		}
 		return handler(ctx, req)
 	}
 	if r.Id == "" {
@@ -110,6 +113,21 @@ func CheckKeySlot(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo,
 		return handler(ctx, req)
 	}
 	return nil, status.Error(codes.Aborted, other)
+}
+
+func checkKeySlotMetadata(req interface{}) error {
+	r, ok := req.(*pb.Metadata)
+	if !ok {
+		return nil
+	}
+	if r.Id == "" {
+		return nil
+	}
+	ok, other := logic.NewHashSlot().IsKeyOnThisServer(r.Id)
+	if ok {
+		return nil
+	}
+	return status.Error(codes.Aborted, other)
 }
 
 // UnaryServerRecoveryInterceptor returns a new unary server interceptor for panic recovery.

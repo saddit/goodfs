@@ -41,7 +41,7 @@ func (v *VersionRepo) Update(name, bucket string, ver *entity.Version) error {
 	if err != nil {
 		return err
 	}
-	return webapi.PutVersion(logic.NewDiscovery().GetMetaServerHTTP(masterId), url.PathEscape(name), ver)
+	return grpcapi.UpdateVersion(logic.NewDiscovery().GetMetaServerGRPC(masterId), name, ver)
 }
 
 // Add add a version for metadata. returns the num of version
@@ -51,11 +51,10 @@ func (v *VersionRepo) Add(name, bucket string, ver *entity.Version) (int32, erro
 	if err != nil {
 		return ErrVersion, err
 	}
-	verNum, err := webapi.PostVersion(logic.NewDiscovery().GetMetaServerHTTP(masterId), url.PathEscape(name), ver)
+	ver.Sequence, err = grpcapi.SaveVersion(logic.NewDiscovery().GetMetaServerGRPC(masterId), name, ver)
 	if err != nil {
 		return ErrVersion, err
 	}
-	ver.Sequence = int32(verNum)
 	return ver.Sequence, nil
 }
 

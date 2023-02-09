@@ -42,7 +42,7 @@ func (b *BucketRepo) Create(bucket *entity.Bucket) error {
 	if err != nil {
 		return err
 	}
-	return webapi.PostBucket(logic.NewDiscovery().GetMetaServerHTTP(masterId), bucket)
+	return grpcapi.SaveBucket(logic.NewDiscovery().GetMetaServerGRPC(masterId), bucket)
 }
 
 func (b *BucketRepo) Delete(s string) error {

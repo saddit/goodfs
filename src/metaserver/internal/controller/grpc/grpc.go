@@ -45,7 +45,7 @@ func NewRpcServer(port string, maxStreams uint32, rw *raftimpl.RaftWrapper, serv
 		rw.Manager.Register(server)
 		cmdServer := NewRaftCmdServer(rw)
 		leaveRaft = func(c context.Context) error {
-			resp, err := cmdServer.LeaveCluster(c, nil)
+			resp, err := cmdServer.LeaveCluster(c, new(pb.EmptyReq))
 			if err != nil {
 				return err
 			}

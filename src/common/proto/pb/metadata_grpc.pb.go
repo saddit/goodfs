@@ -26,7 +26,11 @@ type MetadataApiClient interface {
 	GetBucket(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error)
 	GetMetadata(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error)
 	GetVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error)
-	GetPeers(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*StringsResp, error)
+	GetPeers(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Strings, error)
+	SaveMetadata(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error)
+	SaveVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Int32, error)
+	UpdateVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error)
+	SaveBucket(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type metadataApiClient struct {
@@ -73,9 +77,45 @@ func (c *metadataApiClient) GetVersion(ctx context.Context, in *MetaReq, opts ..
 	return out, nil
 }
 
-func (c *metadataApiClient) GetPeers(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*StringsResp, error) {
-	out := new(StringsResp)
+func (c *metadataApiClient) GetPeers(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Strings, error) {
+	out := new(Strings)
 	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getPeers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataApiClient) SaveMetadata(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/saveMetadata", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataApiClient) SaveVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Int32, error) {
+	out := new(Int32)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/saveVersion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataApiClient) UpdateVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/updateVersion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataApiClient) SaveBucket(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/saveBucket", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +130,11 @@ type MetadataApiServer interface {
 	GetBucket(context.Context, *MetaReq) (*Msgpack, error)
 	GetMetadata(context.Context, *MetaReq) (*Msgpack, error)
 	GetVersion(context.Context, *MetaReq) (*Msgpack, error)
-	GetPeers(context.Context, *EmptyReq) (*StringsResp, error)
+	GetPeers(context.Context, *Empty) (*Strings, error)
+	SaveMetadata(context.Context, *Metadata) (*Empty, error)
+	SaveVersion(context.Context, *Metadata) (*Int32, error)
+	UpdateVersion(context.Context, *Metadata) (*Empty, error)
+	SaveBucket(context.Context, *Metadata) (*Empty, error)
 	mustEmbedUnimplementedMetadataApiServer()
 }
 
@@ -110,8 +154,20 @@ func (UnimplementedMetadataApiServer) GetMetadata(context.Context, *MetaReq) (*M
 func (UnimplementedMetadataApiServer) GetVersion(context.Context, *MetaReq) (*Msgpack, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
 }
-func (UnimplementedMetadataApiServer) GetPeers(context.Context, *EmptyReq) (*StringsResp, error) {
+func (UnimplementedMetadataApiServer) GetPeers(context.Context, *Empty) (*Strings, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPeers not implemented")
+}
+func (UnimplementedMetadataApiServer) SaveMetadata(context.Context, *Metadata) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveMetadata not implemented")
+}
+func (UnimplementedMetadataApiServer) SaveVersion(context.Context, *Metadata) (*Int32, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveVersion not implemented")
+}
+func (UnimplementedMetadataApiServer) UpdateVersion(context.Context, *Metadata) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateVersion not implemented")
+}
+func (UnimplementedMetadataApiServer) SaveBucket(context.Context, *Metadata) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveBucket not implemented")
 }
 func (UnimplementedMetadataApiServer) mustEmbedUnimplementedMetadataApiServer() {}
 
@@ -199,7 +255,7 @@ func _MetadataApi_GetVersion_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _MetadataApi_GetPeers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyReq)
+	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -211,7 +267,79 @@ func _MetadataApi_GetPeers_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: "/proto.MetadataApi/getPeers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetadataApiServer).GetPeers(ctx, req.(*EmptyReq))
+		return srv.(MetadataApiServer).GetPeers(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataApi_SaveMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Metadata)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataApiServer).SaveMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.MetadataApi/saveMetadata",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataApiServer).SaveMetadata(ctx, req.(*Metadata))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataApi_SaveVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Metadata)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataApiServer).SaveVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.MetadataApi/saveVersion",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataApiServer).SaveVersion(ctx, req.(*Metadata))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataApi_UpdateVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Metadata)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataApiServer).UpdateVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.MetadataApi/updateVersion",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataApiServer).UpdateVersion(ctx, req.(*Metadata))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataApi_SaveBucket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Metadata)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataApiServer).SaveBucket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.MetadataApi/saveBucket",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataApiServer).SaveBucket(ctx, req.(*Metadata))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -242,6 +370,22 @@ var MetadataApi_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getPeers",
 			Handler:    _MetadataApi_GetPeers_Handler,
+		},
+		{
+			MethodName: "saveMetadata",
+			Handler:    _MetadataApi_SaveMetadata_Handler,
+		},
+		{
+			MethodName: "saveVersion",
+			Handler:    _MetadataApi_SaveVersion_Handler,
+		},
+		{
+			MethodName: "updateVersion",
+			Handler:    _MetadataApi_UpdateVersion_Handler,
+		},
+		{
+			MethodName: "saveBucket",
+			Handler:    _MetadataApi_SaveBucket_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

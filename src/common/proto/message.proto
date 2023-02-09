@@ -5,6 +5,15 @@ package proto;
 option go_package = "./pb";
 
 message EmptyReq {}
+message Empty {}
+
+message Strings {
+  repeated string data = 1;
+}
+
+message Int32 {
+  int32 data =1;
+}
 
 message Response {
   bool success = 1;

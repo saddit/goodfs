@@ -4,7 +4,6 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase/grpcapi"
 	"apiserver/internal/usecase/logic"
-	"apiserver/internal/usecase/webapi"
 	"fmt"
 )
 
@@ -34,6 +33,6 @@ func (m *MetadataRepo) Insert(data *entity.Metadata) error {
 	if err != nil {
 		return err
 	}
-	loc := logic.NewDiscovery().GetMetaServerHTTP(masterId)
-	return webapi.PostMetadata(loc, *data)
+	loc := logic.NewDiscovery().GetMetaServerGRPC(masterId)
+	return grpcapi.SaveMetadata(loc, name, data)
 }

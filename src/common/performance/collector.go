@@ -81,6 +81,10 @@ func (c *pmCollector) Store() Store {
 }
 
 func (c *pmCollector) PutAsync(action string, kindOf string, cost time.Duration) {
+	logs.Std().DebugFn(func() []any {
+		stack := graceful.GetLimitStacks(6, 1)
+		return []any{fmt.Sprintf("performance: [%s-%s] spend %s:\n%s", kindOf, action, cost, stack)}
+	})
 	go func() {
 		defer graceful.Recover()
 		if err := c.Put(action, kindOf, cost); err != nil {
@@ -106,10 +110,6 @@ func (c *pmCollector) Put(action string, kindOf string, cost time.Duration) erro
 			slices.RemoveFirst(&c.memData)
 		}
 	}
-	logs.Std().DebugFn(func() []any {
-		stack := graceful.GetLimitStacks(3, 2)
-		return []any{fmt.Sprintf("performance: [%s-%s] spend %s:\n%s", kindOf, action, cost, stack)}
-	})
 	return nil
 }
 
