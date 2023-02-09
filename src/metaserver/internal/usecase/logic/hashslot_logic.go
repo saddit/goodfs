@@ -6,7 +6,6 @@ import (
 	"common/util/crypto"
 	"metaserver/internal/usecase/pool"
 	"strings"
-	"time"
 )
 
 type HashSlot struct{}
@@ -37,10 +36,6 @@ func (h HashSlot) SaveToEtcd(id string, info *hashslot.SlotInfo) error {
 			return
 		}
 	}()
-	for pool.HashSlot.Lease == -1 {
-		logs.Std().Warnf("block until HashSlotDB get lifecycle lease!")
-		time.Sleep(1 * time.Second)
-	}
 	return pool.HashSlot.Save(id, info)
 }
 

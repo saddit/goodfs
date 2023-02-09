@@ -38,6 +38,8 @@ func Run(cfg *config.Config) {
 	pool.RaftWrapper = raftWrapper
 	// unregister service
 	defer pool.Registry.Unregister()
+	// remove slots info from etcd
+	defer pool.HashSlot.Remove(cfg.HashSlot.StoreID)
 	// auto save disk-info
 	defer logic.NewSystemStatLogic().StartAutoSave()()
 	// flush config

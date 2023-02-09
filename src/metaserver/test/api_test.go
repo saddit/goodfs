@@ -154,30 +154,6 @@ func TestGetHashSlot(t *testing.T) {
 	}
 }
 
-func TestCalcHashSlot(t *testing.T) {
-	input := "test123456.txt"
-	output := hashslot.CalcBytesSlot([]byte(input))
-	t.Log(output)
-}
-
-func TestGetSlots(t *testing.T) {
-	etcd, err := clientv3.New(clientv3.Config{
-		Endpoints: []string{"pressed.top:2379"},
-		Username:  "root",
-		Password:  "xianka",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := etcd.Get(context.Background(), cst.EtcdPrefix.HashSlot, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, kv := range resp.Kvs {
-		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
-	}
-}
-
 func TestGetRegistry(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},

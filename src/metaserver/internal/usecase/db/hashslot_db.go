@@ -45,7 +45,6 @@ func StatusDesc(status int32) (string, error) {
 
 type HashSlotDB struct {
 	kv             clientv3.KV
-	Lease          clientv3.LeaseID
 	status         *atomic.Int32
 	provider       *atomic.Value
 	updatedAt      int64
@@ -60,7 +59,6 @@ func NewHashSlotDB(keyPrefix string, kv clientv3.KV) *HashSlotDB {
 		kv:        kv,
 		provider:  new(atomic.Value),
 		status:    atomic.NewInt32(StatusNormal),
-		Lease:     -1,
 	}
 }
 
@@ -184,7 +182,7 @@ func (h *HashSlotDB) Save(id string, info *hashslot.SlotInfo) (err error) {
 	info.Checksum = crypto.MD5([]byte(strings.Join(info.Slots, ",")))
 	info.GroupID = id
 	// saving
-	_, err = h.kv.Put(context.Background(), key, string(bt), clientv3.WithLease(h.Lease))
+	_, err = h.kv.Put(context.Background(), key, string(bt))
 	return err
 }
 
@@ -214,19 +212,16 @@ func (h *HashSlotDB) GetKeyIdentify(key string) (string, error) {
 }
 
 func (h *HashSlotDB) Close(timeout time.Duration) error {
-	dg := util.NewNonErrDoneGroup()
-	dg.Todo()
-	go func() {
-		defer dg.Done()
-		for !h.status.CAS(StatusNormal, StatusClosed) {
-			time.Sleep(time.Millisecond * 100)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	for !h.status.CAS(StatusNormal, StatusClosed) {
+		select {
+		case <-ctx.Done():
+			desc, _ := StatusDesc(h.status.Load())
+			return fmt.Errorf("close fail: db stay in %s timeout", desc)
+		default:
+			time.Sleep(time.Millisecond * 500)
 		}
-	}()
-	select {
-	case <-time.NewTicker(timeout).C:
-		desc, _ := StatusDesc(h.status.Load())
-		return fmt.Errorf("close from %s timeout", desc)
-	case <-dg.WaitDone():
-		return nil
 	}
+	return nil
 }

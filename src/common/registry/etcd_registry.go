@@ -179,7 +179,3 @@ func (e *EtcdRegistry) keepaliveLease(ctx context.Context, id clientv3.LeaseID) 
 		e.stopFn = func() {}
 	}, err
 }
-
-func (e *EtcdRegistry) LifecycleLease() (clientv3.LeaseID, bool) {
-	return e.leaseId, e.leaseId != -1
-}

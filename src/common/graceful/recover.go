@@ -23,8 +23,12 @@ func PrintStacks(msg any) {
 }
 
 func GetStacks() string {
+	return GetLimitStacks(3, 100)
+}
+
+func GetLimitStacks(skip, maxSize int) string {
 	var stack []string
-	for i := 1; ; i++ {
+	for i := skip; i < maxSize+skip; i++ {
 		_, file, line, ok := runtime.Caller(i)
 		if !ok {
 			break

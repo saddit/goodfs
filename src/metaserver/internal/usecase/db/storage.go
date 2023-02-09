@@ -38,7 +38,9 @@ func (s *Storage) DB() *bolt.DB {
 func (s *Storage) View(fn usecase.TxFunc) error {
 	if logs.IsDebug() {
 		start := time.Now()
-		defer func() { dbLog.Debugf("read-only tx spent %d ms", time.Since(start).Milliseconds()) }()
+		defer func() {
+			dbLog.Debugf("read-only tx spent %d ms\n%s", time.Since(start).Milliseconds(), graceful.GetLimitStacks(3, 3))
+		}()
 	}
 	return s.DB().View(fn)
 }
@@ -46,7 +48,9 @@ func (s *Storage) View(fn usecase.TxFunc) error {
 func (s *Storage) Update(fn usecase.TxFunc) error {
 	if logs.IsDebug() {
 		start := time.Now()
-		defer func() { dbLog.Debugf("read-write tx spent %d ms", time.Since(start).Milliseconds()) }()
+		defer func() {
+			dbLog.Debugf("read-write tx spent %d ms\n%s", time.Since(start).Milliseconds(), graceful.GetLimitStacks(3, 3))
+		}()
 	}
 	if s.rdOnly.Load().(bool) {
 		return usecase.ErrReadOnly

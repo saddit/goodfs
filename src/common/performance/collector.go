@@ -5,6 +5,7 @@ import (
 	"common/logs"
 	"common/util/slices"
 	"context"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -105,7 +106,10 @@ func (c *pmCollector) Put(action string, kindOf string, cost time.Duration) erro
 			slices.RemoveFirst(&c.memData)
 		}
 	}
-	logs.Std().Debugf("performance: [%s-%s] spend %s", kindOf, action, cost)
+	logs.Std().DebugFn(func() []any {
+		stack := graceful.GetLimitStacks(3, 2)
+		return []any{fmt.Sprintf("performance: [%s-%s] spend %s:\n%s", kindOf, action, cost, stack)}
+	})
 	return nil
 }
 

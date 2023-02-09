@@ -135,7 +135,7 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 	var data entity.RaftData
 	res := make([]any, len(lgs))
 
-	lst, err := f.snapshot.LastAppliedIndex()
+	lastAppliedIndex, err := f.snapshot.LastAppliedIndex()
 	if err != nil {
 		for i := range res {
 			res[i] = err
@@ -152,12 +152,11 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 			res[i] = fmt.Errorf("drop recieved fsmLog type %v", lg.Type)
 			continue
 		}
-		fsmLog.Debugf("apply log index %d and recorded index is %d", lg.Index, lst)
-		if lst >= lg.Index {
+		fsmLog.Debugf("apply log index %d and recorded index is %d", lg.Index, lastAppliedIndex)
+		if lastAppliedIndex >= lg.Index {
 			continue
 		}
-
-		if err := util.DecodeMsgp(&data, lg.Data); err != nil {
+		if err = util.DecodeMsgp(&data, lg.Data); err != nil {
 			res[i] = err
 			continue
 		}
@@ -187,7 +186,7 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 				res[i] = err
 			}
 		}
-	} else {
+	} else if maxIndex > lastAppliedIndex {
 		util.LogErrWithPre("fsm record apply index", f.snapshot.ApplyIndex(maxIndex))
 	}
 	return res
