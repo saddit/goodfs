@@ -2,6 +2,7 @@ package repo
 
 import (
 	"apiserver/internal/entity"
+	"apiserver/internal/usecase/grpcapi"
 	"apiserver/internal/usecase/logic"
 	"apiserver/internal/usecase/webapi"
 	"common/response"
@@ -11,42 +12,45 @@ type BucketRepo struct {
 }
 
 func (b *BucketRepo) Get(s string) (*entity.Bucket, error) {
-	ip, group, err := logic.NewHashSlot().FindMetaLocByName(s)
+	masterId, err := logic.NewHashSlot().KeySlotLocation(s)
 	if err != nil {
 		return nil, err
 	}
-	ip = logic.NewDiscovery().SelectMetaByGroupID(group, ip)
-	return webapi.GetBucket(ip, s)
+	ip, err := logic.NewDiscovery().SelectMetaServerGRPC(masterId)
+	if err != nil {
+		return nil, err
+	}
+	return grpcapi.GetBucket(ip, s)
 }
 
 func (b *BucketRepo) Update(bucket *entity.Bucket) error {
 	if bucket.Name == "" {
 		return response.NewError(400, "bucket name required")
 	}
-	ip, _, err := logic.NewHashSlot().FindMetaLocByName(bucket.Name)
+	masterId, err := logic.NewHashSlot().KeySlotLocation(bucket.Name)
 	if err != nil {
 		return err
 	}
-	return webapi.PutBucket(ip, bucket)
+	return webapi.PutBucket(logic.NewDiscovery().GetMetaServerHTTP(masterId), bucket)
 }
 
 func (b *BucketRepo) Create(bucket *entity.Bucket) error {
 	if bucket.Name == "" {
 		return response.NewError(400, "bucket name required")
 	}
-	ip, _, err := logic.NewHashSlot().FindMetaLocByName(bucket.Name)
+	masterId, err := logic.NewHashSlot().KeySlotLocation(bucket.Name)
 	if err != nil {
 		return err
 	}
-	return webapi.PostBucket(ip, bucket)
+	return webapi.PostBucket(logic.NewDiscovery().GetMetaServerHTTP(masterId), bucket)
 }
 
 func (b *BucketRepo) Delete(s string) error {
-	ip, _, err := logic.NewHashSlot().FindMetaLocByName(s)
+	masterId, err := logic.NewHashSlot().KeySlotLocation(s)
 	if err != nil {
 		return err
 	}
-	return webapi.DeleteBucket(ip, s)
+	return webapi.DeleteBucket(logic.NewDiscovery().GetMetaServerHTTP(masterId), s)
 }
 
 func NewBucketRepo() *BucketRepo {

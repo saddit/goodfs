@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"common/cmd"
-	"common/pb"
+	"common/proto/pb"
 	"common/util"
 	"common/util/slices"
 	"context"

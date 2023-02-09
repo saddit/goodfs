@@ -4,7 +4,8 @@ import (
 	"common/graceful"
 	"common/hashslot"
 	"common/logs"
-	"common/pb"
+	"common/proto/msg"
+	"common/proto/pb"
 	"common/util"
 	"context"
 	"errors"
@@ -195,19 +196,19 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 	var err error
 	switch entity.Dest(item.Dest) {
 	case entity.DestVersion:
-		var i entity.Version
+		var i msg.Version
 		if err = util.DecodeMsgp(&i, item.Data); err != nil {
 			return err
 		}
 		err = h.Service.ReceiveVersion(item.Name, &i)
 	case entity.DestMetadata:
-		var i entity.Metadata
+		var i msg.Metadata
 		if err = util.DecodeMsgp(&i, item.Data); err != nil {
 			return err
 		}
 		err = h.Service.AddMetadata(item.Name, &i)
 	case entity.DestBucket:
-		var i entity.Bucket
+		var i msg.Bucket
 		if err = util.DecodeMsgp(&i, item.Data); err != nil {
 			return err
 		}

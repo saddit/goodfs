@@ -8,18 +8,16 @@ import (
 	"common/cst"
 	"common/hashslot"
 	"common/logs"
-	"common/pb"
+	"common/proto/msg"
+	"common/proto/pb"
 	"common/response"
 	"common/util"
-	"encoding/json"
 	"fmt"
 	"net"
-	"sort"
 	"sync"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 )
 
 type MetadataCond struct {
@@ -46,9 +44,9 @@ func NewMetadata() *Metadata {
 	return new(Metadata)
 }
 
-func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, error) {
+func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*msg.Metadata, int, error) {
 	servers := pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, false, true)
-	lst := make([]*entity.Metadata, 0, len(servers)*cond.Page*cond.PageSize)
+	lst := make([]*msg.Metadata, 0, len(servers)*cond.Page*cond.PageSize)
 	if len(servers) == 0 {
 		logs.Std().Warn("not found any metadata server")
 		return lst, 0, nil
@@ -76,34 +74,19 @@ func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*entity.Metadata, int, e
 	if err := dg.WaitUntilError(); err != nil {
 		return nil, 0, err
 	}
-	// TODO: remove order logic
 	if st, ed, ok := util.PagingOffset(cond.Page, cond.PageSize, len(lst)); ok {
-		sort.Slice(lst, func(i, j int) bool {
-			var res bool
-			switch cond.OrderBy {
-			default:
-				fallthrough
-			case "create_time":
-				res = lst[i].CreateTime < lst[j].CreateTime
-			case "update_time":
-				res = lst[i].UpdateTime < lst[j].UpdateTime
-			case "name":
-				res = lst[i].Name < lst[j].Name
-			}
-			return util.IfElse(cond.Desc, !res, res)
-		})
 		return lst[st:ed], totals, nil
 	}
-	return []*entity.Metadata{}, 0, nil
+	return []*msg.Metadata{}, 0, nil
 }
 
 func (m *Metadata) VersionPaging(cond MetadataCond, token string) ([]byte, int, error) {
 	return webapi.ListVersion(SelectApiServer(), cond.Name, cond.Bucket, cond.Page, cond.PageSize, token)
 }
 
-func (m *Metadata) BucketPaging(cond *BucketCond) ([]*entity.Bucket, int, error) {
+func (m *Metadata) BucketPaging(cond *BucketCond) ([]*msg.Bucket, int, error) {
 	servers := pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, false, true)
-	lst := make([]*entity.Bucket, 0, len(servers)*cond.Page*cond.PageSize)
+	lst := make([]*msg.Bucket, 0, len(servers)*cond.Page*cond.PageSize)
 	if len(servers) == 0 {
 		logs.Std().Warn("not found any metadata server")
 		return lst, 0, nil
@@ -140,7 +123,7 @@ func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {
 	if srcAddr == "" || destAddr == "" {
 		return response.NewError(400, "invalid server id")
 	}
-	cc, err := grpc.Dial(srcAddr, grpc.WithInsecure())
+	cc, err := getConn(srcAddr)
 	if err != nil {
 		return err
 	}
@@ -198,7 +181,7 @@ func (m *Metadata) LeaveRaftCluster(servId string) error {
 	if !ok {
 		return response.NewError(400, "unknown server id")
 	}
-	cc, err := grpc.Dial(servAddr, grpc.WithInsecure())
+	cc, err := getConn(servAddr)
 	if err != nil {
 		return err
 	}
@@ -212,7 +195,7 @@ func (m *Metadata) JoinRaftCluster(masterId, servId string) error {
 	if !ok {
 		return response.NewError(400, "unknown server id")
 	}
-	cc, err := grpc.Dial(servAddr, grpc.WithInsecure())
+	cc, err := getConn(servAddr)
 	if err != nil {
 		return err
 	}
@@ -228,36 +211,35 @@ func (m *Metadata) JoinRaftCluster(masterId, servId string) error {
 }
 
 func (m *Metadata) GetPeers(servId string) ([]*entity.ServerInfo, error) {
-	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
-	servAddr, ok := mp[servId]
+	rpcMap := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	httpMap := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, false)
+	servAddr, ok := rpcMap[servId]
 	if !ok {
 		return nil, response.NewError(400, "unknown server id")
 	}
-	cc, err := grpc.Dial(servAddr, grpc.WithInsecure())
+	cc, err := getConn(servAddr)
 	if err != nil {
 		return nil, err
 	}
 	resp, err := pb.NewMetadataApiClient(cc).GetPeers(context.Background(), new(pb.EmptyReq))
 	if err != nil {
-		return nil, err
+		return nil, ResolveErr(err)
 	}
+	resp.Data = append(resp.Data, servId)
 	var res []map[string]string
-	if err = json.Unmarshal(resp.Data, &res); err != nil {
-		return nil, err
-	}
 	infoList := make([]*entity.ServerInfo, 0, len(res))
-	for _, d := range res {
+	for _, id := range resp.Data {
 		infoList = append(infoList, &entity.ServerInfo{
-			ServerID: d["serverId"],
-			HttpAddr: net.JoinHostPort(d["location"], d["httpPort"]),
-			RpcAddr:  net.JoinHostPort(d["location"], d["grpcPort"]),
+			ServerID: id,
+			HttpAddr: httpMap[id],
+			RpcAddr:  rpcMap[id],
 		})
 	}
 	return infoList, nil
 }
 
 func (*Metadata) GetConfig(ip string) ([]byte, error) {
-	cc, err := grpc.Dial(ip, grpc.WithInsecure())
+	cc, err := getConn(ip)
 	if err != nil {
 		return nil, err
 	}

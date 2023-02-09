@@ -4,6 +4,8 @@ import (
 	"common/logs"
 	"common/util"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -132,4 +134,37 @@ func FailErr(err error, c *gin.Context) *GinExecutor {
 		c.Abort()
 	}
 	return &GinExecutor{c}
+}
+
+// TODO: add more mapping
+var httpGrpcStatus = map[int]codes.Code{
+	http.StatusOK:           codes.OK,
+	http.StatusBadRequest:   codes.InvalidArgument,
+	http.StatusUnauthorized: codes.Unauthenticated,
+	http.StatusForbidden:    codes.PermissionDenied,
+	http.StatusNotFound:     codes.NotFound,
+}
+
+func GRPCError(err error) error {
+	switch err := err.(type) {
+	case validator.ValidationErrors, *validator.ValidationErrors:
+		return status.Error(codes.InvalidArgument, err.Error())
+	case IResponseErr:
+		if IsOk(err.GetStatus()) {
+			return nil
+		} else if IsInternal(err.GetStatus()) {
+			logs.Std().Errorf("grpc internal err: %s", err)
+			return status.Error(codes.Internal, err.Error())
+		} else {
+			code, ok := httpGrpcStatus[err.GetStatus()]
+			if !ok {
+				logs.Std().Errorf("grpc unknown err: %s", err)
+				code = codes.Unknown
+			}
+			return status.Error(code, err.Error())
+		}
+	default:
+		logs.Std().Errorf("grpc internal err: %s", err)
+		return status.Error(codes.Internal, err.Error())
+	}
 }

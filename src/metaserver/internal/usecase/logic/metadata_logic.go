@@ -3,11 +3,11 @@ package logic
 import (
 	"bytes"
 	"common/logs"
+	"common/proto/msg"
+	"common/util"
 	"errors"
 	"fmt"
-	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
-	"common/util"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -30,7 +30,7 @@ func ForeachKeys(fn func(string) bool) TxFunc {
 	}
 }
 
-func AddMeta(id string, data *entity.Metadata) TxFunc {
+func AddMeta(id string, data *msg.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
 		root := GetMetadataBucket(tx)
 		key := util.StrToBytes(id)
@@ -38,6 +38,8 @@ func AddMeta(id string, data *entity.Metadata) TxFunc {
 		if root.Get(key) != nil {
 			return ErrExists
 		}
+		// not save Extra
+		data.Extra = nil
 		// encode data
 		bt, err := util.EncodeMsgp(data)
 		if err != nil {
@@ -71,16 +73,18 @@ func RemoveMeta(name string) TxFunc {
 	}
 }
 
-func UpdateMeta(id string, data *entity.Metadata) TxFunc {
+func UpdateMeta(id string, data *msg.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
 		root := GetMetadataBucket(tx)
-		var origin entity.Metadata
+		var origin msg.Metadata
 		if err := getMeta(root, id, &origin); err != nil {
 			return err
 		}
 		if data.UpdateTime <= origin.UpdateTime {
 			return ErrOldData
 		}
+		// not save Extra
+		data.Extra = nil
 		data.Bucket = origin.Bucket
 		data.CreateTime = origin.CreateTime
 		bt, err := util.EncodeMsgp(data)
@@ -91,13 +95,13 @@ func UpdateMeta(id string, data *entity.Metadata) TxFunc {
 	}
 }
 
-func GetMeta(name string, data *entity.Metadata) TxFunc {
+func GetMeta(name string, data *msg.Metadata) TxFunc {
 	return func(tx *bolt.Tx) error {
 		return getMeta(GetMetadataBucket(tx), name, data)
 	}
 }
 
-func GetExtra(id string, extra *entity.Extra) TxFunc {
+func GetExtra(id string, extra *msg.Extra) TxFunc {
 	return func(tx *bolt.Tx) error {
 		b := GetVersionBucket(tx, id)
 		if b == nil {
@@ -119,7 +123,7 @@ func GetExtra(id string, extra *entity.Extra) TxFunc {
 	}
 }
 
-func AddVerWithSequence(name string, data *entity.Version) TxFunc {
+func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, name); bucket != nil {
 			// only if data is migrated from others will do sequence updating
@@ -145,7 +149,7 @@ func AddVerWithSequence(name string, data *entity.Version) TxFunc {
 	}
 }
 
-func AddVer(name string, data *entity.Version) TxFunc {
+func AddVer(name string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, name); bucket != nil {
 			data.Sequence, _ = bucket.NextSequence()
@@ -173,7 +177,7 @@ func RemoveVer(name string, ver uint64) TxFunc {
 		if b == nil {
 			return nil
 		}
-		var data entity.Version
+		var data msg.Version
 		if err := getVer(b, name, ver, &data); err != nil {
 			return err
 		}
@@ -185,12 +189,12 @@ func RemoveVer(name string, ver uint64) TxFunc {
 	}
 }
 
-func UpdateVer(id string, data *entity.Version) TxFunc {
+func UpdateVer(id string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if b := GetVersionBucket(tx, id); b != nil {
 			key := util.StrToBytes(fmt.Sprint(id, Sep, data.Sequence))
 			// get old one
-			var origin entity.Version
+			var origin msg.Version
 			if err := getVer(b, id, data.Sequence, &origin); err != nil {
 				return err
 			}
@@ -212,7 +216,7 @@ func UpdateVer(id string, data *entity.Version) TxFunc {
 	}
 }
 
-func GetVer(id string, ver uint64, dest *entity.Version) TxFunc {
+func GetVer(id string, ver uint64, dest *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, id); bucket != nil {
 			return getVer(bucket, id, ver, dest)
@@ -281,7 +285,7 @@ func GetVersionBucket(tx *bolt.Tx, name string) *bolt.Bucket {
 	return nil
 }
 
-func getVer(bucket *bolt.Bucket, id string, ver uint64, dest *entity.Version) error {
+func getVer(bucket *bolt.Bucket, id string, ver uint64, dest *msg.Version) error {
 	if bucket == nil {
 		return ErrNotFound
 	}
@@ -292,7 +296,7 @@ func getVer(bucket *bolt.Bucket, id string, ver uint64, dest *entity.Version) er
 	return util.DecodeMsgp(dest, bt)
 }
 
-func getMeta(b *bolt.Bucket, name string, dest *entity.Metadata) error {
+func getMeta(b *bolt.Bucket, name string, dest *msg.Metadata) error {
 	if b == nil {
 		return ErrNotFound
 	}

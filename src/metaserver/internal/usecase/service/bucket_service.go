@@ -1,6 +1,7 @@
 package service
 
 import (
+	"common/proto/msg"
 	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
@@ -16,7 +17,7 @@ func NewBucketService(repo usecase.BucketRepo, rw *raftimpl.RaftWrapper) *Bucket
 	return &BucketService{BucketRepo: repo, RaftApply: raftimpl.RaftApplier(rw)}
 }
 
-func (b *BucketService) Create(bucket *entity.Bucket) error {
+func (b *BucketService) Create(bucket *msg.Bucket) error {
 	if bucket == nil {
 		return usecase.ErrNilData
 	}
@@ -50,7 +51,7 @@ func (b *BucketService) Remove(name string) error {
 	return b.BucketRepo.Remove(name)
 }
 
-func (b *BucketService) Update(bucket *entity.Bucket) error {
+func (b *BucketService) Update(bucket *msg.Bucket) error {
 	if bucket == nil {
 		return usecase.ErrNilData
 	}

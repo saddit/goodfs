@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"common/cst"
 	"common/hashslot"
+	"common/proto/msg"
 	"common/registry"
 	"common/util"
 	"context"
@@ -11,7 +12,6 @@ import (
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"io"
-	"metaserver/internal/entity"
 	"net/http"
 	"testing"
 	"time"
@@ -36,11 +36,6 @@ func TestClearEtcd(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(cst.EtcdPrefix.HashSlot, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.PeersInfo, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.PeersInfo, resp.Deleted)
 	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.Registry, clientv3.WithPrefix())
 	if err != nil {
 		t.Fatal(err)
@@ -64,7 +59,7 @@ func TestClearEtcd(t *testing.T) {
 }
 
 func TestPostAPI(t *testing.T) {
-	data := &entity.Metadata{
+	data := &msg.Metadata{
 		Name: "test.txt",
 	}
 	bt, err := json.Marshal(data)
@@ -155,27 +150,6 @@ func TestGetHashSlot(t *testing.T) {
 		var i hashslot.SlotInfo
 		_ = util.DecodeMsgp(&i, kv.Value)
 		t.Logf("key=%s, value=%s", kv.Key, i.Slots)
-	}
-}
-
-func TestGetPeersInfo(t *testing.T) {
-	etcd, err := clientv3.New(clientv3.Config{
-		Endpoints: []string{"pressed.top:2379"},
-		Username:  "root",
-		Password:  "xianka",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	key := cst.EtcdPrefix.PeersInfo
-	resp, err := etcd.Get(context.Background(), key, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, kv := range resp.Kvs {
-		var i entity.PeerInfo
-		_ = util.DecodeMsgp(&i, kv.Value)
-		t.Logf("key=%s, value=%+v", kv.Key, i)
 	}
 }
 

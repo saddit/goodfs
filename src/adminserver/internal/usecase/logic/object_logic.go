@@ -3,7 +3,7 @@ package logic
 import (
 	"adminserver/internal/usecase/pool"
 	"adminserver/internal/usecase/webapi"
-	"common/pb"
+	"common/proto/pb"
 	"common/response"
 	"common/util"
 	"common/util/crypto"
@@ -67,7 +67,7 @@ func (Objects) LeaveCluster(serverId string) error {
 	if !ok {
 		return response.NewError(400, "serverId not exist")
 	}
-	cc, err := grpc.Dial(addr, grpc.WithInsecure())
+	cc, err := getConn(addr)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (Objects) LeaveCluster(serverId string) error {
 }
 
 func (Objects) GetConfig(ip string) ([]byte, error) {
-	cc, err := grpc.Dial(ip, grpc.WithInsecure())
+	cc, err := getConn(ip)
 	if err != nil {
 		return nil, err
 	}

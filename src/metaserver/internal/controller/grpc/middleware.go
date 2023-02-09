@@ -2,13 +2,14 @@ package grpc
 
 import (
 	"common/collection/set"
-	"common/util"
+	"common/graceful"
+	"common/proto/pb"
 	"context"
+	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
 
-	netGrpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
@@ -28,14 +29,14 @@ var checkRaftNonLeaderMethods = set.OfString([]string{
 	"/proto.RaftCmd/JoinLeader",
 })
 
-var checkLocalMethods = set.OfString([]string{
-	"/proto.RaftCmd/Bootstrap",
-	"/proto.RaftCmd/AddVoter",
-	"/proto.RaftCmd/JoinLeader",
-	"/proto.RaftCmd/AddVoter",
-	"/proto.HashSlot/StartMigration",
-	"/proto.HashSlot/GetCurrentSlots",
-})
+//var checkLocalMethods = set.OfString([]string{
+//	"/proto.RaftCmd/Bootstrap",
+//	"/proto.RaftCmd/AddVoter",
+//	"/proto.RaftCmd/JoinLeader",
+//	"/proto.RaftCmd/AddVoter",
+//	"/proto.HashSlot/StartMigration",
+//	"/proto.HashSlot/GetCurrentSlots",
+//})
 
 var checkWritableMethods = set.OfString([]string{
 	"/proto.HashSlot/StartMigration",
@@ -43,12 +44,12 @@ var checkWritableMethods = set.OfString([]string{
 	"/proto.HashSlot/StreamingReceive",
 })
 
-var checkValidMetaServerMethods = set.OfString([]string{
-	"/proto.HashSlot/PrepareMigration",
-	"/proto.HashSlot/StreamingReceive",
-})
+//var checkValidMetaServerMethods = set.OfString([]string{
+//	"/proto.HashSlot/PrepareMigration",
+//	"/proto.HashSlot/StreamingReceive",
+//})
 
-func CheckRaftEnabledUnary(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
+func CheckRaftEnabledUnary(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	if checkRaftEnabledMethods.Contains(info.FullMethod) {
 		if !pool.RaftWrapper.Enabled {
 			return nil, status.Error(codes.Unavailable, "raft is not enabled")
@@ -57,7 +58,7 @@ func CheckRaftEnabledUnary(ctx context.Context, req interface{}, info *netGrpc.U
 	return handler(ctx, req)
 }
 
-func CheckRaftLeaderUnary(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
+func CheckRaftLeaderUnary(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	if checkRaftLeaderMethods.Contains(info.FullMethod) {
 		if !pool.RaftWrapper.IsLeader() {
 			return nil, status.Error(codes.Unavailable, "server is not a leader")
@@ -66,7 +67,7 @@ func CheckRaftLeaderUnary(ctx context.Context, req interface{}, info *netGrpc.Un
 	return handler(ctx, req)
 }
 
-func CheckWritableUnary(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
+func CheckWritableUnary(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	if checkWritableMethods.Contains(info.FullMethod) {
 		if pool.RaftWrapper.Enabled && !pool.RaftWrapper.IsLeader() {
 			return nil, status.Error(codes.Unavailable, "server is not writable")
@@ -75,7 +76,7 @@ func CheckWritableUnary(ctx context.Context, req interface{}, info *netGrpc.Unar
 	return handler(ctx, req)
 }
 
-func CheckWritableStreaming(srv interface{}, ss netGrpc.ServerStream, info *netGrpc.StreamServerInfo, handler netGrpc.StreamHandler) error {
+func CheckWritableStreaming(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	if checkWritableMethods.Contains(info.FullMethod) {
 		if pool.RaftWrapper.Enabled && !pool.RaftWrapper.IsLeader() {
 			return status.Error(codes.Unavailable, "server is not writable")
@@ -84,7 +85,7 @@ func CheckWritableStreaming(srv interface{}, ss netGrpc.ServerStream, info *netG
 	return handler(srv, ss)
 }
 
-func CheckRaftNonLeaderUnary(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
+func CheckRaftNonLeaderUnary(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	if checkRaftNonLeaderMethods.Contains(info.FullMethod) {
 		if pool.RaftWrapper.IsLeader() {
 			return nil, status.Error(codes.Unavailable, "server is a leader")
@@ -93,30 +94,40 @@ func CheckRaftNonLeaderUnary(ctx context.Context, req interface{}, info *netGrpc
 	return handler(ctx, req)
 }
 
-func CheckLocalUnary(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
-	if checkLocalMethods.Contains(info.FullMethod) {
-		if pr, ok := peer.FromContext(ctx); ok {
-			clientIP := util.ParseIPFromAddr(pr.Addr.String())
-			if !clientIP.IsPrivate() && !clientIP.IsLoopback() {
-				return nil, status.Error(codes.PermissionDenied, "private ip only")
-			}
-		} else {
-			return nil, status.Error(codes.Internal, "get client ip fail")
-		}
+func CheckKeySlot(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	if req == nil {
+		return handler(ctx, req)
 	}
-	return handler(ctx, req)
+	r, ok := req.(*pb.MetaReq)
+	if !ok {
+		return handler(ctx, req)
+	}
+	if r.Id == "" {
+		return handler(ctx, req)
+	}
+	ok, other := logic.NewHashSlot().IsKeyOnThisServer(r.Id)
+	if ok {
+		return handler(ctx, req)
+	}
+	return nil, status.Error(codes.Aborted, other)
 }
 
-func AllowValidMetaServerUnary(ctx context.Context, req interface{}, info *netGrpc.UnaryServerInfo, handler netGrpc.UnaryHandler) (any, error) {
-	if checkValidMetaServerMethods.Contains(info.FullMethod) {
-		//TODO check whether client ip is a meta-server in this system
+// UnaryServerRecoveryInterceptor returns a new unary server interceptor for panic recovery.
+func UnaryServerRecoveryInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+		defer graceful.Recover(func(msg string) {
+			err = status.Error(codes.Internal, "panic")
+		})
+		return handler(ctx, req)
 	}
-	return handler(ctx, req)
 }
 
-func AllowValidMetaServerStreaming(srv interface{}, ss netGrpc.ServerStream, info *netGrpc.StreamServerInfo, handler netGrpc.StreamHandler) error {
-	if checkValidMetaServerMethods.Contains(info.FullMethod) {
-		//TODO
+// StreamServerRecoveryInterceptor returns a new streaming server interceptor for panic recovery.
+func StreamServerRecoveryInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+		defer graceful.Recover(func(msg string) {
+			err = status.Error(codes.Internal, "panic")
+		})
+		return handler(srv, stream)
 	}
-	return handler(srv, ss)
 }

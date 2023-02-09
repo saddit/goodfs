@@ -3,6 +3,7 @@ package pool
 import (
 	"apiserver/config"
 	"apiserver/internal/usecase/componet/selector"
+	"apiserver/internal/usecase/grpcapi"
 	"apiserver/internal/usecase/webapi"
 	"common/logs"
 	"common/performance"
@@ -34,6 +35,8 @@ func InitPool(cfg *config.Config) {
 func Close() {
 	util.LogErr(Perform.Close())
 	util.LogErr(Etcd.Close())
+	util.LogErr(grpcapi.Close())
+	webapi.Close()
 }
 
 func initEtcd(cfg *config.Config) {
@@ -84,4 +87,5 @@ func initPerform(cfg *performance.Config, logCfg *logs.Config, regCfg *registry.
 	}
 	Perform = performance.NewCollector(cfg)
 	webapi.SetPerformanceCollector(Perform)
+	grpcapi.SetPerformanceCollector(Perform)
 }

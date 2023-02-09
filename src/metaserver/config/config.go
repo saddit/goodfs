@@ -21,18 +21,19 @@ const (
 )
 
 type Config struct {
-	Port        string          `yaml:"port" env:"PORT" env-default:"8090"`
-	RpcPort     string          `yaml:"rpc-port" env:"RPC_PORT" env-default:"4090"`
-	DataDir     string          `yaml:"data-dir" env:"DATA_DIR"`
-	Log         logs.Config     `yaml:"log" env-prefix:"LOG"`
-	Cluster     ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
-	Registry    registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
-	Etcd        etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
-	HashSlot    HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
-	Cache       CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
-	DataPath    string          `yaml:"-" env:"-"`
-	filePath    string          `yaml:"-" env:"-"`
-	persistLock sync.Locker     `yaml:"-" env:"-"`
+	Port                 string          `yaml:"port" env:"PORT" env-default:"8090"`
+	RpcPort              string          `yaml:"rpc-port" env:"RPC_PORT" env-default:"4090"`
+	DataDir              string          `yaml:"data-dir" env:"DATA_DIR"`
+	MaxConcurrentStreams uint32          `yaml:"max-concurrent-streams" env:"MAX_CONCURRENT_STREAMS" env-default:"100"`
+	Log                  logs.Config     `yaml:"log" env-prefix:"LOG"`
+	Cluster              ClusterConfig   `yaml:"cluster" env-prefix:"CLUSTER"`
+	Registry             registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Etcd                 etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
+	HashSlot             HashSlotConfig  `yaml:"hash-slot" env-prefix:"HASH_SLOT"`
+	Cache                CacheConfig     `yaml:"cache" env-prefix:"CACHE"`
+	DataPath             string          `yaml:"-" env:"-"`
+	filePath             string          `yaml:"-" env:"-"`
+	persistLock          sync.Locker     `yaml:"-" env:"-"`
 }
 
 func (c *Config) initialize(filePath string) {

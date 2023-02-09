@@ -1,6 +1,7 @@
 port: "8090"
 rpc-port: "4090"
 data-dir: e:\file\temp
+max-concurrent-streams: 100
 log:
   level: debug
   store-dir: ""

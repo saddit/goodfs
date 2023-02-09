@@ -56,13 +56,17 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 		return
 	}
 	id := fmt.Sprint(body.Bucket, "/", body.Name)
-	loc, gid, err := logic.NewHashSlot().FindMetaLocByName(id)
+	serverId, err := logic.NewHashSlot().KeySlotLocation(id)
 	if err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	loc = logic.NewDiscovery().SelectMetaByGroupID(gid, loc)
-	version, total, err := webapi.ListVersion(loc, url.PathEscape(id), body.Page, body.PageSize)
+	ip, err := logic.NewDiscovery().SelectMetaServerHttp(serverId)
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	version, total, err := webapi.ListVersion(ip, url.PathEscape(id), body.Page, body.PageSize)
 	if err != nil {
 		response.FailErr(err, c)
 		return

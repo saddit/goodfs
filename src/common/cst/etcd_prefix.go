@@ -4,7 +4,6 @@ import "fmt"
 
 type etcdPrefix struct {
 	Sep            []byte
-	PeersInfo      string
 	HashSlot       string
 	Registry       string
 	ObjectCap      string
@@ -16,7 +15,6 @@ type etcdPrefix struct {
 
 var EtcdPrefix = etcdPrefix{
 	Sep:            []byte("/"),
-	PeersInfo:      "peers_info",
 	HashSlot:       "hash_slot",
 	Registry:       "registry",
 	ObjectCap:      "object_cap",
@@ -24,10 +22,6 @@ var EtcdPrefix = etcdPrefix{
 	SystemInfo:     "sys_info",
 	Configure:      "configure",
 	LocationSubKey: "good.fs.location",
-}
-
-func (e *etcdPrefix) FmtPeersInfo(groupId, id string) string {
-	return fmt.Sprintf("%s/%s/%s", e.PeersInfo, groupId, id)
 }
 
 func (e *etcdPrefix) FmtRegistry(groupName, serviceName string) string {

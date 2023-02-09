@@ -2,33 +2,26 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "../pb";
+option go_package = "./pb";
 
 import "message.proto";
 
-message Version {
-  bool compress = 1;
-  int64 size = 2;
-  uint64 sequence = 3;
-  string hash = 4;
-  string name = 5;
-  repeated string locations = 6;
+message StringsResp {
+  repeated string data = 1;
 }
 
-message ApiQryResp {
-  repeated Version data = 1;
-}
-
-message JsonResp {
-  bytes data = 1;
-}
-
-message ApiQryHash {
+message MetaReq {
   string hash = 1;
+  string id = 2;
+  int32 version = 3;
+  bool withExtra = 4;
 }
 
 service MetadataApi {
-  rpc getVersionsByHash(ApiQryHash) returns (ApiQryResp);
-  rpc getPeers(EmptyReq) returns (JsonResp);
+  rpc getVersionsByHash(MetaReq) returns (Msgpack);
+  rpc getBucket(MetaReq) returns (Msgpack);
+  rpc getMetadata(MetaReq) returns (Msgpack);
+  rpc getVersion(MetaReq) returns (Msgpack);
+  rpc getPeers(EmptyReq) returns (StringsResp);
 }
 

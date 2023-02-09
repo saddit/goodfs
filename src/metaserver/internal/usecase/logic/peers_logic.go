@@ -1,13 +1,7 @@
 package logic
 
 import (
-	. "common/cst"
-	"common/util"
-	"context"
-	"metaserver/internal/entity"
 	"metaserver/internal/usecase/pool"
-
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type Peers struct{}
@@ -16,47 +10,18 @@ func NewPeers() Peers {
 	return Peers{}
 }
 
-func (Peers) GetPeers() ([]*entity.PeerInfo, error) {
-	prefix := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, "")
-	res, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
-	if err != nil {
+// GetPeers peers server-id exclude self
+func (Peers) GetPeers() ([]string, error) {
+	if !pool.RaftWrapper.Enabled {
+		return []string{}, nil
+	}
+	fu := pool.RaftWrapper.Raft.GetConfiguration()
+	if err := fu.Error(); err != nil {
 		return nil, err
 	}
-	infoList := make([]*entity.PeerInfo, 0, len(res.Kvs))
-	for _, kv := range res.Kvs {
-		var info entity.PeerInfo
-		if err = util.DecodeMsgp(&info, kv.Value); err != nil {
-			return nil, err
-		}
-		infoList = append(infoList, &info)
+	var ids []string
+	for _, sev := range fu.Configuration().Servers {
+		ids = append(ids, string(sev.ID))
 	}
-	return infoList, nil
-}
-
-func (Peers) Register() error {
-	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Registry.ServerID)
-	info := &entity.PeerInfo{
-		Location: util.GetHost(),
-		HttpPort: pool.Config.Port,
-		GrpcPort: pool.Config.Cluster.Port,
-		GroupID:  pool.Config.Cluster.GroupID,
-		ServerID: pool.Config.Registry.ServerID,
-	}
-	bt, err := util.EncodeMsgp(info)
-	if err != nil {
-		return err
-	}
-	_, err = pool.Etcd.Put(context.Background(), key, string(bt))
-	return err
-}
-
-func (p Peers) MustRegister() Peers {
-	util.PanicErr(p.Register())
-	return p
-}
-
-func (Peers) Unregister() error {
-	key := EtcdPrefix.FmtPeersInfo(pool.Config.Cluster.GroupID, pool.Config.Registry.ServerID)
-	_, err := pool.Etcd.Delete(context.Background(), key)
-	return err
+	return ids, nil
 }

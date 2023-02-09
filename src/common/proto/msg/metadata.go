@@ -1,9 +1,15 @@
-package entity
+package msg
 
 //go:generate msgp -tests=false
 
+type Extra struct {
+	Total        int `json:"total" msg:"total"`
+	FirstVersion int `json:"firstVersion" msg:"first_version"`
+	LastVersion  int `json:"lastVersion" msg:"last_version"`
+}
+
 type Metadata struct {
-	*Extra     `msg:"-"`
+	*Extra     `msg:",inline"`
 	Name       string `json:"name" msg:"name" binding:"required"`
 	Bucket     string `json:"bucket" msg:"bucket" binding:"required"`
 	CreateTime int64  `json:"createTime" msg:"create_time"`

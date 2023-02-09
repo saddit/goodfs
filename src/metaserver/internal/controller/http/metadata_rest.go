@@ -1,9 +1,9 @@
 package http
 
 import (
+	"common/proto/msg"
 	"common/response"
 	"common/util"
-	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	. "metaserver/internal/usecase"
 	"sort"
@@ -28,7 +28,7 @@ func (m *MetadataController) RegisterRoute(engine gin.IRouter) {
 }
 
 func (m *MetadataController) Post(g *gin.Context) {
-	var data entity.Metadata
+	var data msg.Metadata
 	if err := g.ShouldBindJSON(&data); err != nil {
 		response.FailErr(err, g)
 		return
@@ -41,7 +41,7 @@ func (m *MetadataController) Post(g *gin.Context) {
 }
 
 func (m *MetadataController) Put(g *gin.Context) {
-	var data entity.Metadata
+	var data msg.Metadata
 	_ = g.ShouldBindJSON(&data)
 	if err := m.service.UpdateMetadata(g.Param("name"), &data); err != nil {
 		response.FailErr(err, g)
@@ -64,14 +64,14 @@ func (m *MetadataController) Get(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	var versionList []*entity.Version
+	var versionList []*msg.Version
 	if vers != nil {
 		versionList = append(versionList, vers)
 	}
 	// metadata and version format
 	response.OkJson(struct {
-		*entity.Metadata
-		Versions []*entity.Version `json:"versions,omitempty"`
+		*msg.Metadata
+		Versions []*msg.Version `json:"versions,omitempty"`
 	}{meta, versionList}, g)
 }
 

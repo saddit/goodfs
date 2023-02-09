@@ -1,11 +1,11 @@
 package service
 
 import (
-	"common/pb"
+	"common/proto/msg"
 	"common/util"
 	"errors"
 	"metaserver/internal/entity"
-	usecase "metaserver/internal/usecase"
+	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
 	"strings"
 	"time"
@@ -22,7 +22,7 @@ func NewMetadataService(repo usecase.IMetadataRepo, batch usecase.IBatchMetaRepo
 	return &MetadataService{raftimpl.RaftApplier(rw), repo, batch, hashIndex}
 }
 
-func (m *MetadataService) AddMetadata(id string, data *entity.Metadata) error {
+func (m *MetadataService) AddMetadata(id string, data *msg.Metadata) error {
 	data.CreateTime = time.Now().UnixMilli()
 	data.UpdateTime = data.CreateTime
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
@@ -40,7 +40,7 @@ func (m *MetadataService) AddMetadata(id string, data *entity.Metadata) error {
 	return m.repo.AddMetadata(id, data)
 }
 
-func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, error) {
+func (m *MetadataService) AddVersion(name string, data *msg.Version) (int, error) {
 	data.Ts = time.Now().UnixMilli()
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:    entity.LogInsert,
@@ -60,7 +60,7 @@ func (m *MetadataService) AddVersion(name string, data *entity.Version) (int, er
 	return int(data.Sequence), nil
 }
 
-func (m *MetadataService) ReceiveVersion(name string, data *entity.Version) error {
+func (m *MetadataService) ReceiveVersion(name string, data *msg.Version) error {
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:    entity.LogMigrate,
 		Dest:    entity.DestVersion,
@@ -79,7 +79,7 @@ func (m *MetadataService) ReceiveVersion(name string, data *entity.Version) erro
 	return nil
 }
 
-func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) error {
+func (m *MetadataService) UpdateMetadata(name string, data *msg.Metadata) error {
 	data.UpdateTime = time.Now().UnixMilli()
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogUpdate,
@@ -96,7 +96,7 @@ func (m *MetadataService) UpdateMetadata(name string, data *entity.Metadata) err
 	return m.repo.UpdateMetadata(name, data)
 }
 
-func (m *MetadataService) UpdateVersion(name string, ver int, data *entity.Version) error {
+func (m *MetadataService) UpdateVersion(name string, ver int, data *msg.Version) error {
 	data.Ts = time.Now().UnixMilli()
 	data.Sequence = uint64(ver)
 	if ok, resp := m.ApplyRaft(&entity.RaftData{
@@ -151,7 +151,7 @@ func (m *MetadataService) RemoveVersion(name string, ver int) error {
 }
 
 // GetMetadata 获取metadata及其版本，如果version为-1则不获取任何版本，返回的版本为nil
-func (m *MetadataService) GetMetadata(id string, version int, withExtra bool) (*entity.Metadata, *entity.Version, error) {
+func (m *MetadataService) GetMetadata(id string, version int, withExtra bool) (*msg.Metadata, *msg.Version, error) {
 	meta, err := m.repo.GetMetadata(id)
 	if err != nil {
 		return nil, nil, err
@@ -175,14 +175,14 @@ func (m *MetadataService) GetMetadata(id string, version int, withExtra bool) (*
 	}
 }
 
-func (m *MetadataService) GetVersion(name string, ver int) (*entity.Version, error) {
+func (m *MetadataService) GetVersion(name string, ver int) (*msg.Version, error) {
 	if ver <= 0 {
 		return m.repo.GetVersion(name, m.repo.GetLastVersionNumber(name))
 	}
 	return m.repo.GetVersion(name, uint64(ver))
 }
 
-func (m *MetadataService) ListVersions(name string, page int, size int) ([]*entity.Version, int, error) {
+func (m *MetadataService) ListVersions(name string, page int, size int) ([]*msg.Version, int, error) {
 	if page == 0 {
 		page = 1
 	}
@@ -191,9 +191,9 @@ func (m *MetadataService) ListVersions(name string, page int, size int) ([]*enti
 	return m.repo.ListVersions(name, start, start+size)
 }
 
-func (m *MetadataService) ListMetadata(prefix string, size int) ([]*entity.Metadata, int, error) {
+func (m *MetadataService) ListMetadata(prefix string, size int) ([]*msg.Metadata, int, error) {
 	if size == 0 {
-		return []*entity.Metadata{}, 0, nil
+		return []*msg.Metadata{}, 0, nil
 	}
 	return m.repo.ListMetadata(prefix, size)
 }
@@ -218,12 +218,12 @@ func (m *MetadataService) GetMetadataBytes(name string) ([]byte, error) {
 	return m.repo.GetMetadataBytes(name)
 }
 
-func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error) {
+func (m *MetadataService) FindByHash(hash string) (res []*msg.Version, err error) {
 	keys, err := m.hashIndex.FindAll(hash)
 	if err != nil {
 		return nil, err
 	}
-	res = make([]*pb.Version, 0, len(keys))
+	res = make([]*msg.Version, 0, len(keys))
 	needSync := false
 	for _, key := range keys {
 		idx := strings.LastIndexByte(key, '.')
@@ -236,13 +236,7 @@ func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error)
 		} else if err != nil {
 			return nil, err
 		}
-		res = append(res, &pb.Version{
-			Hash:      ver.Hash,
-			Sequence:  ver.Sequence,
-			Size:      ver.Size,
-			Name:      name,
-			Locations: ver.Locate,
-		})
+		res = append(res, ver)
 	}
 	if needSync {
 		err = m.hashIndex.Sync()
@@ -250,12 +244,6 @@ func (m *MetadataService) FindByHash(hash string) (res []*pb.Version, err error)
 	return
 }
 
-func (m *MetadataService) UpdateLocates(name string, version int, locates []string) error {
-	ver, err := m.GetVersion(name, version)
-	if err != nil {
-		return err
-	}
-	ver.Ts = time.Now().UnixMilli()
-	ver.Locate = locates
-	return m.UpdateVersion(name, version, ver)
+func (m *MetadataService) UpdateLocates(hash string, index int, locate string) error {
+	return m.repo.UpdateLocateByHash(hash, index, locate)
 }

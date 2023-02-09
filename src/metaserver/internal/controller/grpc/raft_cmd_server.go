@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"common/graceful"
-	"common/pb"
+	"common/proto/pb"
 	"common/util"
 	"context"
 	"encoding/json"

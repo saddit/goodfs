@@ -16,4 +16,7 @@ func (Registry) OnLeaderChanged(isLeader bool) {
 	} else {
 		util.LogErr(pool.Registry.AsSlave().Register())
 	}
+	if lease, ok := pool.Registry.LifecycleLease(); ok {
+		pool.HashSlot.Lease = lease
+	}
 }

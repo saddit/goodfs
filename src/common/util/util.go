@@ -319,6 +319,32 @@ func EncodeMsgp(data msgp.MarshalSizer) ([]byte, error) {
 	return bt, err
 }
 
+func EncodeArrayMsgp[T msgp.Encodable](arr []T) ([]byte, error) {
+	var buffer bytes.Buffer
+	for _, i := range arr {
+		if err := msgp.Encode(&buffer, i); err != nil {
+			return nil, err
+		}
+	}
+	return buffer.Bytes(), nil
+}
+
+func DecodeArrayMsgp[T msgp.Decodable](data []byte, res *[]T) error {
+	buf := bytes.NewBuffer(data)
+	for {
+		var item T
+		err := msgp.Decode(buf, item)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		*res = append(*res, item)
+	}
+	return nil
+}
+
 func PagingOffset(page, size, total int) (int, int, bool) {
 	if page == 0 {
 		return 0, 0, false

@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	"common/pb"
+	"common/proto/pb"
 	"common/util"
 	"context"
 	"encoding/json"
