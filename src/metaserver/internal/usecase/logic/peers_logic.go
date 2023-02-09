@@ -21,6 +21,9 @@ func (Peers) GetPeers() ([]string, error) {
 	}
 	var ids []string
 	for _, sev := range fu.Configuration().Servers {
+		if string(sev.ID) == pool.RaftWrapper.ID {
+			continue
+		}
 		ids = append(ids, string(sev.ID))
 	}
 	return ids, nil
