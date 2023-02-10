@@ -221,7 +221,7 @@ func (m *Metadata) GetPeers(servId string) ([]*entity.ServerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := pb.NewMetadataApiClient(cc).GetPeers(context.Background(), new(pb.EmptyReq))
+	resp, err := pb.NewMetadataApiClient(cc).GetPeers(context.Background(), new(pb.Empty))
 	if err != nil {
 		return nil, ResolveErr(err)
 	}
