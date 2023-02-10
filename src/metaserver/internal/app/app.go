@@ -29,21 +29,19 @@ func Run(cfg *config.Config) {
 		raftWrapper,
 	)
 	hsService := service.NewHashSlotService(pool.HashSlot, metaService, bucketServ, &cfg.HashSlot)
-	grpcServer := grpc.NewRpcServer(cfg.RpcPort, raftWrapper, metaService, hsService)
+	grpcServer := grpc.NewRpcServer(cfg.RpcPort, cfg.MaxConcurrentStreams, raftWrapper, metaService, hsService, bucketServ)
 	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService, bucketServ)
 	// register on leader change
 	raftWrapper.RegisterLeaderChangedEvent(hsService)
 	raftWrapper.RegisterLeaderChangedEvent(logic.NewRegistry())
 	raftWrapper.Init()
 	pool.RaftWrapper = raftWrapper
-	// register peers
-	defer logic.NewPeers().MustRegister().Unregister()
 	// unregister service
 	defer pool.Registry.Unregister()
+	// remove slots info from etcd
+	defer pool.HashSlot.Remove(cfg.HashSlot.StoreID)
 	// auto save disk-info
 	defer logic.NewSystemStatLogic().StartAutoSave()()
-	// remove slots-info
-	defer logic.NewHashSlot().RemoveFromEtcd(cfg.HashSlot.StoreID)
 	// flush config
 	defer cfg.Persist()
 

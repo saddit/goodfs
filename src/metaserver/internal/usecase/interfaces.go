@@ -1,7 +1,8 @@
 package usecase
 
 import (
-	"common/pb"
+	"common/proto/msg"
+	"common/proto/pb"
 	"common/response"
 	"io"
 	"metaserver/internal/entity"
@@ -16,41 +17,41 @@ type (
 		ForeachVersionBytes(string, func([]byte) bool)
 		GetMetadataBytes(string) ([]byte, error)
 		FilterKeys(fn func(string) bool) []string
-		FindByHash(hash string) (res []*pb.Version, err error)
-		UpdateLocates(name string, seq int, locates []string) error
+		FindByHash(hash string) (res []*msg.Version, err error)
+		UpdateLocates(hash string, locateIndex int, locate string) error
 	}
 
 	IMetadataService interface {
 		MetadataRpcService
-		ReceiveVersion(string, *entity.Version) error
-		AddMetadata(string, *entity.Metadata) error
-		AddVersion(string, *entity.Version) (int, error)
-		UpdateMetadata(string, *entity.Metadata) error
-		UpdateVersion(string, int, *entity.Version) error
+		ReceiveVersion(string, *msg.Version) error
+		AddMetadata(string, *msg.Metadata) error
+		AddVersion(string, *msg.Version) (int, error)
+		UpdateMetadata(string, *msg.Metadata) error
+		UpdateVersion(string, int, *msg.Version) error
 		RemoveMetadata(string) error
 		RemoveVersion(string, int) error
-		GetMetadata(string, int, bool) (*entity.Metadata, *entity.Version, error)
-		GetVersion(string, int) (*entity.Version, error)
-		ListVersions(string, int, int) ([]*entity.Version, int, error)
-		ListMetadata(prefix string, size int) (lst []*entity.Metadata, total int, err error)
+		GetMetadata(string, int, bool) (*msg.Metadata, *msg.Version, error)
+		GetVersion(string, int) (*msg.Version, error)
+		ListVersions(string, int, int) ([]*msg.Version, int, error)
+		ListMetadata(prefix string, size int) (lst []*msg.Metadata, total int, err error)
 	}
 
 	WritableRepo interface {
-		AddMetadata(string, *entity.Metadata) error
-		AddVersion(string, *entity.Version) error
-		UpdateMetadata(string, *entity.Metadata) error
-		UpdateVersion(string, *entity.Version) error
+		AddMetadata(string, *msg.Metadata) error
+		AddVersion(string, *msg.Version) error
+		UpdateMetadata(string, *msg.Metadata) error
+		UpdateVersion(string, *msg.Version) error
 		RemoveMetadata(string) error
 		RemoveVersion(string, uint64) error
-		AddVersionWithSequence(string, *entity.Version) error
+		AddVersionWithSequence(string, *msg.Version) error
 		RemoveAllVersion(string) error
 	}
 
 	ReadableRepo interface {
-		GetMetadata(string) (*entity.Metadata, error)
-		GetVersion(string, uint64) (*entity.Version, error)
-		ListVersions(string, int, int) ([]*entity.Version, int, error)
-		ListMetadata(prefix string, size int) (lst []*entity.Metadata, total int, err error)
+		GetMetadata(string) (*msg.Metadata, error)
+		GetVersion(string, uint64) (*msg.Version, error)
+		ListVersions(string, int, int) ([]*msg.Version, int, error)
+		ListMetadata(prefix string, size int) (lst []*msg.Metadata, total int, err error)
 	}
 
 	IHashIndexRepo interface {
@@ -84,11 +85,12 @@ type (
 	IMetadataRepo interface {
 		WritableRepo
 		ReadableRepo
+		UpdateLocateByHash(hash string, index int, value string) error
 		GetLastVersionNumber(id string) uint64
 		GetFirstVersionNumber(id string) uint64
 		ForeachVersionBytes(string, func([]byte) bool)
 		GetMetadataBytes(string) ([]byte, error)
-		GetExtra(id string) (*entity.Extra, error)
+		GetExtra(id string) (*msg.Extra, error)
 	}
 
 	TxFunc func(*bolt.Tx) error
@@ -123,9 +125,9 @@ type (
 	}
 
 	BucketWritableRepo interface {
-		Create(bucket *entity.Bucket) error
+		Create(bucket *msg.Bucket) error
 		Remove(name string) error
-		Update(bucket *entity.Bucket) error
+		Update(bucket *msg.Bucket) error
 	}
 
 	BatchBucketRepo interface {
@@ -136,9 +138,9 @@ type (
 	BucketRepo interface {
 		BucketWritableRepo
 		Foreach(func(k []byte, v []byte) error) error
-		Get(name string) (*entity.Bucket, error)
+		Get(name string) (*msg.Bucket, error)
 		GetBytes(name string) ([]byte, error)
-		List(prefix string, size int) ([]*entity.Bucket, int, error)
+		List(prefix string, size int) ([]*msg.Bucket, int, error)
 	}
 
 	BucketService interface {

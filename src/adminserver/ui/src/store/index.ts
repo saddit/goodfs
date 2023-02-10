@@ -4,6 +4,7 @@ import {Base64} from "js-base64";
 export const useStore = defineStore('default', () => {
     const basicAuth = ref("")
     const locale = ref("en")
+    const selectedServerTab = ref(0)
     const tabClosed = ref(false)
     const user = ref("Anonymous")
     const serverInfo = ref<ServerStatResp>({apiServer: {}, metaServer: {}, dataServer: {}})
@@ -38,10 +39,27 @@ export const useStore = defineStore('default', () => {
         tabClosed.value = !tabClosed.value
     }
 
-    return {basicAuth, locale, tabClosed, serverStat: serverInfo, user, setServerInfo, setAuth, setLocale, closeTab, clearAuth}
+    function setSelectedServerTab(n: number) {
+        selectedServerTab.value = n
+    }
+
+    return {
+        basicAuth,
+        locale,
+        tabClosed,
+        serverStat: serverInfo,
+        user,
+        selectedServerTab,
+        setSelectedServerTab,
+        setServerInfo,
+        setAuth,
+        setLocale,
+        closeTab,
+        clearAuth
+    }
 }, {
     persist: {
         storage: localStorage,
-        paths: ['locale', 'tabClosed', 'user', 'basicAuth']
+        paths: ['locale', 'tabClosed', 'user', 'basicAuth', 'selectedServerTab']
     }
 })

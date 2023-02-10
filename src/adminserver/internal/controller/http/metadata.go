@@ -1,10 +1,10 @@
 package http
 
 import (
-	"adminserver/internal/entity"
 	"adminserver/internal/usecase/logic"
 	"adminserver/internal/usecase/pool"
 	"adminserver/internal/usecase/webapi"
+	"common/proto/msg"
 	"common/response"
 	"common/util"
 
@@ -177,7 +177,7 @@ func (mc *MetadataController) GetConfig(c *gin.Context) {
 }
 
 func (mc *MetadataController) CreateBucket(c *gin.Context) {
-	var b entity.Bucket
+	var b msg.Bucket
 	if err := c.ShouldBindJSON(&b); err != nil {
 		response.FailErr(err, c)
 		return
@@ -191,7 +191,7 @@ func (mc *MetadataController) CreateBucket(c *gin.Context) {
 }
 
 func (mc *MetadataController) UpdateBucket(c *gin.Context) {
-	var b entity.Bucket
+	var b msg.Bucket
 	if err := c.ShouldBindJSON(&b); err != nil {
 		response.FailErr(err, c)
 		return

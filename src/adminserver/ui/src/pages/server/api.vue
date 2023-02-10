@@ -17,13 +17,13 @@ const infos = ref<ServerInfo[]>([])
 const store = useStore()
 
 function updateInfo(state: any) {
-  if (infos.value.length > 0) {
-    return
-  }
-  let stats = state.serverStat.apiServer
-  for (let k in stats) {
-    infos.value.push(stats[k])
-  }
+    let infoList: ServerInfo[] = []
+    let stats = state.serverStat.apiServer
+    for (let k in stats) {
+        let v = stats[k]
+        infoList.push(v)
+    }
+    infos.value = infoList
 }
 
 store.$subscribe((mutation, state)=>{

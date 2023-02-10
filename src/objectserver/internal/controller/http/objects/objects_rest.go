@@ -24,6 +24,10 @@ func Put(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
+	if service.Exist(req.Name) {
+		response.Ok(c)
+		return
+	}
 	var reader io.Reader = c.Request.Body
 	var cache []byte
 	if uint64(c.Request.ContentLength) <= pool.Config.Cache.MaxItemSize.Byte() {

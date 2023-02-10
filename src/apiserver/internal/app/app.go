@@ -18,7 +18,7 @@ func Run(cfg *Config) {
 	//init services
 	versionRepo := repo.NewVersionRepo()
 	bucketRepo := repo.NewBucketRepo()
-	metaRepo := repo.NewMetadataRepo(versionRepo)
+	metaRepo := repo.NewMetadataRepo()
 	metaService := service.NewMetaService(metaRepo, versionRepo)
 	objService := service.NewObjectService(metaService, bucketRepo, pool.Etcd)
 	// register

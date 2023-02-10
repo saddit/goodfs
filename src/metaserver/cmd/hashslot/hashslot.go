@@ -2,7 +2,7 @@ package hashslot
 
 import (
 	"common/cmd"
-	"common/pb"
+	"common/proto/pb"
 	"common/util"
 	"context"
 	"fmt"

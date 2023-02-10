@@ -2,9 +2,9 @@ package repo
 
 import (
 	"common/graceful"
+	"common/proto/msg"
 	"common/util"
 	"errors"
-	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
@@ -24,11 +24,11 @@ func (b *BucketRepo) Foreach(fn func(k []byte, v []byte) error) error {
 	return b.db.View(b.logic.Foreach(fn))
 }
 
-func (b *BucketRepo) Get(name string) (res *entity.Bucket, err error) {
+func (b *BucketRepo) Get(name string) (res *msg.Bucket, err error) {
 	if data, err := b.cache.Get(name); err == nil {
 		return data, nil
 	}
-	res = new(entity.Bucket)
+	res = new(msg.Bucket)
 	err = b.db.View(b.logic.Get(name, res))
 	go func() {
 		defer graceful.Recover()
@@ -39,7 +39,7 @@ func (b *BucketRepo) Get(name string) (res *entity.Bucket, err error) {
 	return
 }
 
-func (b *BucketRepo) Create(bucket *entity.Bucket) (err error) {
+func (b *BucketRepo) Create(bucket *msg.Bucket) (err error) {
 	defer func() {
 		go func() {
 			defer graceful.Recover()
@@ -63,7 +63,7 @@ func (b *BucketRepo) Remove(name string) (err error) {
 	return b.db.Update(b.logic.Delete(name))
 }
 
-func (b *BucketRepo) Update(bucket *entity.Bucket) (err error) {
+func (b *BucketRepo) Update(bucket *msg.Bucket) (err error) {
 	defer func() {
 		go func() {
 			if err == nil {
@@ -75,9 +75,9 @@ func (b *BucketRepo) Update(bucket *entity.Bucket) (err error) {
 	return b.db.Update(b.logic.Update(bucket))
 }
 
-func (b *BucketRepo) List(prefix string, size int) ([]*entity.Bucket, int, error) {
+func (b *BucketRepo) List(prefix string, size int) ([]*msg.Bucket, int, error) {
 	var total int
-	list := make([]*entity.Bucket, 0, size)
+	list := make([]*msg.Bucket, 0, size)
 	err := b.db.View(b.logic.List(prefix, size, &list, &total))
 	// ignore not found err.
 	if errors.Is(err, usecase.ErrNotFound) {

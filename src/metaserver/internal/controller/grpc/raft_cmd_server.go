@@ -1,9 +1,11 @@
 package grpc
 
 import (
+	"common/collection/set"
 	"common/graceful"
-	"common/pb"
+	"common/proto/pb"
 	"common/util"
+	"common/util/slices"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -68,7 +70,7 @@ func (rcs *RaftCmdServerImpl) Bootstrap(_ context.Context, req *pb.BootstrapReq)
 	return okResp, nil
 }
 
-func (rcs *RaftCmdServerImpl) AddVoter(ctx context.Context, req *pb.AddVoterReq) (*pb.Response, error) {
+func (rcs *RaftCmdServerImpl) AddVoter(_ context.Context, req *pb.AddVoterReq) (*pb.Response, error) {
 	if len(req.GetVoters()) == 0 {
 		return &pb.Response{Success: false, Message: "empty voters"}, nil
 	}
@@ -88,8 +90,13 @@ func (rcs *RaftCmdServerImpl) AddVoter(ctx context.Context, req *pb.AddVoterReq)
 		return &pb.Response{Success: false, Message: msg.String()}, nil
 	}
 	// save to config
+	nodes := set.OfString(pool.Config.Cluster.Nodes)
 	for _, item := range req.GetVoters() {
-		pool.Config.Cluster.Nodes = append(pool.Config.Cluster.Nodes, fmt.Sprint(item.Id, ",", item.Address))
+		node := fmt.Sprint(item.Id, ",", item.Address)
+		if nodes.Contains(node) {
+			continue
+		}
+		pool.Config.Cluster.Nodes = append(pool.Config.Cluster.Nodes)
 	}
 	// persist config async
 	go func() {
@@ -127,7 +134,27 @@ func (rcs *RaftCmdServerImpl) LeaveCluster(ctx context.Context, _ *pb.EmptyReq) 
 
 func (rcs *RaftCmdServerImpl) RemoveFollower(_ context.Context, req *pb.RemoveFollowerReq) (*pb.Response, error) {
 	feature := rcs.rf.Raft.DemoteVoter(raft.ServerID(req.FollowerId), req.PrevIndex, time.Second)
-	return nil, feature.Error()
+	if err := feature.Error(); err != nil {
+		return nil, err
+	}
+	id := fmt.Sprint(req.FollowerId, ",")
+	idx := -1
+	for i, node := range pool.Config.Cluster.Nodes {
+		if strings.HasPrefix(node, id) {
+			idx = i
+			break
+		}
+	}
+	if idx > 0 {
+		pool.Config.Cluster.Nodes[0], pool.Config.Cluster.Nodes[idx] = pool.Config.Cluster.Nodes[idx], pool.Config.Cluster.Nodes[idx]
+		slices.RemoveFirst(&pool.Config.Cluster.Nodes)
+		// persist config async
+		go func() {
+			defer graceful.Recover()
+			util.LogErrWithPre("persist config", pool.Config.Persist())
+		}()
+	}
+	return okResp, nil
 }
 
 func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeaderReq) (*pb.Response, error) {

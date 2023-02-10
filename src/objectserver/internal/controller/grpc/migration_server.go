@@ -3,7 +3,7 @@ package grpc
 import (
 	"common/graceful"
 	"common/logs"
-	"common/pb"
+	"common/proto/pb"
 	"common/util"
 	"context"
 	"errors"

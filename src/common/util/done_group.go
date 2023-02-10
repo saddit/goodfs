@@ -114,13 +114,11 @@ func (d *doneGroup) Close() {
 
 // WaitUntilError use select to WaitDone() and WaitError(). if has error return it else return nil
 func (d *doneGroup) WaitUntilError() error {
-	for {
-		select {
-		case <-d.WaitDone():
-			return nil
-		case e := <-d.WaitError():
-			return e
-		}
+	select {
+	case <-d.WaitDone():
+		return nil
+	case e := <-d.WaitError():
+		return e
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"common/datasize"
 	"common/graceful"
 	"common/logs"
-	"common/pb"
+	"common/proto/pb"
 	"common/util"
 	xmath "common/util/math"
 	"common/util/slices"
@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
@@ -240,64 +241,37 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	}
 	// add to capacity db
 	pool.ObjectCap.AddCap(data.Size)
-	servs := pool.Discovery.GetServices(pool.Config.Discovery.MetaServName, false)
+	newLoc, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, false)
+	if !ok {
+		return fmt.Errorf("server unregister yet")
+	}
+	idx := strings.LastIndexByte(data.FileName, '.')
+	seq := util.ToInt(data.FileName[idx+1:])
+	hash := data.FileName[:idx]
+	// get metadata locations of file
+	var wg sync.WaitGroup
+	failNum := atomic.NewInt32(0)
+	var total float64
+	servs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, false)
 	if len(servs) == 0 {
 		return fmt.Errorf("not exist meta-server")
 	}
-	newLoc := util.GetHostPort(pool.Config.Port)
-	hash := strings.Split(data.FileName, ".")[0]
-	versionsMap := make(map[string][]*pb.Version)
-	// get metadata locations of file
-	dg := util.NewDoneGroup()
-	defer dg.Close()
-	for _, addr := range servs {
-		dg.Todo()
+	for id, addr := range servs {
+		if strings.HasSuffix(id, "slave") {
+			continue
+		}
+		total++
+		wg.Add(1)
 		go func(ip string) {
-			defer dg.Done()
-			versions, inner := webapi.VersionsByHash(ip, hash)
-			if inner != nil {
-				dg.Error(inner)
-				return
-			}
-			for _, v := range versions {
-				// index sensitive: locations[i] to shard[i]
-				idx := strings.LastIndexByte(data.FileName, '.')
-				seq := util.ToInt(data.FileName[idx+1:])
-				// do not change if location of this shard has been updated
-				if v.Locations[seq] == data.OriginLocate {
-					v.Locations[seq] = newLoc
-					versionsMap[ip] = append(versionsMap[ip], v)
-				}
+			defer graceful.Recover()
+			defer wg.Done()
+			if inner := webapi.UpdateVersionLocates(ip, hash, seq, newLoc); inner != nil {
+				logs.Std().Errorf("update locate of %s in %s fail: %s", data.FileName, ip, inner)
+				failNum.Inc()
 			}
 		}(addr)
 	}
-	if err = dg.WaitUntilError(); err != nil {
-		return err
-	}
-	// if no metadata exist for this file from 'origin-locate', deprecate it.
-	if len(versionsMap) == 0 {
-		logs.Std().Infof("deprecated: non metadata needs to update for %s (from %s)", data.FileName, data.OriginLocate)
-		return nil
-	}
-	// update locations
-	//FIXME: this will cause inconsistent state
-	failNum := atomic.NewInt32(0)
-	var total float64
-	for addr, versions := range versionsMap {
-		dg.Todo()
-		total += float64(len(versions))
-		go func(ip string, arr []*pb.Version) {
-			defer graceful.Recover()
-			defer dg.Done()
-			for _, ver := range arr {
-				if inner := webapi.UpdateVersionLocates(ip, ver.Name, int(ver.Sequence), ver.Locations); inner != nil {
-					logs.Std().Errorf("update %+v to meta-server %s fail: %s", ver, ip, inner)
-					failNum.Inc()
-				}
-			}
-		}(addr, versions)
-	}
-	dg.Wait()
+	wg.Wait()
 	if fails := failNum.Load(); fails >= int32(math.Ceil(total/2)) {
 		return fmt.Errorf("too much failures when updating metadata (%d/%.0f)", fails, total)
 	}

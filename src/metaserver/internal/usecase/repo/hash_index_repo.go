@@ -14,7 +14,7 @@ func NewHashIndexRepo(s *db.Storage) *HashIndexRepo {
 }
 
 func (h *HashIndexRepo) Remove(hash, key string) error {
-	return h.Storage.DB().Batch(logic.NewHashIndexLogic().RemoveIndex(hash, key))
+	return h.Storage.Batch(logic.NewHashIndexLogic().RemoveIndex(hash, key))
 }
 
 func (h *HashIndexRepo) FindAll(hash string) (keys []string, err error) {

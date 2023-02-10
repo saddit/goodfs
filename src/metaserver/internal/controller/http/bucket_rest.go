@@ -1,9 +1,9 @@
 package http
 
 import (
+	"common/proto/msg"
 	"common/response"
 	"github.com/gin-gonic/gin"
-	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/logic"
 	"net/http"
@@ -38,7 +38,7 @@ func (b *BucketController) Get(c *gin.Context) {
 }
 
 func (b *BucketController) CreateNew(c *gin.Context) {
-	var data entity.Bucket
+	var data msg.Bucket
 	if err := c.ShouldBindJSON(&data); err != nil {
 		response.FailErr(err, c)
 		return
@@ -61,7 +61,7 @@ func (b *BucketController) CreateNew(c *gin.Context) {
 
 func (b *BucketController) Update(c *gin.Context) {
 	name := c.Param("name")
-	var data entity.Bucket
+	var data msg.Bucket
 	if err := c.ShouldBindJSON(&data); err != nil {
 		response.FailErr(err, c)
 		return

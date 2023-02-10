@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"metaserver/internal/entity"
+	"common/proto/msg"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
 )
@@ -15,16 +15,16 @@ func NewBatchBucketRepo(db *db.Storage) *BatchBucketRepo {
 	return &BatchBucketRepo{db: db, logic: logic.NewBucketCrud()}
 }
 
-func (b *BatchBucketRepo) Create(bucket *entity.Bucket) (err error) {
-	return b.db.DB().Batch(b.logic.Create(bucket))
+func (b *BatchBucketRepo) Create(bucket *msg.Bucket) (err error) {
+	return b.db.Batch(b.logic.Create(bucket))
 }
 
 func (b *BatchBucketRepo) Remove(name string) (err error) {
-	return b.db.DB().Batch(b.logic.Delete(name))
+	return b.db.Batch(b.logic.Delete(name))
 }
 
-func (b *BatchBucketRepo) Update(bucket *entity.Bucket) (err error) {
-	return b.db.DB().Batch(b.logic.Update(bucket))
+func (b *BatchBucketRepo) Update(bucket *msg.Bucket) (err error) {
+	return b.db.Batch(b.logic.Update(bucket))
 }
 
 func (b *BatchBucketRepo) Sync() error {

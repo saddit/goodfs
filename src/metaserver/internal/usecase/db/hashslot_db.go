@@ -212,19 +212,16 @@ func (h *HashSlotDB) GetKeyIdentify(key string) (string, error) {
 }
 
 func (h *HashSlotDB) Close(timeout time.Duration) error {
-	dg := util.NewNonErrDoneGroup()
-	dg.Todo()
-	go func() {
-		defer dg.Done()
-		for !h.status.CAS(StatusNormal, StatusClosed) {
-			time.Sleep(time.Millisecond * 100)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	for !h.status.CAS(StatusNormal, StatusClosed) {
+		select {
+		case <-ctx.Done():
+			desc, _ := StatusDesc(h.status.Load())
+			return fmt.Errorf("close fail: db stay in %s timeout", desc)
+		default:
+			time.Sleep(time.Millisecond * 500)
 		}
-	}()
-	select {
-	case <-time.NewTicker(timeout).C:
-		desc, _ := StatusDesc(h.status.Load())
-		return fmt.Errorf("close from %s timeout", desc)
-	case <-dg.WaitDone():
-		return nil
 	}
+	return nil
 }

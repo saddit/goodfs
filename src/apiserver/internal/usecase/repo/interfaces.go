@@ -5,9 +5,8 @@ import (
 )
 
 type IMetadataRepo interface {
-	FindByName(name string, bucket string) (*entity.Metadata, error)
-	FindByNameWithVersion(name string, bucket string, verMode entity.VerMode, withExtra bool) (*entity.Metadata, error)
-	Insert(data *entity.Metadata) (*entity.Metadata, error)
+	FindByName(name string, bucket string, withExtra bool) (*entity.Metadata, error)
+	Insert(data *entity.Metadata) error
 }
 
 type IVersionRepo interface {
