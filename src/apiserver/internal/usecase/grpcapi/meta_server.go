@@ -207,3 +207,25 @@ func SaveBucket(ip string, body *entity.Bucket) error {
 	})
 	return ResolveErr(err)
 }
+
+func ListVersion(ip, id string, page, pageSize int) (arr []*msg.Version, total int64, err error) {
+	defer perform(false)()
+	conn, err := getConn(ip)
+	if err != nil {
+		return
+	}
+	resp, err := pb.NewMetadataApiClient(conn).ListVersion(context.Background(), &pb.MetaReq{
+		Id: id,
+		Page: &pb.Pageable{
+			Page:     int32(page),
+			PageSize: int32(pageSize),
+		},
+	})
+	if err != nil {
+		err = ResolveErr(err)
+		return
+	}
+	total = resp.Total
+	arr, err = util.DecodeArrayMsgp(resp.Data, func() *msg.Version { return new(msg.Version) })
+	return
+}

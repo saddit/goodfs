@@ -41,6 +41,24 @@ func (m *MetadataApiServer) GetVersionsByHash(_ context.Context, req *pb.MetaReq
 	return &pb.Msgpack{Data: bt}, nil
 }
 
+func (m *MetadataApiServer) ListVersion(_ context.Context, req *pb.MetaReq) (*pb.Msgpack, error) {
+	if req.Id == "" || req.Page == nil {
+		return nil, status.Error(codes.InvalidArgument, "id and page required")
+	}
+	if req.Page.Page <= 0 || req.Page.PageSize <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "page and pageSize must gt 0")
+	}
+	res, total, err := m.Service.ListVersions(req.Id, int(req.Page.Page), int(req.Page.PageSize))
+	if err != nil {
+		return nil, err
+	}
+	bt, err := util.EncodeArrayMsgp(res)
+	if err != nil {
+		return nil, response.GRPCError(err)
+	}
+	return &pb.Msgpack{Data: bt, Total: int64(total)}, nil
+}
+
 func (m *MetadataApiServer) GetBucket(_ context.Context, req *pb.MetaReq) (*pb.Msgpack, error) {
 	if req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id (bucket name) required")

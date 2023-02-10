@@ -3,13 +3,12 @@ package http
 import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
+	"apiserver/internal/usecase/grpcapi"
 	"apiserver/internal/usecase/logic"
-	"apiserver/internal/usecase/webapi"
 	"common/response"
 	"common/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/url"
 )
 
 type MetadataController struct {
@@ -61,19 +60,16 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	ip, err := logic.NewDiscovery().SelectMetaServerHttp(serverId)
+	ip, err := logic.NewDiscovery().SelectMetaServerGRPC(serverId)
 	if err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	version, total, err := webapi.ListVersion(ip, url.PathEscape(id), body.Page, body.PageSize)
+	version, total, err := grpcapi.ListVersion(ip, id, body.Page, body.PageSize)
 	if err != nil {
 		response.FailErr(err, c)
 		return
 	}
 	c.Header("X-Total-Count", util.ToString(total))
-	if _, err = c.Writer.Write(version); err != nil {
-		response.FailErr(err, c)
-		return
-	}
+	response.OkJson(version, c)
 }

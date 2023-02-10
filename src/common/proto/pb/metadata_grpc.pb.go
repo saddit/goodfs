@@ -26,6 +26,7 @@ type MetadataApiClient interface {
 	GetBucket(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error)
 	GetMetadata(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error)
 	GetVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error)
+	ListVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error)
 	GetPeers(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Strings, error)
 	SaveMetadata(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error)
 	SaveVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Int32, error)
@@ -71,6 +72,15 @@ func (c *metadataApiClient) GetMetadata(ctx context.Context, in *MetaReq, opts .
 func (c *metadataApiClient) GetVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error) {
 	out := new(Msgpack)
 	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getVersion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataApiClient) ListVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error) {
+	out := new(Msgpack)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/listVersion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +140,7 @@ type MetadataApiServer interface {
 	GetBucket(context.Context, *MetaReq) (*Msgpack, error)
 	GetMetadata(context.Context, *MetaReq) (*Msgpack, error)
 	GetVersion(context.Context, *MetaReq) (*Msgpack, error)
+	ListVersion(context.Context, *MetaReq) (*Msgpack, error)
 	GetPeers(context.Context, *Empty) (*Strings, error)
 	SaveMetadata(context.Context, *Metadata) (*Empty, error)
 	SaveVersion(context.Context, *Metadata) (*Int32, error)
@@ -153,6 +164,9 @@ func (UnimplementedMetadataApiServer) GetMetadata(context.Context, *MetaReq) (*M
 }
 func (UnimplementedMetadataApiServer) GetVersion(context.Context, *MetaReq) (*Msgpack, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
+}
+func (UnimplementedMetadataApiServer) ListVersion(context.Context, *MetaReq) (*Msgpack, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListVersion not implemented")
 }
 func (UnimplementedMetadataApiServer) GetPeers(context.Context, *Empty) (*Strings, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPeers not implemented")
@@ -250,6 +264,24 @@ func _MetadataApi_GetVersion_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).GetVersion(ctx, req.(*MetaReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataApi_ListVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetaReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataApiServer).ListVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.MetadataApi/listVersion",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataApiServer).ListVersion(ctx, req.(*MetaReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -366,6 +398,10 @@ var MetadataApi_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getVersion",
 			Handler:    _MetadataApi_GetVersion_Handler,
+		},
+		{
+			MethodName: "listVersion",
+			Handler:    _MetadataApi_ListVersion_Handler,
 		},
 		{
 			MethodName: "getPeers",

@@ -22,4 +22,5 @@ message Response {
 
 message Msgpack {
   bytes data = 1;
+  int64 total = 2;
 }

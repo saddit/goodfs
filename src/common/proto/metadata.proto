@@ -11,6 +11,12 @@ message MetaReq {
   string id = 2;
   int32 version = 3;
   bool withExtra = 4;
+  Pageable page = 5;
+}
+
+message Pageable {
+  int32 page = 1;
+  int32 pageSize = 2;
 }
 
 message Metadata {
@@ -24,6 +30,7 @@ service MetadataApi {
   rpc getBucket(MetaReq) returns (Msgpack);
   rpc getMetadata(MetaReq) returns (Msgpack);
   rpc getVersion(MetaReq) returns (Msgpack);
+  rpc listVersion(MetaReq) returns (Msgpack);
   rpc getPeers(Empty) returns (Strings);
   rpc saveMetadata(Metadata) returns (Empty);
   rpc saveVersion(Metadata) returns (Int32);
