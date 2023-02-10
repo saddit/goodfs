@@ -1,6 +1,7 @@
 package http
 
 import (
+	"common/proto/msg"
 	"common/request"
 	"common/response"
 	"github.com/gin-gonic/gin"
@@ -22,12 +23,12 @@ func (v *VersionController) RegisterRoute(engine gin.IRouter) {
 	engine.GET("/metadata_version/:name", v.Get)
 	engine.GET("/metadata_version/:name/list", v.List)
 	engine.DELETE("/metadata_version/:name", v.Delete)
-	engine.PATCH("/metadata_version/:name/locates", v.UpdateLocates)
+	engine.PATCH("/version/locate", v.UpdateLocates)
 	engine.GET("/version/list", v.ListByCond)
 }
 
 func (v *VersionController) Post(g *gin.Context) {
-	var data entity.Version
+	var data msg.Version
 	if err := g.ShouldBindJSON(&data); err != nil {
 		response.FailErr(err, g)
 		return
@@ -42,7 +43,7 @@ func (v *VersionController) Post(g *gin.Context) {
 }
 
 func (v *VersionController) Put(g *gin.Context) {
-	var data entity.Version
+	var data msg.Version
 	if err := g.ShouldBindJSON(&data); err != nil {
 		response.FailErr(err, g)
 		return
@@ -121,15 +122,15 @@ func (v *VersionController) Delete(g *gin.Context) {
 
 func (v *VersionController) UpdateLocates(c *gin.Context) {
 	body := struct {
-		Locations []string `json:"locations" binding:"min=1"`
-		Name      string   `uri:"name" binding:"required"`
-		Version   int      `form:"version" binding:"required"`
+		Locate      string `json:"locate" binding:"required"`
+		Hash        string `json:"hash" binding:"required"`
+		LocateIndex int    `json:"locateIndex"`
 	}{}
 	if err := entity.BindAll(c, &body, entity.FullBindings...); err != nil {
 		response.BadRequestErr(err, c)
 		return
 	}
-	if err := v.service.UpdateLocates(body.Name, body.Version, body.Locations); err != nil {
+	if err := v.service.UpdateLocates(body.Hash, body.LocateIndex, body.Locate); err != nil {
 		response.FailErr(err, c)
 		return
 	}

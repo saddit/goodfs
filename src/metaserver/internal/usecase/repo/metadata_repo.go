@@ -5,17 +5,18 @@ import (
 	"common/cst"
 	"common/graceful"
 	"common/logs"
+	"common/proto/msg"
 	"common/system/disk"
 	"common/util"
 	"fmt"
 	bolt "go.etcd.io/bbolt"
 	"io"
-	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
 	"os"
 	"strings"
+	"time"
 )
 
 type MetadataRepo struct {
@@ -27,7 +28,7 @@ func NewMetadataRepo(db *db.Storage, c usecase.IMetaCache) *MetadataRepo {
 	return &MetadataRepo{MainDB: db, Cache: c}
 }
 
-func (m *MetadataRepo) AddMetadata(id string, data *entity.Metadata) error {
+func (m *MetadataRepo) AddMetadata(id string, data *msg.Metadata) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
@@ -42,7 +43,7 @@ func (m *MetadataRepo) AddMetadata(id string, data *entity.Metadata) error {
 	return nil
 }
 
-func (m *MetadataRepo) UpdateMetadata(name string, data *entity.Metadata) error {
+func (m *MetadataRepo) UpdateMetadata(name string, data *msg.Metadata) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
@@ -72,11 +73,11 @@ func (m *MetadataRepo) RemoveMetadata(name string) error {
 	return nil
 }
 
-func (m *MetadataRepo) GetMetadata(id string) (*entity.Metadata, error) {
+func (m *MetadataRepo) GetMetadata(id string) (*msg.Metadata, error) {
 	if data, err := m.Cache.GetMetadata(id); err == nil {
 		return data, nil
 	}
-	data := &entity.Metadata{}
+	data := &msg.Metadata{}
 	if err := m.MainDB.View(logic.GetMeta(id, data)); err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (m *MetadataRepo) GetMetadata(id string) (*entity.Metadata, error) {
 	return data, nil
 }
 
-func (m *MetadataRepo) AddVersion(id string, data *entity.Version) error {
+func (m *MetadataRepo) AddVersion(id string, data *msg.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
@@ -102,7 +103,7 @@ func (m *MetadataRepo) AddVersion(id string, data *entity.Version) error {
 	return nil
 }
 
-func (m *MetadataRepo) AddVersionWithSequence(id string, data *entity.Version) error {
+func (m *MetadataRepo) AddVersionWithSequence(id string, data *msg.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
@@ -117,7 +118,7 @@ func (m *MetadataRepo) AddVersionWithSequence(id string, data *entity.Version) e
 	return nil
 }
 
-func (m *MetadataRepo) UpdateVersion(id string, data *entity.Version) error {
+func (m *MetadataRepo) UpdateVersion(id string, data *msg.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
@@ -208,11 +209,11 @@ func (m *MetadataRepo) GetLastVersionNumber(name string) uint64 {
 	return max
 }
 
-func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, error) {
+func (m *MetadataRepo) GetVersion(name string, ver uint64) (*msg.Version, error) {
 	if data, err := m.Cache.GetVersion(name, ver); err == nil {
 		return data, nil
 	}
-	data := &entity.Version{}
+	data := &msg.Version{}
 	if err := m.MainDB.DB().View(logic.GetVer(name, ver, data)); err != nil {
 		return nil, err
 	}
@@ -223,7 +224,7 @@ func (m *MetadataRepo) GetVersion(name string, ver uint64) (*entity.Version, err
 	return data, nil
 }
 
-func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*entity.Version, total int, err error) {
+func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*msg.Version, total int, err error) {
 	size := end - start + 1
 	lst, _, err = m.Cache.ListVersions(name, start, end)
 	if util.InstanceOf[PartlyMatchedErr](err) {
@@ -241,7 +242,7 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 		min := util.StrToBytes(fmt.Sprint(name, logic.Sep, start))
 
 		for k, v := c.Seek(min); k != nil && len(lst) < size; k, v = c.Next() {
-			data := &entity.Version{}
+			data := &msg.Version{}
 			if err := util.DecodeMsgp(data, v); err != nil {
 				return err
 			}
@@ -254,7 +255,7 @@ func (m *MetadataRepo) ListVersions(name string, start int, end int) (lst []*ent
 	return
 }
 
-func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Metadata, total int, err error) {
+func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*msg.Metadata, total int, err error) {
 	err = m.MainDB.View(func(tx *bolt.Tx) error {
 		root := logic.GetMetadataBucket(tx)
 		if root == nil {
@@ -274,7 +275,7 @@ func (m *MetadataRepo) ListMetadata(prefix string, size int) (lst []*entity.Meta
 				break
 			}
 			if len(v) > 0 {
-				var data entity.Metadata
+				var data msg.Metadata
 				if err := util.DecodeMsgp(&data, v); err != nil {
 					return err
 				}
@@ -334,8 +335,8 @@ func (m *MetadataRepo) GetMetadataBytes(key string) ([]byte, error) {
 	return res, err
 }
 
-func (m *MetadataRepo) GetExtra(id string) (*entity.Extra, error) {
-	var i entity.Extra
+func (m *MetadataRepo) GetExtra(id string) (*msg.Extra, error) {
+	var i msg.Extra
 	err := m.MainDB.View(logic.GetExtra(id, &i))
 	return &i, err
 }
@@ -363,6 +364,29 @@ func (m *MetadataRepo) ApplyIndex(i uint64) error {
 		}
 		if i > specBuc.Sequence() {
 			return specBuc.SetSequence(i)
+		}
+		return nil
+	})
+}
+
+func (m *MetadataRepo) UpdateLocateByHash(hash string, index int, value string) error {
+	return m.MainDB.Update(func(tx *bolt.Tx) error {
+		var keys []string
+		if err := logic.NewHashIndexLogic().GetIndex(hash, &keys)(tx); err != nil {
+			return err
+		}
+		var v msg.Version
+		for _, key := range keys {
+			idx := strings.LastIndexByte(key, '.')
+			metaId, sequence := key[:idx], util.ToUint64(key[idx+1:])
+			if err := logic.GetVer(metaId, sequence, &v)(tx); err != nil {
+				return err
+			}
+			v.Ts = time.Now().UnixMilli()
+			v.Locate[index] = value
+			if err := logic.UpdateVer(metaId, &v)(tx); err != nil {
+				return err
+			}
 		}
 		return nil
 	})

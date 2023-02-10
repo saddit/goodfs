@@ -20,11 +20,13 @@ func (m *MetaService) AddVersion(name, bucket string, version *entity.Version) (
 }
 
 func (m *MetaService) SaveMetadata(md *entity.Metadata) (int32, error) {
-	res, err := m.repo.Insert(md)
-	if err != nil {
+	if err := m.repo.Insert(md); err != nil {
 		return 0, err
 	}
-	return res.Versions[0].Sequence, nil
+	if len(md.Versions) > 0 {
+		return m.AddVersion(md.Name, md.Bucket, md.Versions[0])
+	}
+	return 0, nil
 }
 
 func (m *MetaService) UpdateVersion(name, bucket string, version *entity.Version) (err error) {
@@ -49,15 +51,19 @@ func (m *MetaService) GetVersion(name, bucket string, version int32) (*entity.Ve
 
 func (m *MetaService) GetMetadata(name, bucket string, ver int32, withExtra bool) (*entity.Metadata, error) {
 	verMode := entity.VerMode(ver)
-	res, err := m.repo.FindByNameWithVersion(name, bucket, verMode, withExtra)
+	res, err := m.repo.FindByName(name, bucket, withExtra)
 	if err != nil {
 		return nil, err
 	}
 	if res == nil {
 		return nil, usecase.ErrNotFound
 	}
-	if verMode != entity.VerModeNot && len(res.Versions) == 0 {
-		return res, usecase.ErrNotFound
+	if verMode != entity.VerModeNot {
+		v, err := m.versionRepo.Find(name, bucket, ver)
+		if err != nil {
+			return nil, err
+		}
+		res.Versions = append(res.Versions, v)
 	}
 	return res, nil
 }

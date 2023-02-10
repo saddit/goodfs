@@ -2,9 +2,9 @@ package repo
 
 import (
 	"common/cache"
+	"common/proto/msg"
 	"common/util"
 	"fmt"
-	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 )
 
@@ -20,17 +20,17 @@ func NewBucketCacheRepo(cache cache.ICache) *BucketCacheRepo {
 	return &BucketCacheRepo{cache: cache}
 }
 
-func (b *BucketCacheRepo) Get(name string) (*entity.Bucket, error) {
+func (b *BucketCacheRepo) Get(name string) (*msg.Bucket, error) {
 	bt, ok := b.cache.HasGet(fmt.Sprint(BucketCachePrefix, name))
 	if !ok {
 		return nil, usecase.ErrNotFound
 	}
-	var i entity.Bucket
+	var i msg.Bucket
 	err := util.DecodeMsgp(&i, bt)
 	return &i, err
 }
 
-func (b *BucketCacheRepo) Create(bucket *entity.Bucket) error {
+func (b *BucketCacheRepo) Create(bucket *msg.Bucket) error {
 	bt, err := util.EncodeMsgp(bucket)
 	if err != nil {
 		return err
@@ -44,7 +44,7 @@ func (b *BucketCacheRepo) Remove(name string) error {
 	return nil
 }
 
-func (b *BucketCacheRepo) Update(bucket *entity.Bucket) error {
+func (b *BucketCacheRepo) Update(bucket *msg.Bucket) error {
 	return b.Create(bucket)
 }
 
@@ -56,7 +56,7 @@ func (b *BucketCacheRepo) GetBytes(name string) ([]byte, error) {
 	return bt, nil
 }
 
-func (b *BucketCacheRepo) List(string, int) ([]*entity.Bucket, int, error) {
+func (b *BucketCacheRepo) List(string, int) ([]*msg.Bucket, int, error) {
 	panic("not implement Foreach")
 }
 

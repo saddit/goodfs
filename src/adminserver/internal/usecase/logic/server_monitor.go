@@ -48,10 +48,14 @@ func (sm ServerMonitor) ServerStat(servName string) (map[string]*entity.ServerIn
 		mp[id] = &entity.ServerInfo{SysInfo: sysInfo, ServerID: id}
 	}
 	for id, httpAddr := range pool.Discovery.GetServiceMapping(servName, false) {
-		mp[id].HttpAddr = httpAddr
+		if s, ok := mp[id]; ok {
+			s.HttpAddr = httpAddr
+		}
 	}
 	for id, rpcAddr := range pool.Discovery.GetServiceMapping(servName, true) {
-		mp[id].RpcAddr = rpcAddr
+		if s, ok := mp[id]; ok {
+			s.RpcAddr = rpcAddr
+		}
 	}
 	return mp, nil
 }

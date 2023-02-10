@@ -190,17 +190,18 @@ function getSlotsString(id: string): string {
 }
 
 function updateInfo(state: any) {
-    if (infos.value.length > 0) {
-        return
-    }
+    let infoList: ServerInfo[] = []
+    let cap = {used: 0, total: 0, free: 0}
     let stats = state.serverStat.metaServer
     for (let k in stats) {
         let v = stats[k]
-        infos.value.push(v)
-        capInfo.value.used += v.sysInfo.diskInfo.used
-        capInfo.value.total += v.sysInfo.diskInfo.total
-        capInfo.value.free += v.sysInfo.diskInfo.free
+        infoList.push(v)
+        cap.used += v.sysInfo.diskInfo.used
+        cap.total += v.sysInfo.diskInfo.total
+        cap.free += v.sysInfo.diskInfo.free
     }
+    infos.value = infoList
+    capInfo.value = cap
 }
 
 function getSlotsDetail() {

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 
-option go_package="../pb";
+option go_package = "./pb";
 
 import "message.proto";
 

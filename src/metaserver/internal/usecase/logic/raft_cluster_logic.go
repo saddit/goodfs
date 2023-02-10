@@ -18,10 +18,6 @@ func (rc RaftCluster) UpdateConfiguration(cfg *config.ClusterConfig) error {
 	// update config
 	pool.Config.Cluster.GroupID = cfg.GroupID
 	pool.Config.Cluster.Nodes = cfg.Nodes
-	// re-register peers on change raft cluster
-	if err := NewPeers().Register(); err != nil {
-		return err
-	}
 
 	hsLogic := NewHashSlot()
 	if pool.RaftWrapper.IsLeader() {

@@ -2,10 +2,10 @@ package logic
 
 import (
 	"bytes"
+	"common/proto/msg"
 	"common/util"
 	"errors"
 	bolt "go.etcd.io/bbolt"
-	"metaserver/internal/entity"
 	"metaserver/internal/usecase"
 )
 
@@ -32,7 +32,7 @@ func (b *BucketCrud) getBucketBucket(tx *bolt.Tx) (*bolt.Bucket, error) {
 	return bk, nil
 }
 
-func (b *BucketCrud) Get(name string, data *entity.Bucket) usecase.TxFunc {
+func (b *BucketCrud) Get(name string, data *msg.Bucket) usecase.TxFunc {
 	return func(tx *bolt.Tx) error {
 		root, err := b.getBucketBucket(tx)
 		if err != nil {
@@ -60,7 +60,7 @@ func (b *BucketCrud) GetBytes(name string, bt *[]byte) usecase.TxFunc {
 	}
 }
 
-func (b *BucketCrud) Create(data *entity.Bucket) usecase.TxFunc {
+func (b *BucketCrud) Create(data *msg.Bucket) usecase.TxFunc {
 	return func(tx *bolt.Tx) error {
 		if data.Name == "" {
 			return errors.New("empty primary key 'Name'")
@@ -91,12 +91,12 @@ func (b *BucketCrud) Delete(name string) usecase.TxFunc {
 	}
 }
 
-func (b *BucketCrud) Update(data *entity.Bucket) usecase.TxFunc {
+func (b *BucketCrud) Update(data *msg.Bucket) usecase.TxFunc {
 	return func(tx *bolt.Tx) error {
 		if data.Name == "" {
 			return errors.New("empty primary key 'Name'")
 		}
-		var origin entity.Bucket
+		var origin msg.Bucket
 		if err := b.Get(data.Name, &origin)(tx); err != nil {
 			return err
 		}
@@ -114,7 +114,7 @@ func (b *BucketCrud) Update(data *entity.Bucket) usecase.TxFunc {
 	}
 }
 
-func (b *BucketCrud) List(prefix string, limit int, res *[]*entity.Bucket, total *int) usecase.TxFunc {
+func (b *BucketCrud) List(prefix string, limit int, res *[]*msg.Bucket, total *int) usecase.TxFunc {
 	prefixBt := util.StrToBytes(prefix)
 	return func(tx *bolt.Tx) error {
 		root, err := b.getBucketBucket(tx)
@@ -137,7 +137,7 @@ func (b *BucketCrud) List(prefix string, limit int, res *[]*entity.Bucket, total
 			if prefix != "" && !bytes.HasPrefix(k, prefixBt) {
 				break
 			}
-			var i entity.Bucket
+			var i msg.Bucket
 			if err = util.DecodeMsgp(&i, v); err != nil {
 				return err
 			}

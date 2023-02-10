@@ -1,5 +1,7 @@
 package entity
 
+import "common/proto/msg"
+
 //go:generate msgp -tests=false
 
 type LogType int8
@@ -20,12 +22,12 @@ const (
 )
 
 type RaftData struct {
-	Type     LogType   `msg:"type" json:"type"`
-	Dest     Dest      `msg:"dest" json:"dest"`
-	Name     string    `msg:"name" json:"name"`
-	Sequence uint64    `msg:"sequence" json:"sequence,omitempty"`
-	Version  *Version  `msg:"version" json:"version,omitempty"`
-	Metadata *Metadata `msg:"metadata" json:"metadata,omitempty"`
-	Bucket   *Bucket   `msg:"bucket" json:"bucket,omitempty"`
-	Batch    bool      `msg:"-" json:"-"`
+	Type     LogType       `msg:"type" json:"type"`
+	Dest     Dest          `msg:"dest" json:"dest"`
+	Name     string        `msg:"name" json:"name"`
+	Sequence uint64        `msg:"sequence" json:"sequence,omitempty"`
+	Version  *msg.Version  `msg:"version" json:"version,omitempty"`
+	Metadata *msg.Metadata `msg:"metadata" json:"metadata,omitempty"`
+	Bucket   *msg.Bucket   `msg:"bucket" json:"bucket,omitempty"`
+	Batch    bool          `msg:"-" json:"-"`
 }

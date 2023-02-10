@@ -3,7 +3,6 @@ package webapi
 import (
 	"apiserver/internal/entity"
 	"bytes"
-	"common/pb"
 	"common/request"
 	"common/response"
 	"common/util"
@@ -171,23 +170,6 @@ func DelVersion(ip, name string, verNum int32) error {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
 	return nil
-}
-
-func VersionsByHash(ip, hash string) ([]*pb.Version, error) {
-	defer perform(false)()
-	resp, err := httpClient.Get(fmt.Sprintf("http://%s/version/list?hash=%s", ip, hash))
-	if err != nil {
-		return nil, err
-	}
-	bt, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	var res []*pb.Version
-	if err = json.Unmarshal(bt, &res); err != nil {
-		return nil, err
-	}
-	return res, nil
 }
 
 func metaRest(ip, name string) string {

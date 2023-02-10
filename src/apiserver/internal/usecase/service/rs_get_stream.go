@@ -85,24 +85,26 @@ func NewRSTempStream(option *StreamOption, rsCfg *config.RsConfig) *RSGetStream 
 
 func (g *RSGetStream) Seek(offset int64, whence int) (int64, error) {
 	if whence != io.SeekCurrent {
-		panic("only support io.SeekCurrent")
+		logs.Std().Warn("rs get stream only supports seek whence io.SeekCurrent")
 	}
 	if offset < 0 {
-		return 0, fmt.Errorf("only support forward seek offest")
+		return 0, fmt.Errorf("rs get stream only supports forward seek offest")
 	}
-
-	//读取offset长度的数据，丢弃于内存
 	length := int64(g.rsCfg.BlockSize())
 	buf := bytes.NewBuffer(make([]byte, length))
 	for offset > 0 {
 		if length > offset {
-			//当剩余未读取内容少于BlockSize时 减少读取量
 			length = offset
 		}
-		if _, e := io.CopyN(buf, g, length); e != nil {
-			return offset, e
+		n, err := io.CopyN(buf, g, length)
+		offset -= n
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return offset, err
 		}
-		offset -= length
+		buf.Reset()
 	}
 	buf = nil
 	return offset, nil

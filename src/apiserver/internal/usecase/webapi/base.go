@@ -35,10 +35,14 @@ func perform(written bool) func() {
 	}
 	t := time.Now()
 	return func() {
-		util.LogErr(performCollector.Put(
+		performCollector.PutAsync(
 			util.IfElse(written, performance.ActionWrite, performance.ActionRead),
 			performance.KindOfHTTP,
 			time.Since(t),
-		))
+		)
 	}
+}
+
+func Close() {
+	httpClient.CloseIdleConnections()
 }

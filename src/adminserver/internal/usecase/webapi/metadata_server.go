@@ -1,8 +1,8 @@
 package webapi
 
 import (
-	"adminserver/internal/entity"
 	"adminserver/internal/usecase/pool"
+	"common/proto/msg"
 	"common/response"
 	"common/util"
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"net/url"
 )
 
-func ListMetadata(ip, prefix string, pageSize int) ([]*entity.Metadata, int, error) {
+func ListMetadata(ip, prefix string, pageSize int) ([]*msg.Metadata, int, error) {
 	resp, err := pool.Http.Get(metadataListRest(ip, map[string][]string{
 		"prefix":    {prefix},
 		"page_size": {util.ToString(pageSize)},
@@ -22,11 +22,11 @@ func ListMetadata(ip, prefix string, pageSize int) ([]*entity.Metadata, int, err
 		return nil, 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
 	total := util.ToInt(resp.Header.Get("X-Total-Count"))
-	lst, err := util.UnmarshalFromIO[[]*entity.Metadata](resp.Body)
+	lst, err := util.UnmarshalFromIO[[]*msg.Metadata](resp.Body)
 	return lst, total, err
 }
 
-func ListBuckets(ip, prefix string, pageSize int) ([]*entity.Bucket, int, error) {
+func ListBuckets(ip, prefix string, pageSize int) ([]*msg.Bucket, int, error) {
 	resp, err := pool.Http.Get(bucketListRest(ip, map[string][]string{
 		"prefix":    {prefix},
 		"page_size": {util.ToString(pageSize)},
@@ -38,7 +38,7 @@ func ListBuckets(ip, prefix string, pageSize int) ([]*entity.Bucket, int, error)
 		return nil, 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
 	total := util.ToInt(resp.Header.Get("X-Total-Count"))
-	lst, err := util.UnmarshalFromIO[[]*entity.Bucket](resp.Body)
+	lst, err := util.UnmarshalFromIO[[]*msg.Bucket](resp.Body)
 	return lst, total, err
 }
 

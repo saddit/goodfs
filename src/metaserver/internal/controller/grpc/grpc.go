@@ -2,45 +2,50 @@ package grpc
 
 import (
 	"common/logs"
-	"common/pb"
+	"common/proto/pb"
 	"common/util"
 	"context"
 	"errors"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
 	"net"
 
-	netGrpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 )
 
 var log = logs.New("grpc-server")
 
 type Server struct {
-	*netGrpc.Server
+	*grpc.Server
 	Port         string
 	leaveCluster func(c context.Context) error
 }
 
 // NewRpcServer init a grpc raft server. if no available nodes return empty object
-func NewRpcServer(port string, rw *raftimpl.RaftWrapper, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService) *Server {
-	server := netGrpc.NewServer(netGrpc.ChainUnaryInterceptor(
-		// CheckLocalUnary,
-		CheckWritableUnary,
-		CheckRaftEnabledUnary,
-		CheckRaftLeaderUnary,
-		CheckRaftNonLeaderUnary,
-		// AllowValidMetaServerUnary,
-	), netGrpc.ChainStreamInterceptor(
-		CheckWritableStreaming,
-		// AllowValidMetaServerStreaming,
-	))
+func NewRpcServer(port string, maxStreams uint32, rw *raftimpl.RaftWrapper, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService, serv3 usecase.BucketService) *Server {
+	server := grpc.NewServer(
+		grpc.MaxConcurrentStreams(maxStreams),
+		grpc.ChainUnaryInterceptor(
+			UnaryServerRecoveryInterceptor(),
+			CheckKeySlot,
+			CheckWritableUnary,
+			CheckRaftEnabledUnary,
+			CheckRaftLeaderUnary,
+			CheckRaftNonLeaderUnary,
+		), grpc.ChainStreamInterceptor(
+			StreamServerRecoveryInterceptor(),
+			CheckWritableStreaming,
+		),
+	)
 	// init raft service
 	leaveRaft := func(context.Context) error { return nil }
 	if rw.Enabled {
 		rw.Manager.Register(server)
 		cmdServer := NewRaftCmdServer(rw)
 		leaveRaft = func(c context.Context) error {
-			resp, err := cmdServer.LeaveCluster(c, nil)
+			resp, err := cmdServer.LeaveCluster(c, new(pb.EmptyReq))
 			if err != nil {
 				return err
 			}
@@ -51,9 +56,10 @@ func NewRpcServer(port string, rw *raftimpl.RaftWrapper, serv1 usecase.IMetadata
 		}
 		pb.RegisterRaftCmdServer(server, cmdServer)
 	}
-	// register hash-slot services
+	// register services
+	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 	pb.RegisterHashSlotServer(server, NewHashSlotServer(serv2))
-	pb.RegisterMetadataApiServer(server, NewMetadataApiServer(serv1))
+	pb.RegisterMetadataApiServer(server, NewMetadataApiServer(serv1, serv3))
 	pb.RegisterConfigServiceServer(server, &ConfigServiceServer{})
 	return &Server{server, port, leaveRaft}
 }

@@ -1,8 +1,8 @@
 package webapi
 
 import (
-	"adminserver/internal/entity"
 	"adminserver/internal/usecase/pool"
+	"common/proto/msg"
 	"common/request"
 	"common/response"
 	"common/util"
@@ -83,7 +83,7 @@ func CheckToken(ip, token string) error {
 	return nil
 }
 
-func CreateBucket(ip string, b *entity.Bucket, token string) error {
+func CreateBucket(ip string, b *msg.Bucket, token string) error {
 	req, err := request.JsonReq(http.MethodPost, fmt.Sprintf("%s://%s/v1/bucket", GetSchema(), ip), b)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func CreateBucket(ip string, b *entity.Bucket, token string) error {
 	return nil
 }
 
-func UpdateBucket(ip string, b *entity.Bucket, token string) error {
+func UpdateBucket(ip string, b *msg.Bucket, token string) error {
 	req, err := request.JsonReq(http.MethodPut, fmt.Sprintf("%s://%s/v1/bucket/%s", GetSchema(), ip, b.Name), b)
 	if err != nil {
 		return err
