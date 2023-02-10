@@ -6,8 +6,11 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"math"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
@@ -311,7 +314,7 @@ func DecodeMsgp(data msgp.Unmarshaler, bt []byte) (err error) {
 }
 
 // EncodeMsgp encode data with msgp
-func EncodeMsgp(data msgp.MarshalSizer) ([]byte, error) {
+func EncodeMsgp(data msgp.Marshaler) ([]byte, error) {
 	bt, err := data.MarshalMsg(nil)
 	if err != nil {
 		return nil, fmt.Errorf("decode-msgp: %w", err)
@@ -319,30 +322,50 @@ func EncodeMsgp(data msgp.MarshalSizer) ([]byte, error) {
 	return bt, err
 }
 
-func EncodeArrayMsgp[T msgp.Encodable](arr []T) ([]byte, error) {
-	var buffer bytes.Buffer
-	for _, i := range arr {
-		if err := msgp.Encode(&buffer, i); err != nil {
-			return nil, err
-		}
+// EncodeArrayMsgp encodes an array of objects by msgp. size of item after encoded must be less than 2 << 32 - 1
+func EncodeArrayMsgp[T msgp.Marshaler](arr []T) (res []byte, err error) {
+	if len(arr) == 0 {
+		return
 	}
-	return buffer.Bytes(), nil
+	buf := make([]byte, 0)
+	size := make([]byte, binary.MaxVarintLen32)
+	for _, v := range arr {
+		buf, err = v.MarshalMsg(buf)
+		if err != nil {
+			return
+		}
+		if res == nil {
+			res = make([]byte, 0, len(arr)*len(buf))
+		}
+		if len(buf) > math.MaxInt32 {
+			err = fmt.Errorf("msgp encoded object is too large: %d", len(buf))
+			return
+		}
+		binary.PutUvarint(size, uint64(len(buf)))
+		res = append(res, size...)
+		res = append(res, buf...)
+		buf = buf[:0]
+	}
+	return
 }
 
-func DecodeArrayMsgp[T msgp.Decodable](data []byte, res *[]T) error {
-	buf := bytes.NewBuffer(data)
-	for {
-		var item T
-		err := msgp.Decode(buf, item)
-		if err == io.EOF {
-			break
+// DecodeArrayMsgp decodes bytes generated from EncodeArrayMsgp
+func DecodeArrayMsgp[T msgp.Unmarshaler](data []byte, constructor func() T) (arr []T, err error) {
+	for cur := 0; cur < len(data); {
+		item := constructor()
+		size, n := binary.Uvarint(data[cur : cur+binary.MaxVarintLen32])
+		if n <= 0 {
+			err = errors.New("decode array msgp: format err")
+			return
 		}
-		if err != nil {
-			return err
+		cur += binary.MaxVarintLen32
+		if _, err = item.UnmarshalMsg(data[cur : cur+int(size)]); err != nil {
+			return
 		}
-		*res = append(*res, item)
+		cur += int(size)
+		arr = append(arr, item)
 	}
-	return nil
+	return
 }
 
 func PagingOffset(page, size, total int) (int, int, bool) {
@@ -381,4 +404,15 @@ func IntToBytes(i uint64) []byte {
 func BytesToInt(b []byte) uint64 {
 	i, _ := binary.ReadUvarint(bytes.NewBuffer(b))
 	return i
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandString(n int) string {
+	rd := rand.New(rand.NewSource(time.Now().UnixMilli()))
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rd.Intn(len(letterRunes))]
+	}
+	return string(b)
 }
