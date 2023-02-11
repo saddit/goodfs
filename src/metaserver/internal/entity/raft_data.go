@@ -2,7 +2,7 @@ package entity
 
 import "common/proto/msg"
 
-//go:generate msgp -tests=false
+//go:generate msgp -tests=false #metaserver/entity
 
 type LogType int8
 type Dest int8

@@ -19,7 +19,7 @@ package disk
 
 import "common/datasize"
 
-//go:generate msgp -tests=false
+//go:generate msgp -tests=false #disk
 
 // Info stat fs struct is container which holds following values
 // Total - total size of the volume / disk

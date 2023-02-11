@@ -1,6 +1,6 @@
 package msg
 
-//go:generate msgp -tests=false
+//go:generate msgp -tests=false #msg
 
 type Extra struct {
 	Total        int `json:"total" msg:"total"`

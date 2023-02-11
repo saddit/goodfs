@@ -417,12 +417,6 @@ func (z *Info) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "Ffree")
 				return
 			}
-		case "fs_type":
-			z.FSType, err = dc.ReadString()
-			if err != nil {
-				err = msgp.WrapError(err, "FSType")
-				return
-			}
 		case "major":
 			z.Major, err = dc.ReadUint32()
 			if err != nil {
@@ -433,6 +427,12 @@ func (z *Info) DecodeMsg(dc *msgp.Reader) (err error) {
 			z.Minor, err = dc.ReadUint32()
 			if err != nil {
 				err = msgp.WrapError(err, "Minor")
+				return
+			}
+		case "fs_type":
+			z.FSType, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FSType")
 				return
 			}
 		default:
@@ -499,16 +499,6 @@ func (z *Info) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Ffree")
 		return
 	}
-	// write "fs_type"
-	err = en.Append(0xa7, 0x66, 0x73, 0x5f, 0x74, 0x79, 0x70, 0x65)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.FSType)
-	if err != nil {
-		err = msgp.WrapError(err, "FSType")
-		return
-	}
 	// write "major"
 	err = en.Append(0xa5, 0x6d, 0x61, 0x6a, 0x6f, 0x72)
 	if err != nil {
@@ -527,6 +517,16 @@ func (z *Info) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteUint32(z.Minor)
 	if err != nil {
 		err = msgp.WrapError(err, "Minor")
+		return
+	}
+	// write "fs_type"
+	err = en.Append(0xa7, 0x66, 0x73, 0x5f, 0x74, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FSType)
+	if err != nil {
+		err = msgp.WrapError(err, "FSType")
 		return
 	}
 	return
@@ -563,15 +563,15 @@ func (z *Info) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "f_free"
 	o = append(o, 0xa6, 0x66, 0x5f, 0x66, 0x72, 0x65, 0x65)
 	o = msgp.AppendUint64(o, z.Ffree)
-	// string "fs_type"
-	o = append(o, 0xa7, 0x66, 0x73, 0x5f, 0x74, 0x79, 0x70, 0x65)
-	o = msgp.AppendString(o, z.FSType)
 	// string "major"
 	o = append(o, 0xa5, 0x6d, 0x61, 0x6a, 0x6f, 0x72)
 	o = msgp.AppendUint32(o, z.Major)
 	// string "minor"
 	o = append(o, 0xa5, 0x6d, 0x69, 0x6e, 0x6f, 0x72)
 	o = msgp.AppendUint32(o, z.Minor)
+	// string "fs_type"
+	o = append(o, 0xa7, 0x66, 0x73, 0x5f, 0x74, 0x79, 0x70, 0x65)
+	o = msgp.AppendString(o, z.FSType)
 	return
 }
 
@@ -623,12 +623,6 @@ func (z *Info) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "Ffree")
 				return
 			}
-		case "fs_type":
-			z.FSType, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "FSType")
-				return
-			}
 		case "major":
 			z.Major, bts, err = msgp.ReadUint32Bytes(bts)
 			if err != nil {
@@ -639,6 +633,12 @@ func (z *Info) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			z.Minor, bts, err = msgp.ReadUint32Bytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "Minor")
+				return
+			}
+		case "fs_type":
+			z.FSType, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FSType")
 				return
 			}
 		default:
@@ -655,6 +655,6 @@ func (z *Info) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Info) Msgsize() (s int) {
-	s = 1 + 6 + z.Total.Msgsize() + 5 + z.Free.Msgsize() + 5 + z.Used.Msgsize() + 6 + msgp.Uint64Size + 7 + msgp.Uint64Size + 8 + msgp.StringPrefixSize + len(z.FSType) + 6 + msgp.Uint32Size + 6 + msgp.Uint32Size
+	s = 1 + 6 + z.Total.Msgsize() + 5 + z.Free.Msgsize() + 5 + z.Used.Msgsize() + 6 + msgp.Uint64Size + 7 + msgp.Uint64Size + 6 + msgp.Uint32Size + 6 + msgp.Uint32Size + 8 + msgp.StringPrefixSize + len(z.FSType)
 	return
 }
