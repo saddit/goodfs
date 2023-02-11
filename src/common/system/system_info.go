@@ -6,7 +6,7 @@ import (
 	"common/system/mem"
 )
 
-//go:generate msgp -tests=false
+//go:generate msgp -tests=false #system
 
 type Info struct {
 	DiskInfo  *disk.Info    `json:"diskInfo" msg:",inline"`

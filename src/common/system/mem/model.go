@@ -1,6 +1,6 @@
 package mem
 
-//go:generate msgp -tests=false
+//go:generate msgp -tests=false #mem
 
 type Status struct {
 	All  uint64 `json:"all" msg:"all"`
