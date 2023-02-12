@@ -22,3 +22,7 @@ btn-ok: '确认'
 btn-close: '关闭'
 btn-cancel: '取消'
 req-success: '请求成功'
+# zh only
+Default: '默认'
+ErasureCode: '纠删码'
+Replications: '多副本'

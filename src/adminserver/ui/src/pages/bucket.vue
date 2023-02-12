@@ -54,7 +54,7 @@
         <!-- row: store strategy -->
         <span>{{ t('field-store-strategy') }}</span>
         <select class="col-span-2 select-pri" v-model="operatingBucket.storeStrategy">
-          <option v-for="(v,idx) in $cst.storeStrategy" :value="idx">{{ v }}</option>
+          <option v-for="(v,idx) in $cst.storeStrategy" :value="idx">{{ t(v) }}</option>
         </select>
 
         <!-- optional area: strategy params -->
@@ -273,7 +273,7 @@ const columns = [
     }),
     columnHelper.accessor('storeStrategy', {
         header: 'Strategy',
-        cell: props => pkg.cst.storeStrategy[props.getValue()]
+        cell: props => `${t(pkg.cst.storeStrategy[props.getValue()])} (${props.row.original.dataShards}+${props.row.original.parityShards})`
     }),
     columnHelper.accessor('compress', {
         header: 'Compress',
