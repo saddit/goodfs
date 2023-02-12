@@ -72,14 +72,14 @@ func initBalancer(cfg *config.Config) {
 }
 
 func initPerform(cfg *performance.Config, logCfg *logs.Config, regCfg *registry.Config, etcd *clientv3.Client) {
-	if cfg.Store == performance.Local {
+	if cfg.Enable && cfg.Store == performance.Local {
 		localPath := logCfg.StoreDir
 		if localPath == "" {
 			localPath = os.TempDir()
 		}
 		performance.SetLocalStore(performance.NewLocalStore(filepath.Join(localPath, regCfg.ServerID+".perf")))
 	}
-	if cfg.Store == performance.Remote {
+	if cfg.Enable && cfg.Store == performance.Remote {
 		performance.SetRemoteStore(performance.NewEtcdStore(etcd, []string{
 			performance.ActionRead,
 			performance.ActionWrite,
