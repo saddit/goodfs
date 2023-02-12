@@ -18,10 +18,8 @@ const (
 )
 
 type Config struct {
-	Checksum       bool               `yaml:"checksum" env:"CHECKSUM" env-default:"false"`
 	Port           string             `yaml:"port" env:"PORT" env-default:"8080"`
 	SelectStrategy string             `yaml:"select-strategy" env:"SELECT_STRATEGY" env-default:"random"`
-	LocateTimeout  time.Duration      `yaml:"locate-timeout" env:"LOCATE_TIMEOUT" env-default:"1s"`
 	Log            logs.Config        `yaml:"log" env-prefix:"LOG"`
 	Etcd           etcd.Config        `yaml:"etcd" env-prefix:"ETCD"`
 	Object         ObjectConfig       `yaml:"object" env-prefix:"OBJECT"`
@@ -50,8 +48,11 @@ type DiscoveryConfig struct {
 }
 
 type ObjectConfig struct {
-	ReedSolomon RsConfig          `yaml:"reed-solomon" env-prefix:"REED_SOLOMON"`
-	Replication ReplicationConfig `yaml:"replication" env-prefix:"REPLICATION"`
+	Checksum        bool              `yaml:"checksum" env:"CHECKSUM"`
+	DistinctSize    datasize.DataSize `yaml:"distinct-size" env:"DISTINCT_SIZE"`
+	DistinctTimeout time.Duration     `yaml:"distinct-timeout" env:"DISTINCT_TIMEOUT" env-default:"200ms"`
+	ReedSolomon     RsConfig          `yaml:"reed-solomon" env-prefix:"REED_SOLOMON"`
+	Replication     ReplicationConfig `yaml:"replication" env-prefix:"REPLICATION"`
 }
 
 type ReplicationConfig struct {

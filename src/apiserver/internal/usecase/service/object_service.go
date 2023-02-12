@@ -8,6 +8,7 @@ import (
 	"apiserver/internal/usecase/repo"
 	"bufio"
 	"common/cst"
+	"common/datasize"
 	"common/graceful"
 	"common/logs"
 	"common/response"
@@ -76,7 +77,7 @@ func (o *ObjectService) LocateObject(hash string, shardNum int) ([]string, bool)
 		}
 	}
 	// to receive locates
-	tt := time.NewTicker(pool.Config.LocateTimeout)
+	tt := time.NewTicker(pool.Config.Object.DistinctTimeout)
 	defer tt.Stop()
 
 	var cnt int
@@ -148,7 +149,9 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (vn
 	ver.Hash = o.UniqueHash(ver.Hash, ver.StoreStrategy, ver.DataShards, ver.ParityShards, ver.Compress)
 	// filter duplicate
 	var ok bool
-	ver.Locate, ok = o.LocateObject(ver.Hash, ver.DataShards+ver.ParityShards)
+	if datasize.DataSize(ver.Size) >= pool.Config.Object.DistinctSize {
+		ver.Locate, ok = o.LocateObject(ver.Hash, ver.DataShards+ver.ParityShards)
+	}
 
 	// if object not exists, upload to data server
 	if !ok {
@@ -190,7 +193,7 @@ func streamToDataServer(req *entity.PutReq, meta *entity.Version, provider Strea
 	defer stream.Close()
 
 	//digest validation
-	if pool.Config.Checksum {
+	if pool.Config.Object.Checksum {
 		reader := io.TeeReader(bufio.NewReaderSize(req.Body, 8*cst.OS.PageSize), stream)
 		hash := crypto.SHA256IO(reader)
 		// compare to request hash which is real object checksum, not version hash.

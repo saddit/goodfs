@@ -1,11 +1,10 @@
 port: 8080
-checksum: false
 select-strategy: space-first
 log:
   level: debug
   store-dir: e:/file/temp/log
 performance:
-  enable: true
+  enable: false
   store: local
 registry:
   server-id: node
@@ -20,6 +19,9 @@ discovery:
   meta-server-name: "metaserver"
   data-server-name: "objectserver"
 object:
+  checksum: false
+  distinct-size: 100mb
+  distinct-timeout: 150ms
   reed-solomon:
     data-shards: 4
     parity-shards: 2
@@ -37,7 +39,7 @@ auth:
   callback:
     enable: false
     url: http://localhost:8090/v1/authorize
-    params: ['access-token']
+    params: [ 'access-token' ]
 tls:
   enabled: true
   server-cert-file: E:\text\code-project\GolangProject\projects\goodfs\test_conf\example.com+5.pem

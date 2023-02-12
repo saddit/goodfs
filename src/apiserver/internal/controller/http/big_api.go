@@ -204,7 +204,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 
 func (bc *BigObjectsController) finishUpload(metaName, bucketName string, v *entity.Version, conf *config.RsConfig) (verNum int32, err error) {
 	// validate digest
-	if pool.Config.Checksum {
+	if pool.Config.Object.Checksum {
 		getStream := service.NewRSTempStream(&service.StreamOption{
 			Hash:    v.Hash,
 			Size:    v.Size,
