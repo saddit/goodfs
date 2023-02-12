@@ -222,7 +222,7 @@ const versionColumns = [
     }),
     versionColumnHelper.accessor('storeStrategy', {
         header: 'Strategy',
-        cell: props => pkg.cst.storeStrategy[props.getValue()]
+        cell: props => t(pkg.cst.storeStrategy[props.getValue()])
     }),
     versionColumnHelper.accessor('dataShards', {
         header: 'Data Shards',

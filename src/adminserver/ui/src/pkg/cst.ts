@@ -26,6 +26,6 @@ export const ssRS = 1 // storeStrategy: ReedSolomon
 export const ssMR = 2 // storeStrategy: MultiReplication
 export const storeStrategy = [
     'Default',
-    'ReedSolomon',
-    'MultiReplication'
+    'ErasureCode',
+    'Replications'
 ]
