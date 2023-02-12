@@ -2,8 +2,10 @@ package repo
 
 import (
 	"apiserver/internal/entity"
+	"apiserver/internal/usecase"
 	"apiserver/internal/usecase/grpcapi"
 	"apiserver/internal/usecase/logic"
+	"common/response"
 	"fmt"
 )
 
@@ -34,5 +36,13 @@ func (m *MetadataRepo) Insert(data *entity.Metadata) error {
 		return err
 	}
 	loc := logic.NewDiscovery().GetMetaServerGRPC(masterId)
-	return grpcapi.SaveMetadata(loc, name, data)
+	if err = grpcapi.SaveMetadata(loc, name, data); err != nil {
+		// mark a concurrent error
+		if resp, ok := err.(response.IResponseErr); ok {
+			if resp.GetMessage() == "data exists" {
+				return usecase.ErrMetadataExists
+			}
+		}
+	}
+	return err
 }
