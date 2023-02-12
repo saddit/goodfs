@@ -15,6 +15,7 @@ import (
 	"common/util"
 	"common/util/crypto"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -168,7 +169,14 @@ func (o *ObjectService) StoreObject(req *entity.PutReq, md *entity.Metadata) (vn
 
 	// save metadata
 	if metadata == nil {
-		return o.metaService.SaveMetadata(md)
+		// if SaveMetadata returns ErrMetadataExists that means a concurrent problem, get the metadata and continue it.
+		if vn, err = o.metaService.SaveMetadata(md); !errors.Is(err, ErrMetadataExists) {
+			return
+		}
+		metadata, err = o.metaService.GetMetadata(md.Name, md.Bucket, int32(entity.VerModeNot), true)
+		if err != nil {
+			return
+		}
 	}
 	if vn, err = o.metaService.AddVersion(md.Name, md.Bucket, ver); err != nil {
 		return
