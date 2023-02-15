@@ -14,7 +14,7 @@ func Run(cfg *config.Config) {
 	//init components
 	pool.InitPool(cfg)
 	defer pool.CloseAll()
-	netAddr := util.GetHostPort(cfg.Port)
+	netAddr := util.ServerAddress(cfg.Port)
 	pool.OnOpen(func() {
 		// register service
 		util.PanicErr(pool.Registry.Register())

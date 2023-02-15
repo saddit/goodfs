@@ -13,7 +13,7 @@ func Run(cfg *config.Config) {
 	pool.Init(cfg)
 	defer pool.Close()
 
-	httpAddr := util.GetHostPort(cfg.Port)
+	httpAddr := util.ServerAddress(cfg.Port)
 
 	graceful.ListenAndServe(
 		nil,
