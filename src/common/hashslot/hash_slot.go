@@ -1,6 +1,7 @@
 package hashslot
 
 import (
+	"common/util"
 	"common/util/math"
 	"common/util/slices"
 	"errors"
@@ -177,33 +178,37 @@ func IsValidEdge(edge *Edge, provider IEdgeProvider) bool {
 	return res[0].Value == edge.Value
 }
 
-// CombineEdges The 'src' must be sort
+// CombineEdges combine dest to src.
 func CombineEdges(src EdgeList, dest EdgeList) EdgeList {
-	var newAdd EdgeList
-	for _, nw := range dest {
-		idx := sort.Search(src.Len(), func(i int) bool { return src[i].End >= nw.Start })
-		// nw.Start > od.End is impossible
-		if idx < src.Len() && nw.End >= src[idx].Start {
-			src[idx].Start = math.MinInt(src[idx].Start, nw.Start)
-			src[idx].End = math.MaxInt(src[idx].End, nw.End)
-		} else {
-			newAdd = append(newAdd, nw)
-		}
-	}
-	src = append(src, newAdd...)
+	newEdges := make(EdgeList, 0, len(src)+len(dest))
+	src = append(src, dest...)
 	sort.Sort(src)
-	return src
+	for _, edge := range src {
+		if len(newEdges) <= 0 {
+			newEdges = append(newEdges, edge)
+			continue
+		}
+		last := slices.Last(newEdges)
+		if edge.Start <= last.End {
+			last.Start = math.MinInt(last.Start, edge.Start)
+			last.End = math.MaxInt(last.End, edge.End)
+			continue
+		}
+		newEdges = append(newEdges, edge)
+	}
+	return newEdges
 }
 
 // RemoveEdges remove edges contains in dest from src
 func RemoveEdges(src EdgeList, dest EdgeList) EdgeList {
-	for len(dest) > 0 {
-		del := slices.First(dest)
-		dest = slices.RemoveHead(dest)
-		tmp := make(EdgeList, 0, len(src))
+	buf1 := make(EdgeList, 0, len(src)+len(dest))
+	buf2 := make(EdgeList, 0, len(src)+len(dest))
+	for i, del := range dest {
+		// use two buffer crossly to reduce memory allocates
+		tmp := util.IfElse(i%2 == 0, buf1, buf2)
 		for _, edge := range src {
 			// edge no contains in del, leaves all
-			if edge.End < del.Start || del.End < edge.Start {
+			if edge.End <= del.Start || del.End <= edge.Start {
 				tmp = append(tmp, edge)
 				continue
 			}
@@ -217,6 +222,8 @@ func RemoveEdges(src EdgeList, dest EdgeList) EdgeList {
 			}
 		}
 		src = tmp
+		// clear buffer
+		tmp = slices.RemoveAll(tmp)
 	}
 	return src
 }
