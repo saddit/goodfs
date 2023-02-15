@@ -4,12 +4,9 @@ import (
 	"common/hashslot"
 	"common/logs"
 	"common/util"
-	"common/util/crypto"
 	"context"
 	"errors"
 	"fmt"
-	"sort"
-	"strings"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -98,7 +95,7 @@ func (h *HashSlotDB) reloadProvider(old any) error {
 		if err := util.DecodeMsgp(&info, kv.Value); err != nil {
 			return fmt.Errorf("reloadProvider: %w", err)
 		}
-		slotsMap[info.Location] = info.Slots
+		slotsMap[info.ServerID] = info.Slots
 	}
 	data, err := hashslot.WrapSlots(slotsMap)
 	if err != nil {
@@ -177,9 +174,6 @@ func (h *HashSlotDB) Save(id string, info *hashslot.SlotInfo) (err error) {
 	if err != nil {
 		return err
 	}
-	// checksum
-	sort.Strings(info.Slots)
-	info.Checksum = crypto.MD5([]byte(strings.Join(info.Slots, ",")))
 	info.GroupID = id
 	// saving
 	_, err = h.kv.Put(context.Background(), key, string(bt))

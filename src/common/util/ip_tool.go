@@ -120,10 +120,13 @@ func ParseIP(addr string) net.IP {
 var localIP string
 var getLocalIP = sync.Once{}
 
+const ServerIpEnv = "SERVER_IP"
+
 func DetectServerIP() string {
 	getLocalIP.Do(func() {
-		if env, ok := os.LookupEnv("SERVER_IP"); ok {
+		if env, ok := os.LookupEnv(ServerIpEnv); ok {
 			localIP = env
+			return
 		}
 		conn, err := net.Dial("udp", "8.8.8.8:53")
 		if err != nil {
@@ -136,7 +139,7 @@ func DetectServerIP() string {
 			LogErrWithPre("get server ip", err)
 			localIP = "127.0.0.1"
 		}
-		_ = os.Setenv("SERVER_IP", localIP)
+		_ = os.Setenv(ServerIpEnv, localIP)
 	})
 	return localIP
 }

@@ -85,7 +85,7 @@ func (h *HashSlotService) PrepareMigrationTo(loc *pb.LocationInfo, slots []strin
 	if err != nil {
 		return err
 	}
-	edges, err := hashslot.WrapSlotsToEdges(slots, pool.HttpHostPort)
+	edges, err := hashslot.WrapSlotsToEdges(slots, pool.Config.Registry.ServerID)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (h *HashSlotService) PrepareMigrationTo(loc *pb.LocationInfo, slots []strin
 	resp, err := client.PrepareMigration(context.Background(), &pb.PrepareReq{
 		Id: h.Cfg.StoreID,
 		Location: &pb.LocationInfo{
-			Host:     util.GetHost(),
+			Host:     util.DetectServerIP(),
 			RpcPort:  pool.Config.Cluster.Port,
 			HttpPort: pool.Config.Port,
 		},
@@ -127,7 +127,7 @@ func (h *HashSlotService) PrepareMigrationFrom(loc *pb.LocationInfo, slots []str
 	if err != nil {
 		return err
 	}
-	edges, err := hashslot.WrapSlotsToEdges(slots, pool.HttpHostPort)
+	edges, err := hashslot.WrapSlotsToEdges(slots, pool.Config.Registry.ServerID)
 	if err != nil {
 		return err
 	}
@@ -180,8 +180,8 @@ func (h *HashSlotService) FinishReceiveItem(success bool) error {
 		return fmt.Errorf("update slot fails after finish migration: %w", err)
 	}
 	// combine to new slots, ignore error because both have been validated
-	curEdges, _ := hashslot.WrapSlotsToEdges(info.Slots, info.Location)
-	newEdges, _ := hashslot.WrapSlotsToEdges(newSlots, info.Location)
+	curEdges, _ := hashslot.WrapSlotsToEdges(info.Slots, "")
+	newEdges, _ := hashslot.WrapSlotsToEdges(newSlots, "")
 	info.Slots = hashslot.CombineEdges(curEdges, newEdges).Strings()
 	// save new slot-info
 	if err = logic.NewHashSlot().SaveToEtcd(h.Cfg.StoreID, info); err != nil {
@@ -265,7 +265,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	if err != nil {
 		return fmt.Errorf("update slot fails after finish migration: %w", err)
 	}
-	curEdges, _ := hashslot.WrapSlotsToEdges(info.Slots, info.Location)
+	curEdges, _ := hashslot.WrapSlotsToEdges(info.Slots, "")
 	info.Slots = hashslot.RemoveEdges(curEdges, delEdges).Strings()
 	// save new slot-info
 	if err = logic.NewHashSlot().SaveToEtcd(h.Cfg.StoreID, info); err != nil {

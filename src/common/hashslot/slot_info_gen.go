@@ -36,18 +36,6 @@ func (z *SlotInfo) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "ServerID")
 				return
 			}
-		case "location":
-			z.Location, err = dc.ReadString()
-			if err != nil {
-				err = msgp.WrapError(err, "Location")
-				return
-			}
-		case "checksum":
-			z.Checksum, err = dc.ReadString()
-			if err != nil {
-				err = msgp.WrapError(err, "Checksum")
-				return
-			}
 		case "slots":
 			var zb0002 uint32
 			zb0002, err = dc.ReadArrayHeader()
@@ -80,9 +68,9 @@ func (z *SlotInfo) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *SlotInfo) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 5
+	// map header, size 3
 	// write "id"
-	err = en.Append(0x85, 0xa2, 0x69, 0x64)
+	err = en.Append(0x83, 0xa2, 0x69, 0x64)
 	if err != nil {
 		return
 	}
@@ -99,26 +87,6 @@ func (z *SlotInfo) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteString(z.ServerID)
 	if err != nil {
 		err = msgp.WrapError(err, "ServerID")
-		return
-	}
-	// write "location"
-	err = en.Append(0xa8, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.Location)
-	if err != nil {
-		err = msgp.WrapError(err, "Location")
-		return
-	}
-	// write "checksum"
-	err = en.Append(0xa8, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x75, 0x6d)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.Checksum)
-	if err != nil {
-		err = msgp.WrapError(err, "Checksum")
 		return
 	}
 	// write "slots"
@@ -144,19 +112,13 @@ func (z *SlotInfo) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *SlotInfo) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 5
+	// map header, size 3
 	// string "id"
-	o = append(o, 0x85, 0xa2, 0x69, 0x64)
+	o = append(o, 0x83, 0xa2, 0x69, 0x64)
 	o = msgp.AppendString(o, z.GroupID)
 	// string "server_id"
 	o = append(o, 0xa9, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x5f, 0x69, 0x64)
 	o = msgp.AppendString(o, z.ServerID)
-	// string "location"
-	o = append(o, 0xa8, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
-	o = msgp.AppendString(o, z.Location)
-	// string "checksum"
-	o = append(o, 0xa8, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x75, 0x6d)
-	o = msgp.AppendString(o, z.Checksum)
 	// string "slots"
 	o = append(o, 0xa5, 0x73, 0x6c, 0x6f, 0x74, 0x73)
 	o = msgp.AppendArrayHeader(o, uint32(len(z.Slots)))
@@ -196,18 +158,6 @@ func (z *SlotInfo) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "ServerID")
 				return
 			}
-		case "location":
-			z.Location, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Location")
-				return
-			}
-		case "checksum":
-			z.Checksum, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Checksum")
-				return
-			}
 		case "slots":
 			var zb0002 uint32
 			zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
@@ -241,7 +191,7 @@ func (z *SlotInfo) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *SlotInfo) Msgsize() (s int) {
-	s = 1 + 3 + msgp.StringPrefixSize + len(z.GroupID) + 10 + msgp.StringPrefixSize + len(z.ServerID) + 9 + msgp.StringPrefixSize + len(z.Location) + 9 + msgp.StringPrefixSize + len(z.Checksum) + 6 + msgp.ArrayHeaderSize
+	s = 1 + 3 + msgp.StringPrefixSize + len(z.GroupID) + 10 + msgp.StringPrefixSize + len(z.ServerID) + 6 + msgp.ArrayHeaderSize
 	for za0001 := range z.Slots {
 		s += msgp.StringPrefixSize + len(z.Slots[za0001])
 	}

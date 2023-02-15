@@ -1,16 +1,15 @@
 package registry
 
 import (
+	"bytes"
 	. "common/cst"
 	"common/graceful"
 	"common/logs"
 	"common/util"
 	"context"
 	"fmt"
-	"net"
-	"strings"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"net"
 )
 
 var registryLog = logs.New("etcd-registry")
@@ -59,10 +58,13 @@ func (e *EtcdRegistry) GetServiceMapping(name string, rpc bool) map[string]strin
 	}
 	res := make(map[string]string, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
-		sp := strings.Split(string(kv.Key), "/")
-		sp = strings.Split(sp[len(sp)-1], "_")
+		idx := bytes.LastIndexByte(kv.Value, '/')
+		if idx < 0 {
+			continue
+		}
+		sid, _, _ := bytes.Cut(kv.Value[idx+1:], []byte("_"))
 		value := RegisterValue(kv.Value)
-		res[sp[0]] = util.IfElse(rpc, value.RpcAddr(), value.HttpAddr())
+		res[util.BytesToStr(sid)] = util.IfElse(rpc, value.RpcAddr(), value.HttpAddr())
 	}
 	return res
 }

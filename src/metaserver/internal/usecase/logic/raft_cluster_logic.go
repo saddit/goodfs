@@ -26,11 +26,11 @@ func (rc RaftCluster) UpdateConfiguration(cfg *config.ClusterConfig) error {
 		if err != nil {
 			return err
 		}
-		if err := hsLogic.RemoveFromEtcd(pool.Config.HashSlot.StoreID); err != nil {
+		if err = hsLogic.RemoveFromEtcd(pool.Config.HashSlot.StoreID); err != nil {
 			return err
 		}
 		pool.Config.HashSlot.StoreID = cfg.GroupID
-		if err := hsLogic.SaveToEtcd(pool.Config.HashSlot.StoreID, info); err != nil {
+		if err = hsLogic.SaveToEtcd(pool.Config.HashSlot.StoreID, info); err != nil {
 			return err
 		}
 	} else {

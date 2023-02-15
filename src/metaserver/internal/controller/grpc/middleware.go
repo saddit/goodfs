@@ -112,7 +112,7 @@ func CheckKeySlot(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo,
 	if ok {
 		return handler(ctx, req)
 	}
-	return nil, status.Error(codes.Aborted, other)
+	return nil, status.Error(codes.Aborted, logic.NewDiscovery().PeerIp(other, true))
 }
 
 func checkKeySlotMetadata(req interface{}) error {
@@ -127,7 +127,7 @@ func checkKeySlotMetadata(req interface{}) error {
 	if ok {
 		return nil
 	}
-	return status.Error(codes.Aborted, other)
+	return status.Error(codes.Aborted, logic.NewDiscovery().PeerIp(other, true))
 }
 
 // UnaryServerRecoveryInterceptor returns a new unary server interceptor for panic recovery.

@@ -3,9 +3,8 @@ package logic
 import (
 	"common/hashslot"
 	"common/logs"
-	"common/util/crypto"
+	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/pool"
-	"strings"
 )
 
 type HashSlot struct{}
@@ -18,7 +17,7 @@ func (h HashSlot) IsKeyOnThisServer(key string) (bool, string) {
 		logs.Std().Error(err)
 		return false, ""
 	}
-	return id == pool.HttpHostPort, id
+	return id == pool.Config.Registry.ServerID, id
 }
 
 func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
@@ -27,7 +26,6 @@ func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
 
 func (h HashSlot) SaveToEtcd(id string, info *hashslot.SlotInfo) error {
 	info.GroupID = id
-	info.Location = pool.HttpHostPort
 	info.ServerID = pool.Config.Registry.ServerID
 	go func() {
 		pool.Config.HashSlot.Slots = info.Slots
@@ -49,13 +47,14 @@ func (HashSlot) GetById(storeId string) (*hashslot.SlotInfo, error) {
 		return nil, err
 	}
 	if !ok {
-		return &hashslot.SlotInfo{
-			GroupID:  pool.Config.HashSlot.StoreID,
-			ServerID: pool.Config.Registry.ServerID,
-			Location: pool.HttpHostPort,
-			Checksum: crypto.MD5([]byte(strings.Join(pool.Config.HashSlot.Slots, ","))),
-			Slots:    pool.Config.HashSlot.Slots,
-		}, nil
+		if storeId == pool.Config.HashSlot.StoreID {
+			return &hashslot.SlotInfo{
+				GroupID:  pool.Config.HashSlot.StoreID,
+				ServerID: pool.Config.Registry.ServerID,
+				Slots:    pool.Config.HashSlot.Slots,
+			}, nil
+		}
+		return nil, usecase.ErrNotFound
 	}
 	return data, nil
 }

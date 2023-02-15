@@ -2,6 +2,8 @@ package hashslot
 
 import (
 	"common/util/math"
+	"common/util/slices"
+	"errors"
 	"fmt"
 	"hash/crc32"
 	"sort"
@@ -10,6 +12,10 @@ import (
 )
 
 const MaxSlot = 16383
+
+var (
+	ErrOverlap = errors.New("overlap slots")
+)
 
 func formatInt(slot string) (int, int, error) {
 	rg := strings.Split(slot, "-")
@@ -45,7 +51,7 @@ func sortAndValidate(edges EdgeList) error {
 		}
 		pre := edges[i-1]
 		if pre.Start == edge.Start || pre.End > edge.Start {
-			return fmt.Errorf("overlap %s and %s", pre, edge)
+			return fmt.Errorf("%w: %s and %s", ErrOverlap, pre, edge)
 		}
 	}
 	return nil
@@ -189,29 +195,28 @@ func CombineEdges(src EdgeList, dest EdgeList) EdgeList {
 	return src
 }
 
-// RemoveEdges The 'dest' must be sort
+// RemoveEdges remove edges contains in dest from src
 func RemoveEdges(src EdgeList, dest EdgeList) EdgeList {
-	res := make(EdgeList, 0, len(src))
-	for _, edge := range src {
-		idx := sort.Search(len(dest), func(i int) bool { return dest[i].Start >= edge.Start })
-		if idx < len(dest) {
-			del := dest[idx]
+	for len(dest) > 0 {
+		del := slices.First(dest)
+		dest = slices.RemoveHead(dest)
+		tmp := make(EdgeList, 0, len(src))
+		for _, edge := range src {
 			// edge no contains in del, leaves all
-			if edge.End < del.Start {
-				res = append(res, edge)
+			if edge.End < del.Start || del.End < edge.Start {
+				tmp = append(tmp, edge)
 				continue
 			}
 			// edge contains del and leaves head part
 			if edge.Start < del.Start {
-				res = append(res, &Edge{Start: edge.Start, End: del.Start, Value: edge.Value})
+				tmp = append(tmp, &Edge{Start: edge.Start, End: del.Start, Value: edge.Value})
 			}
 			// edge contains del and leaves tail part
 			if edge.End > del.End {
-				res = append(res, &Edge{Start: del.End, End: edge.End, Value: edge.Value})
+				tmp = append(tmp, &Edge{Start: del.End, End: edge.End, Value: edge.Value})
 			}
-		} else {
-			res = append(res, edge)
 		}
+		src = tmp
 	}
-	return res
+	return src
 }

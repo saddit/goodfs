@@ -108,9 +108,12 @@ func (e *EtcdDiscovery) GetServiceMapping(name string, rpc bool) map[string]stri
 	service := util.IfElse(rpc, e.rpcService, e.httpService)
 	if sl, ok := service[name]; ok {
 		for k, v := range sl.copy() {
-			sp := strings.Split(v, "/")
-			sp = strings.Split(sp[len(sp)-1], "_")
-			res[sp[0]] = k
+			idx := strings.LastIndexByte(v, '/')
+			if idx < 0 {
+				continue
+			}
+			sid, _, _ := strings.Cut(v[idx+1:], "_")
+			res[sid] = k
 		}
 	}
 	return res
