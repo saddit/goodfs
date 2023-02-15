@@ -12,6 +12,7 @@ import (
 	"metaserver/config"
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/raftimpl"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -21,25 +22,21 @@ import (
 )
 
 var (
-	Config       *config.Config
-	Cache        cache.ICache
-	Storage      *db.Storage
-	HashSlot     *db.HashSlotDB
-	RaftWrapper  *raftimpl.RaftWrapper
-	Etcd         *clientv3.Client
-	Registry     *registry.EtcdRegistry
-	HttpHostPort string
-	GrpcHostPort string
+	Config      *config.Config
+	Cache       cache.ICache
+	Storage     *db.Storage
+	HashSlot    *db.HashSlotDB
+	RaftWrapper *raftimpl.RaftWrapper
+	Etcd        *clientv3.Client
+	Registry    *registry.EtcdRegistry
 )
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
-	HttpHostPort = util.ServerAddress(cfg.Port)
-	GrpcHostPort = util.ServerAddress(cfg.Cluster.Port)
 	initLog(&cfg.Log)
 	initCache(cfg.Cache)
 	initEtcd(&cfg.Etcd)
-	initRegistry(&cfg.Registry, Etcd)
+	initRegistry(cfg, Etcd)
 	initStorage(cfg)
 	initHashSlot(&cfg.Registry, Etcd)
 }
@@ -47,6 +44,7 @@ func InitPool(cfg *config.Config) {
 func initLog(cfg *logs.Config) {
 	logs.SetLevel(cfg.Level)
 	if logs.IsDebug() || logs.IsTrace() {
+		_ = os.Setenv(util.ServerIpEnv, "127.0.0.1")
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -74,10 +72,10 @@ func initStorage(cfg *config.Config) {
 	}
 }
 
-func initRegistry(cfg *registry.Config, etcd *clientv3.Client) {
-	cfg.HttpAddr = HttpHostPort
-	cfg.RpcAddr = GrpcHostPort
-	Registry = registry.NewEtcdRegistry(etcd, *cfg)
+func initRegistry(cfg *config.Config, etcd *clientv3.Client) {
+	cfg.Registry.HttpAddr = util.ServerAddress(cfg.Port)
+	cfg.Registry.RpcAddr = util.ServerAddress(cfg.RpcPort)
+	Registry = registry.NewEtcdRegistry(etcd, cfg.Registry)
 }
 
 func initHashSlot(cfg *registry.Config, etcd *clientv3.Client) {

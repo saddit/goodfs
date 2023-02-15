@@ -49,7 +49,9 @@ func (b *BucketController) CreateNew(c *gin.Context) {
 	}
 	// post request has not 'name' param. need check again here
 	if ok, other := logic.NewHashSlot().IsKeyOnThisServer(data.Name); !ok {
-		response.Exec(c).Redirect(http.StatusSeeOther, other)
+		response.Exec(c).
+			Header(gin.H{"Location": logic.NewDiscovery().PeerLocation(other, c)}).
+			Fail(http.StatusBadRequest, "see other")
 		return
 	}
 	if err := b.service.Create(&data); err != nil {

@@ -2,6 +2,7 @@ package app
 
 import (
 	"common/graceful"
+	"common/util"
 	"metaserver/config"
 	"metaserver/internal/controller/grpc"
 	"metaserver/internal/controller/http"
@@ -30,7 +31,7 @@ func Run(cfg *config.Config) {
 	)
 	hsService := service.NewHashSlotService(pool.HashSlot, metaService, bucketServ, &cfg.HashSlot)
 	grpcServer := grpc.NewRpcServer(cfg.RpcPort, cfg.MaxConcurrentStreams, raftWrapper, metaService, hsService, bucketServ)
-	httpServer := http.NewHttpServer(pool.HttpHostPort, metaService, bucketServ)
+	httpServer := http.NewHttpServer(util.ServerAddress(cfg.Port), metaService, bucketServ)
 	// register on leader change
 	raftWrapper.RegisterLeaderChangedEvent(hsService)
 	raftWrapper.RegisterLeaderChangedEvent(logic.NewRegistry())

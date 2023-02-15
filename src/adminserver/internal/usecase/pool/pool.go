@@ -3,10 +3,13 @@ package pool
 import (
 	"adminserver/config"
 	"adminserver/internal/usecase/db"
+	"common/logs"
 	"common/registry"
 	"common/util"
+	"github.com/gin-gonic/gin"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"net/http"
+	"os"
 )
 
 var (
@@ -19,6 +22,7 @@ var (
 
 func Init(cfg *config.Config) {
 	Config = cfg
+	initLog(&cfg.Log)
 	initHttpClient()
 	initEtcd(cfg)
 	initDiscovery(Etcd, cfg)
@@ -34,6 +38,16 @@ func Close() {
 
 func initHttpClient() {
 	Http = &http.Client{Timeout: 0}
+}
+
+func initLog(cfg *logs.Config) {
+	logs.SetLevel(cfg.Level)
+	if logs.IsDebug() || logs.IsTrace() {
+		_ = os.Setenv(util.ServerIpEnv, "127.0.0.1")
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 }
 
 func initEtcd(cfg *config.Config) {

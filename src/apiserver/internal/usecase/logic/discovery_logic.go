@@ -16,11 +16,13 @@ func (Discovery) GetDataServers() []string {
 }
 
 func (Discovery) GetMetaServerHTTP(id string) string {
-	return pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, false)[id]
+	ip, _ := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id, false)
+	return ip
 }
 
 func (Discovery) GetMetaServerGRPC(id string) string {
-	return pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)[id]
+	ip, _ := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id, true)
+	return ip
 }
 
 func (d Discovery) SelectDataServer(sel selector.Selector, size int) []string {

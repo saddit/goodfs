@@ -30,6 +30,10 @@ func RemoveFirst[T any](arr *[]T) {
 	*arr = (*arr)[1:]
 }
 
+func RemoveHead[T any](arr []T) []T {
+	return arr[1:]
+}
+
 func ExtremalIndex[T any](arr []T, fn func(ex, cur T) bool) int {
 	var exIdx int
 	for i := range arr {

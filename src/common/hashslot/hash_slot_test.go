@@ -46,6 +46,44 @@ func TestRemoveEdges(t *testing.T) {
 	assert.New(t).EqualValues([]string{"0-10", "120-125", "200-500"}, RemoveEdges(e1, e2).Strings())
 }
 
+func TestRemoveEdges2(t *testing.T) {
+	slots1 := []string{
+		"0-16384",
+	}
+	slots2 := []string{
+		"3000-4000",
+		"6000-10000",
+	}
+	e1, err := WrapSlotsToEdges(slots1, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e2, err := WrapSlotsToEdges(slots2, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.New(t).EqualValues([]string{"0-3000", "4000-6000", "10000-16384"}, RemoveEdges(e1, e2).Strings())
+}
+
+func TestRemoveEdges3(t *testing.T) {
+	slots1 := []string{
+		"0-8000",
+		"9000-9500",
+	}
+	slots2 := []string{
+		"7000-9200",
+	}
+	e1, err := WrapSlotsToEdges(slots1, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e2, err := WrapSlotsToEdges(slots2, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.New(t).EqualValues([]string{"0-7000", "9200-9500"}, RemoveEdges(e1, e2).Strings())
+}
+
 func TestFindRangeCurrentData(t *testing.T) {
 	sm := map[string][]string{
 		"A": {"0-100", "110-115"},
@@ -97,9 +135,4 @@ func TestIsSlotInEdges(t *testing.T) {
 	assert.New(t).False(IsSlotInEdges(100, p))
 	assert.New(t).False(IsSlotInEdges(105, p))
 	assert.New(t).False(IsSlotInEdges(120, p))
-}
-
-func TestCalcBytesSlot(t *testing.T) {
-	res := CalcBytesSlot([]byte("x-www-form-url.location.form"))
-	t.Log(res)
 }

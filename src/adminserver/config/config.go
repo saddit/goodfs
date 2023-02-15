@@ -21,6 +21,7 @@ type DiscoveryConfig struct {
 
 type Config struct {
 	Port          string          `yaml:"port" env:"PORT" env-default:"80"`
+	Log           logs.Config     `yaml:"log" env-prefix:"LOG"`
 	Discovery     DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
 	Etcd          etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	EnabledApiTLS bool            `yaml:"enabled-api-tls" env:"ENABLED_API_TLS"`
