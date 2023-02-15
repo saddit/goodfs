@@ -26,6 +26,10 @@ func Clear[T any](arr *[]T) {
 	*arr = (*arr)[:0]
 }
 
+func RemoveAll[T any](arr []T) []T {
+	return arr[:0]
+}
+
 func RemoveFirst[T any](arr *[]T) {
 	*arr = (*arr)[1:]
 }

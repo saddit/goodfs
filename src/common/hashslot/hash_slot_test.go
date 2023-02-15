@@ -26,6 +26,44 @@ func TestCombineEdges(t *testing.T) {
 	assert.New(t).EqualValues([]string{"0-110", "115-500"}, CombineEdges(e1, e2).Strings())
 }
 
+func TestCombineEdges2(t *testing.T) {
+	slots1 := []string{
+		"0-100",
+		"120-500",
+	}
+	slots2 := []string{
+		"100-120",
+	}
+	e1, err := WrapSlotsToEdges(slots1, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e2, err := WrapSlotsToEdges(slots2, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.New(t).EqualValues([]string{"0-500"}, CombineEdges(e1, e2).Strings())
+}
+
+func TestCombineEdges3(t *testing.T) {
+	slots1 := []string{
+		"120-500",
+	}
+	slots2 := []string{
+		"1-99",
+		"500-520",
+	}
+	e1, err := WrapSlotsToEdges(slots1, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e2, err := WrapSlotsToEdges(slots2, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.New(t).EqualValues([]string{"1-99", "120-520"}, CombineEdges(e1, e2).Strings())
+}
+
 func TestRemoveEdges(t *testing.T) {
 	slots1 := []string{
 		"0-100",
@@ -34,6 +72,7 @@ func TestRemoveEdges(t *testing.T) {
 	slots2 := []string{
 		"10-100",
 		"125-200",
+		"500-600",
 	}
 	e1, err := WrapSlotsToEdges(slots1, "A")
 	if err != nil {
