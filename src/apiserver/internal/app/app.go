@@ -22,7 +22,7 @@ func Run(cfg *Config) {
 	metaService := service.NewMetaService(metaRepo, versionRepo)
 	objService := service.NewObjectService(metaService, bucketRepo, pool.Etcd)
 	// register
-	cfg.Registry.HttpAddr = util.GetHostPort(cfg.Port)
+	cfg.Registry.HttpAddr = util.ServerAddress(cfg.Port)
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry).MustRegister().Unregister()
 	// system-info auto saving
 	defer logic.NewSystemStatLogic().StartAutoSave()()

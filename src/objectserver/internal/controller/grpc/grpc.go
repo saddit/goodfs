@@ -27,7 +27,7 @@ func (r *Server) ListenAndServe() error {
 	if r.Server == nil {
 		return nil
 	}
-	sock, err := net.Listen("tcp", util.GetHostPort(r.Port))
+	sock, err := net.Listen("tcp", util.ServerAddress(r.Port))
 	if err != nil {
 		panic(err)
 	}

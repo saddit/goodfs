@@ -11,8 +11,6 @@ import (
 	"io"
 	"math"
 	"math/rand"
-	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -118,127 +116,6 @@ func IfElse[T any](cond bool, t T, f T) T {
 		return t
 	}
 	return f
-}
-
-// LookupIP returns ipv4 if success else return empty string.
-func LookupIP(addr string) string {
-	if ip := ParseIPFromAddr(addr); ip != nil {
-		return ip.String()
-	}
-	return ""
-}
-
-// GetHost get host name from environment variables or os.Hostname or GetServerIP
-func GetHost() string {
-	if host, ok := os.LookupEnv("HOST"); ok {
-		return host
-	}
-	var err error
-	if host, err := os.Hostname(); err == nil {
-		return host
-	}
-	logs.Std().Error(err)
-	return GetServerIP()
-}
-
-func GetHostPort(port string) string {
-	return net.JoinHostPort(GetHost(), port)
-}
-
-func GetHostFromAddr(addr string) string {
-	// cut http prefix
-	addr = strings.TrimPrefix(addr, "https://")
-	addr = strings.TrimPrefix(addr, "http://")
-	if strings.LastIndexByte(addr, ':') < 0 {
-		return addr
-	}
-	host, _, _ := net.SplitHostPort(addr)
-	return host
-}
-
-// ParseIPFromAddr Parse to net.IP if found ipv4 else return private or ipv6 or loopback ip. If no found anything, return nil.
-func ParseIPFromAddr(addr string) net.IP {
-	host := GetHostFromAddr(addr)
-	if netIP := net.ParseIP(host); netIP != nil {
-		return netIP
-	}
-	ips, err := net.LookupIP(host)
-	if err != nil {
-		LogErr(err)
-		return nil
-	}
-	var loopback net.IP
-	var private net.IP
-	var ipv6 net.IP
-	for _, ip := range ips {
-		if ip.IsLoopback() {
-			loopback = ip
-		} else if ip.IsPrivate() {
-			private = ip
-		} else if ip.To4() != nil {
-			return ip
-		} else if ip.To16() != nil {
-			ipv6 = ip
-		}
-	}
-
-	if private != nil {
-		return private
-	}
-
-	if ipv6 != nil {
-		return ipv6
-	}
-
-	return loopback
-}
-
-func GetPortFromAddr(addr string) string {
-	// cut http prefix
-	addr = strings.TrimPrefix(addr, "https://")
-	addr = strings.TrimPrefix(addr, "http://")
-	_, port, _ := net.SplitHostPort(addr)
-	return port
-}
-
-// GetServerIP Return public ipv4 if success else return private or ipv6 or loopback ip. At least, return "127.0.0.1"
-func GetServerIP() string {
-	if env, ok := os.LookupEnv("SERVER_IP"); ok {
-		return env
-	}
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		LogErr(err)
-		return "127.0.0.1"
-	}
-
-	var loopback net.IP
-	var private net.IP
-	var ipv6 net.IP
-	for _, address := range addrs {
-		ip := ParseIPFromAddr(address.String())
-		if ip != nil {
-			if ip.IsPrivate() {
-				private = ip
-			} else if ip.IsLoopback() {
-				loopback = ip
-			} else if ip.To4() != nil {
-				return ip.String()
-			} else if ip.To16() != nil {
-				ipv6 = ip
-			}
-		}
-	}
-
-	if private != nil {
-		return private.String()
-	}
-
-	if ipv6 != nil {
-		return ipv6.String()
-	}
-
-	return loopback.String()
 }
 
 func ToInt(str string) int {

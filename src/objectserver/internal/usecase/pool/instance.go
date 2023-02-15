@@ -152,8 +152,8 @@ func initEtcd(cfg *etcd.Config) {
 }
 
 func initRegister(et *clientv3.Client, cfg *config.Config) {
-	cfg.Registry.HttpAddr = util.GetHostPort(cfg.Port)
-	cfg.Registry.RpcAddr = util.GetHostPort(cfg.RpcPort)
+	cfg.Registry.HttpAddr = util.ServerAddress(cfg.Port)
+	cfg.Registry.RpcAddr = util.ServerAddress(cfg.RpcPort)
 	er := registry.NewEtcdRegistry(et, cfg.Registry)
 	Registry, Discovery = er, er
 }

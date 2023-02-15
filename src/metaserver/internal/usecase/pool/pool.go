@@ -34,8 +34,8 @@ var (
 
 func InitPool(cfg *config.Config) {
 	Config = cfg
-	HttpHostPort = util.GetHostPort(cfg.Port)
-	GrpcHostPort = util.GetHostPort(cfg.Cluster.Port)
+	HttpHostPort = util.ServerAddress(cfg.Port)
+	GrpcHostPort = util.ServerAddress(cfg.Cluster.Port)
 	initLog(&cfg.Log)
 	initCache(cfg.Cache)
 	initEtcd(&cfg.Etcd)

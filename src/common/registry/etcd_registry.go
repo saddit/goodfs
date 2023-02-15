@@ -99,7 +99,7 @@ func (e *EtcdRegistry) LookupIP(hostport string) string {
 	if err != nil {
 		return net.JoinHostPort("127.0.0.1", "16384")
 	}
-	ip := util.ParseIPFromAddr(host)
+	ip := util.ParseIP(host)
 	if ip == nil {
 		return net.JoinHostPort("127.0.0.1", port)
 	}
