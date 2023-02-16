@@ -5,6 +5,7 @@ import (
 	"apiserver/internal/usecase/componet/selector"
 	"apiserver/internal/usecase/grpcapi"
 	"apiserver/internal/usecase/pool"
+	"common/logs"
 )
 
 type Discovery struct{}
@@ -16,12 +17,18 @@ func (Discovery) GetDataServers() []string {
 }
 
 func (Discovery) GetMetaServerHTTP(id string) string {
-	ip, _ := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id, false)
+	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id, false)
+	if !ok {
+		logs.Std().Errorf("not found ip for server %s", id)
+	}
 	return ip
 }
 
 func (Discovery) GetMetaServerGRPC(id string) string {
-	ip, _ := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id, true)
+	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id, true)
+	if !ok {
+		logs.Std().Errorf("not found ip for server %s", id)
+	}
 	return ip
 }
 

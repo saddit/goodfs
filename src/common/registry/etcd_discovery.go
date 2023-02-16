@@ -128,10 +128,10 @@ func (e *EtcdDiscovery) GetServices(name string, rpc bool) []string {
 }
 
 func (e *EtcdDiscovery) GetService(name string, id string, rpc bool) (string, bool) {
-	service := util.IfElse(rpc, e.rpcService, e.httpService)
-	if sl, ok := service[name]; ok {
-		addr, ok := sl.data[id]
-		return addr, ok
+	mp := e.GetServiceMapping(name, rpc)
+	if mp != nil {
+		v, ok := mp[id]
+		return v, ok
 	}
 	return "", false
 }
