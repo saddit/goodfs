@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 )
 
-type NonErrDoneGroup interface {
+type WaitGroup interface {
 	Add(int)
 	Done()
 	Wait()
@@ -17,13 +17,18 @@ type NonErrDoneGroup interface {
 }
 
 type DoneGroup interface {
-	NonErrDoneGroup
+	WaitGroup
+	// Close stop receive error
 	Close()
+	// Error deliver an error and close the group. Only one error can be received.
 	Error(error)
+	// Errors deliver an error. Must call WaitError first in another goroutine to prevent from deadlock.
+	// Do not call Error or Close without waiting the group done if this function was used in any goroutine
 	Errors(error)
+	// WaitError block to receive err from Error or Errors until group is closed
 	WaitError() <-chan error
+	// WaitUntilError use select to WaitDone() and WaitError(). if has error return it else return nil
 	WaitUntilError() error
-	ErrorUtilDone() <-chan error
 }
 
 type doneGroup struct {
@@ -32,12 +37,13 @@ type doneGroup struct {
 	closed *atomic.Bool
 }
 
-// NewNonErrDoneGroup equals to WaitGroup. Only Todo() and WaitDone() func can be used!
-func NewNonErrDoneGroup() NonErrDoneGroup {
-	return &doneGroup{sync.WaitGroup{}, nil, &atomic.Bool{}}
+func NewWaitGroup() WaitGroup {
+	b := &atomic.Bool{}
+	b.Store(true)
+	return &doneGroup{sync.WaitGroup{}, nil, b}
 }
 
-func NewDoneGroup() *doneGroup {
+func NewDoneGroup() DoneGroup {
 	return &doneGroup{sync.WaitGroup{}, make(chan error, 1), &atomic.Bool{}}
 }
 
@@ -63,17 +69,16 @@ func (d *doneGroup) Todo() {
 	d.Add(1)
 }
 
-// Error deliver an error. Only one error can be received since Close would be invoked.
+// Error deliver an error and close the group. Only one error can be received.
 func (d *doneGroup) Error(e error) {
-	if d.closed.CompareAndSwap(false, false) {
-		defer d.Close()
-		if d.ec != nil {
-			d.ec <- e
-		}
+	if d.closed.CompareAndSwap(false, true) && d.ec != nil {
+		defer close(d.ec)
+		d.ec <- e
 	}
 }
 
-// Errors deliver an error. Must call WaitError in another goroutine prevent from deadlock.
+// Errors deliver an error. Must call WaitError first in another goroutine to prevent from deadlock.
+// Do not call Error or Close without waiting the group done if this function was used in any goroutine
 func (d *doneGroup) Errors(e error) {
 	if d.closed.Load() {
 		return
@@ -118,21 +123,6 @@ func (d *doneGroup) WaitUntilError() error {
 	case e := <-d.WaitError():
 		return e
 	}
-}
-
-// ErrorUtilDone receive errors until done. will close if done.
-func (d *doneGroup) ErrorUtilDone() <-chan error {
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				graceful.PrintStacks(err)
-				d.Error(errors.New(fmt.Sprint(err)))
-			}
-		}()
-		defer d.Close()
-		d.Wait()
-	}()
-	return d.ec
 }
 
 type limitDoneGroup struct {

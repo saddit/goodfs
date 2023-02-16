@@ -160,6 +160,7 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 	success := true
 	dg := util.LimitDoneGroup(128)
 	defer dg.Close()
+	// receive all errors
 	go func() {
 		defer graceful.Recover()
 		for err := range dg.WaitError() {
@@ -191,6 +192,7 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 				}
 			}
 			client := clientMap[cur]
+			// transfer file async
 			dg.Todo()
 			go func(toAddr string) {
 				defer dg.Done()
@@ -202,6 +204,7 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 					dg.Errors(inner)
 					return
 				}
+				// remove file async if transfer success
 				go func() {
 					defer graceful.Recover()
 					// remove local file
