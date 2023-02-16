@@ -5,8 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-
-	"go.uber.org/atomic"
+	"sync/atomic"
 )
 
 type NonErrDoneGroup interface {
@@ -35,11 +34,11 @@ type doneGroup struct {
 
 // NewNonErrDoneGroup equals to WaitGroup. Only Todo() and WaitDone() func can be used!
 func NewNonErrDoneGroup() NonErrDoneGroup {
-	return &doneGroup{sync.WaitGroup{}, nil, atomic.NewBool(true)}
+	return &doneGroup{sync.WaitGroup{}, nil, &atomic.Bool{}}
 }
 
 func NewDoneGroup() *doneGroup {
-	return &doneGroup{sync.WaitGroup{}, make(chan error, 1), atomic.NewBool(false)}
+	return &doneGroup{sync.WaitGroup{}, make(chan error, 1), &atomic.Bool{}}
 }
 
 // Done equals to WaitGroup Done() but recover and call Error() on panic
@@ -66,12 +65,11 @@ func (d *doneGroup) Todo() {
 
 // Error deliver an error. Only one error can be received since Close would be invoked.
 func (d *doneGroup) Error(e error) {
-	if d.closed.Load() {
-		return
-	}
-	defer d.Close()
-	if d.ec != nil {
-		d.ec <- e
+	if d.closed.CompareAndSwap(false, false) {
+		defer d.Close()
+		if d.ec != nil {
+			d.ec <- e
+		}
 	}
 }
 
@@ -107,7 +105,7 @@ func (d *doneGroup) WaitDone() <-chan struct{} {
 
 // Close closing the error receive channel. Safe to call multi goroutine and times
 func (d *doneGroup) Close() {
-	if d.closed.CAS(false, true) && d.ec != nil {
+	if d.closed.CompareAndSwap(false, true) && d.ec != nil {
 		close(d.ec)
 	}
 }
