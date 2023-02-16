@@ -6,7 +6,6 @@ import (
 	"common/util"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -32,11 +31,12 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 	defer perform(true)()
 	req, _ := http.NewRequest(http.MethodPost, tempRest(ip, name), nil)
 	req.Header.Add("Size", fmt.Sprint(size))
+	keepalive(req)
 	resp, e := httpClient.Do(req)
 	if e != nil {
 		return "", e
 	}
-	res, e := ioutil.ReadAll(resp.Body)
+	res, e := io.ReadAll(resp.Body)
 	if e != nil {
 		return "", fmt.Errorf("post temp object name=%v, return error response body, status=%v", name, resp.StatusCode)
 	}
@@ -49,7 +49,7 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 func PatchTmpObject(ip, id string, body io.Reader) error {
 	defer perform(true)()
 	req, _ := http.NewRequest(http.MethodPatch, tempRest(ip, id), body)
-	keepAlive(req)
+	keepalive(req)
 	resp, e := httpClient.Do(req)
 	if e != nil {
 		return e
@@ -71,8 +71,11 @@ func PutTmpObject(ip, id string, compress bool) error {
 	defer perform(true)()
 	form := make(url.Values)
 	form.Set("compress", fmt.Sprintf("%t", compress))
-	req, _ := http.NewRequest(http.MethodPut, fmt.Sprint(tempRest(ip, id), "?", form.Encode()), nil)
-	keepAlive(req)
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprint(tempRest(ip, id), "?", form.Encode()), nil)
+	if err != nil {
+		return err
+	}
+	keepalive(req)
 	resp, e := httpClient.Do(req)
 	if e != nil {
 		return e
@@ -163,7 +166,7 @@ func PutObject(ip, id string, compress bool, body io.Reader) error {
 	if err != nil {
 		return err
 	}
-	keepAlive(req)
+	keepalive(req)
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
@@ -208,6 +211,6 @@ func tempRest(ip, id string) string {
 	return fmt.Sprintf("http://%s/temp/%s", ip, id)
 }
 
-func keepAlive(req *http.Request) {
+func keepalive(req *http.Request) {
 	req.Header.Set("Keep-Alive", "timeout=62, max=10000")
 }
