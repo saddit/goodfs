@@ -3,7 +3,6 @@ package service
 import (
 	"apiserver/config"
 	"common/datasize"
-	"common/logs"
 	"common/util"
 	"common/util/slices"
 	"fmt"
@@ -49,26 +48,19 @@ func (c *CopyPutStream) Flush() (err error) {
 	}
 	defer func() { slices.Clear(&c.cache) }()
 	dg := util.NewDoneGroup()
-	defer dg.Close()
 	sucNum := atomic.NewInt32(0)
 	for _, wt := range c.writers {
 		dg.Todo()
 		go func(writer io.Writer) {
 			defer dg.Done()
-			if _, err := writer.Write(c.cache); err != nil {
-				dg.Error(err)
+			if _, inner := writer.Write(c.cache); inner != nil {
+				dg.Error(inner)
 				return
 			}
 			sucNum.Inc()
 		}(wt)
 	}
-	for inner := range dg.ErrorUtilDone() {
-		logs.Std().Debugf("write replication err: %s", inner)
-		if c.rpConfig.AtLeastCopiesNum() > int(sucNum.Load()) {
-			return inner
-		}
-	}
-	return
+	return dg.WaitUntilError()
 }
 
 func (c *CopyPutStream) Write(p []byte) (n int, err error) {

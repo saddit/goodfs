@@ -4,6 +4,7 @@ import (
 	"apiserver/config"
 	"apiserver/internal/usecase/webapi"
 	"bytes"
+	"common/collection/set"
 	"common/cst"
 	"common/graceful"
 	"common/util"
@@ -54,23 +55,20 @@ func (c *CopyFixStream) startFix() func() error {
 	go func() {
 		defer dg.Done()
 		data := c.buffer.Bytes()
-		wg := util.NewDoneGroup()
-		defer wg.Close()
+		errs := set.NewWriteSyncSet()
+		wg := util.NewWaitGroup()
 		for idx, name := range c.fileNames {
 			wg.Todo()
 			go func(i int, key string) {
 				defer wg.Done()
 				if err := webapi.PutObject(c.locates[i], key, c.compress, bytes.NewBuffer(data)); err != nil {
-					wg.Error(fmt.Errorf("fix %s put-api err: %w", key, err))
+					errs.Add(fmt.Sprintf("fix %s put-api err: %w", key, err))
 				}
 			}(idx, name)
 		}
-		var errs []string
-		for err := range wg.ErrorUtilDone() {
-			errs = append(errs, err.Error())
-		}
-		if len(errs) > 0 {
-			dg.Error(errors.New(strings.Join(errs, ";")))
+		wg.Wait()
+		if errs.Size() > 0 {
+			dg.Error(errors.New(strings.Join(set.To[string](errs), ";")))
 			return
 		}
 		if c.Updater == nil {
