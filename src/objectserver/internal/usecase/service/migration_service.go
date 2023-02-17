@@ -23,8 +23,8 @@ import (
 	"strings"
 	"sync"
 
-	"go.uber.org/atomic"
 	"google.golang.org/grpc"
+	"sync/atomic"
 )
 
 var (
@@ -253,7 +253,7 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	hash := data.FileName[:idx]
 	// get metadata locations of file
 	var wg sync.WaitGroup
-	failNum := atomic.NewInt32(0)
+	failNum := atomic.Int32{}
 	var total float64
 	servs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, false)
 	if len(servs) == 0 {
@@ -270,7 +270,7 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 			defer wg.Done()
 			if inner := webapi.UpdateVersionLocates(ip, hash, seq, newLoc); inner != nil {
 				logs.Std().Errorf("update locate of %s in %s fail: %s", data.FileName, ip, inner)
-				failNum.Inc()
+				failNum.Add(1)
 			}
 		}(addr)
 	}

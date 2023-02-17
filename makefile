@@ -6,7 +6,7 @@ define build-ui
 endef
 
 gen:
-	$(foreach n, $(source), cd src/$(n)server && go -x generate ./...;)
+	$(foreach n, $(source), cd src/$(n)server && go generate -x ./...;)
 	cd src/common && go generate -x ./...
 
 build-all:

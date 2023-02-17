@@ -10,7 +10,7 @@ import (
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.uber.org/atomic"
+	"sync/atomic"
 )
 
 var (
@@ -43,7 +43,7 @@ func StatusDesc(status int32) (string, error) {
 type HashSlotDB struct {
 	kv             clientv3.KV
 	status         *atomic.Int32
-	provider       *atomic.Value
+	provider       *atomic.Pointer[hashslot.IEdgeProvider]
 	updatedAt      int64
 	migratingSlots []string
 	migratingHost  string
@@ -51,11 +51,13 @@ type HashSlotDB struct {
 }
 
 func NewHashSlotDB(keyPrefix string, kv clientv3.KV) *HashSlotDB {
+	at := &atomic.Int32{}
+	at.Store(StatusNormal)
 	return &HashSlotDB{
 		KeyPrefix: keyPrefix,
 		kv:        kv,
-		provider:  new(atomic.Value),
-		status:    atomic.NewInt32(StatusNormal),
+		provider:  &atomic.Pointer[hashslot.IEdgeProvider]{},
+		status:    at,
 	}
 }
 
@@ -79,10 +81,10 @@ func (h *HashSlotDB) GetEdgeProvider(reload bool) (hashslot.IEdgeProvider, error
 			return nil, err
 		}
 	}
-	return h.provider.Load().(hashslot.IEdgeProvider), nil
+	return *h.provider.Load(), nil
 }
 
-func (h *HashSlotDB) reloadProvider(old any) error {
+func (h *HashSlotDB) reloadProvider(old *hashslot.IEdgeProvider) error {
 	slotsMap := make(map[string][]string)
 	// get slots data from etcd (only master saves into to etcd)
 	res, err := h.kv.Get(context.Background(), h.KeyPrefix, clientv3.WithPrefix())
@@ -101,7 +103,7 @@ func (h *HashSlotDB) reloadProvider(old any) error {
 	if err != nil {
 		return fmt.Errorf("reloadProvider: %w", err)
 	}
-	if h.provider.CompareAndSwap(old, data) {
+	if h.provider.CompareAndSwap(old, &data) {
 		h.updatedAt = time.Now().Unix()
 		hsLog.Infof("update hash-slots success at %d", h.updatedAt)
 	}
@@ -109,7 +111,7 @@ func (h *HashSlotDB) reloadProvider(old any) error {
 }
 
 func (h *HashSlotDB) ReadyMigrateFrom(loc string, slots []string) error {
-	if h.status.CAS(StatusNormal, StatusMigrateFrom) {
+	if h.status.CompareAndSwap(StatusNormal, StatusMigrateFrom) {
 		h.migratingHost = loc
 		h.migratingSlots = slots
 		hsLog.Debugf("switch normal to migrate-from")
@@ -119,7 +121,7 @@ func (h *HashSlotDB) ReadyMigrateFrom(loc string, slots []string) error {
 }
 
 func (h *HashSlotDB) ReadyMigrateTo(loc string, slots []string) error {
-	if h.status.CAS(StatusNormal, StatusMigrateTo) {
+	if h.status.CompareAndSwap(StatusNormal, StatusMigrateTo) {
 		h.migratingHost = loc
 		h.migratingSlots = slots
 		hsLog.Debugf("switch normal to migrate-to")
@@ -129,7 +131,7 @@ func (h *HashSlotDB) ReadyMigrateTo(loc string, slots []string) error {
 }
 
 func (h *HashSlotDB) FinishMigrateTo() error {
-	if h.status.CAS(StatusMigrateTo, StatusNormal) {
+	if h.status.CompareAndSwap(StatusMigrateTo, StatusNormal) {
 		h.migratingHost = ""
 		h.migratingSlots = nil
 		hsLog.Debugf("switch migrate-to to normal")
@@ -139,7 +141,7 @@ func (h *HashSlotDB) FinishMigrateTo() error {
 }
 
 func (h *HashSlotDB) FinishMigrateFrom() error {
-	if h.status.CAS(StatusMigrateFrom, StatusNormal) {
+	if h.status.CompareAndSwap(StatusMigrateFrom, StatusNormal) {
 		h.migratingHost = ""
 		h.migratingSlots = nil
 		hsLog.Debugf("switch migrate-from to normal")
@@ -208,7 +210,7 @@ func (h *HashSlotDB) GetKeyIdentify(key string) (string, error) {
 func (h *HashSlotDB) Close(timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	for !h.status.CAS(StatusNormal, StatusClosed) {
+	for !h.status.CompareAndSwap(StatusNormal, StatusClosed) {
 		select {
 		case <-ctx.Done():
 			desc, _ := StatusDesc(h.status.Load())
