@@ -9,17 +9,18 @@ import (
 	"common/util"
 	"context"
 	"errors"
+	"fmt"
 	"objectserver/config"
 	"strings"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.uber.org/atomic"
+	"sync/atomic"
 )
 
 type ObjectCapacity struct {
 	cli         clientv3.KV
-	currentCap  *atomic.Uint64
+	currentCap  *atomic.Int64
 	CurrentID   string
 	groupName   string
 	serviceName string
@@ -28,7 +29,7 @@ type ObjectCapacity struct {
 func NewObjectCapacity(c clientv3.KV, cfg *config.Config) *ObjectCapacity {
 	return &ObjectCapacity{
 		c,
-		atomic.NewUint64(0),
+		&atomic.Int64{},
 		cfg.Registry.ServerID,
 		cfg.Registry.Group,
 		cfg.Registry.Name,
@@ -36,11 +37,11 @@ func NewObjectCapacity(c clientv3.KV, cfg *config.Config) *ObjectCapacity {
 }
 
 func (oc *ObjectCapacity) AddCap(i int64) {
-	oc.currentCap.Add(uint64(i))
+	oc.currentCap.Add(i)
 }
 
 func (oc *ObjectCapacity) SubCap(i int64) {
-	oc.currentCap.Sub(uint64(i))
+	oc.currentCap.Add(-i)
 }
 
 func (oc *ObjectCapacity) Capacity() int64 {
@@ -78,7 +79,7 @@ func (oc *ObjectCapacity) Save() error {
 	go func() {
 		defer dg.Done()
 		keyCap := cst.EtcdPrefix.FmtObjectCap(oc.groupName, oc.serviceName, oc.CurrentID)
-		if _, err := oc.cli.Put(context.Background(), keyCap, oc.currentCap.String()); err != nil {
+		if _, err := oc.cli.Put(context.Background(), keyCap, fmt.Sprint(oc.Capacity())); err != nil {
 			dg.Error(err)
 			return
 		}
@@ -120,7 +121,7 @@ func (oc *ObjectCapacity) GetAll() (map[string]uint64, error) {
 	return res, nil
 }
 
-func (oc *ObjectCapacity) Get(s string) (uint64, error) {
+func (oc *ObjectCapacity) Get(s string) (int64, error) {
 	if s == oc.CurrentID {
 		return oc.currentCap.Load(), nil
 	}
@@ -132,7 +133,7 @@ func (oc *ObjectCapacity) Get(s string) (uint64, error) {
 	if len(resp.Kvs) == 0 {
 		return 0, errors.New("not exist capacity " + s)
 	}
-	return util.ToUint64(string(resp.Kvs[0].Value)), nil
+	return util.ToInt64(string(resp.Kvs[0].Value)), nil
 }
 
 func (oc *ObjectCapacity) RemoveAll() error {

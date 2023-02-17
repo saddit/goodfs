@@ -6,8 +6,8 @@ import (
 	"common/util"
 	"common/util/slices"
 	"fmt"
-	"go.uber.org/atomic"
 	"io"
+	"sync/atomic"
 )
 
 type CopyPutStream struct {
@@ -48,7 +48,7 @@ func (c *CopyPutStream) Flush() (err error) {
 	}
 	defer func() { slices.Clear(&c.cache) }()
 	dg := util.NewDoneGroup()
-	sucNum := atomic.NewInt32(0)
+	sucNum := atomic.Int32{}
 	for _, wt := range c.writers {
 		dg.Todo()
 		go func(writer io.Writer) {
@@ -57,7 +57,7 @@ func (c *CopyPutStream) Flush() (err error) {
 				dg.Error(inner)
 				return
 			}
-			sucNum.Inc()
+			sucNum.Add(1)
 		}(wt)
 	}
 	return dg.WaitUntilError()
