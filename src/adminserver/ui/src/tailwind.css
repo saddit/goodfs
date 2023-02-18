@@ -32,15 +32,19 @@
     }
 
     .select-pri {
-        @apply form-select rounded focus:ring-indigo-500
+        @apply form-select rounded focus:ring-indigo-500 border-gray-300
+    }
+
+    .select-pri-sm {
+        @apply select-pri w-28 text-sm py-1
     }
 
     .checkbox-pri {
-        @apply rounded text-indigo-600 focus:ring-indigo-500 form-checkbox
+        @apply rounded text-indigo-600 focus:ring-indigo-500 form-checkbox border-gray-300
     }
 
     .input-text-pri {
-        @apply rounded focus:ring-indigo-500 form-input
+        @apply rounded focus:ring-indigo-500 form-input border-gray-300
     }
 
     /* Hide scrollbar for Chrome, Safari and Opera */

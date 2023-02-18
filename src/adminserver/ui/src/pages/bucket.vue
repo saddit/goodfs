@@ -1,48 +1,56 @@
 <template>
-  <div class="flex items-center mx-4">
-    <MagnifyingGlassIcon class="w-6 h-6 mr-2 text-indigo-600"/>
-    <input type="text"
-           class="text-input-pri"
-           :placeholder="t('search-by-name')"/>
-    <button class="btn-pri-sm ml-4" @click="operateType = opAdd">{{ t('add-bucket') }}</button>
-  </div>
-  <table class="mt-4">
-    <thead>
-    <tr
-        v-for="headerGroup in dataTable.getHeaderGroups()"
-        :key="headerGroup.id"
-    >
-      <th
-          v-for="header in headerGroup.headers"
-          :key="header.id"
-          :colSpan="header.colSpan"
+  <div class="w-full h-full overflow-y-auto flex flex-col items-center">
+    <div class="flex w-full mt-1 items-center justify-start">
+      <MagnifyingGlassIcon class="w-6 h-6 mx-2 text-indigo-600"/>
+      <input type="text"
+             class="text-input-pri"
+             :placeholder="t('search-by-name')"/>
+      <button class="btn-pri-sm ml-4" @click="operateType = opAdd">{{ t('add-bucket') }}</button>
+    </div>
+    <table class="mt-4 w-full">
+      <thead>
+      <tr
+          v-for="headerGroup in dataTable.getHeaderGroups()"
+          :key="headerGroup.id"
       >
-        <FlexRender
-            v-if="!header.isPlaceholder"
-            :render="header.column.columnDef.header"
-            :props="header.getContext()"
-        />
-      </th>
-    </tr>
-    </thead>
-    <tbody>
-    <template v-if="dataList.length > 0">
-      <tr v-for="row in dataTable.getRowModel().rows" :key="row.id">
-        <td v-for="cell in row.getVisibleCells()" :key="cell.id">
+        <th
+            v-for="header in headerGroup.headers"
+            :key="header.id"
+            :colSpan="header.colSpan"
+        >
           <FlexRender
-              :render="cell.column.columnDef.cell"
-              :props="cell.getContext()"
+              v-if="!header.isPlaceholder"
+              :render="header.column.columnDef.header"
+              :props="header.getContext()"
           />
-        </td>
+        </th>
       </tr>
-    </template>
-    <tr v-else>
-      <td :colspan="columns.length" class="text-center">{{ t('no-data') }}</td>
-    </tr>
-    </tbody>
-  </table>
-  <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
-              v-model="dataReq.page"/>
+      </thead>
+      <tbody>
+      <template v-if="dataList.length > 0">
+        <tr v-for="row in dataTable.getRowModel().rows" :key="row.id">
+          <td v-for="cell in row.getVisibleCells()" :key="cell.id">
+            <FlexRender
+                :render="cell.column.columnDef.cell"
+                :props="cell.getContext()"
+            />
+          </td>
+        </tr>
+      </template>
+      <tr v-else>
+        <td :colspan="columns.length" class="text-center">{{ t('no-data') }}</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="inline-flex items-center space-x-3 my-4">
+      <span class="text-gray-900 text-sm">{{ t('total-num')}}: {{dataReq.total}}</span>
+      <select class="select-pri-sm">
+        <option v-for="v in [10,20,50]" :value="v">{{v}}/page</option>
+      </select>
+      <Pagination :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
+                  v-model="dataReq.page"/>
+    </div>
+  </div>
   <!-- add or update dialog -->
   <ModalTemplate v-model="isOperating" title="Bucket" v-if="operateType > 0">
     <template #panel>
