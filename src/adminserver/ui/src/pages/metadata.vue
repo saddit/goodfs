@@ -1,56 +1,62 @@
 <template>
-  <div class="w-full h-full overflow-y-auto">
-    <div class="px-4 mt-10 flex flex-col items-center">
-      <!-- metadata table -->
-      <div class="flex w-full items-center justify-start">
-        <MagnifyingGlassIcon class="w-6 h-6 mr-2 text-indigo-600"/>
-        <input type="text"
-               @change="e => searchData(e.target)"
-               class="text-input-pri"
-               :placeholder="t('search-by-name')"/>
-        <!-- TODO: beautify -->
-        <input v-if="dataReq.bucket" type="file" class="ml-8" @change="uploadObject"/>
-      </div>
-      <table class="mt-4 w-full">
-        <thead>
-        <tr
-            v-for="headerGroup in dataTable.getHeaderGroups()"
-            :key="headerGroup.id"
+  <div class="w-full h-full overflow-y-auto flex flex-col items-center">
+    <div class="flex w-full mt-1 items-center justify-start">
+      <MagnifyingGlassIcon class="w-6 h-6 mx-2 text-indigo-600"/>
+      <input type="text"
+             @change="e => searchData(e.target)"
+             class="text-input-pri"
+             :placeholder="t('search-by-name')"/>
+      <!-- TODO: beautify -->
+      <input v-if="dataReq.bucket" type="file" class="ml-8" @change="uploadObject"/>
+    </div>
+    <!-- metadata table -->
+    <table class="mt-4 w-full">
+      <thead>
+      <tr
+          v-for="headerGroup in dataTable.getHeaderGroups()"
+          :key="headerGroup.id"
+      >
+        <th
+            v-for="header in headerGroup.headers"
+            :key="header.id"
+            :colSpan="header.colSpan"
         >
-          <th
-              v-for="header in headerGroup.headers"
-              :key="header.id"
-              :colSpan="header.colSpan"
-          >
+          <FlexRender
+              v-if="!header.isPlaceholder"
+              :render="header.column.columnDef.header"
+              :props="header.getContext()"
+          />
+        </th>
+      </tr>
+      </thead>
+      <tbody>
+      <template v-if="dataList.length > 0">
+        <tr v-for="row in dataTable.getRowModel().rows" :key="row.id">
+          <td v-for="cell in row.getVisibleCells()" :key="cell.id">
             <FlexRender
-                v-if="!header.isPlaceholder"
-                :render="header.column.columnDef.header"
-                :props="header.getContext()"
+                :render="cell.column.columnDef.cell"
+                :props="cell.getContext()"
             />
-          </th>
+          </td>
         </tr>
-        </thead>
-        <tbody>
-        <template v-if="dataList.length > 0">
-          <tr v-for="row in dataTable.getRowModel().rows" :key="row.id">
-            <td v-for="cell in row.getVisibleCells()" :key="cell.id">
-              <FlexRender
-                  :render="cell.column.columnDef.cell"
-                  :props="cell.getContext()"
-              />
-            </td>
-          </tr>
-        </template>
-        <tr v-else>
-          <td colspan="4" class="text-center">{{ t('no-data') }}</td>
-        </tr>
-        </tbody>
-      </table>
-      <Pagination class="my-4" :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
+      </template>
+      <tr v-else>
+        <td colspan="4" class="text-center">{{ t('no-data') }}</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="inline-flex items-center space-x-3 my-4">
+      <span class="text-gray-900 text-sm">{{ t('total-num')}}: {{dataReq.total}}</span>
+      <select class="select-pri-sm">
+        <option v-for="v in [10,20,50]" :value="v">{{v}}/page</option>
+      </select>
+      <Pagination :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
                   v-model="dataReq.page"/>
-      <!-- version table -->
-      <ModalTemplate v-model="showVersionTb" title="Versions">
-        <template #panel>
+    </div>
+    <!-- version table -->
+    <ModalTemplate v-model="showVersionTb" title="Versions">
+      <template #panel>
+        <div class="flex flex-col items-center">
           <table class="m-1">
             <thead>
             <tr
@@ -86,11 +92,17 @@
             </tr>
             </tbody>
           </table>
-          <Pagination class="my-4" :max-num="5" :total="versionReq.total" :page-size="versionReq.pageSize"
-                      v-model="versionReq.page"/>
-        </template>
-      </ModalTemplate>
-    </div>
+          <div class="inline-flex items-center space-x-3 my-4 mx-auto">
+            <span class="text-gray-900 text-sm">{{ t('total-num')}}: {{versionReq.total}}</span>
+            <select class="select-pri-sm">
+              <option v-for="v in [10,20,50]" :value="v">{{v}}/page</option>
+            </select>
+            <Pagination :max-num="5" :total="versionReq.total" :page-size="versionReq.pageSize"
+                        v-model="versionReq.page"/>
+          </div>
+        </div>
+      </template>
+    </ModalTemplate>
   </div>
 </template>
 
