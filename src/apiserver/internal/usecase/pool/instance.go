@@ -61,7 +61,6 @@ func initDiscovery(etcd *clientv3.Client, cfg *config.Config) {
 func initLog(cfg *logs.Config) {
 	logs.SetLevel(cfg.Level)
 	if logs.IsDebug() || logs.IsTrace() {
-		_ = os.Setenv(util.ServerIpEnv, "127.0.0.1")
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)

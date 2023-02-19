@@ -53,16 +53,16 @@ func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
 func (e *EtcdRegistry) GetServiceMapping(name string, rpc bool) map[string]string {
 	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.cfg.Group, name), clientv3.WithPrefix())
 	if err != nil {
-		registryLog.Infof("get services: %s", err)
+		registryLog.Errorf("get services: %s", err)
 		return map[string]string{}
 	}
 	res := make(map[string]string, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
-		idx := bytes.LastIndexByte(kv.Value, '/')
+		idx := bytes.LastIndexByte(kv.Key, '/')
 		if idx < 0 {
 			continue
 		}
-		sid, _, _ := bytes.Cut(kv.Value[idx+1:], []byte("_"))
+		sid, _, _ := bytes.Cut(kv.Key[idx+1:], []byte("_"))
 		value := RegisterValue(kv.Value)
 		res[util.BytesToStr(sid)] = util.IfElse(rpc, value.RpcAddr(), value.HttpAddr())
 	}

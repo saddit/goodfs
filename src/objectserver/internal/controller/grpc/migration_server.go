@@ -82,20 +82,20 @@ func (ms *MigrationServer) RequireSend(_ context.Context, info *pb.RequiredInfo)
 	return &pb.Response{Success: true, Message: "ok"}, nil
 }
 
-func (ms *MigrationServer) LeaveCommand(context.Context, *pb.EmptyReq) (*pb.Response, error) {
+func (ms *MigrationServer) LeaveCommand(c context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
 	curLocate, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, false)
 	if !ok {
 		return &pb.Response{Success: false, Message: "it's an unregister server"}, nil
 	}
 	sizeMap, err := ms.Service.DeviationValues(false)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return &pb.Response{Success: false, Message: err.Error()}, nil
 	}
 	if err = pool.CloseGraceful(); err != nil {
 		return &pb.Response{Success: false, Message: "close pool fail"}, nil
 	}
 	if err = ms.Service.SendingTo(curLocate, sizeMap); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return &pb.Response{Success: false, Message: err.Error()}, nil
 	}
 	return &pb.Response{Success: true, Message: "ok"}, nil
 }

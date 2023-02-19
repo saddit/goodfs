@@ -12,7 +12,7 @@ type Server struct {
 	netHttp.Server
 }
 
-func NewHttpServer(addr string, service IMetadataService, bucketService BucketService) *Server {
+func NewHttpServer(port string, service IMetadataService, bucketService BucketService) *Server {
 	engine := gin.New()
 	engine.Use(
 		gin.LoggerWithWriter(logs.Std().Out),
@@ -28,7 +28,7 @@ func NewHttpServer(addr string, service IMetadataService, bucketService BucketSe
 	NewVersionController(service).RegisterRoute(engine)
 	NewBucketController(bucketService).RegisterRoute(engine)
 	return &Server{netHttp.Server{
-		Addr:    addr,
+		Addr:    ":" + port,
 		Handler: engine.Handler(),
 	}}
 }

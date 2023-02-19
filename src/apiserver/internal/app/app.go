@@ -29,6 +29,6 @@ func Run(cfg *Config) {
 	//start api server
 	graceful.ListenAndServe(
 		nil,
-		http.NewHttpServer(cfg.Registry.HttpAddr, objService, metaService, bucketRepo),
+		http.NewHttpServer(cfg.Port, objService, metaService, bucketRepo),
 	)
 }

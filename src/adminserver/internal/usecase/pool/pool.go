@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"net/http"
-	"os"
 )
 
 var (
@@ -43,7 +42,6 @@ func initHttpClient() {
 func initLog(cfg *logs.Config) {
 	logs.SetLevel(cfg.Level)
 	if logs.IsDebug() || logs.IsTrace() {
-		_ = os.Setenv(util.ServerIpEnv, "127.0.0.1")
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
