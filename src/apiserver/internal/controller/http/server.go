@@ -16,7 +16,7 @@ type Server struct {
 	tls *config.TLSConfig
 }
 
-func NewHttpServer(addr string, o IObjectService, m IMetaService, b repo.IBucketRepo) *Server {
+func NewHttpServer(port string, o IObjectService, m IMetaService, b repo.IBucketRepo) *Server {
 	authMid := auth.AuthenticationMiddleware(&pool.Config.Auth,
 		auth.NewCallbackValidator(&pool.Config.Auth.Callback),
 		auth.NewPasswordValidator(pool.Etcd, &pool.Config.Auth.Password),
@@ -38,7 +38,7 @@ func NewHttpServer(addr string, o IObjectService, m IMetaService, b repo.IBucket
 		NewBucketController(b).Register(authRoute)
 	}
 
-	return &Server{netHttp.Server{Addr: addr, Handler: eng}, &pool.Config.TLS}
+	return &Server{netHttp.Server{Addr: ":" + port, Handler: eng.Handler()}, &pool.Config.TLS}
 }
 
 func (s *Server) ListenAndServe() error {

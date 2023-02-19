@@ -17,7 +17,7 @@ type HttpServer struct {
 	http.Server
 }
 
-func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
+func NewHttpServer(port string, webFs static.ServeFileSystem) *HttpServer {
 	eng := gin.Default()
 
 	randSec := uuid.New()
@@ -51,7 +51,7 @@ func NewHttpServer(addr string, webFs static.ServeFileSystem) *HttpServer {
 		c.Redirect(http.StatusPermanentRedirect, "/")
 	})
 
-	return &HttpServer{Server: http.Server{Handler: eng, Addr: addr}}
+	return &HttpServer{Server: http.Server{Handler: eng.Handler(), Addr: ":" + port}}
 }
 
 func (s *HttpServer) ListenAndServe() error {

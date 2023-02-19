@@ -3,7 +3,6 @@ package grpc
 import (
 	"common/logs"
 	"common/proto/pb"
-	"common/util"
 	"context"
 	"errors"
 	"metaserver/internal/usecase"
@@ -87,7 +86,7 @@ func (r *Server) ListenAndServe() error {
 	if r.Server == nil {
 		return nil
 	}
-	sock, err := net.Listen("tcp", util.ServerAddress(r.Port))
+	sock, err := net.Listen("tcp", ":"+r.Port)
 	if err != nil {
 		panic(err)
 	}

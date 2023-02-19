@@ -41,6 +41,7 @@ func (s *serviceList) list() []string {
 	return ls
 }
 
+// copy returns a map of key=address value=registered key
 func (s *serviceList) copy() map[string]string {
 	ls := make(map[string]string, len(s.data))
 	s.lock.RLock()

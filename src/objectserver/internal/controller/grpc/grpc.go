@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"common/proto/pb"
-	"common/util"
 	"context"
 	"errors"
 	log "github.com/sirupsen/logrus"
@@ -27,7 +26,7 @@ func (r *Server) ListenAndServe() error {
 	if r.Server == nil {
 		return nil
 	}
-	sock, err := net.Listen("tcp", util.ServerAddress(r.Port))
+	sock, err := net.Listen("tcp", ":"+r.Port)
 	if err != nil {
 		panic(err)
 	}
