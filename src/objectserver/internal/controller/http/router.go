@@ -16,6 +16,7 @@ type Server struct {
 
 func NewHttpServer(addr string) *Server {
 	r := gin.New()
+	r.UseH2C = true
 	r.Use(gin.LoggerWithWriter(logs.Std().Out), gin.RecoveryWithWriter(logs.Std().Out))
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get)
 	r.HEAD("/objects/:name", objects.Head)
@@ -31,7 +32,8 @@ func NewHttpServer(addr string) *Server {
 
 	r.GET("/ping", stat.Ping)
 	r.GET("/stat", stat.Info)
-	return &Server{&http.Server{Addr: addr, Handler: r}}
+
+	return &Server{&http.Server{Addr: addr, Handler: r.Handler()}}
 }
 
 func (h *Server) ListenAndServe() error {

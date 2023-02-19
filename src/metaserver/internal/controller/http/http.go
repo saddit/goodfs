@@ -20,6 +20,7 @@ func NewHttpServer(addr string, service IMetadataService, bucketService BucketSe
 		CheckLeaderInRaftMode,
 		CheckKeySlot,
 	)
+	engine.UseH2C = true
 	engine.UseRawPath = true
 	engine.UnescapePathValues = true
 	//Http router
@@ -28,7 +29,7 @@ func NewHttpServer(addr string, service IMetadataService, bucketService BucketSe
 	NewBucketController(bucketService).RegisterRoute(engine)
 	return &Server{netHttp.Server{
 		Addr:    addr,
-		Handler: engine,
+		Handler: engine.Handler(),
 	}}
 }
 
