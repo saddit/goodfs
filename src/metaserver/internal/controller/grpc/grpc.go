@@ -6,8 +6,6 @@ import (
 	"common/util"
 	"context"
 	"errors"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
 	"net"
@@ -57,7 +55,7 @@ func NewRpcServer(port string, maxStreams uint32, rw *raftimpl.RaftWrapper, serv
 		pb.RegisterRaftCmdServer(server, cmdServer)
 	}
 	// register services
-	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
+	// grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 	pb.RegisterHashSlotServer(server, NewHashSlotServer(serv2))
 	pb.RegisterMetadataApiServer(server, NewMetadataApiServer(serv1, serv3))
 	pb.RegisterConfigServiceServer(server, &ConfigServiceServer{})

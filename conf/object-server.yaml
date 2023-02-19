@@ -1,7 +1,7 @@
 port: 8100
 rpc-port: 4100
 log:
-  level: debug
+  level: info
 exclude-mount-points: ["C:"]
 base-mount-point: "E:"
 storage-path: /file/temp
