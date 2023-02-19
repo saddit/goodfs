@@ -3,8 +3,10 @@ package grpc
 import (
 	"common/collection/set"
 	"common/graceful"
+	"common/proto"
 	"common/proto/pb"
 	"common/util"
+	"common/util/maps"
 	"common/util/slices"
 	"context"
 	"encoding/json"
@@ -116,7 +118,14 @@ func (rcs *RaftCmdServerImpl) Config(context.Context, *pb.EmptyReq) (*pb.Respons
 
 func (rcs *RaftCmdServerImpl) LeaveCluster(ctx context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
 	if rcs.rf.IsLeader() {
-		if err := rcs.rf.Raft.LeadershipTransfer().Error(); err != nil {
+		lives := pool.Registry.GetServiceMapping(pool.Config.Registry.Name, true)
+		k, ok := maps.OneOf(lives)
+		if !ok {
+			return &pb.Response{Message: "not available peers. leadership transfer fails.", Success: false}, nil
+		}
+		if err := rcs.rf.Raft.
+			LeadershipTransferToServer(raft.ServerID(k), raft.ServerAddress(lives[k])).
+			Error(); err != nil {
 			return nil, fmt.Errorf("transfer leader error: %w", err)
 		}
 		return okResp, nil
@@ -173,7 +182,7 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 	if rcs.rf.LeaderID() != req.MasterId {
 		if rcs.rf.LeaderID() != "" {
 			// demote voter
-			_, err := client.RemoveFollower(ctx, &pb.RemoveFollowerReq{
+			_, err = client.RemoveFollower(ctx, &pb.RemoveFollowerReq{
 				FollowerId: rcs.rf.ID,
 				PrevIndex:  rcs.rf.Raft.AppliedIndex(),
 			})
@@ -181,30 +190,24 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 				return nil, err
 			}
 		}
-		resp, err := client.AddVoter(ctx, &pb.AddVoterReq{
+		_, err = proto.ResolveResponse(client.AddVoter(ctx, &pb.AddVoterReq{
 			Voters: []*pb.Voter{{
 				Id:        rcs.rf.ID,
 				Address:   rcs.rf.Address,
 				PrevIndex: rcs.rf.Raft.AppliedIndex(),
 			}},
-		})
+		}))
 		if err != nil {
-			return nil, err
-		}
-		if !resp.Success {
-			return resp, nil
+			return &pb.Response{Message: err.Error()}, nil
 		}
 	}
 	// get leader config
-	resp, err := client.Config(context.Background(), new(pb.EmptyReq))
+	msg, err := proto.ResolveResponse(client.Config(context.Background(), new(pb.EmptyReq)))
 	if err != nil {
-		return nil, err
-	}
-	if !resp.Success {
-		return resp, nil
+		return &pb.Response{Message: err.Error()}, nil
 	}
 	var cfg config.ClusterConfig
-	if err := json.Unmarshal(util.StrToBytes(resp.Message), &cfg); err != nil {
+	if err = json.Unmarshal(util.StrToBytes(msg), &cfg); err != nil {
 		return nil, err
 	}
 	err = logic.NewRaftCluster().UpdateConfiguration(&cfg)

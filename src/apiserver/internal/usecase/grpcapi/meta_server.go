@@ -2,6 +2,7 @@ package grpcapi
 
 import (
 	"apiserver/internal/entity"
+	"common/proto"
 	"common/proto/msg"
 	"common/proto/pb"
 	"common/util"
@@ -17,7 +18,7 @@ func GetMetadata(ip, id string, withExtra bool) (*entity.Metadata, error) {
 	ctx := context.Background()
 	cli := pb.NewMetadataApiClient(conn)
 	resp, err := cli.GetMetadata(ctx, &pb.MetaReq{Id: id, WithExtra: withExtra})
-	if err = ResolveErr(err); err != nil {
+	if err = proto.ResolveErr(err); err != nil {
 		return nil, err
 	}
 	var m msg.Metadata
@@ -49,7 +50,7 @@ func GetVersion(ip, id string, verNum int32) (*entity.Version, error) {
 	ctx := context.Background()
 	cli := pb.NewMetadataApiClient(conn)
 	resp, err := cli.GetVersion(ctx, &pb.MetaReq{Id: id, Version: verNum})
-	if err = ResolveErr(err); err != nil {
+	if err = proto.ResolveErr(err); err != nil {
 		return nil, err
 	}
 	var v msg.Version
@@ -79,7 +80,7 @@ func GetBucket(ip, name string) (*entity.Bucket, error) {
 	ctx := context.Background()
 	cli := pb.NewMetadataApiClient(conn)
 	resp, err := cli.GetBucket(ctx, &pb.MetaReq{Id: name})
-	if err = ResolveErr(err); err != nil {
+	if err = proto.ResolveErr(err); err != nil {
 		return nil, err
 	}
 	var b msg.Bucket
@@ -110,7 +111,7 @@ func GetPeers(ip string) ([]string, error) {
 	ctx := context.Background()
 	cli := pb.NewMetadataApiClient(conn)
 	resp, err := cli.GetPeers(ctx, new(pb.Empty))
-	if err = ResolveErr(err); err != nil {
+	if err = proto.ResolveErr(err); err != nil {
 		return nil, err
 	}
 	return resp.Data, nil
@@ -137,7 +138,7 @@ func UpdateVersion(ip, id string, body *entity.Version) error {
 		Id:      id,
 		Msgpack: bt,
 	})
-	return ResolveErr(err)
+	return proto.ResolveErr(err)
 }
 
 func SaveVersion(ip, id string, body *entity.Version) (int32, error) {
@@ -162,7 +163,7 @@ func SaveVersion(ip, id string, body *entity.Version) (int32, error) {
 		Msgpack: bt,
 	})
 	if err != nil {
-		return 0, ResolveErr(err)
+		return 0, proto.ResolveErr(err)
 	}
 	return res.Data, nil
 }
@@ -181,7 +182,7 @@ func SaveMetadata(ip, id string, body *entity.Metadata) error {
 		Id:      id,
 		Msgpack: bt,
 	})
-	return ResolveErr(err)
+	return proto.ResolveErr(err)
 }
 
 func SaveBucket(ip string, body *entity.Bucket) error {
@@ -205,7 +206,7 @@ func SaveBucket(ip string, body *entity.Bucket) error {
 		Id:      body.Name,
 		Msgpack: bt,
 	})
-	return ResolveErr(err)
+	return proto.ResolveErr(err)
 }
 
 func ListVersion(ip, id string, page, pageSize int) (arr []*msg.Version, total int64, err error) {
@@ -222,7 +223,7 @@ func ListVersion(ip, id string, page, pageSize int) (arr []*msg.Version, total i
 		},
 	})
 	if err != nil {
-		err = ResolveErr(err)
+		err = proto.ResolveErr(err)
 		return
 	}
 	total = resp.Total
