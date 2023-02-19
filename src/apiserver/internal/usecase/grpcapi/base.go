@@ -2,12 +2,9 @@ package grpcapi
 
 import (
 	"common/performance"
-	"common/response"
 	"common/util"
 	"errors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"sync"
 	"time"
 )
@@ -45,21 +42,6 @@ func Close() error {
 		}
 	}
 	return errors.Join(errs...)
-}
-
-func ResolveErr(err error) response.IResponseErr {
-	s, ok := status.FromError(err)
-	if !ok {
-		return response.NewError(500, err.Error())
-	}
-	switch s.Code() {
-	case codes.OK:
-		return nil
-	case codes.InvalidArgument, codes.Aborted, codes.NotFound:
-		return response.NewError(400, s.Message())
-	default:
-		return response.NewError(500, s.Message())
-	}
 }
 
 var performCollector performance.Collector

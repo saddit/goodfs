@@ -4,6 +4,7 @@ import (
 	"common/graceful"
 	"common/hashslot"
 	"common/logs"
+	"common/proto"
 	"common/proto/msg"
 	"common/proto/pb"
 	"common/util"
@@ -16,7 +17,6 @@ import (
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
-	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -247,14 +247,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	errs = append(errs, h.migrateMetadata(stream, delEdges)...)
 	errs = append(errs, h.migrateBuckets(stream, delEdges)...)
 	if len(errs) > 0 {
-		sb := strings.Builder{}
-		sb.WriteString("occurred errors:")
-		for _, err := range errs {
-			sb.WriteRune('\n')
-			sb.WriteString(err.Error())
-		}
-		hsLog.Error(sb.String())
-		return errors.New("migrate partly fails, please retry again")
+		return errors.Join(errs...)
 	}
 	// all migrate success
 	if err = h.Store.FinishMigrateTo(); err != nil {
@@ -272,7 +265,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 		return fmt.Errorf("save new slot-info fails after finsih migrateion: %w", err)
 	}
 	// close stream as success
-	if err := stream.CloseSend(); err != nil {
+	if err = stream.CloseSend(); err != nil {
 		hsLog.Error(err)
 	}
 	hsLog.Infof("finish migration to %s success", toLoc.Host)
@@ -295,7 +288,7 @@ func (h *HashSlotService) migrateMetadata(stream pb.HashSlot_StreamingReceiveCli
 			continue
 		}
 		// send data
-		if err := stream.Send(&pb.MigrationItem{
+		if err = stream.Send(&pb.MigrationItem{
 			Name: key,
 			Data: data,
 			Dest: int32(entity.DestMetadata),
@@ -305,21 +298,17 @@ func (h *HashSlotService) migrateMetadata(stream pb.HashSlot_StreamingReceiveCli
 			continue
 		}
 		// recv response
-		resp, err := stream.Recv()
+		_, err = proto.ResolveResponse(stream.Recv())
 		if err != nil {
 			hsLog.Debugf("recv send-metadata %s response err: %s", key, err)
 			errs = append(errs, err)
-			continue
-		} else if !resp.Success {
-			hsLog.Debugf("send-metadata %s recv failure resposne: %s", key, resp.Message)
-			errs = append(errs, errors.New(resp.Message))
 			continue
 		}
 		// start send versions
 		allVersionSuccess := true
 		h.Service.ForeachVersionBytes(key, func(b []byte) bool {
 			// send version
-			if err := stream.Send(&pb.MigrationItem{
+			if err = stream.Send(&pb.MigrationItem{
 				Name: key,
 				Data: b,
 				Dest: int32(entity.DestVersion),
@@ -329,15 +318,11 @@ func (h *HashSlotService) migrateMetadata(stream pb.HashSlot_StreamingReceiveCli
 				hsLog.Debugf("send-metadata-version %s err: %s", key, err)
 			}
 			// recv response
-			resp, err := stream.Recv()
+			_, err = proto.ResolveResponse(stream.Recv())
 			if err != nil {
 				errs = append(errs, err)
 				allVersionSuccess = false
 				hsLog.Debugf("send-metadata-version %s recv err: %s", key, err)
-			} else if !resp.Success {
-				errs = append(errs, errors.New(resp.Message))
-				allVersionSuccess = false
-				hsLog.Debugf("send-metadata-version %s recv failure resposne: %s", key, resp.Message)
 			}
 			return true
 		})
@@ -348,8 +333,8 @@ func (h *HashSlotService) migrateMetadata(stream pb.HashSlot_StreamingReceiveCli
 		// delete if all success
 		go func() {
 			defer graceful.Recover()
-			if err := h.Service.RemoveMetadata(key); err != nil {
-				hsLog.Errorf("delete-metadata %s fail: %s", key, err)
+			if inner := h.Service.RemoveMetadata(key); inner != nil {
+				hsLog.Errorf("delete-metadata %s fail: %s", key, inner)
 			}
 		}()
 	}
@@ -378,7 +363,7 @@ func (h *HashSlotService) migrateBuckets(stream pb.HashSlot_StreamingReceiveClie
 			continue
 		}
 		// send data
-		if err := stream.Send(&pb.MigrationItem{
+		if err = stream.Send(&pb.MigrationItem{
 			Name: keyStr,
 			Data: v,
 			Dest: int32(entity.DestBucket),
@@ -388,14 +373,10 @@ func (h *HashSlotService) migrateBuckets(stream pb.HashSlot_StreamingReceiveClie
 			continue
 		}
 		// recv response
-		resp, err := stream.Recv()
+		_, err = proto.ResolveResponse(stream.Recv())
 		if err != nil {
 			hsLog.Debugf("recv send-bucket %s response err: %s", keyStr, err)
 			errs = append(errs, err)
-			continue
-		} else if !resp.Success {
-			hsLog.Debugf("send-bucket %s recv failure resposne: %s", keyStr, resp.Message)
-			errs = append(errs, errors.New(resp.Message))
 			continue
 		}
 		successBuckets++
