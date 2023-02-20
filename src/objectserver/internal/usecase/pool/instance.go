@@ -9,7 +9,6 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/registry"
-	"common/util"
 	"common/util/slices"
 	"errors"
 	"objectserver/config"
@@ -152,7 +151,7 @@ func initEtcd(cfg *etcd.Config) {
 }
 
 func initRegister(et *clientv3.Client, cfg *config.Config) {
-	cfg.Registry.HttpAddr = util.ServerAddress(cfg.Port)
+	cfg.Registry.ServerPort = cfg.Port
 	er := registry.NewEtcdRegistry(et, cfg.Registry)
 	Registry, Discovery = er, er
 }

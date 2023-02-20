@@ -8,11 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"metaserver/internal/controller/grpc"
 	. "metaserver/internal/usecase"
-	netHttp "net/http"
+	"net/http"
 )
 
 type Server struct {
-	netHttp.Server
+	http.Server
 	grpcServer *grpc.Server
 }
 
@@ -21,20 +21,18 @@ func NewHttpServer(port string, grpcServer *grpc.Server, service IMetadataServic
 	engine.Use(
 		gin.LoggerWithWriter(logs.Std().Out),
 		gin.RecoveryWithWriter(logs.Std().Out),
-		grpcServer.ServeHandler(),
 		CheckLeaderInRaftMode,
 		CheckKeySlot,
 	)
-	engine.UseH2C = true
 	engine.UseRawPath = true
 	engine.UnescapePathValues = true
 	//Http router
 	NewMetadataController(service).RegisterRoute(engine)
 	NewVersionController(service).RegisterRoute(engine)
 	NewBucketController(bucketService).RegisterRoute(engine)
-	return &Server{netHttp.Server{
+	return &Server{http.Server{
 		Addr:    ":" + port,
-		Handler: engine.Handler(),
+		Handler: util.H2CHandler(engine, grpcServer),
 	}, grpcServer}
 }
 

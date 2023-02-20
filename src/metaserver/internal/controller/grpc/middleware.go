@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"common/collection/set"
-	"common/graceful"
 	"common/proto/pb"
 	"context"
 	"metaserver/internal/usecase/logic"
@@ -29,25 +28,15 @@ var checkRaftNonLeaderMethods = set.OfString([]string{
 	"/proto.RaftCmd/JoinLeader",
 })
 
-//var checkLocalMethods = set.OfString([]string{
-//	"/proto.RaftCmd/Bootstrap",
-//	"/proto.RaftCmd/AddVoter",
-//	"/proto.RaftCmd/JoinLeader",
-//	"/proto.RaftCmd/AddVoter",
-//	"/proto.HashSlot/StartMigration",
-//	"/proto.HashSlot/GetCurrentSlots",
-//})
-
 var checkWritableMethods = set.OfString([]string{
 	"/proto.HashSlot/StartMigration",
 	"/proto.HashSlot/PrepareMigration",
 	"/proto.HashSlot/StreamingReceive",
+	"/proto.MetadataApi/SaveVersion",
+	"/proto.MetadataApi/SaveMetadata",
+	"/proto.MetadataApi/UpdateMetadata",
+	"/proto.MetadataApi/SaveBucket",
 })
-
-//var checkValidMetaServerMethods = set.OfString([]string{
-//	"/proto.HashSlot/PrepareMigration",
-//	"/proto.HashSlot/StreamingReceive",
-//})
 
 func CheckRaftEnabledUnary(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	if checkRaftEnabledMethods.Contains(info.FullMethod) {
@@ -112,7 +101,7 @@ func CheckKeySlot(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo,
 	if ok {
 		return handler(ctx, req)
 	}
-	return nil, status.Error(codes.Aborted, logic.NewDiscovery().PeerIp(other, true))
+	return nil, status.Error(codes.Aborted, logic.NewDiscovery().PeerIp(other))
 }
 
 func checkKeySlotMetadata(req interface{}) error {
@@ -127,25 +116,5 @@ func checkKeySlotMetadata(req interface{}) error {
 	if ok {
 		return nil
 	}
-	return status.Error(codes.Aborted, logic.NewDiscovery().PeerIp(other, true))
-}
-
-// UnaryServerRecoveryInterceptor returns a new unary server interceptor for panic recovery.
-func UnaryServerRecoveryInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
-		defer graceful.Recover(func(msg string) {
-			err = status.Error(codes.Internal, "panic")
-		})
-		return handler(ctx, req)
-	}
-}
-
-// StreamServerRecoveryInterceptor returns a new streaming server interceptor for panic recovery.
-func StreamServerRecoveryInterceptor() grpc.StreamServerInterceptor {
-	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
-		defer graceful.Recover(func(msg string) {
-			err = status.Error(codes.Internal, "panic")
-		})
-		return handler(srv, stream)
-	}
+	return status.Error(codes.Aborted, logic.NewDiscovery().PeerIp(other))
 }

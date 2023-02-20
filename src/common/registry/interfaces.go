@@ -7,9 +7,9 @@ type (
 	}
 	Discovery interface {
 		// GetServices server addresses
-		GetServices(name string, rpc bool) []string
+		GetServices(name string) []string
 		// GetServiceMapping server id to address mapping
-		GetServiceMapping(name string, rpc bool) map[string]string
-		GetService(name string, id string, rpc bool) (string, bool)
+		GetServiceMapping(name string) map[string]string
+		GetService(name string, id string) (string, bool)
 	}
 )

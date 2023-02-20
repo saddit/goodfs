@@ -3,14 +3,12 @@ package grpc
 import (
 	"common/logs"
 	"common/proto/pb"
+	"common/util"
 	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
-	"strings"
-
-	"google.golang.org/grpc"
 )
 
 var log = logs.New("grpc-server")
@@ -23,6 +21,8 @@ type Server struct {
 // NewRpcServer init a grpc raft server. if no available nodes return empty object
 func NewRpcServer(maxStreams uint32, rw *raftimpl.RaftWrapper, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService, serv3 usecase.BucketService) *Server {
 	server := grpc.NewServer(
+		util.CommonUnaryInterceptors(),
+		util.CommonStreamInterceptors(),
 		grpc.MaxConcurrentStreams(maxStreams),
 		grpc.ChainUnaryInterceptor(
 			CheckKeySlot,
@@ -30,8 +30,8 @@ func NewRpcServer(maxStreams uint32, rw *raftimpl.RaftWrapper, serv1 usecase.IMe
 			CheckRaftEnabledUnary,
 			CheckRaftLeaderUnary,
 			CheckRaftNonLeaderUnary,
-		), grpc.ChainStreamInterceptor(
-			StreamServerRecoveryInterceptor(),
+		),
+		grpc.ChainStreamInterceptor(
 			CheckWritableStreaming,
 		),
 	)
@@ -78,17 +78,5 @@ func (r *Server) Shutdown(ctx context.Context) error {
 		return errors.New("graceful stop grpc server timeout")
 	case <-finish:
 		return nil
-	}
-}
-
-func (r *Server) ServeHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		req := c.Request
-		if req.ProtoMajor == 2 &&
-			strings.HasPrefix(req.Header.Get("Content-Type"), "application/grpc") {
-			r.ServeHTTP(c.Writer, req)
-			return
-		}
-		c.Next()
 	}
 }

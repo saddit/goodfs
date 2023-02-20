@@ -5,13 +5,12 @@ import (
 	"common/util"
 	"context"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"objectserver/internal/controller/grpc"
 	"objectserver/internal/controller/http/objects"
 	"objectserver/internal/controller/http/stat"
 	"objectserver/internal/controller/http/temp"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
@@ -21,9 +20,7 @@ type Server struct {
 
 func NewHttpServer(port string, grpcServer *grpc.Server) *Server {
 	r := gin.New()
-	r.UseH2C = true
 	r.Use(gin.LoggerWithWriter(logs.Std().Out), gin.RecoveryWithWriter(logs.Std().Out))
-	r.Use(grpcServer.ServeHandler())
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get)
 	r.HEAD("/objects/:name", objects.Head)
 	r.PUT("/objects/:name", temp.FilterEmptyRequest, objects.Put)
@@ -39,7 +36,10 @@ func NewHttpServer(port string, grpcServer *grpc.Server) *Server {
 	r.GET("/ping", stat.Ping)
 	r.GET("/stat", stat.Info)
 
-	return &Server{&http.Server{Addr: ":" + port, Handler: r.Handler()}, grpcServer}
+	return &Server{&http.Server{
+		Addr:    ":" + port,
+		Handler: util.H2CHandler(r, grpcServer),
+	}, grpcServer}
 }
 
 func (h *Server) ListenAndServe() error {

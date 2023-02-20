@@ -45,7 +45,7 @@ func NewMetadata() *Metadata {
 }
 
 func (m *Metadata) MetadataPaging(cond MetadataCond) ([]*msg.Metadata, int, error) {
-	servers := pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, false, true)
+	servers := pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, true)
 	lst := make([]*msg.Metadata, 0, len(servers)*cond.Page*cond.PageSize)
 	if len(servers) == 0 {
 		logs.Std().Warn("not found any metadata server")
@@ -85,7 +85,7 @@ func (m *Metadata) VersionPaging(cond MetadataCond, token string) ([]byte, int, 
 }
 
 func (m *Metadata) BucketPaging(cond *BucketCond) ([]*msg.Bucket, int, error) {
-	servers := pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, false, true)
+	servers := pool.Discovery.GetServicesWith(pool.Config.Discovery.MetaServName, true)
 	lst := make([]*msg.Bucket, 0, len(servers)*cond.Page*cond.PageSize)
 	if len(servers) == 0 {
 		logs.Std().Warn("not found any metadata server")
@@ -118,7 +118,7 @@ func (m *Metadata) BucketPaging(cond *BucketCond) ([]*msg.Bucket, int, error) {
 }
 
 func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {
-	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName)
 	srcAddr, destAddr := mp[srcID], mp[destID]
 	if srcAddr == "" || destAddr == "" {
 		return response.NewError(400, "invalid server id")
@@ -135,8 +135,8 @@ func (m *Metadata) StartMigration(srcID, destID string, slots []string) error {
 	resp, err := cli.StartMigration(context.Background(), &pb.MigrationReq{
 		Slots: slots,
 		TargetLocation: &pb.LocationInfo{
-			Host:    host,
-			RpcPort: port,
+			Host: host,
+			Port: port,
 		},
 	})
 	if err != nil {
@@ -170,13 +170,13 @@ func (m *Metadata) GetSlotsDetail() (map[string]*hashslot.SlotInfo, error) {
 }
 
 func (m *Metadata) GetMasterServerIds() set.Set {
-	mp := pool.Discovery.GetServiceMappingWith(pool.Config.Discovery.MetaServName, false, true)
+	mp := pool.Discovery.GetServiceMappingWith(pool.Config.Discovery.MetaServName, true)
 	masters := set.OfMapKeys(mp)
 	return masters
 }
 
 func (m *Metadata) LeaveRaftCluster(servId string) error {
-	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName)
 	servAddr, ok := mp[servId]
 	if !ok {
 		return response.NewError(400, "unknown server id")
@@ -190,7 +190,7 @@ func (m *Metadata) LeaveRaftCluster(servId string) error {
 }
 
 func (m *Metadata) JoinRaftCluster(masterId, servId string) error {
-	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName)
 	servAddr, ok := mp[servId]
 	if !ok {
 		return response.NewError(400, "unknown server id")
@@ -211,9 +211,8 @@ func (m *Metadata) JoinRaftCluster(masterId, servId string) error {
 }
 
 func (m *Metadata) GetPeers(servId string) ([]*entity.ServerInfo, error) {
-	rpcMap := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
-	httpMap := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, false)
-	servAddr, ok := rpcMap[servId]
+	ipMap := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName)
+	servAddr, ok := ipMap[servId]
 	if !ok {
 		return nil, response.NewError(400, "unknown server id")
 	}
@@ -231,8 +230,7 @@ func (m *Metadata) GetPeers(servId string) ([]*entity.ServerInfo, error) {
 	for _, id := range resp.Data {
 		infoList = append(infoList, &entity.ServerInfo{
 			ServerID: id,
-			HttpAddr: httpMap[id],
-			RpcAddr:  rpcMap[id],
+			HttpAddr: ipMap[id],
 		})
 	}
 	return infoList, nil

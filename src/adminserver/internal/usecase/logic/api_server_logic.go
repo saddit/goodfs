@@ -7,7 +7,7 @@ import (
 )
 
 func SelectApiServer() string {
-	servers := pool.Discovery.GetServices(pool.Config.Discovery.ApiServName, false)
+	servers := pool.Discovery.GetServices(pool.Config.Discovery.ApiServName)
 	rand.Seed(time.Now().Unix())
 	idx := rand.Intn(len(servers))
 	return servers[idx]

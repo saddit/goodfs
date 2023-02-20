@@ -9,7 +9,6 @@ import (
 	"apiserver/internal/usecase/service"
 	"common/graceful"
 	"common/registry"
-	"common/util"
 )
 
 func Run(cfg *Config) {
@@ -22,7 +21,7 @@ func Run(cfg *Config) {
 	metaService := service.NewMetaService(metaRepo, versionRepo)
 	objService := service.NewObjectService(metaService, bucketRepo, pool.Etcd)
 	// register
-	cfg.Registry.HttpAddr = util.ServerAddress(cfg.Port)
+	cfg.Registry.ServerPort = cfg.Port
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry).MustRegister().Unregister()
 	// system-info auto saving
 	defer logic.NewSystemStatLogic().StartAutoSave()()

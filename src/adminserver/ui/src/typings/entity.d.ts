@@ -69,7 +69,6 @@ declare interface TimeStat {
 declare interface ServerInfo {
     serverId: string
     httpAddr: string
-    rpcAddr: string
     isMaster?: boolean
     sysInfo: SystemInfo
 }

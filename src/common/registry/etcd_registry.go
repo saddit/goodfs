@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"net"
 )
 
 var registryLog = logs.New("etcd-registry")
@@ -50,7 +49,7 @@ func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
 	return e
 }
 
-func (e *EtcdRegistry) GetServiceMapping(name string, rpc bool) map[string]string {
+func (e *EtcdRegistry) GetServiceMapping(name string) map[string]string {
 	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.cfg.Group, name), clientv3.WithPrefix())
 	if err != nil {
 		registryLog.Errorf("get services: %s", err)
@@ -63,13 +62,12 @@ func (e *EtcdRegistry) GetServiceMapping(name string, rpc bool) map[string]strin
 			continue
 		}
 		sid, _, _ := bytes.Cut(kv.Key[idx+1:], []byte("_"))
-		value := RegisterValue(kv.Value)
-		res[util.BytesToStr(sid)] = util.IfElse(rpc, value.RpcAddr(), value.HttpAddr())
+		res[util.BytesToStr(sid)] = util.BytesToStr(kv.Value)
 	}
 	return res
 }
 
-func (e *EtcdRegistry) GetServices(name string, rpc bool) []string {
+func (e *EtcdRegistry) GetServices(name string) []string {
 	resp, err := e.cli.Get(context.Background(), EtcdPrefix.FmtRegistry(e.cfg.Group, name), clientv3.WithPrefix())
 	if err != nil {
 		registryLog.Infof("get services: %s", err)
@@ -77,14 +75,13 @@ func (e *EtcdRegistry) GetServices(name string, rpc bool) []string {
 	}
 	res := make([]string, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
-		value := RegisterValue(kv.Value)
-		res = append(res, util.IfElse(rpc, value.RpcAddr(), value.HttpAddr()))
+		res = append(res, util.BytesToStr(kv.Value))
 	}
 	return res
 }
 
-func (e *EtcdRegistry) GetService(name string, id string, rpc bool) (string, bool) {
-	mp := e.GetServiceMapping(name, rpc)
+func (e *EtcdRegistry) GetService(name string, id string) (string, bool) {
+	mp := e.GetServiceMapping(name)
 	v, ok := mp[id]
 	return v, ok
 }
@@ -96,18 +93,6 @@ func (e *EtcdRegistry) MustRegister() *EtcdRegistry {
 	return e
 }
 
-func (e *EtcdRegistry) LookupIP(hostport string) string {
-	host, port, err := net.SplitHostPort(hostport)
-	if err != nil {
-		return net.JoinHostPort("127.0.0.1", "16384")
-	}
-	ip := util.ParseIP(host)
-	if ip == nil {
-		return net.JoinHostPort("127.0.0.1", port)
-	}
-	return net.JoinHostPort(ip.String(), port)
-}
-
 func (e *EtcdRegistry) Register() error {
 	// skip if already register
 	if e.leaseId != -1 {
@@ -116,12 +101,11 @@ func (e *EtcdRegistry) Register() error {
 	ctx := context.Background()
 	var err error
 	//init registered key
-	registerValue := NewRV(e.LookupIP(e.cfg.HttpAddr), e.LookupIP(e.cfg.RpcAddr))
-	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), registerValue); err != nil {
+	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), util.ServerAddress(e.cfg.ServerPort)); err != nil {
 		return err
 	}
 	var keepAlive <-chan *clientv3.LeaseKeepAliveResponse
-	keepAlive, e.stopFn, err = e.keepaliveLease(ctx, e.leaseId)
+	keepAlive, e.stopFn, err = e.keepaliveLease(e.leaseId)
 	if err != nil {
 		return err
 	}
@@ -156,26 +140,22 @@ func (e *EtcdRegistry) Unregister() error {
 	return nil
 }
 
-func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key string, value RegisterValue) (clientv3.LeaseID, error) {
+func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key string, value string) (clientv3.LeaseID, error) {
 	//grant a lease
-	ctx2, cancel2 := context.WithTimeout(ctx, e.cfg.Timeout)
-	defer cancel2()
-	lease, err := e.cli.Grant(ctx2, int64(e.cfg.Interval.Seconds()))
+	lease, err := e.cli.Grant(ctx, int64(e.cfg.Interval.Seconds()))
 	if err != nil {
 		return -1, fmt.Errorf("Register interval heartbeat: grant lease error, %v", err)
 	}
 	//create a key with lease
-	ctx3, cancel3 := context.WithTimeout(ctx, e.cfg.Timeout)
-	defer cancel3()
-	if _, err := e.cli.Put(ctx3, key, string(value), clientv3.WithLease(lease.ID)); err != nil {
+	if _, err = e.cli.Put(ctx, key, value, clientv3.WithLease(lease.ID)); err != nil {
 		return -1, fmt.Errorf("Register interval heartbeat: send heartbeat error, %v", err)
 	}
 	return lease.ID, nil
 }
 
-func (e *EtcdRegistry) keepaliveLease(ctx context.Context, id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, func(), error) {
-	ctx2, cancel := context.WithCancel(ctx)
-	ch, err := e.cli.KeepAlive(ctx2, id)
+func (e *EtcdRegistry) keepaliveLease(id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, func(), error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	ch, err := e.cli.KeepAlive(ctx, id)
 	return ch, func() {
 		defer cancel()
 		e.stopFn = func() {}
