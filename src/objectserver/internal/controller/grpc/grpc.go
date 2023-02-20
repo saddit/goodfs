@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"common/datasize"
 	"common/proto/pb"
 	"common/util"
 	"context"
@@ -16,6 +17,7 @@ type Server struct {
 func NewServer(service *service.MigrationService) *Server {
 	serv := grpc.NewServer(
 		grpc.MaxConcurrentStreams(100),
+		grpc.MaxRecvMsgSize(int(8*datasize.MB)),
 		util.CommonUnaryInterceptors(),
 		util.CommonStreamInterceptors(),
 	)

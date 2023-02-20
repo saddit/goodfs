@@ -37,7 +37,7 @@ func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServ
 	for {
 		data, err := stream.Recv()
 		if err == io.EOF {
-			break
+			return stream.SendMsg(&pb.Response{Success: true})
 		}
 		if err != nil {
 			return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
@@ -48,7 +48,7 @@ func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServ
 			}
 			if file, err = ms.Service.OpenFile(data.FileName, data.Size); err != nil {
 				if os.IsExist(err) {
-					break
+					return stream.SendAndClose(&pb.Response{Success: true})
 				}
 				return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
 			}
@@ -57,7 +57,6 @@ func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServ
 			return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
 		}
 	}
-	return stream.SendAndClose(&pb.Response{Success: true})
 }
 
 func (ms *MigrationServer) FinishReceive(_ context.Context, info *pb.ObjectInfo) (*pb.Response, error) {
