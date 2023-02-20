@@ -18,7 +18,7 @@ func MessageFromJSONBody(body io.ReadCloser) string {
 		return "unknown"
 	}
 	mp := make(map[string]interface{})
-	if err := json.Unmarshal(bt, &mp); err != nil {
+	if err = json.Unmarshal(bt, &mp); err != nil {
 		logs.Std().Debugf("MessageFromJSONBody.UnmarshalBody: %s", err)
 		return "unknown"
 	}

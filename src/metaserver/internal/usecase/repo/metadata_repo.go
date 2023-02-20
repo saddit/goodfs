@@ -330,9 +330,11 @@ func (m *MetadataRepo) GetMetadataBytes(key string) ([]byte, error) {
 	var res []byte
 	err := m.MainDB.View(func(tx *bolt.Tx) error {
 		v := logic.GetMetadataBucket(tx).Get(util.StrToBytes(key))
-		res = make([]byte, 0, len(v))
+		if v == nil {
+			return usecase.ErrNotFound
+		}
 		// copy values from the mmap pointer
-		copy(res, v)
+		res, _ = io.ReadAll(bytes.NewBuffer(v))
 		return nil
 	})
 	return res, err

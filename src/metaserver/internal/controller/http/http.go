@@ -21,6 +21,7 @@ func NewHttpServer(port string, grpcServer *grpc.Server, service IMetadataServic
 	engine.Use(
 		gin.LoggerWithWriter(logs.Std().Out),
 		gin.RecoveryWithWriter(logs.Std().Out),
+		CheckInNormal,
 		CheckLeaderInRaftMode,
 		CheckKeySlot,
 	)

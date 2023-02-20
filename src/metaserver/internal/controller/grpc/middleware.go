@@ -61,6 +61,9 @@ func CheckWritableUnary(ctx context.Context, req interface{}, info *grpc.UnarySe
 		if pool.RaftWrapper.Enabled && !pool.RaftWrapper.IsLeader() {
 			return nil, status.Error(codes.Unavailable, "server is not writable")
 		}
+		if !pool.HashSlot.IsNormal() {
+			return nil, status.Error(codes.Aborted, "server in migration")
+		}
 	}
 	return handler(ctx, req)
 }
