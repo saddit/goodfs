@@ -4,34 +4,21 @@ import (
 	"common/proto/pb"
 	"context"
 	"errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
-	"net"
 	"objectserver/internal/usecase/service"
+	"strings"
 )
 
 type Server struct {
 	*grpc.Server
-	Port string
 }
 
-func NewRpcServer(port string, service *service.MigrationService) *Server {
+func NewServer(service *service.MigrationService) *Server {
 	serv := grpc.NewServer()
 	pb.RegisterObjectMigrationServer(serv, NewMigrationServer(service))
 	pb.RegisterConfigServiceServer(serv, &ConfigServiceServer{})
-	return &Server{serv, port}
-}
-
-func (r *Server) ListenAndServe() error {
-	if r.Server == nil {
-		return nil
-	}
-	sock, err := net.Listen("tcp", ":"+r.Port)
-	if err != nil {
-		panic(err)
-	}
-	log.Infof("rpc server listening on %s", sock.Addr().String())
-	return r.Serve(sock)
+	return &Server{serv}
 }
 
 func (r *Server) Shutdown(ctx context.Context) error {
@@ -49,5 +36,17 @@ func (r *Server) Shutdown(ctx context.Context) error {
 		return errors.New("graceful stop grpc server timeout")
 	case <-finish:
 		return nil
+	}
+}
+
+func (r *Server) ServeHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		req := c.Request
+		if req.ProtoMajor == 2 &&
+			strings.HasPrefix(req.Header.Get("Content-Type"), "application/grpc") {
+			r.ServeHTTP(c.Writer, req)
+			return
+		}
+		c.Next()
 	}
 }

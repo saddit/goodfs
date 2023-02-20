@@ -72,7 +72,6 @@ func initStorage(cfg *config.Config) {
 
 func initRegistry(cfg *config.Config, etcd *clientv3.Client) {
 	cfg.Registry.HttpAddr = util.ServerAddress(cfg.Port)
-	cfg.Registry.RpcAddr = util.ServerAddress(cfg.RpcPort)
 	Registry = registry.NewEtcdRegistry(etcd, cfg.Registry)
 }
 

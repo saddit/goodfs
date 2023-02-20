@@ -41,7 +41,7 @@ func getClient() (pb.HashSlotClient, error) {
 	return pb.NewHashSlotClient(cc), nil
 }
 
-func startMigration(targetHost, rpcPort string, slots []string) {
+func startMigration(targetHost, port string, slots []string) {
 	cli, err := getClient()
 	if err != nil {
 		return
@@ -49,8 +49,8 @@ func startMigration(targetHost, rpcPort string, slots []string) {
 	resp, err := cli.StartMigration(context.Background(), &pb.MigrationReq{
 		Slots: slots,
 		TargetLocation: &pb.LocationInfo{
-			Host:    targetHost,
-			RpcPort: rpcPort,
+			Host: targetHost,
+			Port: port,
 		},
 	})
 	if err != nil {

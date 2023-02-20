@@ -2,6 +2,7 @@ package app
 
 import (
 	"common/graceful"
+	"common/util"
 	"metaserver/config"
 	"metaserver/internal/controller/grpc"
 	"metaserver/internal/controller/http"
@@ -20,7 +21,7 @@ func Run(cfg *config.Config) {
 	metaRepo := repo.NewMetadataRepo(pool.Storage, repo.NewMetadataCacheRepo(pool.Cache))
 	bucketRepo := repo.NewBucketRepo(pool.Storage, repo.NewBucketCacheRepo(pool.Cache))
 	fsm := raftimpl.NewFSM(metaRepo, repo.NewBatchRepo(pool.Storage), bucketRepo, repo.NewBatchBucketRepo(pool.Storage), metaRepo)
-	raftWrapper := raftimpl.NewRaft(cfg.Cluster, fsm)
+	raftWrapper := raftimpl.NewRaft(util.ServerAddress(cfg.Port), cfg.Cluster, fsm)
 	bucketServ := service.NewBucketService(bucketRepo, raftWrapper)
 	metaService := service.NewMetadataService(
 		metaRepo,
@@ -29,8 +30,8 @@ func Run(cfg *config.Config) {
 		raftWrapper,
 	)
 	hsService := service.NewHashSlotService(pool.HashSlot, metaService, bucketServ, &cfg.HashSlot)
-	grpcServer := grpc.NewRpcServer(cfg.RpcPort, cfg.MaxConcurrentStreams, raftWrapper, metaService, hsService, bucketServ)
-	httpServer := http.NewHttpServer(cfg.Port, metaService, bucketServ)
+	grpcServer := grpc.NewRpcServer(cfg.MaxConcurrentStreams, raftWrapper, metaService, hsService, bucketServ)
+	httpServer := http.NewHttpServer(cfg.Port, grpcServer, metaService, bucketServ)
 	// register on leader change
 	raftWrapper.RegisterLeaderChangedEvent(hsService)
 	raftWrapper.RegisterLeaderChangedEvent(logic.NewRegistry())
@@ -45,5 +46,5 @@ func Run(cfg *config.Config) {
 	// flush config
 	defer cfg.Persist()
 
-	graceful.ListenAndServe(nil, httpServer, grpcServer)
+	graceful.ListenAndServe(nil, httpServer)
 }

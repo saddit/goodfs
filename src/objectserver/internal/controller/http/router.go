@@ -2,7 +2,11 @@ package http
 
 import (
 	"common/logs"
+	"common/util"
+	"context"
+	"errors"
 	"net/http"
+	"objectserver/internal/controller/grpc"
 	"objectserver/internal/controller/http/objects"
 	"objectserver/internal/controller/http/stat"
 	"objectserver/internal/controller/http/temp"
@@ -12,12 +16,14 @@ import (
 
 type Server struct {
 	*http.Server
+	grpcServer *grpc.Server
 }
 
-func NewHttpServer(port string) *Server {
+func NewHttpServer(port string, grpcServer *grpc.Server) *Server {
 	r := gin.New()
 	r.UseH2C = true
 	r.Use(gin.LoggerWithWriter(logs.Std().Out), gin.RecoveryWithWriter(logs.Std().Out))
+	r.Use(grpcServer.ServeHandler())
 	r.GET("/objects/:name", objects.GetFromCache, objects.Get)
 	r.HEAD("/objects/:name", objects.Head)
 	r.PUT("/objects/:name", temp.FilterEmptyRequest, objects.Put)
@@ -33,10 +39,28 @@ func NewHttpServer(port string) *Server {
 	r.GET("/ping", stat.Ping)
 	r.GET("/stat", stat.Info)
 
-	return &Server{&http.Server{Addr: ":" + port, Handler: r.Handler()}}
+	return &Server{&http.Server{Addr: ":" + port, Handler: r.Handler()}, grpcServer}
 }
 
 func (h *Server) ListenAndServe() error {
 	logs.Std().Infof("http server listen on: %s", h.Addr)
 	return h.Server.ListenAndServe()
+}
+
+func (s *Server) Shutdown(c context.Context) error {
+	var err1, err2 error
+	dg := util.NewWaitGroup()
+	// shutdown grpc
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		err1 = s.grpcServer.Shutdown(c)
+	}()
+	// shutdown http
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		err2 = s.Server.Shutdown(c)
+	}()
+	return errors.Join(err1, err2)
 }

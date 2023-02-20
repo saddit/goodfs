@@ -36,12 +36,11 @@ func NewDisabledRaft() *RaftWrapper {
 	return &RaftWrapper{Enabled: false}
 }
 
-func NewRaft(cfg config.ClusterConfig, fsm raft.FSM) *RaftWrapper {
+func NewRaft(localAddr string, cfg config.ClusterConfig, fsm raft.FSM) *RaftWrapper {
 	if !cfg.Enable {
 		return NewDisabledRaft()
 	}
-	address := util.ServerAddress(cfg.Port)
-	manager := transport.New(raft.ServerAddress(address), []grpc.DialOption{grpc.WithInsecure()})
+	manager := transport.New(raft.ServerAddress(localAddr), []grpc.DialOption{grpc.WithInsecure()})
 	baseDir := cfg.StoreDir
 
 	c := raft.DefaultConfig()
@@ -89,7 +88,7 @@ func NewRaft(cfg config.ClusterConfig, fsm raft.FSM) *RaftWrapper {
 		Raft:           r,
 		Manager:        manager,
 		ID:             cfg.ID,
-		Address:        address,
+		Address:        localAddr,
 		Enabled:        true,
 		closeRaftStore: closeFn,
 	}
