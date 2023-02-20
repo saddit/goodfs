@@ -10,9 +10,9 @@
     </div>
     <!-- lines -->
     <div class="inline-flex items-center pt-2 mt-2">
-      <div v-for="v in value" :style="{width: getWid(v)}" class="h-2 group relative" :class="[getBgColor(v.identify)]">
+      <div v-for="v in value" :style="{width: getWid(v)}" class="h-2 group relative cursor-pointer" :class="[getBgColor(v.identify)]">
         <span
-            class="transition-opacity font-light text-xs opacity-0 group-hover:opacity-100 fixed -top-4 left-0 text-gray-600 select-none">
+            class="transition-opacity font-light text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 absolute -top-4 left-0 text-gray-600 select-none">
           {{ `${v.start}-${v.end}` }}
         </span>
       </div>

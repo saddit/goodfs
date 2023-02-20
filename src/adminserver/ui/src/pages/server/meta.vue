@@ -46,7 +46,10 @@
         <!-- row 4 button -->
         <span></span>
         <button class="btn-revert max-h-10 mx-1" @click="closeMigrateDialog">{{ $t('btn-cancel') }}</button>
-        <button class="btn-pri max-h-10 mx-1" @click="startMigrate">{{ $t('btn-ok') }}</button>
+        <button class="btn-pri max-h-10 mx-1" @click="startMigrate">
+          <font-awesome-icon v-if="inMigrate" class="animate-spin mr-2" icon="spinner"/>
+          {{ $t('btn-ok') }}
+        </button>
         <!-- row 5 error message-->
         <template v-if="formErrMsg">
           <span></span>
@@ -101,6 +104,7 @@ const slaves = ref<ServerInfo[]>([])
 const openRaftCmdDialog = ref(false)
 const store = useStore()
 const formErrMsg = ref("")
+const inMigrate = ref(false)
 const {t} = useI18n({inheritLocale: true})
 
 watch(selectedRaftMaster, v => {
@@ -170,6 +174,7 @@ function joinCluster(masterId: string, servId: string) {
 function closeMigrateDialog() {
     openMigrateDialog.value = false
     formErrMsg.value = ""
+    inMigrate.value = false
     migrateReq.value = {srcServerId: "", destServerId: "", slots: [], slotsStr: ""}
 }
 
@@ -223,14 +228,24 @@ function startMigrate() {
         return;
     }
     migrateReq.value.slots = migrateReq.value.slotsStr.split(",")
-    api.metadata.startMigrate(migrateReq.value)
-        .then(() => {
-            useToast().success(t('req-success'))
-            closeMigrateDialog()
-        })
-        .catch((err: Error) => {
-            formErrMsg.value = err.message
-        })
+    inMigrate.value = true
+    api.metadata.startMigrate(migrateReq.value).then(() => {
+        useToast().success(t('req-success'))
+        getSlotsDetail()
+        closeMigrateDialog()
+    }).catch((err: Error) => {
+        if (err.message.length > 30) {
+            formErrMsg.value = t('mig-fail')
+            let wd = window.open("", "", "")
+            if (wd) {
+                wd.document.write(err.message)
+                wd.document.close()
+                wd.focus()
+            }
+            return
+        }
+        formErrMsg.value = err.message
+    }).finally(() => inMigrate.value = false)
 }
 
 store.$subscribe((mutation, state) => {
@@ -276,6 +291,7 @@ en:
   input-serv-id: 'Please input server id'
   do-not-choose-same-id: 'Do not choose same server id'
   err-format-of-slots: 'Err format of slots'
+  mig-fail: 'Migration fails'
 zh:
   migration: '数据迁移'
   src-server: '源服务器'
@@ -290,4 +306,5 @@ zh:
   input-serv-id: '请输入 server id'
   do-not-choose-same-id: '请勿选择相同的 server id'
   err-format-of-slots: 'slots 格式有误'
+  mig-fail: '迁移失败'
 </i18n>
