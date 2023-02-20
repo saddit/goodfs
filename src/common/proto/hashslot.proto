@@ -8,8 +8,7 @@ import "message.proto";
 
 message LocationInfo {
   string host = 1;
-  string httpPort = 2;
-  string rpcPort = 3;
+  string port = 2;
 }
 
 message MigrationItem {

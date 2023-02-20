@@ -17,6 +17,7 @@ import (
 	"metaserver/internal/usecase/db"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
+	"net"
 	"time"
 
 	"google.golang.org/grpc"
@@ -96,7 +97,7 @@ func (h *HashSlotService) PrepareMigrationTo(loc *pb.LocationInfo, slots []strin
 		}
 	}
 	// send prepare rpc to target
-	cc, err := grpc.Dial(fmt.Sprint(loc.GetHost(), ":", loc.GetRpcPort()), grpc.WithInsecure())
+	cc, err := grpc.Dial(net.JoinHostPort(loc.GetHost(), loc.GetPort()), grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
@@ -104,9 +105,8 @@ func (h *HashSlotService) PrepareMigrationTo(loc *pb.LocationInfo, slots []strin
 	resp, err := client.PrepareMigration(context.Background(), &pb.PrepareReq{
 		Id: h.Cfg.StoreID,
 		Location: &pb.LocationInfo{
-			Host:     util.DetectServerIP(),
-			RpcPort:  pool.Config.Cluster.Port,
-			HttpPort: pool.Config.Port,
+			Host: util.DetectServerIP(),
+			Port: pool.Config.Port,
 		},
 		Slots: slots,
 	})
@@ -138,7 +138,7 @@ func (h *HashSlotService) PrepareMigrationFrom(loc *pb.LocationInfo, slots []str
 		}
 	}
 	// change status to migrate-from
-	if err := h.Store.ReadyMigrateFrom(loc.GetHost(), slots); err != nil {
+	if err = h.Store.ReadyMigrateFrom(loc.GetHost(), slots); err != nil {
 		return err
 	}
 	cancelCh := make(chan struct{})
@@ -231,7 +231,7 @@ func (h *HashSlotService) AutoMigrate(toLoc *pb.LocationInfo, slots []string) er
 	}
 	defer h.Store.FinishMigrateTo() // avoid status stick if PANIC
 	// connect to target
-	cc, err := grpc.Dial(fmt.Sprint(toLoc.Host, ":", toLoc.RpcPort), grpc.WithInsecure())
+	cc, err := grpc.Dial(net.JoinHostPort(toLoc.Host, toLoc.Port), grpc.WithInsecure())
 	if err != nil {
 		return err
 	}

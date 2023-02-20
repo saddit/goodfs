@@ -35,5 +35,6 @@ func Run(cfg *config.Config) {
 	// warmup serv
 	service.WarmUpLocateCache()
 	// startup server
-	graceful.ListenAndServe(nil, http.NewHttpServer(cfg.Port), grpc.NewRpcServer(cfg.RpcPort, service.NewMigrationService(pool.ObjectCap)))
+	grpcServer := grpc.NewServer(service.NewMigrationService(pool.ObjectCap))
+	graceful.ListenAndServe(nil, http.NewHttpServer(cfg.Port, grpcServer))
 }

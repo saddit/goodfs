@@ -2,21 +2,26 @@ package http
 
 import (
 	"common/logs"
+	"common/util"
+	"context"
+	"errors"
+	"github.com/gin-gonic/gin"
+	"metaserver/internal/controller/grpc"
 	. "metaserver/internal/usecase"
 	netHttp "net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
 	netHttp.Server
+	grpcServer *grpc.Server
 }
 
-func NewHttpServer(port string, service IMetadataService, bucketService BucketService) *Server {
+func NewHttpServer(port string, grpcServer *grpc.Server, service IMetadataService, bucketService BucketService) *Server {
 	engine := gin.New()
 	engine.Use(
 		gin.LoggerWithWriter(logs.Std().Out),
 		gin.RecoveryWithWriter(logs.Std().Out),
+		grpcServer.ServeHandler(),
 		CheckLeaderInRaftMode,
 		CheckKeySlot,
 	)
@@ -30,10 +35,28 @@ func NewHttpServer(port string, service IMetadataService, bucketService BucketSe
 	return &Server{netHttp.Server{
 		Addr:    ":" + port,
 		Handler: engine.Handler(),
-	}}
+	}, grpcServer}
 }
 
 func (s *Server) ListenAndServe() error {
 	logs.New("http-server").Infof("server listening on %s", s.Addr)
 	return s.Server.ListenAndServe()
+}
+
+func (s *Server) Shutdown(c context.Context) error {
+	var err1, err2 error
+	dg := util.NewWaitGroup()
+	// shutdown grpc
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		err1 = s.grpcServer.Shutdown(c)
+	}()
+	// shutdown http
+	dg.Todo()
+	go func() {
+		defer dg.Done()
+		err2 = s.Server.Shutdown(c)
+	}()
+	return errors.Join(err1, err2)
 }

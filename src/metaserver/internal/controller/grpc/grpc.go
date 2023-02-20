@@ -5,9 +5,10 @@ import (
 	"common/proto/pb"
 	"context"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/raftimpl"
-	"net"
+	"strings"
 
 	"google.golang.org/grpc"
 )
@@ -16,16 +17,14 @@ var log = logs.New("grpc-server")
 
 type Server struct {
 	*grpc.Server
-	Port         string
 	leaveCluster func(c context.Context) error
 }
 
 // NewRpcServer init a grpc raft server. if no available nodes return empty object
-func NewRpcServer(port string, maxStreams uint32, rw *raftimpl.RaftWrapper, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService, serv3 usecase.BucketService) *Server {
+func NewRpcServer(maxStreams uint32, rw *raftimpl.RaftWrapper, serv1 usecase.IMetadataService, serv2 usecase.IHashSlotService, serv3 usecase.BucketService) *Server {
 	server := grpc.NewServer(
 		grpc.MaxConcurrentStreams(maxStreams),
 		grpc.ChainUnaryInterceptor(
-			UnaryServerRecoveryInterceptor(),
 			CheckKeySlot,
 			CheckWritableUnary,
 			CheckRaftEnabledUnary,
@@ -58,7 +57,7 @@ func NewRpcServer(port string, maxStreams uint32, rw *raftimpl.RaftWrapper, serv
 	pb.RegisterHashSlotServer(server, NewHashSlotServer(serv2))
 	pb.RegisterMetadataApiServer(server, NewMetadataApiServer(serv1, serv3))
 	pb.RegisterConfigServiceServer(server, &ConfigServiceServer{})
-	return &Server{server, port, leaveRaft}
+	return &Server{server, leaveRaft}
 }
 
 func (r *Server) Shutdown(ctx context.Context) error {
@@ -82,14 +81,14 @@ func (r *Server) Shutdown(ctx context.Context) error {
 	}
 }
 
-func (r *Server) ListenAndServe() error {
-	if r.Server == nil {
-		return nil
+func (r *Server) ServeHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		req := c.Request
+		if req.ProtoMajor == 2 &&
+			strings.HasPrefix(req.Header.Get("Content-Type"), "application/grpc") {
+			r.ServeHTTP(c.Writer, req)
+			return
+		}
+		c.Next()
 	}
-	sock, err := net.Listen("tcp", ":"+r.Port)
-	if err != nil {
-		panic(err)
-	}
-	log.Infof("server listening on %s", sock.Addr().String())
-	return r.Serve(sock)
 }
