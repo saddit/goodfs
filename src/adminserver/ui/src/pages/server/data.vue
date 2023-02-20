@@ -19,8 +19,10 @@
   <ModalTemplate title="Join or Leave" v-model="openMigrateDialog">
     <template #panel>
       <div class="py-6 px-8 grid-cols-1 grid gap-y-2">
-        <button class="btn-pri" @click="clusterCmd('join')">Join cluster</button>
-        <button class="btn-pri" @click="clusterCmd('leave')">Leave cluster</button>
+        <button class="btn-pri" @click="clusterCmd('leave')">
+          <font-awesome-icon v-if="inRequesting" class="animate-spin mr-2" icon="spinner"/>
+          Leave cluster
+        </button>
         <button class="btn-revert" @click="openMigrateDialog = false">Close</button>
       </div>
     </template>
@@ -32,6 +34,7 @@ const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
 const store = useStore()
 const openMigrateDialog = ref(false)
+const inRequesting = ref(false)
 let migrateServId = ""
 const {t} = useI18n({inheritLocale: true})
 
@@ -57,6 +60,7 @@ function openDialog(servId: string) {
 
 async function clusterCmd(cmd: string) {
     try {
+        inRequesting.value = true
         if (cmd == 'join') {
             await api.objects.join(migrateServId)
         } else if (cmd == 'leave') {
@@ -66,6 +70,8 @@ async function clusterCmd(cmd: string) {
         useToast().success(t('req-success'))
     } catch (err: any) {
         useToast().error(err.message)
+    } finally {
+        inRequesting.value = false
     }
 }
 
