@@ -55,15 +55,15 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 		total += float64(v)
 	}
 	avg := uint64(math.Ceil(total / float64(size)))
-	rpcMap := pool.Discovery.GetServiceMapping(pool.Config.Registry.Name, true)
-	res := make(map[string]int64, len(rpcMap))
+	servMap := pool.Discovery.GetServiceMapping(pool.Config.Registry.Name)
+	res := make(map[string]int64, len(servMap))
 	for k, v := range capMap {
 		// skip self
 		if k == pool.Config.Registry.ServerID {
 			continue
 		}
 		if v = util.IfElse(join, v-avg, avg-v); v > 0 {
-			rpcAddr, ok := rpcMap[k]
+			rpcAddr, ok := servMap[k]
 			if !ok {
 				return nil, fmt.Errorf("unknown peers '%s'", k)
 			}
@@ -244,7 +244,7 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	}
 	// add to capacity db
 	pool.ObjectCap.AddCap(data.Size)
-	newLoc, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID, false)
+	newLoc, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID)
 	if !ok {
 		return fmt.Errorf("server unregister yet")
 	}
@@ -255,7 +255,7 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	var wg sync.WaitGroup
 	failNum := atomic.Int32{}
 	var total float64
-	servs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, false)
+	servs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName)
 	if len(servs) == 0 {
 		return fmt.Errorf("not exist meta-server")
 	}

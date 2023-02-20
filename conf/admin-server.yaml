@@ -1,7 +1,7 @@
 port: 80
 log:
   level: debug
-enabled-api-tls: true
+enabled-api-tls: false
 discovery:
   group: "goodfs"
 etcd:

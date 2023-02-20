@@ -159,7 +159,7 @@ func (mc *MetadataController) BucketList(c *gin.Context) {
 
 func (mc *MetadataController) GetConfig(c *gin.Context) {
 	sid := c.Param("serverId")
-	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, sid, true)
+	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, sid)
 	if !ok {
 		response.BadRequestMsg("unknown serverId", c)
 		return

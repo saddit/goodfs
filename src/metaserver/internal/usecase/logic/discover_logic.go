@@ -14,13 +14,13 @@ func NewDiscovery() Discover {
 	return Discover{}
 }
 
-func (Discover) PeerIp(id string, rpc bool) string {
-	ip, _ := pool.Registry.GetService(pool.Config.Registry.Name, id, rpc)
+func (Discover) PeerIp(id string) string {
+	ip, _ := pool.Registry.GetService(pool.Config.Registry.Name, id)
 	return ip
 }
 
 func (d Discover) PeerLocation(id string, c *gin.Context) string {
-	ip := d.PeerIp(id, false)
+	ip := d.PeerIp(id)
 	if ip == "" {
 		ip = "unknown-id"
 	}

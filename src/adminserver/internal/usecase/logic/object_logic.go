@@ -41,7 +41,7 @@ func (Objects) Download(name, bucket string, version int, token string) (io.Read
 }
 
 func (Objects) JoinCluster(serverId string) error {
-	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.DataServName, true)
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.DataServName)
 	addr, ok := mp[serverId]
 	if !ok {
 		return response.NewError(400, "serverId not exist")
@@ -62,7 +62,7 @@ func (Objects) JoinCluster(serverId string) error {
 }
 
 func (Objects) LeaveCluster(serverId string) error {
-	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.DataServName, true)
+	mp := pool.Discovery.GetServiceMapping(pool.Config.Discovery.DataServName)
 	addr, ok := mp[serverId]
 	if !ok {
 		return response.NewError(400, "serverId not exist")

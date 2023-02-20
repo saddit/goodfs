@@ -44,7 +44,7 @@ func NewMetadataApiClient(cc grpc.ClientConnInterface) MetadataApiClient {
 
 func (c *metadataApiClient) GetVersionsByHash(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error) {
 	out := new(Msgpack)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getVersionsByHash", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/GetVersionsByHash", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (c *metadataApiClient) GetVersionsByHash(ctx context.Context, in *MetaReq, 
 
 func (c *metadataApiClient) GetBucket(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error) {
 	out := new(Msgpack)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getBucket", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/GetBucket", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (c *metadataApiClient) GetBucket(ctx context.Context, in *MetaReq, opts ...
 
 func (c *metadataApiClient) GetMetadata(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error) {
 	out := new(Msgpack)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getMetadata", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/GetMetadata", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (c *metadataApiClient) GetMetadata(ctx context.Context, in *MetaReq, opts .
 
 func (c *metadataApiClient) GetVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error) {
 	out := new(Msgpack)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getVersion", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/GetVersion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (c *metadataApiClient) GetVersion(ctx context.Context, in *MetaReq, opts ..
 
 func (c *metadataApiClient) ListVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Msgpack, error) {
 	out := new(Msgpack)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/listVersion", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/ListVersion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (c *metadataApiClient) ListVersion(ctx context.Context, in *MetaReq, opts .
 
 func (c *metadataApiClient) GetPeers(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Strings, error) {
 	out := new(Strings)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/getPeers", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/GetPeers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (c *metadataApiClient) GetPeers(ctx context.Context, in *Empty, opts ...grp
 
 func (c *metadataApiClient) SaveMetadata(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/saveMetadata", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/SaveMetadata", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (c *metadataApiClient) SaveMetadata(ctx context.Context, in *Metadata, opts
 
 func (c *metadataApiClient) SaveVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Int32, error) {
 	out := new(Int32)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/saveVersion", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/SaveVersion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (c *metadataApiClient) SaveVersion(ctx context.Context, in *Metadata, opts 
 
 func (c *metadataApiClient) UpdateVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/updateVersion", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/UpdateVersion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (c *metadataApiClient) UpdateVersion(ctx context.Context, in *Metadata, opt
 
 func (c *metadataApiClient) SaveBucket(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/proto.MetadataApi/saveBucket", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/SaveBucket", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func _MetadataApi_GetVersionsByHash_Handler(srv interface{}, ctx context.Context
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/getVersionsByHash",
+		FullMethod: "/proto.MetadataApi/GetVersionsByHash",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).GetVersionsByHash(ctx, req.(*MetaReq))
@@ -224,7 +224,7 @@ func _MetadataApi_GetBucket_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/getBucket",
+		FullMethod: "/proto.MetadataApi/GetBucket",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).GetBucket(ctx, req.(*MetaReq))
@@ -242,7 +242,7 @@ func _MetadataApi_GetMetadata_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/getMetadata",
+		FullMethod: "/proto.MetadataApi/GetMetadata",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).GetMetadata(ctx, req.(*MetaReq))
@@ -260,7 +260,7 @@ func _MetadataApi_GetVersion_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/getVersion",
+		FullMethod: "/proto.MetadataApi/GetVersion",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).GetVersion(ctx, req.(*MetaReq))
@@ -278,7 +278,7 @@ func _MetadataApi_ListVersion_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/listVersion",
+		FullMethod: "/proto.MetadataApi/ListVersion",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).ListVersion(ctx, req.(*MetaReq))
@@ -296,7 +296,7 @@ func _MetadataApi_GetPeers_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/getPeers",
+		FullMethod: "/proto.MetadataApi/GetPeers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).GetPeers(ctx, req.(*Empty))
@@ -314,7 +314,7 @@ func _MetadataApi_SaveMetadata_Handler(srv interface{}, ctx context.Context, dec
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/saveMetadata",
+		FullMethod: "/proto.MetadataApi/SaveMetadata",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).SaveMetadata(ctx, req.(*Metadata))
@@ -332,7 +332,7 @@ func _MetadataApi_SaveVersion_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/saveVersion",
+		FullMethod: "/proto.MetadataApi/SaveVersion",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).SaveVersion(ctx, req.(*Metadata))
@@ -350,7 +350,7 @@ func _MetadataApi_UpdateVersion_Handler(srv interface{}, ctx context.Context, de
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/updateVersion",
+		FullMethod: "/proto.MetadataApi/UpdateVersion",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).UpdateVersion(ctx, req.(*Metadata))
@@ -368,7 +368,7 @@ func _MetadataApi_SaveBucket_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.MetadataApi/saveBucket",
+		FullMethod: "/proto.MetadataApi/SaveBucket",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataApiServer).SaveBucket(ctx, req.(*Metadata))
@@ -384,43 +384,43 @@ var MetadataApi_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MetadataApiServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "getVersionsByHash",
+			MethodName: "GetVersionsByHash",
 			Handler:    _MetadataApi_GetVersionsByHash_Handler,
 		},
 		{
-			MethodName: "getBucket",
+			MethodName: "GetBucket",
 			Handler:    _MetadataApi_GetBucket_Handler,
 		},
 		{
-			MethodName: "getMetadata",
+			MethodName: "GetMetadata",
 			Handler:    _MetadataApi_GetMetadata_Handler,
 		},
 		{
-			MethodName: "getVersion",
+			MethodName: "GetVersion",
 			Handler:    _MetadataApi_GetVersion_Handler,
 		},
 		{
-			MethodName: "listVersion",
+			MethodName: "ListVersion",
 			Handler:    _MetadataApi_ListVersion_Handler,
 		},
 		{
-			MethodName: "getPeers",
+			MethodName: "GetPeers",
 			Handler:    _MetadataApi_GetPeers_Handler,
 		},
 		{
-			MethodName: "saveMetadata",
+			MethodName: "SaveMetadata",
 			Handler:    _MetadataApi_SaveMetadata_Handler,
 		},
 		{
-			MethodName: "saveVersion",
+			MethodName: "SaveVersion",
 			Handler:    _MetadataApi_SaveVersion_Handler,
 		},
 		{
-			MethodName: "updateVersion",
+			MethodName: "UpdateVersion",
 			Handler:    _MetadataApi_UpdateVersion_Handler,
 		},
 		{
-			MethodName: "saveBucket",
+			MethodName: "SaveBucket",
 			Handler:    _MetadataApi_SaveBucket_Handler,
 		},
 	},

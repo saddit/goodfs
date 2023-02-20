@@ -1,5 +1,4 @@
 port: 8100
-rpc-port: 4100
 log:
   level: info
 exclude-mount-points: ["C:"]

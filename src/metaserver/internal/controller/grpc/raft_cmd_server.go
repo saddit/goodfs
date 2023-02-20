@@ -118,7 +118,7 @@ func (rcs *RaftCmdServerImpl) Config(context.Context, *pb.EmptyReq) (*pb.Respons
 
 func (rcs *RaftCmdServerImpl) LeaveCluster(ctx context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
 	if rcs.rf.IsLeader() {
-		lives := pool.Registry.GetServiceMapping(pool.Config.Registry.Name, true)
+		lives := pool.Registry.GetServiceMapping(pool.Config.Registry.Name)
 		k, ok := maps.OneOf(lives)
 		if !ok {
 			return &pb.Response{Message: "not available peers. leadership transfer fails.", Success: false}, nil
@@ -168,7 +168,7 @@ func (rcs *RaftCmdServerImpl) RemoveFollower(_ context.Context, req *pb.RemoveFo
 
 func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeaderReq) (*pb.Response, error) {
 	// dial a connection to leader
-	mp := pool.Registry.GetServiceMapping(pool.Config.Registry.Name, true)
+	mp := pool.Registry.GetServiceMapping(pool.Config.Registry.Name)
 	addr, ok := mp[req.MasterId]
 	if !ok {
 		return nil, fmt.Errorf("'%s' is not an exist meta-server id", req.MasterId)

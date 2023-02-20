@@ -82,7 +82,7 @@ func (oc *ObjectsController) Leave(c *gin.Context) {
 
 func (oc *ObjectsController) GetConfig(c *gin.Context) {
 	sid := c.Param("serverId")
-	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.DataServName, sid, true)
+	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.DataServName, sid)
 	if !ok {
 		response.BadRequestMsg("unknown serverId", c)
 		return

@@ -13,11 +13,11 @@ type Discovery struct{}
 func NewDiscovery() Discovery { return Discovery{} }
 
 func (Discovery) GetDataServers() []string {
-	return pool.Discovery.GetServices(pool.Config.Discovery.DataServName, false)
+	return pool.Discovery.GetServices(pool.Config.Discovery.DataServName)
 }
 
 func (Discovery) GetMetaServerHTTP(id string) string {
-	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id, false)
+	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id)
 	if !ok {
 		logs.Std().Errorf("not found ip for server %s", id)
 	}
@@ -25,7 +25,7 @@ func (Discovery) GetMetaServerHTTP(id string) string {
 }
 
 func (Discovery) GetMetaServerGRPC(id string) string {
-	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id, true)
+	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id)
 	if !ok {
 		logs.Std().Errorf("not found ip for server %s", id)
 	}
@@ -46,7 +46,7 @@ func (d Discovery) SelectDataServer(sel selector.Selector, size int) []string {
 }
 
 func (Discovery) SelectMetaServerHttp(metaServerId string) (string, error) {
-	metaServs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, false)
+	metaServs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName)
 	ip, ok := metaServs[metaServerId]
 	if !ok {
 		return "", usecase.ErrServiceUnavailable
@@ -66,7 +66,7 @@ func (Discovery) SelectMetaServerHttp(metaServerId string) (string, error) {
 }
 
 func (Discovery) SelectMetaServerGRPC(metaServerId string) (string, error) {
-	metaServs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName, true)
+	metaServs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName)
 	ip, ok := metaServs[metaServerId]
 	if !ok {
 		return "", usecase.ErrServiceUnavailable
@@ -75,7 +75,7 @@ func (Discovery) SelectMetaServerGRPC(metaServerId string) (string, error) {
 	peerIds = append(peerIds, metaServerId)
 	ips := make([]string, 0, len(peerIds))
 	for _, id := range peerIds {
-		if ip, ok := metaServs[id]; ok {
+		if ip, ok = metaServs[id]; ok {
 			ips = append(ips, ip)
 		}
 	}

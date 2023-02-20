@@ -26,15 +26,15 @@ message Metadata {
 }
 
 service MetadataApi {
-  rpc getVersionsByHash(MetaReq) returns (Msgpack);
-  rpc getBucket(MetaReq) returns (Msgpack);
-  rpc getMetadata(MetaReq) returns (Msgpack);
-  rpc getVersion(MetaReq) returns (Msgpack);
-  rpc listVersion(MetaReq) returns (Msgpack);
-  rpc getPeers(Empty) returns (Strings);
-  rpc saveMetadata(Metadata) returns (Empty);
-  rpc saveVersion(Metadata) returns (Int32);
-  rpc updateVersion(Metadata) returns (Empty);
-  rpc saveBucket(Metadata) returns (Empty);
+  rpc GetVersionsByHash(MetaReq) returns (Msgpack);
+  rpc GetBucket(MetaReq) returns (Msgpack);
+  rpc GetMetadata(MetaReq) returns (Msgpack);
+  rpc GetVersion(MetaReq) returns (Msgpack);
+  rpc ListVersion(MetaReq) returns (Msgpack);
+  rpc GetPeers(Empty) returns (Strings);
+  rpc SaveMetadata(Metadata) returns (Empty);
+  rpc SaveVersion(Metadata) returns (Int32);
+  rpc UpdateVersion(Metadata) returns (Empty);
+  rpc SaveBucket(Metadata) returns (Empty);
 }
 

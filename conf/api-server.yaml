@@ -41,6 +41,6 @@ auth:
     url: http://localhost:8090/v1/authorize
     params: [ 'access-token' ]
 tls:
-  enabled: true
+  enabled: false
   server-cert-file: E:\text\code-project\GolangProject\projects\goodfs\test_conf\example.com+5.pem
   server-key-file: E:\text\code-project\GolangProject\projects\goodfs\test_conf\example.com+5-key.pem

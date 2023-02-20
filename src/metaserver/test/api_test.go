@@ -104,14 +104,13 @@ func TestEtcdRegsitry(t *testing.T) {
 		t.Fatal(err)
 	}
 	disc := registry.NewEtcdRegistry(etcd, registry.Config{
-		Group:    "goodfs",
-		Services: []string{"metaserver"},
-		HttpAddr: "server-a:8080",
-		RpcAddr:  "server-a:4040",
+		Group:      "goodfs",
+		Services:   []string{"metaserver"},
+		ServerPort: "8080",
 	})
 	defer disc.MustRegister().Unregister()
-	httpList := disc.GetServices("metaserver", false)
-	rpcList := disc.GetServices("metaserver", true)
+	httpList := disc.GetServices("metaserver")
+	rpcList := disc.GetServices("metaserver")
 	t.Log(httpList, len(httpList))
 	t.Log(rpcList, len(rpcList))
 }
