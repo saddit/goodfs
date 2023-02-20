@@ -41,14 +41,14 @@
         </tr>
       </template>
       <tr v-else>
-        <td colspan="4" class="text-center">{{ t('no-data') }}</td>
+        <td colspan="5" class="text-center">{{ t('no-data') }}</td>
       </tr>
       </tbody>
     </table>
     <div class="inline-flex items-center space-x-3 my-4">
-      <span class="text-gray-900 text-sm">{{ t('total-num')}}: {{dataReq.total}}</span>
+      <span class="text-gray-900 text-sm">{{ t('total-num') }}: {{ dataReq.total }}</span>
       <select class="select-pri-sm">
-        <option v-for="v in [10,20,50]" :value="v">{{v}}/page</option>
+        <option v-for="v in [10,20,50]" :value="v">{{ v }}/page</option>
       </select>
       <Pagination :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
                   v-model="dataReq.page"/>
@@ -93,9 +93,9 @@
             </tbody>
           </table>
           <div class="inline-flex items-center space-x-3 my-4 mx-auto">
-            <span class="text-gray-900 text-sm">{{ t('total-num')}}: {{versionReq.total}}</span>
+            <span class="text-gray-900 text-sm">{{ t('total-num') }}: {{ versionReq.total }}</span>
             <select class="select-pri-sm">
-              <option v-for="v in [10,20,50]" :value="v">{{v}}/page</option>
+              <option v-for="v in [10,20,50]" :value="v">{{ v }}/page</option>
             </select>
             <Pagination :max-num="5" :total="versionReq.total" :page-size="versionReq.pageSize"
                         v-model="versionReq.page"/>
@@ -195,7 +195,7 @@ function uploadObject(event: any) {
 const dataColumns = [
     dataColumnHelper.accessor('name', {
         header: 'Name',
-        cell: props => props.getValue()
+        cell: props => props.getValue(),
     }),
     dataColumnHelper.accessor('bucket', {
         header: 'Bucket',
@@ -243,6 +243,15 @@ const versionColumns = [
     versionColumnHelper.accessor('parityShards', {
         header: 'Parity Shards',
         cell: props => props.getValue()
+    }),
+    versionColumnHelper.accessor('compress', {
+        header: 'Compress',
+        cell: ({row}) => h('input', {
+            type: "checkbox",
+            disabled: true,
+            class: "checkbox-pri",
+            checked: row.original.compress
+        }, '')
     }),
     versionColumnHelper.display({
         id: 'action',

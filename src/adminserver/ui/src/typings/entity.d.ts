@@ -5,6 +5,7 @@ declare interface PageResult<T> {
 
 declare interface Version {
     hash: string
+    compress: boolean
     size: number
     sequence: number
     ts: number
