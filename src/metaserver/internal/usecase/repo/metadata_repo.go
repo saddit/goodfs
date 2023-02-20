@@ -329,7 +329,10 @@ func (m *MetadataRepo) ForeachVersionBytes(name string, fn func([]byte) bool) {
 func (m *MetadataRepo) GetMetadataBytes(key string) ([]byte, error) {
 	var res []byte
 	err := m.MainDB.View(func(tx *bolt.Tx) error {
-		res = logic.GetMetadataBucket(tx).Get(util.StrToBytes(key))
+		v := logic.GetMetadataBucket(tx).Get(util.StrToBytes(key))
+		res = make([]byte, 0, len(v))
+		// copy values from the mmap pointer
+		copy(res, v)
 		return nil
 	})
 	return res, err
