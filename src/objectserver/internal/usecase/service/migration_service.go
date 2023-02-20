@@ -6,15 +6,19 @@ import (
 	"common/datasize"
 	"common/graceful"
 	"common/logs"
+	"common/proto"
 	"common/proto/pb"
+	"common/response"
 	"common/util"
 	xmath "common/util/math"
 	"common/util/slices"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"math"
+	"net/http"
 	"objectserver/internal/db"
 	"objectserver/internal/usecase/pool"
 	"objectserver/internal/usecase/webapi"
@@ -79,29 +83,42 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 
 func (ms *MigrationService) writeStream(stream pb.ObjectMigration_ReceiveDataClient, file io.Reader, name string, size int64) (err error) {
 	defer func() {
-		resp, inner := stream.CloseAndRecv()
+		var resp *pb.Response
+		var inner error
+		// if err is io.EOF, means stream has been closed by receiver
+		if errors.Is(err, io.EOF) {
+			err, resp = nil, new(pb.Response)
+			inner = stream.RecvMsg(resp)
+		} else {
+			resp, inner = stream.CloseAndRecv()
+		}
 		if inner != nil {
 			msLog.Errorf("send file %s fail, close and recv err: %s", name, inner)
+			err = errors.Join(err, inner)
+			return
 		}
 		if !resp.Success {
-			err = fmt.Errorf("send file %s fail, close and recv message: %s", name, resp.Message)
+			err = errors.Join(err, fmt.Errorf("send file %s fail, close and recv message: %s", name, resp.Message))
 		}
 	}()
+	var n int
 	buf := make([]byte, xmath.MinNumber(size, int64(4*datasize.MB)))
 	for {
-		n, inner := file.Read(buf)
-		if inner == io.EOF {
+		n, err = file.Read(buf)
+		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("read file %s err: %s", name, inner)
+			return fmt.Errorf("read file %s err: %s", name, err)
 		}
-		if inner = stream.Send(&pb.ObjectData{
+		if err = stream.Send(&pb.ObjectData{
 			FileName: name,
 			Size:     size,
 			Data:     buf[:n],
-		}); inner != nil {
-			msLog.Errorf("stream interrupted, send %s data returns err: %s", name, inner)
+		}); errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			msLog.Errorf("stream interrupted, send %s data returns err: %s", name, err)
 			return
 		}
 	}
@@ -125,12 +142,8 @@ func (ms *MigrationService) sendFileTo(path string, client pb.ObjectMigrationCli
 		return err
 	}
 	// finish an object
-	resp, err := client.FinishReceive(context.Background(), info)
-	if err != nil {
+	if _, err = proto.ResolveResponse(client.FinishReceive(context.Background(), info)); err != nil {
 		return fmt.Errorf("finish send file %s err: %w", info.FileName, err)
-	}
-	if !resp.Success {
-		return fmt.Errorf("finish send file %s fail: %s", info.FileName, resp.Message)
 	}
 	return nil
 }
@@ -268,7 +281,12 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 		go func(ip string) {
 			defer graceful.Recover()
 			defer wg.Done()
-			if inner := webapi.UpdateVersionLocates(ip, hash, seq, newLoc); inner != nil {
+			inner := webapi.UpdateVersionLocates(ip, hash, seq, newLoc)
+			// ignore not found failure
+			if response.CheckErrStatus(http.StatusNotFound, inner) {
+				return
+			}
+			if inner != nil {
 				logs.Std().Errorf("update locate of %s in %s fail: %s", data.FileName, ip, inner)
 				failNum.Add(1)
 			}
