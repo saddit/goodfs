@@ -26,6 +26,15 @@ func CheckLeaderInRaftMode(c *gin.Context) {
 	c.Next()
 }
 
+func CheckInNormal(c *gin.Context) {
+	if isWriteMethod(c.Request.Method) && !pool.HashSlot.IsNormal() {
+		response.Exec(c).Fail(http.StatusConflict, "server in migration")
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+
 func CheckKeySlot(c *gin.Context) {
 	if isWriteMethod(c.Request.Method) {
 		name := c.Param("name")

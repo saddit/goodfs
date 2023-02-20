@@ -61,6 +61,10 @@ func NewHashSlotDB(keyPrefix string, kv clientv3.KV) *HashSlotDB {
 	}
 }
 
+func (h *HashSlotDB) IsNormal() bool {
+	return h.status.Load() == StatusNormal
+}
+
 func (h *HashSlotDB) GetMigrateTo() (bool, string, []string) {
 	return h.status.Load() == StatusMigrateTo, h.migratingHost, h.migratingSlots
 }
