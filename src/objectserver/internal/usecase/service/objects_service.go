@@ -9,6 +9,7 @@ import (
 	"common/response"
 	"common/system/disk"
 	"common/util"
+	"common/util/math"
 	"fmt"
 	"io"
 	global "objectserver/internal/usecase/pool"
@@ -145,7 +146,8 @@ func GetFile(fullPath string, offset, size int64, writer io.Writer) error {
 			return err
 		}
 	}
-	_, err = io.CopyBuffer(writer, disk.LimitReader(file, size), disk.AlignedBlock(8*cst.OS.PageSize))
+	bufSize := math.MinInt(int(size), 8*cst.OS.PageSize)
+	_, err = io.CopyBuffer(writer, disk.LimitReader(file, size), disk.AlignedBlock(bufSize))
 	return err
 }
 
@@ -256,7 +258,8 @@ func GetFileCompress(fullPath string, offset, size int64, writer io.Writer) erro
 			return err
 		}
 	}
-	_, err = io.CopyBuffer(writer, disk.LimitReader(s2.NewReader(file), size), disk.AlignedBlock(8*cst.OS.PageSize))
+	bufSize := math.MinNumber(8*cst.OS.PageSize, int(size))
+	_, err = io.CopyBuffer(writer, disk.LimitReader(s2.NewReader(file), size), disk.AlignedBlock(bufSize))
 	return err
 }
 
@@ -295,14 +298,20 @@ func CommitFile(mountPoint, tmpName, fileName string, compress bool) error {
 			}
 			return err
 		}
+		tmpStat, err := tmp.Stat()
+		if err != nil {
+			return err
+		}
 		defer tmp.Close()
 		target, err := os.OpenFile(filePath, cst.OS.WriteFlag, cst.OS.ModeUser)
 		if err != nil {
 			return err
 		}
 		defer target.Close()
-		wt := s2.NewWriter(target, s2.WriterBlockSize(int(datasize.MB*2)))
-		_, err = io.CopyBuffer(wt, tmp, make([]byte, datasize.MB*4))
+		bufSize := math.MinNumber(int64(4*datasize.MB), tmpStat.Size())
+		blockSize := math.MinNumber(int64(2*datasize.MB), math.MaxNumber(tmpStat.Size(), int64(4*datasize.KB)))
+		wt := s2.NewWriter(target, s2.WriterBlockSize(int(blockSize)))
+		_, err = io.CopyBuffer(wt, tmp, make([]byte, bufSize))
 		if err != nil {
 			return err
 		}

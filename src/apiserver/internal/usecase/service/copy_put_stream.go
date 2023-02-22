@@ -4,6 +4,7 @@ import (
 	"apiserver/config"
 	"common/datasize"
 	"common/util"
+	"common/util/math"
 	"common/util/slices"
 	"fmt"
 	"io"
@@ -37,7 +38,7 @@ func NewCopyPutStream(opt *StreamOption, rpCfg *config.ReplicationConfig) (*Copy
 	return &CopyPutStream{
 		rpConfig: *rpCfg,
 		writers:  writers,
-		cache:    make([]byte, 0, rpCfg.BlockSize),
+		cache:    make([]byte, 0, math.MinNumber(int64(rpCfg.BlockSize), opt.Size)),
 	}, nil
 }
 
@@ -69,7 +70,7 @@ func (c *CopyPutStream) Write(p []byte) (n int, err error) {
 			next = length
 		}
 		c.cache = append(c.cache, p[cur:cur+next]...)
-		if datasize.DataSize(len(c.cache)) == c.rpConfig.BlockSize {
+		if datasize.DataSize(len(c.cache)) >= c.rpConfig.BlockSize {
 			if err = c.Flush(); err != nil {
 				n = cur
 				return

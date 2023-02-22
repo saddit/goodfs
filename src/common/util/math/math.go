@@ -14,6 +14,13 @@ func MinNumber[T Number](i, j T) T {
 	return j
 }
 
+func MaxNumber[T Number](i, j T) T {
+	if i > j {
+		return i
+	}
+	return j
+}
+
 func MinInt(i, j int) int {
 	if i < j {
 		return i

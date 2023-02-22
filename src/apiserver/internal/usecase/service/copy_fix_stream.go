@@ -5,7 +5,6 @@ import (
 	"apiserver/internal/usecase/webapi"
 	"bytes"
 	"common/collection/set"
-	"common/cst"
 	"common/graceful"
 	"common/util"
 	"errors"
@@ -28,7 +27,7 @@ func NewCopyFixStream(lostNames []string, newLocates []string, opt *StreamOption
 		locates:   newLocates,
 		rpConfig:  cfg,
 		compress:  opt.Compress,
-		buffer:    bytes.NewBuffer(make([]byte, 0, 8*cst.OS.PageSize)),
+		buffer:    bytes.NewBuffer(make([]byte, 0, opt.Size)),
 		Updater:   opt.Updater,
 	}, nil
 }

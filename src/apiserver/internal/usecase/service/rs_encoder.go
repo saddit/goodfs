@@ -45,7 +45,7 @@ func (e *rsEncoder) Write(bt []byte) (int, error) {
 			next = length
 		}
 		e.cache = append(e.cache, bt[cur:cur+next]...)
-		if len(e.cache) == e.rsConfig.BlockSize() {
+		if len(e.cache) >= e.rsConfig.BlockSize() {
 			if _, err := e.Flush(); err != nil {
 				return cur, err
 			}
