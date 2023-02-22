@@ -75,8 +75,8 @@ func (e *rsEncoder) Flush() (int, error) {
 	dg.Todo()
 	go func() {
 		defer dg.Done()
-		if err := e.enc.Encode(shards); err != nil {
-			dg.Error(err)
+		if inner := e.enc.Encode(shards); inner != nil {
+			dg.Error(inner)
 			return
 		}
 		// write parity shards after encode
@@ -94,7 +94,7 @@ func (e *rsEncoder) Flush() (int, error) {
 		}
 	}()
 
-	// write data shards without waitting encode
+	// write data shards without waiting encode
 	for i, v := range shards[:e.rsConfig.DataShards] {
 		dg.Todo()
 		go func(idx int, val []byte) {

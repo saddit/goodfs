@@ -7,7 +7,6 @@ import (
 	"common/util/slices"
 	"fmt"
 	"io"
-	"sync/atomic"
 )
 
 type CopyPutStream struct {
@@ -48,7 +47,6 @@ func (c *CopyPutStream) Flush() (err error) {
 	}
 	defer func() { slices.Clear(&c.cache) }()
 	dg := util.NewDoneGroup()
-	sucNum := atomic.Int32{}
 	for _, wt := range c.writers {
 		dg.Todo()
 		go func(writer io.Writer) {
@@ -57,7 +55,6 @@ func (c *CopyPutStream) Flush() (err error) {
 				dg.Error(inner)
 				return
 			}
-			sucNum.Add(1)
 		}(wt)
 	}
 	return dg.WaitUntilError()
@@ -73,8 +70,9 @@ func (c *CopyPutStream) Write(p []byte) (n int, err error) {
 		}
 		c.cache = append(c.cache, p[cur:cur+next]...)
 		if datasize.DataSize(len(c.cache)) == c.rpConfig.BlockSize {
-			if err := c.Flush(); err != nil {
-				return cur, err
+			if err = c.Flush(); err != nil {
+				n = cur
+				return
 			}
 		}
 		cur += next
