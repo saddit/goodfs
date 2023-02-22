@@ -24,19 +24,18 @@ func NewRSPutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSPutStream, er
 		wg.Todo()
 		go func(idx int) {
 			defer wg.Done()
-			stream, e := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), int64(perShard), opt.Compress)
-			if e != nil {
-				wg.Error(e)
-			} else {
-				writers[idx] = stream
+			stream, err := NewPutStream(opt.Locates[idx], fmt.Sprintf("%s.%d", opt.Hash, idx), int64(perShard), opt.Compress)
+			if err != nil {
+				wg.Error(err)
+				return
 			}
+			writers[idx] = stream
 		}(i)
 	}
 	if e := wg.WaitUntilError(); e != nil {
 		return nil, e
 	}
-	enc := NewEncoder(writers, rsCfg)
-	return &RSPutStream{enc, opt.Locates}, nil
+	return &RSPutStream{NewEncoder(writers, rsCfg), opt.Locates}, nil
 }
 
 func newExistedRSPutStream(ips, ids []string, hash string, compress bool, rsCfg *config.RsConfig) *RSPutStream {
