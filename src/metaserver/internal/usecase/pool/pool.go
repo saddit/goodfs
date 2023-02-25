@@ -52,6 +52,7 @@ func initLog(cfg *logs.Config) {
 func initEtcd(cfg *etcd.Config) {
 	var err error
 	Etcd, err = clientv3.New(clientv3.Config{
+		DialTimeout:         10 * time.Second,
 		Endpoints:           cfg.Endpoint,
 		Username:            cfg.Username,
 		Password:            cfg.Password,

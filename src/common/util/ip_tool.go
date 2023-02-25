@@ -124,6 +124,10 @@ const ServerIpEnv = "SERVER_IP"
 
 func DetectServerIP() string {
 	getLocalIP.Do(func() {
+		defer func() {
+			_ = os.Setenv(ServerIpEnv, localIP)
+			logs.Std().Infof("detected server ip: %s", localIP)
+		}()
 		if env, ok := os.LookupEnv(ServerIpEnv); ok {
 			localIP = env
 			return
@@ -132,14 +136,15 @@ func DetectServerIP() string {
 		if err != nil {
 			LogErrWithPre("get server ip", err)
 			localIP = "127.0.0.1"
+			return
 		}
 		defer CloseAndLog(conn)
 		localIP, _, err = net.SplitHostPort(conn.LocalAddr().String())
 		if err != nil {
 			LogErrWithPre("get server ip", err)
 			localIP = "127.0.0.1"
+			return
 		}
-		_ = os.Setenv(ServerIpEnv, localIP)
 	})
 	return localIP
 }

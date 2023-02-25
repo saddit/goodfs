@@ -13,6 +13,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var (
@@ -43,13 +44,14 @@ func initEtcd(cfg *config.Config) {
 	// init etcd
 	var err error
 	Etcd, err = clientv3.New(clientv3.Config{
+		DialTimeout:         10 * time.Second,
 		Endpoints:           cfg.Etcd.Endpoint,
 		Username:            cfg.Etcd.Username,
 		Password:            cfg.Etcd.Password,
 		PermitWithoutStream: true,
 	})
 	if err != nil {
-		panic(err)
+		panic("init etcd: " + err.Error())
 	}
 }
 

@@ -1,6 +1,6 @@
 port: 8100
 log:
-  level: info
+  level: debug
 exclude-mount-points: ["C:"]
 base-mount-point: "E:"
 storage-path: /file/temp
