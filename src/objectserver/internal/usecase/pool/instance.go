@@ -90,7 +90,6 @@ func initDir(cfg *config.Config, dm *component.DriverManager) {
 	if e := os.MkdirAll(filepath.Join(cfg.BaseMountPoint, cfg.PathCachePath), cst.OS.ModeUser); e != nil {
 		panic(e)
 	}
-	dm.Update()
 	for _, mp := range dm.GetAllMountPoint() {
 		if e := os.MkdirAll(filepath.Join(mp, cfg.TempPath), cst.OS.ModeUser); e != nil {
 			panic(e)
@@ -105,6 +104,7 @@ func initDriverManger(ex []string, in []string) {
 	DriverManager = component.NewDriverManager(component.SpaceFirstBalancer())
 	DriverManager.Excludes = set.OfString(ex)
 	DriverManager.Includes = set.OfString(in)
+	DriverManager.Update()
 }
 
 func initPathCache(cfg *config.Config) {

@@ -8,11 +8,11 @@ import (
 	"apiserver/internal/usecase/repo"
 	"common/logs"
 	"github.com/gin-gonic/gin"
-	netHttp "net/http"
+	"net/http"
 )
 
 type Server struct {
-	netHttp.Server
+	http.Server
 	tls *config.TLSConfig
 }
 
@@ -38,7 +38,7 @@ func NewHttpServer(port string, o IObjectService, m IMetaService, b repo.IBucket
 		NewBucketController(b).Register(authRoute)
 	}
 
-	return &Server{netHttp.Server{Addr: ":" + port, Handler: eng.Handler()}, &pool.Config.TLS}
+	return &Server{http.Server{Addr: ":" + port, Handler: eng.Handler()}, &pool.Config.TLS}
 }
 
 func (s *Server) ListenAndServe() error {

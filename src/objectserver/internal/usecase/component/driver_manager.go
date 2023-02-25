@@ -58,6 +58,9 @@ func (dm *DriverManager) Update() {
 			TotalSpace: stat.Total,
 		})
 	}
+	if len(info) == 0 {
+		logs.Std().Errorf("not found any availeble mountpoints!")
+	}
 	dm.drivers = info
 }
 
