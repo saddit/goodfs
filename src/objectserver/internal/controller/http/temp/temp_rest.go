@@ -27,7 +27,8 @@ func Patch(g *gin.Context) {
 	}
 	// only allow last chuck may not be power of 4KB
 	// for reading from network-io, using too big buffer is not wise.
-	if _, err := service.AppendFileAligned(ti.FullPath, g.Request.Body, 2*cst.OS.PageSize); err != nil {
+	bufSize := xmath.MinInt(int(g.Request.ContentLength), 2*cst.OS.PageSize)
+	if _, err := service.AppendFileAligned(ti.FullPath, g.Request.Body, bufSize); err != nil {
 		response.FailErr(err, g)
 		return
 	}

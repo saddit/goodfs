@@ -270,7 +270,8 @@ func AppendFileCompress(fullPath string, fileStream io.Reader, bufSize int) (int
 		return 0, err
 	}
 	defer file.Close()
-	wt := s2.NewWriter(file, s2.WriterBetterCompression())
+	blockSize := math.MinInt(2*datasize.MB.Int(), math.MaxInt(bufSize, 4*datasize.KB.Int()))
+	wt := s2.NewWriter(file, s2.WriterBetterCompression(), s2.WriterBlockSize(blockSize))
 	n, err := io.CopyBuffer(wt, fileStream, make([]byte, bufSize))
 	if err != nil {
 		return n, err
@@ -298,26 +299,14 @@ func CommitFile(mountPoint, tmpName, fileName string, compress bool) error {
 			}
 			return err
 		}
+		defer util.CloseAndLog(tmp)
 		tmpStat, err := tmp.Stat()
 		if err != nil {
 			return err
 		}
-		defer tmp.Close()
-		target, err := os.OpenFile(filePath, cst.OS.WriteFlag, cst.OS.ModeUser)
-		if err != nil {
-			return err
-		}
-		defer target.Close()
-		bufSize := math.MinNumber(int64(4*datasize.MB), tmpStat.Size())
-		blockSize := math.MinNumber(int64(2*datasize.MB), math.MaxNumber(tmpStat.Size(), int64(4*datasize.KB)))
-		wt := s2.NewWriter(target, s2.WriterBlockSize(int(blockSize)))
-		_, err = io.CopyBuffer(wt, tmp, make([]byte, bufSize))
-		if err != nil {
-			return err
-		}
-		if err = wt.Close(); err != nil {
-			return err
-		}
+		bufSize := math.MinInt(4*datasize.MB.Int(), int(tmpStat.Size()))
+		_, err = AppendFileCompress(filePath, tmp, disk.AlignedSize(bufSize))
+		return err
 	} else {
 		if err := os.Rename(tempPath, filePath); err != nil {
 			if os.IsNotExist(err) {
