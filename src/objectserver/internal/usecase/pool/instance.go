@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/allegro/bigcache"
 	"github.com/gin-gonic/gin"
@@ -141,12 +142,13 @@ func initCache(cfg *config.CacheConfig) {
 func initEtcd(cfg *etcd.Config) {
 	var e error
 	if Etcd, e = clientv3.New(clientv3.Config{
+		DialTimeout:         10 * time.Second,
 		Endpoints:           cfg.Endpoint,
 		Username:            cfg.Username,
 		Password:            cfg.Password,
 		PermitWithoutStream: true,
 	}); e != nil {
-		panic(e)
+		panic("init etcd: " + e.Error())
 	}
 }
 
