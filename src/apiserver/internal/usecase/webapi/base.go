@@ -11,14 +11,14 @@ import (
 var (
 	dialer = &net.Dialer{
 		Timeout:   30 * time.Second,
-		KeepAlive: 1 * time.Minute,
+		KeepAlive: 5 * time.Minute,
 	}
 	httpClient = http.Client{Transport: &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           dialer.DialContext,
 		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          200,
-		IdleConnTimeout:       2 * time.Minute,
+		MaxIdleConns:          2500,
+		IdleConnTimeout:       10 * time.Minute,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}}
@@ -41,6 +41,10 @@ func perform(written bool) func() {
 			time.Since(t),
 		)
 	}
+}
+
+func keepalive(req *http.Request) {
+	req.Header.Set("Keep-Alive", "timeout=300, max=2500")
 }
 
 func Close() {

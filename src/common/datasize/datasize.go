@@ -58,6 +58,14 @@ func (d DataSize) String() string {
 	return fmt.Sprintf("%.0f%s", num, units[i].name)
 }
 
+func (d DataSize) Int() int {
+	return int(d)
+}
+
+func (d DataSize) Int64() int64 {
+	return int64(d)
+}
+
 type unit struct {
 	name  string
 	value DataSize

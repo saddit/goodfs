@@ -8,6 +8,7 @@ import (
 	"github.com/ncw/directio"
 )
 
+// AlignedSize aligned n to multiple of 4096
 func AlignedSize(n int) int {
 	if i := n % directio.BlockSize; i > 0 {
 		return n - i + directio.BlockSize
@@ -15,6 +16,7 @@ func AlignedSize(n int) int {
 	return n
 }
 
+// AlignedSize64 is same as AlignedSize but returns int64 value
 func AlignedSize64(n int64) int64 {
 	if i := n % directio.BlockSize; i > 0 {
 		return n - i + directio.BlockSize
@@ -22,6 +24,7 @@ func AlignedSize64(n int64) int64 {
 	return n
 }
 
+// AlignedReader reads from underlying reader, padding their size to multiple of 4096 if buffer is large enough
 type AlignedReader struct {
 	io.Reader
 }
@@ -36,8 +39,12 @@ func (ar *AlignedReader) Read(p []byte) (n int, err error) {
 	if err == io.ErrUnexpectedEOF {
 		err = io.EOF
 	}
-	n = math.MinInt(length, AlignedSize(n))
-	return
+	// padding zero if needed
+	paddingEnd := math.MinInt(length, AlignedSize(n))
+	for i := n; i < paddingEnd; i++ {
+		p[i] = 0
+	}
+	return paddingEnd, err
 }
 
 // AlignedWriter impl io.ReaderFrom interface

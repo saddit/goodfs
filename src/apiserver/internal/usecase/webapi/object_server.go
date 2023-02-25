@@ -210,7 +210,3 @@ func objectRest(ip, id string) string {
 func tempRest(ip, id string) string {
 	return fmt.Sprintf("http://%s/temp/%s", ip, id)
 }
-
-func keepalive(req *http.Request) {
-	req.Header.Set("Keep-Alive", "timeout=62, max=10000")
-}
