@@ -101,7 +101,11 @@ func (e *EtcdRegistry) Register() error {
 	ctx := context.Background()
 	var err error
 	//init registered key
-	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), util.ServerAddress(e.cfg.ServerPort)); err != nil {
+	addr, ok := e.cfg.RegisterAddr()
+	if !ok {
+		addr = util.ServerAddress(e.cfg.ServerPort)
+	}
+	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), addr); err != nil {
 		return err
 	}
 	var keepAlive <-chan *clientv3.LeaseKeepAliveResponse
