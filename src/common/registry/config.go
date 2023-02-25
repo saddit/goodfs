@@ -1,8 +1,12 @@
 package registry
 
-import "time"
+import (
+	"net"
+	"time"
+)
 
 type Config struct {
+	ServerIP   string        `yaml:"server-ip" env:"SERVER_IP"`
 	ServerID   string        `yaml:"server-id" env:"SERVER_ID" env-required:"true"`
 	Group      string        `yaml:"group" env:"GROUP" env-default:"goodfs"`
 	Name       string        `yaml:"name" env:"NAME" env-required:"true"`
@@ -10,4 +14,11 @@ type Config struct {
 	Timeout    time.Duration `yaml:"timeout" env:"TIMEOUT" env-default:"3s"`
 	Services   []string      `yaml:"services,omitempty" env:"SERVICES" env-separator:","`
 	ServerPort string        `yaml:"-" env:"-"`
+}
+
+func (c *Config) RegisterAddr() (string, bool) {
+	if c.ServerIP == "" {
+		return "", false
+	}
+	return net.JoinHostPort(c.ServerIP, c.ServerPort), true
 }

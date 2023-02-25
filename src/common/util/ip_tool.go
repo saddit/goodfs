@@ -120,15 +120,15 @@ func ParseIP(addr string) net.IP {
 var localIP string
 var getLocalIP = sync.Once{}
 
-const ServerIpEnv = "SERVER_IP"
+const EnvServerIP = "SERVER_IP"
 
 func DetectServerIP() string {
 	getLocalIP.Do(func() {
 		defer func() {
-			_ = os.Setenv(ServerIpEnv, localIP)
+			_ = os.Setenv(EnvServerIP, localIP)
 			logs.Std().Infof("detected server ip: %s", localIP)
 		}()
-		if env, ok := os.LookupEnv(ServerIpEnv); ok {
+		if env, ok := os.LookupEnv(EnvServerIP); ok {
 			localIP = env
 			return
 		}
@@ -139,12 +139,30 @@ func DetectServerIP() string {
 			return
 		}
 		defer CloseAndLog(conn)
-		localIP, _, err = net.SplitHostPort(conn.LocalAddr().String())
-		if err != nil {
-			LogErrWithPre("get server ip", err)
+		localIP, _, _ = net.SplitHostPort(conn.LocalAddr().String())
+		if !IsPublicIP(net.ParseIP(localIP)) {
 			localIP = "127.0.0.1"
 			return
 		}
 	})
 	return localIP
+}
+
+func IsPublicIP(IP net.IP) bool {
+	if IP.IsLoopback() || IP.IsLinkLocalMulticast() || IP.IsLinkLocalUnicast() {
+		return false
+	}
+	if ip4 := IP.To4(); ip4 != nil {
+		switch {
+		case ip4[0] == 10:
+			return false
+		case ip4[0] == 172 && ip4[1] >= 16 && ip4[1] <= 31:
+			return false
+		case ip4[0] == 192 && ip4[1] == 168:
+			return false
+		default:
+			return true
+		}
+	}
+	return false
 }

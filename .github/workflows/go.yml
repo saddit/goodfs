@@ -32,9 +32,6 @@ jobs:
        
     - name: Build Frontend
       run: cd src/adminserver/ui && yarn && yarn run build
-      
-    - name: Go work sync
-      run: go work sync
 
     - name: Build AdminServer
       run: go build -v ./src/adminserver
