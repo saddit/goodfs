@@ -9,7 +9,6 @@ import (
 
 type RSPutStream struct {
 	*rsEncoder
-	Locates []string
 }
 
 func NewRSPutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSPutStream, error) {
@@ -35,7 +34,7 @@ func NewRSPutStream(opt *StreamOption, rsCfg *config.RsConfig) (*RSPutStream, er
 	if e := wg.WaitUntilError(); e != nil {
 		return nil, e
 	}
-	return &RSPutStream{NewEncoder(writers, rsCfg), opt.Locates}, nil
+	return &RSPutStream{NewEncoder(writers, rsCfg)}, nil
 }
 
 func newExistedRSPutStream(ips, ids []string, hash string, compress bool, rsCfg *config.RsConfig) *RSPutStream {
@@ -43,7 +42,7 @@ func newExistedRSPutStream(ips, ids []string, hash string, compress bool, rsCfg 
 	for i := range writers {
 		writers[i] = newExistedPutStream(ips[i], fmt.Sprintf("%s.%d", hash, i), ids[i], compress)
 	}
-	return &RSPutStream{NewEncoder(writers, rsCfg), ips}
+	return &RSPutStream{NewEncoder(writers, rsCfg)}
 }
 
 func (p *RSPutStream) Commit(ok bool) error {

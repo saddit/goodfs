@@ -180,7 +180,7 @@ func (bc *BigObjectsController) Patch(g *gin.Context) {
 	verNum, err := bc.finishUpload(stream.Name, stream.Bucket, &entity.Version{
 		Hash:          stream.Hash,
 		Size:          stream.Size,
-		Locate:        stream.Locates,
+		Locate:        stream.Servers,
 		DataShards:    stream.Config.DataShards,
 		ParityShards:  stream.Config.ParityShards,
 		ShardSize:     stream.Config.ShardSize(stream.Size),
