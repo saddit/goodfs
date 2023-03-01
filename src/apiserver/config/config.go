@@ -2,6 +2,7 @@ package config
 
 import (
 	"apiserver/internal/usecase/componet/auth"
+	"common/cst"
 	"common/datasize"
 	"common/etcd"
 	"common/logs"
@@ -31,13 +32,13 @@ type Config struct {
 }
 
 func (c *Config) initialize() {
-	// aligned (DataShards * BlockPerShard) to 64KB
-	if i := c.Object.ReedSolomon.BlockPerShard * c.Object.ReedSolomon.DataShards % (64 << 10); i > 0 {
-		c.Object.ReedSolomon.BlockPerShard = (c.Object.ReedSolomon.BlockPerShard*c.Object.ReedSolomon.DataShards - i + (64 << 10)) / c.Object.ReedSolomon.DataShards
+	if i := c.Object.ReedSolomon.BlockSize() % cst.OS.NetPkgSize; i > 0 {
+		newSize := c.Object.ReedSolomon.BlockSize() - i + cst.OS.NetPkgSize
+		c.Object.ReedSolomon.BlockPerShard = newSize / c.Object.ReedSolomon.DataShards
 		logs.Std().Warnf("aligned object.reedsolomon.block-per-shard to %d", c.Object.ReedSolomon.BlockPerShard)
 	}
-	if i := c.Object.Replication.BlockSize % (4 * datasize.KB); i > 0 {
-		c.Object.Replication.BlockSize = c.Object.Replication.BlockSize - i + 4*datasize.KB
+	if i := c.Object.Replication.BlockSize % datasize.DataSize(cst.OS.NetPkgSize); i > 0 {
+		c.Object.Replication.BlockSize = c.Object.Replication.BlockSize - i + datasize.DataSize(cst.OS.NetPkgSize)
 		logs.Std().Warnf("aligned object.replication.block-size to %d", c.Object.Replication.BlockSize)
 	}
 }
@@ -74,7 +75,7 @@ func (rp *ReplicationConfig) ToleranceLossNum() int {
 type RsConfig struct {
 	DataShards    int  `yaml:"data-shards" env:"DATA_SHARDS" env-default:"4"`             // DataShards shards number of data part
 	ParityShards  int  `yaml:"parity-shards" env:"PARITY_SHARDS" env-default:"2"`         // ParityShards shards number of parity part
-	BlockPerShard int  `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"16384"` // BlockPerShard auto increase to make (DataShards * BlockPerShard) is multiple of 16KB
+	BlockPerShard int  `yaml:"block-per-shard" env:"BLOCK_PER_SHARD" env-default:"16384"` // BlockPerShard auto increase to make BlockSize is multiple of 16KB
 	RewriteAsync  bool `yaml:"rewrite-async" env:"REWRITE_ASYNC" env-default:"true"`      // RewriteAsync store lost shard asynchronously
 }
 

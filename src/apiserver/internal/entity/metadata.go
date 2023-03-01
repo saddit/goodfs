@@ -2,6 +2,8 @@ package entity
 
 import (
 	"apiserver/config"
+	"common/cst"
+	"common/util/math"
 )
 
 type VerMode int32
@@ -98,13 +100,17 @@ func (b *Bucket) MakeVersion(ver *Version, conf *config.ObjectConfig) {
 	}
 }
 
-func (b *Bucket) MakeConf(conf *config.ObjectConfig) (cfg config.ObjectConfig) {
+func (b *Bucket) MakeConf(conf *config.ObjectConfig, objectSize int64) (cfg config.ObjectConfig) {
 	// copy of config
 	cfg = *conf
 	switch b.StoreStrategy {
 	case ECReedSolomon:
 		cfg.ReedSolomon.DataShards = b.DataShards
 		cfg.ReedSolomon.ParityShards = b.ParityShards
+		if i := cfg.ReedSolomon.BlockSize() % cst.OS.NetPkgSize; i > 0 {
+			newSize := math.MinInt(cfg.ReedSolomon.BlockSize()-i+cst.OS.NetPkgSize, int(objectSize))
+			cfg.ReedSolomon.BlockPerShard = newSize / cfg.ReedSolomon.DataShards
+		}
 	case MultiReplication:
 		cfg.Replication.CopiesCount = b.DataShards
 	}

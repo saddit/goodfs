@@ -59,7 +59,7 @@ func (bc *BigObjectsController) Post(g *gin.Context) {
 		req.Compress = true
 	}
 	// configure by bucket config
-	conf := bucket.MakeConf(&pool.Config.Object).ReedSolomon
+	conf := bucket.MakeConf(&pool.Config.Object, req.Size).ReedSolomon
 	// generate a unique hash as version hash
 	uniqueHash := bc.objectService.UniqueHash(req.Hash, entity.ECReedSolomon, conf.DataShards, conf.ParityShards, req.Compress)
 	// filter duplicate

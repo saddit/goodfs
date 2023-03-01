@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	baseUrl = "https://localhost:8080"
+	baseUrl = "http://localhost:8080"
 )
 
 var (
@@ -29,7 +29,7 @@ func TestBigUpload(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprint(baseUrl, "/v1/big/testBig-1.5.bytes"), nil)
 	req.Header.Set("Digest", crypto.SHA256(data))
 	req.Header.Set("Size", fmt.Sprint(len(data)))
-	req.Header.Set("Bucket", "b1")
+	req.Header.Set("Bucket", "rs")
 	resp, err := cli.Do(req)
 	if err != nil {
 		t.Fatal(err)
