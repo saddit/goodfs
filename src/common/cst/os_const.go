@@ -6,11 +6,13 @@ import (
 )
 
 var OS = struct {
-	ModeUser  fs.FileMode
-	WriteFlag int
-	PageSize  int
+	ModeUser   fs.FileMode
+	WriteFlag  int
+	PageSize   int
+	NetPkgSize int
 }{
-	ModeUser:  0700,
-	WriteFlag: os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
-	PageSize:  4096,
+	ModeUser:   0700,
+	WriteFlag:  os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
+	PageSize:   4096,
+	NetPkgSize: 16 << 10,
 }

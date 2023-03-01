@@ -14,6 +14,7 @@ import (
 	"common/response"
 	"common/util"
 	"common/util/crypto"
+	"common/util/math"
 	"context"
 	"errors"
 	"fmt"
@@ -254,6 +255,11 @@ func NewStreamProvider(opt *StreamOption, ver *entity.Version) StreamProvider {
 		cfg := pool.Config.Object.ReedSolomon
 		cfg.DataShards = ver.DataShards
 		cfg.ParityShards = ver.ParityShards
+		// aligned block size
+		if i := cfg.BlockSize() % cst.OS.NetPkgSize; i > 0 {
+			newSize := math.MinInt(cfg.BlockSize()-i+cst.OS.NetPkgSize, int(opt.Size))
+			cfg.BlockPerShard = newSize / cfg.DataShards
+		}
 		return RsStreamProvider(opt, &cfg)
 	case entity.MultiReplication:
 		cfg := pool.Config.Object.Replication

@@ -36,7 +36,8 @@ func newExistedPutStream(ip, name, id string, compress bool) *PutStream {
 }
 
 func (p *PutStream) Close() error {
-	return p.Commit(false)
+	p.committed.CompareAndSwap(false, true)
+	return nil
 }
 
 func (p *PutStream) Write(b []byte) (n int, err error) {
