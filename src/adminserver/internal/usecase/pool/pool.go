@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"net/http"
+	"time"
 )
 
 var (
@@ -52,12 +53,13 @@ func initEtcd(cfg *config.Config) {
 	// init etcd
 	var err error
 	Etcd, err = clientv3.New(clientv3.Config{
-		Endpoints: cfg.Etcd.Endpoint,
-		Username:  cfg.Etcd.Username,
-		Password:  cfg.Etcd.Password,
+		Endpoints:   cfg.Etcd.Endpoint,
+		Username:    cfg.Etcd.Username,
+		Password:    cfg.Etcd.Password,
+		DialTimeout: 10 * time.Second,
 	})
 	if err != nil {
-		panic(err)
+		panic("init etcd fail:" + err.Error())
 	}
 }
 

@@ -38,7 +38,7 @@ func (m *MetadataRepo) Insert(data *entity.Metadata) error {
 	loc := logic.NewDiscovery().GetMetaServerGRPC(masterId)
 	if err = grpcapi.SaveMetadata(loc, name, data); err != nil {
 		// mark a concurrent error
-		if resp, ok := err.(response.IResponseErr); ok {
+		if resp, ok := err.(response.IErr); ok {
 			if resp.GetMessage() == "data exists" {
 				return usecase.ErrMetadataExists
 			}

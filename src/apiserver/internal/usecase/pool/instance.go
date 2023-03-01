@@ -51,7 +51,7 @@ func initEtcd(cfg *config.Config) {
 		PermitWithoutStream: true,
 	})
 	if err != nil {
-		panic("init etcd: " + err.Error())
+		panic("init etcd fail: " + err.Error())
 	}
 }
 
