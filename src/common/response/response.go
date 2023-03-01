@@ -110,7 +110,7 @@ func FailErr(err error, c *gin.Context) *GinExecutor {
 	switch err := err.(type) {
 	case validator.ValidationErrors, *validator.ValidationErrors:
 		BadRequestErr(err, c)
-	case IResponseErr:
+	case IErr:
 		if IsOk(err.GetStatus()) {
 			c.Status(err.GetStatus())
 		} else if IsInternal(err.GetStatus()) {
@@ -149,7 +149,7 @@ func GRPCError(err error) error {
 	switch err := err.(type) {
 	case validator.ValidationErrors, *validator.ValidationErrors:
 		return status.Error(codes.InvalidArgument, err.Error())
-	case IResponseErr:
+	case IErr:
 		if IsOk(err.GetStatus()) {
 			return nil
 		} else if IsInternal(err.GetStatus()) {

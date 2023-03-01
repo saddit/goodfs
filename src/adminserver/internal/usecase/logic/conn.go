@@ -44,7 +44,7 @@ func Close() error {
 	return errors.Join(errs...)
 }
 
-func ResolveErr(err error) response.IResponseErr {
+func ResolveErr(err error) response.IErr {
 	s, ok := status.FromError(err)
 	if !ok {
 		return response.NewError(500, err.Error())

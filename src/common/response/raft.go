@@ -1,20 +1,20 @@
 package response
 
 type RaftFsmResp struct {
-	*ResponseErr
+	*Err
 	Data any
 }
 
 func NewRaftFsmResp(err error) *RaftFsmResp {
 	switch err := err.(type) {
-	case *ResponseErr:
+	case *Err:
 		return &RaftFsmResp{err, nil}
-	case ResponseErr:
+	case Err:
 		return &RaftFsmResp{&err, nil}
 	case nil:
-		return &RaftFsmResp{&ResponseErr{Status: 200}, nil}
+		return &RaftFsmResp{&Err{Status: 200}, nil}
 	default:
-		return &RaftFsmResp{&ResponseErr{Status: 500, Message: err.Error()}, nil}
+		return &RaftFsmResp{&Err{Status: 500, Message: err.Error()}, nil}
 	}
 }
 
@@ -23,5 +23,5 @@ func (r *RaftFsmResp) Ok() bool {
 }
 
 func (r *RaftFsmResp) Unwrap() error {
-	return r.ResponseErr
+	return r.Err
 }
