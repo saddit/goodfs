@@ -160,16 +160,17 @@ func TestIsValidEdge(t *testing.T) {
 }
 
 func TestIsSlotInEdges(t *testing.T) {
-	p, err := WrapSlotsToEdges([]string{"0-100", "110-115"}, "A")
+	p, err := WrapSlotsToEdges([]string{"1-100", "110-115"}, "A")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.New(t).True(IsSlotInEdges(0, p))
+	assert.New(t).True(IsSlotInEdges(1, p))
 	assert.New(t).True(IsSlotInEdges(110, p))
 	assert.New(t).True(IsSlotInEdges(50, p))
 	assert.New(t).True(IsSlotInEdges(112, p))
 
+	assert.New(t).False(IsSlotInEdges(0, p))
 	assert.New(t).False(IsSlotInEdges(115, p))
 	assert.New(t).False(IsSlotInEdges(100, p))
 	assert.New(t).False(IsSlotInEdges(105, p))

@@ -131,19 +131,19 @@ func CopyOfEdges(identify string, provider IEdgeProvider) EdgeList {
 
 func GetSlotIdentify(slot int, provider IEdgeProvider) (string, error) {
 	edges := provider.get()
-	for _, edge := range edges {
-		if slot >= edge.Start && slot < edge.End {
-			return edge.Value, nil
-		}
+	if idx := sort.Search(len(edges), func(i int) bool {
+		return slot < edges[i].End
+	}); idx < len(edges) && slot >= edges[idx].Start {
+		return edges[idx].Value, nil
 	}
 	return "", fmt.Errorf("slots assigment error, cannot find slot %d", slot)
 }
 
 func IsSlotInEdges(slot int, edges EdgeList) bool {
-	for _, edge := range edges {
-		if slot >= edge.Start && slot < edge.End {
-			return true
-		}
+	if idx := sort.Search(len(edges), func(i int) bool {
+		return slot < edges[i].End
+	}); idx < len(edges) {
+		return slot >= edges[idx].Start
 	}
 	return false
 }
