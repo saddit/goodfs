@@ -9,10 +9,6 @@ type (
 		GetExtra() map[string][]string
 	}
 
-	IAuthenticator interface {
-		ProviderVerification() Verification
-	}
-
 	Verification interface {
 		Verify(Credential) error
 		Middleware(*gin.Context) (bool, error)

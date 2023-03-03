@@ -60,7 +60,7 @@ func (pv *PasswordValidator) Verify(token Credential) error {
 		return errors.New("no api-credential provided from etcd")
 	}
 	var admin credential.AdminCredential
-	if err := util.DecodeMsgp(&admin, resp.Kvs[0].Value); err != nil {
+	if err = util.DecodeMsgp(&admin, resp.Kvs[0].Value); err != nil {
 		return err
 	}
 	if token.GetUsername() != admin.Username || token.GetPassword() != admin.Password {

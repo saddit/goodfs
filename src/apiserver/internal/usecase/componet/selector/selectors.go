@@ -33,6 +33,7 @@ func NewSelector(str string) Selector {
 	return sec
 }
 
+// IPSelector handles to reduce duplicated selections when the number of IPs is insufficient
 type IPSelector struct {
 	Selector
 	IPs  []string
@@ -43,7 +44,6 @@ func NewIPSelector(selector Selector, ips []string) *IPSelector {
 	return &IPSelector{Selector: selector, IPs: ips, used: make([]string, 0, len(ips))}
 }
 
-// Select 负载均衡选增IP，能够自动处理IP不足的情况
 func (i *IPSelector) Select() string {
 	if i.used == nil {
 		i.used = make([]string, 0, len(i.IPs))
