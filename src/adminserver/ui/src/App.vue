@@ -87,7 +87,7 @@ function loginOut() {
           </Popover>
         </div>
       </div>
-      <RouterView/>
+      <RouterView class="overflow-y-auto"/>
     </div>
   </main>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full overflow-y-auto flex flex-col items-center">
+  <div class="w-full flex flex-col items-center">
     <div class="flex w-full mt-1 items-center justify-start">
       <MagnifyingGlassIcon class="w-6 h-6 mx-2 text-indigo-600"/>
       <input type="text"

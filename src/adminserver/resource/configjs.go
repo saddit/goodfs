@@ -25,7 +25,7 @@ type configJS struct {
 }
 
 func newConfigJS(file http.File) configJS {
-	content := fmt.Sprintf(`window.baseUrl = "%s://%s/api"`, "http", util.ServerAddress(pool.Config.Port))
+	content := fmt.Sprintf("window.backendPort = %s", pool.Config.Port)
 	return configJS{file, util.StrToBytes(content)}
 }
 

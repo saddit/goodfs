@@ -1,1 +1,1 @@
-window.baseUrl = "http://localhost:80/api"
+window.backendPort = 80

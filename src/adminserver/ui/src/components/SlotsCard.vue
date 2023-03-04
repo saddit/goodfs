@@ -37,13 +37,13 @@ const badgers = computed(() => {
         }
         s.push(v.identify)
     }
-    console.log(s)
+    // console.log(s)
     return s
 })
 
 function getWid(v: SlotRange): string {
     let len = v.end - v.start
-    return `${unitWidth.value * len * 0.85}px`
+    return `${unitWidth.value * len * 0.9}px`
 }
 
 function getBgColor(v: string): string {
@@ -57,8 +57,8 @@ const unitWidth = ref(0)
 
 onMounted(() => {
     unitWidth.value = slotsCardDom.value.clientWidth / 16384
-    watch(slotsCardDom.value.clientWidth, (v: number) => {
-        unitWidth.value = v / 16384
+    window.addEventListener('resize', ()=>{
+        unitWidth.value = slotsCardDom.value.clientWidth / 16384
     })
 })
 
