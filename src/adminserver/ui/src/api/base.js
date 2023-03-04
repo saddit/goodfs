@@ -1,7 +1,7 @@
 import axios from "axios";
 import {ApiError} from "@/api/error";
 
-axios.defaults.baseURL = window.baseUrl
+axios.defaults.baseURL = location.protocol + "//" + location.hostname + ":" + window.backendPort + "/api"
 axios.defaults.timeout = 0
 
 // Add a request interceptor

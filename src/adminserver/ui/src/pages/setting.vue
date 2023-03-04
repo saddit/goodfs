@@ -1,5 +1,5 @@
 <template>
-  <div class="w-1/4 divide-y divide-gray-400 mx-10">
+  <div class="w-64 sm:w-[32rem] divide-y divide-gray-400 mx-10">
     <!-- group1 -->
     <div class="panel">
       <div class="title">{{ t('general-setting') }}</div>

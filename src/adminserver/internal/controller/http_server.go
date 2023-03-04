@@ -3,6 +3,7 @@ package controller
 import (
 	http2 "adminserver/internal/controller/http"
 	"common/logs"
+	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -48,7 +49,8 @@ func NewHttpServer(port string, webFs static.ServeFileSystem) *HttpServer {
 		if url == "/favicon.ico" {
 			return
 		}
-		c.Redirect(http.StatusPermanentRedirect, "/")
+		rq := c.Request.URL.RawQuery
+		c.Redirect(http.StatusPermanentRedirect, fmt.Sprintf("/?redirect=%s&%s", url, rq))
 	})
 
 	return &HttpServer{Server: http.Server{Handler: eng.Handler(), Addr: ":" + port}}

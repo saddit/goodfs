@@ -1,10 +1,8 @@
 <template>
-	<div>
-		<div ref="usageChart"
-			class="bg-white rounded-2xl border border-gray-200 outline outline-3 outline-offset-4 outline-indigo-600 h-56">
+	<div class="bg-white shadow-lg rounded-2xl">
+		<div class="inline-flex justify-center text-sm text-indigo-600 font-bold pt-2 w-full">{{ $t(`${type}-usage`) }}
 		</div>
-		<div class="inline-flex justify-center text-sm text-indigo-600 font-medium pt-2.5 w-full">{{ $t(`${type}-usage`) }}
-		</div>
+		<div class="h-56" ref="usageChart"></div>
 	</div>
 </template>
 
