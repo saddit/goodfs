@@ -70,6 +70,6 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	c.Header("X-Total-Count", util.ToString(total))
+	c.Header("X-Total-Count", util.IntString(total))
 	response.OkJson(version, c)
 }

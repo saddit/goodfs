@@ -5,6 +5,7 @@ import (
 	"adminserver/internal/usecase/db"
 	"adminserver/internal/usecase/pool"
 	"common/cst"
+	"common/datasize"
 	"common/system"
 	"common/util"
 	"context"
@@ -55,6 +56,14 @@ func (sm ServerMonitor) ServerStat(servName string) (map[string]*entity.ServerIn
 	return mp, nil
 }
 
+func (sm ServerMonitor) AliveCounts() map[string]int {
+	counts := make(map[string]int, 3)
+	counts[pool.Config.Discovery.ApiServName] = pool.Discovery.GetServiceCount(pool.Config.Discovery.ApiServName)
+	counts[pool.Config.Discovery.MetaServName] = pool.Discovery.GetServiceCount(pool.Config.Discovery.MetaServName)
+	counts[pool.Config.Discovery.DataServName] = pool.Discovery.GetServiceCount(pool.Config.Discovery.DataServName)
+	return counts
+}
+
 func (sm ServerMonitor) NameOfServerNo(num int) string {
 	var servName string
 	switch num {
@@ -76,4 +85,40 @@ func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*
 		res[k] = util.IfElse(statType == "cpu", v.CpuTimeline, v.MemTimeline)
 	}
 	return res
+}
+
+func (sm ServerMonitor) StatTimeLineOverview() (cpu map[string][]*db.TimeStat, mem map[string][]*db.TimeStat) {
+	allNo := []int{0, 1, 2}
+	cpu, mem = make(map[string][]*db.TimeStat, 0), make(map[string][]*db.TimeStat, 0)
+	for _, v := range allNo {
+		name := sm.NameOfServerNo(v)
+		tl := pool.StatDB.GetTimeline(name)
+		for _, v2 := range tl {
+			cpu[name] = v2.CpuTimeline
+			mem[name] = v2.MemTimeline
+		}
+	}
+	return
+}
+
+func (ServerMonitor) EtcdStatus() ([]*entity.EtcdStatus, error) {
+	ctx := context.Background()
+	var arr []*entity.EtcdStatus
+	for _, endpoint := range pool.Config.Etcd.Endpoint {
+		resp, err := pool.Etcd.Status(ctx, endpoint)
+		if err != nil {
+			return nil, err
+		}
+		if resp.Errors == nil {
+			resp.Errors = []string{}
+		}
+		arr = append(arr, &entity.EtcdStatus{
+			DBSize:       datasize.DataSize(resp.DbSize),
+			DBSizeInUse:  datasize.DataSize(resp.DbSizeInUse),
+			AlarmMessage: resp.Errors,
+			Endpoint:     endpoint,
+			IsLearner:    resp.IsLearner,
+		})
+	}
+	return arr, nil
 }

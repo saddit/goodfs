@@ -13,7 +13,7 @@ import (
 func ListMetadata(ip, prefix string, pageSize int) ([]*msg.Metadata, int, error) {
 	resp, err := pool.Http.Get(metadataListRest(ip, map[string][]string{
 		"prefix":    {prefix},
-		"page_size": {util.ToString(pageSize)},
+		"page_size": {util.IntString(pageSize)},
 	}))
 	if err != nil {
 		return nil, 0, err
@@ -29,7 +29,7 @@ func ListMetadata(ip, prefix string, pageSize int) ([]*msg.Metadata, int, error)
 func ListBuckets(ip, prefix string, pageSize int) ([]*msg.Bucket, int, error) {
 	resp, err := pool.Http.Get(bucketListRest(ip, map[string][]string{
 		"prefix":    {prefix},
-		"page_size": {util.ToString(pageSize)},
+		"page_size": {util.IntString(pageSize)},
 	}))
 	if err != nil {
 		return nil, 0, err

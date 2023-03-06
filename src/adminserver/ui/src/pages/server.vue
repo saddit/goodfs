@@ -34,6 +34,7 @@ onBeforeMount(() => {
     }).catch((err: Error) => {
         useToast().error(err.message)
     })
+    onSelectTab(useStore().selectedServerTab)
 })
 
 const {t} = useI18n()

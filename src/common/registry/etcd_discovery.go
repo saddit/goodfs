@@ -117,6 +117,13 @@ func (e *EtcdDiscovery) GetServices(name string) []string {
 	return []string{}
 }
 
+func (e *EtcdDiscovery) GetServiceCount(name string) int {
+	if sl, ok := e.services[name]; ok {
+		return sl.Len()
+	}
+	return 0
+}
+
 func (e *EtcdDiscovery) GetService(name string, id string) (string, bool) {
 	mp := e.GetServiceMapping(name)
 	if mp != nil {

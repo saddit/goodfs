@@ -1,5 +1,10 @@
 package msg
 
+import (
+	"common/util"
+	"fmt"
+)
+
 //go:generate msgp -tests=false #msg
 
 type Extra struct {
@@ -16,6 +21,10 @@ type Metadata struct {
 	UpdateTime int64  `json:"updateTime" msg:"update_time"`
 }
 
+func (z *Metadata) ID() string {
+	return fmt.Sprintf(z.Bucket, "/", z.Name)
+}
+
 type Version struct {
 	Compress      bool     `json:"compress" msg:"compress"`
 	StoreStrategy int8     `json:"storeStrategy" msg:"store_strategy" binding:"required"`
@@ -27,6 +36,10 @@ type Version struct {
 	Sequence      uint64   `json:"sequence" msg:"sequence"` // Sequence version number auto generated on saving
 	Hash          string   `json:"hash" msg:"hash" binding:"required"`
 	Locate        []string `json:"locate" msg:"locate" binding:"min=1"`
+}
+
+func (z *Version) ID() string {
+	return util.UIntString(z.Sequence)
 }
 
 type Bucket struct {
@@ -41,4 +54,8 @@ type Bucket struct {
 	UpdateTime     int64    `json:"updateTime" msg:"update_time"`         // UpdateTime is last updating time
 	Name           string   `json:"name" msg:"name"`                      // Name is the bucket's name
 	Policies       []string `json:"policies" msg:"policies"`              // Policies is the iam polices for this bucket (No support yet)
+}
+
+func (z *Bucket) ID() string {
+	return z.Name
 }

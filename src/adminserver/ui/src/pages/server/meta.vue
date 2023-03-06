@@ -21,8 +21,8 @@
     </div>
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
-  <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.metaServerNo"/>
-  <UsageLine :type="$cst.statTypeMem" :server-no="$cst.metaServerNo"/>
+  <UsageLine h="h-56" class="mb-4" :type="$cst.statTypeCpu" :tl="cpuTl"/>
+  <UsageLine h="h-56" :type="$cst.statTypeMem" :tl="memTl"/>
   <!-- Data migration dialog -->
   <ModalTemplate v-model="openMigrateDialog" :title="t('migration')" @close="closeMigrateDialog">
     <template #panel>
@@ -96,6 +96,8 @@ let slots: { [key: string]: SlotsInfo } = {}
 const slotRanges = ref<SlotRange[]>([])
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
+const cpuTl = ref<Record<string, TimeStat[]>>({})
+const memTl = ref<Record<string, TimeStat[]>>({})
 const migrateReq = ref<MetaMigrateReq>({srcServerId: "", destServerId: "", slots: [], slotsStr: ""})
 const openMigrateDialog = ref(false)
 const selectedRaftMaster = ref("")
@@ -209,6 +211,17 @@ function updateInfo(state: any) {
     capInfo.value = cap
 }
 
+function getTl() {
+    api.serverStat.timeline(pkg.cst.metaServerNo, pkg.cst.statTypeCpu)
+        .then(res => {
+            cpuTl.value = res
+        })
+    api.serverStat.timeline(pkg.cst.metaServerNo, pkg.cst.statTypeMem)
+        .then(res => {
+            memTl.value = res
+        })
+}
+
 function getSlotsDetail() {
     api.metadata.slotsDetail().then(res => {
         slots = res
@@ -255,6 +268,9 @@ store.$subscribe((mutation, state) => {
 onBeforeMount(() => {
     updateInfo(store)
     getSlotsDetail()
+    pkg.utils.invokeInterval(() => {
+        getTl()
+    }, 1000 * 60 * 60)
 })
 </script>
 

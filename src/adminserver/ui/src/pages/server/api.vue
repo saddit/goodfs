@@ -8,13 +8,15 @@
     {{$t('no-servers')}}
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
-  <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.apiServerNo" />
-  <UsageLine :type="$cst.statTypeMem" :server-no="$cst.apiServerNo" />
+  <UsageLine class="mb-4" h="h-56" :type="$cst.statTypeCpu" :tl="cpuTl" />
+  <UsageLine h="h-56" :type="$cst.statTypeMem" :tl="memTl" />
 </template>
 
 <script setup lang="ts">
 const infos = ref<ServerInfo[]>([])
 const store = useStore()
+const cpuTl = ref<Record<string, TimeStat[]>>({})
+const memTl = ref<Record<string, TimeStat[]>>({})
 
 function updateInfo(state: any) {
     let infoList: ServerInfo[] = []
@@ -26,12 +28,26 @@ function updateInfo(state: any) {
     infos.value = infoList
 }
 
+function getTl() {
+    api.serverStat.timeline(pkg.cst.apiServerNo, pkg.cst.statTypeCpu)
+        .then(res => {
+            cpuTl.value = res
+        })
+    api.serverStat.timeline(pkg.cst.apiServerNo, pkg.cst.statTypeMem)
+        .then(res => {
+            memTl.value = res
+        })
+}
+
 store.$subscribe((mutation, state)=>{
   updateInfo(state)
 })
 
 onBeforeMount(()=>{
   updateInfo(store)
+    pkg.utils.invokeInterval(()=>{
+        getTl()
+    }, 1000 * 60 * 60)
 })
 </script>
 

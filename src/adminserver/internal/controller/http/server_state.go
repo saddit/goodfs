@@ -11,6 +11,7 @@ import (
 )
 
 type ServerStateController struct {
+	logic logic.ServerMonitor
 }
 
 func NewServerStateController() *ServerStateController {
@@ -20,7 +21,32 @@ func NewServerStateController() *ServerStateController {
 func (ss *ServerStateController) Register(r gin.IRouter) {
 	r.Group("server").
 		GET("/stat", ss.Stat).
+		GET("/overview", ss.Overview).
+		GET("/etcdstat", ss.EtcdStat).
 		GET("/:type/timeline", ss.UsageTimeline)
+}
+
+func (ss *ServerStateController) Overview(c *gin.Context) {
+	aliveCounts := ss.logic.AliveCounts()
+	metaLogic := logic.NewMetadata()
+	nb, err := metaLogic.TotalBuckets()
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	no, err := metaLogic.TotalObjects()
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	cpu, mem := ss.logic.StatTimeLineOverview()
+	response.OkJson(gin.H{
+		"aliveCounts":  aliveCounts,
+		"totalBuckets": nb,
+		"totalObjects": no,
+		"avgCpu":       cpu,
+		"avgMem":       mem,
+	}, c)
 }
 
 func (ss *ServerStateController) Stat(c *gin.Context) {
@@ -77,5 +103,14 @@ func (ss *ServerStateController) UsageTimeline(c *gin.Context) {
 	usageType := c.Param("type")
 	sn := c.Query("server")
 	res := logic.NewServerMonitor().StatTimeline(util.ToInt(sn), usageType)
+	response.OkJson(res, c)
+}
+
+func (ss *ServerStateController) EtcdStat(c *gin.Context) {
+	res, err := ss.logic.EtcdStatus()
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
 	response.OkJson(res, c)
 }

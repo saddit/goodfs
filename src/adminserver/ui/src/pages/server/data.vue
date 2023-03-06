@@ -13,8 +13,8 @@
     <CapCard v-if="capInfo.total > 0" class="w-[32%]" :cap-info="capInfo"/>
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
-  <UsageLine class="mb-4" :type="$cst.statTypeCpu" :server-no="$cst.dataServerNo"/>
-  <UsageLine :type="$cst.statTypeMem" :server-no="$cst.dataServerNo"/>
+  <UsageLine h="h-56" class="mb-4" :type="$cst.statTypeCpu" :tl="cpuTl"/>
+  <UsageLine h="h-56" :type="$cst.statTypeMem" :tl="memTl"/>
   <!-- Migration dialog -->
   <ModalTemplate title="Join or Leave" v-model="openMigrateDialog">
     <template #panel>
@@ -32,6 +32,8 @@
 <script setup lang="ts">
 const infos = ref<ServerInfo[]>([])
 const capInfo = ref<DiskInfo>({used: 0, total: 0, free: 0})
+const cpuTl = ref<Record<string, TimeStat[]>>({})
+const memTl = ref<Record<string, TimeStat[]>>({})
 const store = useStore()
 const openMigrateDialog = ref(false)
 const inRequesting = ref(false)
@@ -75,12 +77,26 @@ async function clusterCmd(cmd: string) {
     }
 }
 
+function getTl() {
+    api.serverStat.timeline(pkg.cst.dataServerNo, pkg.cst.statTypeCpu)
+        .then(res => {
+            cpuTl.value = res
+        })
+    api.serverStat.timeline(pkg.cst.dataServerNo, pkg.cst.statTypeMem)
+        .then(res => {
+            memTl.value = res
+        })
+}
+
 store.$subscribe((mutation, state) => {
     updateInfo(state)
 })
 
 onBeforeMount(() => {
     updateInfo(store)
+    pkg.utils.invokeInterval(() => {
+        getTl()
+    }, 1000 * 60 * 60)
 })
 </script>
 
