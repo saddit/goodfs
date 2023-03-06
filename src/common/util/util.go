@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"common/logs"
+	xmath "common/util/math"
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
@@ -74,6 +75,14 @@ func InstanceOf[T any](obj any) bool {
 		return ok
 	}
 	return false
+}
+
+func IntString[T xmath.Signed](n T) string {
+	return strconv.FormatInt(int64(n), 10)
+}
+
+func UIntString[T xmath.Unsigned](n T) string {
+	return strconv.FormatUint(uint64(n), 10)
 }
 
 func ToString(v any) string {

@@ -87,3 +87,11 @@ declare interface SlotRange {
     end: number
     identify: string
 }
+
+declare interface EtcdStatus {
+    endpoint: string
+    alarmMessage: string[]
+    dbSize: number
+    dbSizeInUse: number
+    isLearner: boolean
+}

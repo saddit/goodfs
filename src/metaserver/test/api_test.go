@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"common/cst"
+	"common/datasize"
 	"common/hashslot"
 	"common/proto/msg"
 	"common/registry"
@@ -188,5 +189,32 @@ func TestGetSysInfo(t *testing.T) {
 		var s system.Info
 		_ = util.DecodeMsgp(&s, kv.Value)
 		t.Logf("key=%s, value=%+v", kv.Key, s)
+	}
+}
+
+func TestEtcdStatus(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username:  "root",
+		Password:  "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := etcd.MemberList(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range resp.Members {
+		t.Log(v.String())
+	}
+	aresp, _ := etcd.AlarmList(context.Background())
+	for _, a := range aresp.Alarms {
+		t.Log(a.String())
+	}
+	for _, ep := range []string{"pressed.top:2379"} {
+		sresp, _ := etcd.Status(context.Background(), ep)
+		t.Log(ep)
+		t.Logf("dbsize=%s,dbsize_inuse=%s,is_learner=%t", datasize.DataSize(sresp.DbSize), datasize.DataSize(sresp.DbSizeInUse), sresp.IsLearner)
 	}
 }

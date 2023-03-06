@@ -51,3 +51,7 @@ func (s *serviceList) copy() map[string]string {
 	}
 	return ls
 }
+
+func (s *serviceList) Len() int {
+	return len(s.data)
+}

@@ -126,7 +126,7 @@ func GetTmpObject(ip, name string, size int64) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Size", util.ToString(size))
+	req.Header.Set("Size", util.IntString(size))
 	return httpClient.Do(req)
 }
 
@@ -139,7 +139,7 @@ func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Re
 		return nil, err
 	}
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
-	req.Header.Set("Size", util.ToString(size))
+	req.Header.Set("Size", util.IntString(size))
 	return httpClient.Do(req)
 }
 

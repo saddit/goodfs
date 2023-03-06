@@ -8,3 +8,5 @@ declare interface ServerStatResp {
     metaServer: { [k: string]: ServerInfo }
     dataServer: { [k: string]: ServerInfo }
 }
+
+declare interface StringAny extends Record<string, any> {}

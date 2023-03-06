@@ -40,7 +40,7 @@ func (mc *MetadataController) Page(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	res, total, err := logic.NewMetadata().MetadataPaging(cond)
+	res, total, err := logic.NewMetadata().MetadataPaging(&cond)
 	if err != nil {
 		response.FailErr(err, c)
 		return
@@ -61,7 +61,7 @@ func (mc *MetadataController) Versions(c *gin.Context) {
 		response.FailErr(err, c)
 		return
 	}
-	c.Header("X-Total-Count", util.ToString(total))
+	c.Header("X-Total-Count", util.IntString(total))
 	if _, err := c.Writer.Write(res); err != nil {
 		response.FailErr(err, c)
 		return
