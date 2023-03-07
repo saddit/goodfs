@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white shadow-lg rounded-2xl">
+  <div class="bg-white shadow-md rounded-md">
     <div class="inline-flex justify-center text-sm text-indigo-600 font-bold pt-2 w-full">{{ $t(`${type}-usage`) }}
     </div>
     <div :class="h" ref="usageChart"></div>

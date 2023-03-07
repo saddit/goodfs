@@ -1,5 +1,5 @@
 <template>
-  <div class="min-w-40 py-3 px-2 bg-white h-48 w-40 md:h-44 md:w-44 shadow-lg rounded flex flex-col justify-between">
+  <div class="min-w-40 py-3 px-2 bg-white h-48 w-40 md:h-44 md:w-44 shadow-md rounded-md flex flex-col justify-between">
     <div>
       <div class="inline-flex justify-between items-center px-2 w-full">
         <ServerIcon class="text-indigo-600 w-10 h-10"/>

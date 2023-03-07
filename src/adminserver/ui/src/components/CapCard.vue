@@ -1,5 +1,5 @@
 <template>
-	<div class="bg-white rounded-lg shadow-lg inline-flex items-center relative justify-center">
+	<div class="bg-white rounded-md shadow-md inline-flex items-center relative justify-center">
 		<span class="absolute top-2 left-2 text-indigo-600 font-bold">{{ $t('capacity') }}</span>
 		<div id="cap-chart" ref="capChart" class="w-1/2 h-44"></div>
 		<div class="w-fit">

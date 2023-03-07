@@ -1,6 +1,7 @@
 <template>
   <div class="w-full h-full overflow-y-auto bg-gray-100 p-6">
-    <div class="flex">
+    <div class="flex flex-wrap">
+      <!-- overview -->
       <div class="display-overview w-1/4 min-w-[24rem]">
         <!-- alive counts -->
         <div class="mr-2">
@@ -35,7 +36,7 @@
         </span>
       </div>
       <!-- etcd -->
-      <div class="w-1/2 ml-5 bg-white rounded-md shadow-md px-4">
+      <div class="md:ml-4 bg-white rounded-md shadow-md px-4 flex-grow min-w-[24rem]">
         <div class="mt-3 font-medium text-indigo-600 text-xl" @click="filterLogs('all')">{{ t('etcd-cluster') }}</div>
         <!-- member list -->
         <div class="flex flex-wrap space-x-2 mt-4 mb-5">
@@ -144,10 +145,6 @@ function getOverview() {
 
 .display-overview > div {
     @apply bg-white rounded-md p-3 shadow-md mb-2
-}
-
-.display-overview > hr {
-    @apply w-full invisible
 }
 
 .alarm-logs {
