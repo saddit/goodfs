@@ -6,7 +6,6 @@ import (
 	"common/graceful"
 	"common/logs"
 	"common/proto/msg"
-	"common/system/disk"
 	"common/util"
 	"fmt"
 	bolt "go.etcd.io/bbolt"
@@ -214,7 +213,7 @@ func (m *MetadataRepo) GetVersion(name string, ver uint64) (*msg.Version, error)
 		return data, nil
 	}
 	data := &msg.Version{}
-	if err := m.MainDB.DB().View(logic.GetVer(name, ver, data)); err != nil {
+	if err := m.MainDB.View(logic.GetVer(name, ver, data)); err != nil {
 		return nil, err
 	}
 	go func() {
@@ -295,7 +294,7 @@ func (m *MetadataRepo) Snapshot() (usecase.SnapshotTx, error) {
 func (m *MetadataRepo) Restore(r io.Reader) (err error) {
 	dbPath := m.MainDB.DB().Path() + "_replace"
 	// open new db file
-	newFile, err := disk.OpenFileDirectIO(dbPath, os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
+	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
 		logs.Std().Error("restore fail on open new file: %v", err)
 		return err
