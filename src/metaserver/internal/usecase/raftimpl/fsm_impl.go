@@ -34,67 +34,67 @@ func NewFSM(m IMetadataRepo, mb IBatchMetaRepo, b BucketRepo, bb BatchBucketRepo
 	}
 }
 
-func (f *FSMImpl) applyBucket(data *entity.RaftData) *response.RaftFsmResp {
+func (f *FSMImpl) applyBucket(data *entity.RaftData) *FSMResponse {
 	repo := util.IfElse[BucketWritableRepo](data.Batch, f.bucketBatch, f.bucketRepo)
 	switch data.Type {
 	case entity.LogInsert:
-		return response.NewRaftFsmResp(repo.Create(data.Bucket))
+		return FSMResult(repo.Create(data.Bucket))
 	case entity.LogRemove:
-		return response.NewRaftFsmResp(repo.Remove(data.Name))
+		return FSMResult(repo.Remove(data.Name))
 	case entity.LogUpdate:
-		return response.NewRaftFsmResp(repo.Update(data.Bucket))
+		return FSMResult(repo.Update(data.Bucket))
 	default:
-		return response.NewRaftFsmResp(ErrNotFound)
+		return FSMResult(ErrUnknownRaftLog)
 	}
 }
 
-func (f *FSMImpl) applyMetadata(data *entity.RaftData) *response.RaftFsmResp {
+func (f *FSMImpl) applyMetadata(data *entity.RaftData) *FSMResponse {
 	repo := util.IfElse[WritableRepo](data.Batch, f.metaBatch, f.metaRepo)
 	switch data.Type {
 	case entity.LogInsert:
-		return response.NewRaftFsmResp(repo.AddMetadata(data.Name, data.Metadata))
+		return FSMResult(repo.AddMetadata(data.Name, data.Metadata))
 	case entity.LogRemove:
-		return response.NewRaftFsmResp(repo.RemoveMetadata(data.Name))
+		return FSMResult(repo.RemoveMetadata(data.Name))
 	case entity.LogUpdate:
-		return response.NewRaftFsmResp(repo.UpdateMetadata(data.Name, data.Metadata))
+		return FSMResult(repo.UpdateMetadata(data.Name, data.Metadata))
 	default:
-		return response.NewRaftFsmResp(ErrNotFound)
+		return FSMResult(ErrUnknownRaftLog)
 	}
 }
 
-func (f *FSMImpl) applyVersion(data *entity.RaftData) *response.RaftFsmResp {
+func (f *FSMImpl) applyVersion(data *entity.RaftData) *FSMResponse {
 	repo := util.IfElse[WritableRepo](data.Batch, f.metaBatch, f.metaRepo)
 	switch data.Type {
 	case entity.LogMigrate:
-		resp := response.NewRaftFsmResp(repo.AddVersionWithSequence(data.Name, data.Version))
+		resp := FSMResult(repo.AddVersionWithSequence(data.Name, data.Version))
 		return resp
 	case entity.LogInsert:
-		resp := response.NewRaftFsmResp(repo.AddVersion(data.Name, data.Version))
+		resp := FSMResult(repo.AddVersion(data.Name, data.Version))
 		resp.Data = data.Version.Sequence
 		return resp
 	case entity.LogRemove:
-		return response.NewRaftFsmResp(repo.RemoveVersion(data.Name, data.Sequence))
+		return FSMResult(repo.RemoveVersion(data.Name, data.Sequence))
 	case entity.LogUpdate:
 		data.Version.Sequence = data.Sequence
-		return response.NewRaftFsmResp(repo.UpdateVersion(data.Name, data.Version))
+		return FSMResult(repo.UpdateVersion(data.Name, data.Version))
 	default:
-		return response.NewRaftFsmResp(ErrNotFound)
+		return FSMResult(ErrUnknownRaftLog)
 	}
 }
 
-func (f *FSMImpl) applyVersionAll(data *entity.RaftData) *response.RaftFsmResp {
+func (f *FSMImpl) applyVersionAll(data *entity.RaftData) *FSMResponse {
 	repo := util.IfElse[WritableRepo](data.Batch, f.metaBatch, f.metaRepo)
 	switch data.Type {
 	case entity.LogRemove:
-		return response.NewRaftFsmResp(repo.RemoveAllVersion(data.Name))
+		return FSMResult(repo.RemoveAllVersion(data.Name))
 	default:
-		return response.NewRaftFsmResp(ErrNotFound)
+		return FSMResult(ErrUnknownRaftLog)
 	}
 }
 
 func (f *FSMImpl) Apply(lg *raft.Log) (r any) {
 	if lg == nil || len(lg.Data) == 0 {
-		return response.NewRaftFsmResp(ErrNilData)
+		return FSMResult(ErrNilData)
 	}
 	if lg.Type != raft.LogCommand {
 		return fmt.Errorf("drop recieved fsmLog type %v", lg.Type)
@@ -128,7 +128,7 @@ func (f *FSMImpl) Apply(lg *raft.Log) (r any) {
 	case entity.DestBucket:
 		return f.applyBucket(&data)
 	}
-	return ErrNotFound
+	return ErrUnknownRaftLog
 }
 
 func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
@@ -145,7 +145,7 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 	var maxIndex uint64
 	for i, lg := range lgs {
 		if lg == nil || len(lg.Data) == 0 {
-			res[i] = response.NewRaftFsmResp(ErrNilData)
+			res[i] = FSMResult(ErrNilData)
 			continue
 		}
 		if lg.Type != raft.LogCommand {
@@ -171,14 +171,14 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 		case entity.DestBucket:
 			res[i] = f.applyBucket(&data)
 		default:
-			res[i] = ErrNotFound
+			res[i] = ErrUnknownRaftLog
 		}
 
 		if lg.Index > maxIndex {
 			maxIndex = lg.Index
 		}
 	}
-	//TODO: metaBatch Sync and bucketBatch Sync it's same for now.
+	//NOTICE: metaBatch Sync and bucketBatch Sync it's same for now.
 	if err = f.metaBatch.Sync(); err != nil {
 		err = fmt.Errorf("sync fail: %s", err)
 		for i := range res {
@@ -226,4 +226,33 @@ func (s *snapshot) Persist(sink raft.SnapshotSink) error {
 
 func (s *snapshot) Release() {
 	util.LogErr(s.Rollback())
+}
+
+type FSMResponse struct {
+	err  *response.Err
+	Data any
+}
+
+func FSMResult(err error) *FSMResponse {
+	switch err := err.(type) {
+	case *response.Err:
+		return &FSMResponse{err, nil}
+	case response.Err:
+		return &FSMResponse{&err, nil}
+	case nil:
+		return &FSMResponse{&response.Err{Status: 200}, nil}
+	default:
+		return &FSMResponse{&response.Err{Status: 500, Message: err.Error()}, nil}
+	}
+}
+
+func (r *FSMResponse) Ok() bool {
+	return r.err.Status/100 == 2
+}
+
+func (r *FSMResponse) ToError() error {
+	if r.Ok() {
+		return nil
+	}
+	return r.err
 }
