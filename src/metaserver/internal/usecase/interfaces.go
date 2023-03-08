@@ -3,7 +3,6 @@ package usecase
 import (
 	"common/proto/msg"
 	"common/proto/pb"
-	"common/response"
 	"io"
 	"metaserver/internal/entity"
 	"time"
@@ -79,7 +78,7 @@ type (
 	}
 
 	RaftApply interface {
-		ApplyRaft(*entity.RaftData) (bool, *response.RaftFsmResp)
+		ApplyRaft(*entity.RaftData) (bool, any, error)
 	}
 
 	IMetadataRepo interface {

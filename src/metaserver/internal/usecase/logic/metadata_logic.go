@@ -161,7 +161,7 @@ func AddVer(name string, data *msg.Version) TxFunc {
 			if err != nil {
 				return err
 			}
-			if err := bucket.Put(key, bt); err != nil {
+			if err = bucket.Put(key, bt); err != nil {
 				return err
 			}
 			return NewHashIndexLogic().AddIndex(data.Hash, util.BytesToStr(key))(tx)

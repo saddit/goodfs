@@ -25,16 +25,13 @@ func NewMetadataService(repo usecase.IMetadataRepo, batch usecase.IBatchMetaRepo
 func (m *MetadataService) AddMetadata(id string, data *msg.Metadata) error {
 	data.CreateTime = time.Now().UnixMilli()
 	data.UpdateTime = data.CreateTime
-	if ok, resp := m.ApplyRaft(&entity.RaftData{
+	if ok, _, err := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogInsert,
 		Dest:     entity.DestMetadata,
 		Name:     id,
 		Metadata: data,
 	}); ok {
-		if resp.Ok() {
-			return nil
-		}
-		return resp
+		return err
 	}
 
 	return m.repo.AddMetadata(id, data)
@@ -42,16 +39,16 @@ func (m *MetadataService) AddMetadata(id string, data *msg.Metadata) error {
 
 func (m *MetadataService) AddVersion(name string, data *msg.Version) (int, error) {
 	data.Ts = time.Now().UnixMilli()
-	if ok, resp := m.ApplyRaft(&entity.RaftData{
+	if ok, resp, err := m.ApplyRaft(&entity.RaftData{
 		Type:    entity.LogInsert,
 		Dest:    entity.DestVersion,
 		Name:    name,
 		Version: data,
 	}); ok {
-		if resp.Ok() {
-			return int(resp.Data.(uint64)), nil
+		if err != nil {
+			return -1, err
 		}
-		return -1, resp
+		return int(resp.(uint64)), nil
 	}
 
 	if err := m.repo.AddVersion(name, data); err != nil {
@@ -61,16 +58,13 @@ func (m *MetadataService) AddVersion(name string, data *msg.Version) (int, error
 }
 
 func (m *MetadataService) ReceiveVersion(name string, data *msg.Version) error {
-	if ok, resp := m.ApplyRaft(&entity.RaftData{
+	if ok, _, err := m.ApplyRaft(&entity.RaftData{
 		Type:    entity.LogMigrate,
 		Dest:    entity.DestVersion,
 		Name:    name,
 		Version: data,
 	}); ok {
-		if resp.Ok() {
-			return nil
-		}
-		return resp
+		return err
 	}
 
 	if err := m.repo.AddVersionWithSequence(name, data); err != nil {
@@ -81,16 +75,13 @@ func (m *MetadataService) ReceiveVersion(name string, data *msg.Version) error {
 
 func (m *MetadataService) UpdateMetadata(name string, data *msg.Metadata) error {
 	data.UpdateTime = time.Now().UnixMilli()
-	if ok, resp := m.ApplyRaft(&entity.RaftData{
+	if ok, _, err := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogUpdate,
 		Dest:     entity.DestMetadata,
 		Name:     name,
 		Metadata: data,
 	}); ok {
-		if resp.Ok() {
-			return nil
-		}
-		return resp
+		return err
 	}
 
 	return m.repo.UpdateMetadata(name, data)
@@ -99,48 +90,39 @@ func (m *MetadataService) UpdateMetadata(name string, data *msg.Metadata) error 
 func (m *MetadataService) UpdateVersion(name string, ver int, data *msg.Version) error {
 	data.Ts = time.Now().UnixMilli()
 	data.Sequence = uint64(ver)
-	if ok, resp := m.ApplyRaft(&entity.RaftData{
+	if ok, _, err := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogUpdate,
 		Dest:     entity.DestVersion,
 		Name:     name,
 		Sequence: data.Sequence,
 		Version:  data,
 	}); ok {
-		if resp.Ok() {
-			return nil
-		}
-		return resp
+		return err
 	}
 
 	return m.repo.UpdateVersion(name, data)
 }
 
 func (m *MetadataService) RemoveMetadata(name string) error {
-	if ok, resp := m.ApplyRaft(&entity.RaftData{
+	if ok, _, err := m.ApplyRaft(&entity.RaftData{
 		Type: entity.LogRemove,
 		Dest: entity.DestMetadata,
 		Name: name,
 	}); ok {
-		if resp.Ok() {
-			return nil
-		}
-		return resp
+		return err
 	}
 
 	return m.repo.RemoveMetadata(name)
 }
 
 func (m *MetadataService) RemoveVersion(name string, ver int) error {
-	if ok, resp := m.ApplyRaft(&entity.RaftData{
+	if ok, _, err := m.ApplyRaft(&entity.RaftData{
 		Type:     entity.LogRemove,
 		Dest:     util.IfElse(ver < 0, entity.DestVersionAll, entity.DestVersion),
 		Name:     name,
 		Sequence: uint64(ver),
 	}); ok {
-		if resp.Ok() {
-			return nil
-		}
-		return resp
+		return err
 	}
 
 	if ver < 0 {

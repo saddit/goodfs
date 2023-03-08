@@ -6,7 +6,6 @@ import (
 	"common/proto"
 	"common/proto/pb"
 	"common/util"
-	"common/util/maps"
 	"common/util/slices"
 	"context"
 	"encoding/json"
@@ -78,7 +77,7 @@ func (rcs *RaftCmdServerImpl) AddVoter(_ context.Context, req *pb.AddVoterReq) (
 	}
 	var resultFeatures []raft.IndexFuture
 	for _, item := range req.GetVoters() {
-		res := rcs.rf.Raft.AddVoter(raft.ServerID(item.GetId()), raft.ServerAddress(item.GetAddress()), item.GetPrevIndex(), 10*time.Second)
+		res := rcs.rf.Raft.AddVoter(raft.ServerID(item.GetId()), raft.ServerAddress(item.GetAddress()), 0, 10*time.Second)
 		resultFeatures = append(resultFeatures, res)
 	}
 	var msg strings.Builder
@@ -118,15 +117,10 @@ func (rcs *RaftCmdServerImpl) Config(context.Context, *pb.EmptyReq) (*pb.Respons
 
 func (rcs *RaftCmdServerImpl) LeaveCluster(ctx context.Context, _ *pb.EmptyReq) (*pb.Response, error) {
 	if rcs.rf.IsLeader() {
-		lives := pool.Registry.GetServiceMapping(pool.Config.Registry.Name)
-		k, ok := maps.OneOf(lives)
-		if !ok {
-			return &pb.Response{Message: "not available peers. leadership transfer fails.", Success: false}, nil
-		}
-		if err := rcs.rf.Raft.
-			LeadershipTransferToServer(raft.ServerID(k), raft.ServerAddress(lives[k])).
-			Error(); err != nil {
-			return nil, fmt.Errorf("transfer leader error: %w", err)
+		_, id := rcs.rf.Raft.LeaderWithID()
+		ft := rcs.rf.Raft.RemoveServer(id, 0, time.Second*5)
+		if err := ft.Error(); err != nil {
+			return &pb.Response{Success: false, Message: err.Error()}, nil
 		}
 		return okResp, nil
 	}
@@ -137,17 +131,17 @@ func (rcs *RaftCmdServerImpl) LeaveCluster(ctx context.Context, _ *pb.EmptyReq) 
 	}
 	return pb.NewRaftCmdClient(cc).RemoveFollower(ctx, &pb.RemoveFollowerReq{
 		FollowerId: rcs.rf.ID,
-		PrevIndex:  rcs.rf.Raft.AppliedIndex(),
 	})
 }
 
 func (rcs *RaftCmdServerImpl) RemoveFollower(_ context.Context, req *pb.RemoveFollowerReq) (*pb.Response, error) {
-	feature := rcs.rf.Raft.DemoteVoter(raft.ServerID(req.FollowerId), req.PrevIndex, time.Second)
+	feature := rcs.rf.Raft.RemoveServer(raft.ServerID(req.FollowerId), 0, time.Second)
 	if err := feature.Error(); err != nil {
 		return nil, err
 	}
 	id := fmt.Sprint(req.FollowerId, ",")
 	idx := -1
+	// node is like id,host:port
 	for i, node := range pool.Config.Cluster.Nodes {
 		if strings.HasPrefix(node, id) {
 			idx = i
@@ -184,7 +178,6 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 			// demote voter
 			_, err = client.RemoveFollower(ctx, &pb.RemoveFollowerReq{
 				FollowerId: rcs.rf.ID,
-				PrevIndex:  rcs.rf.Raft.AppliedIndex(),
 			})
 			if err != nil {
 				return nil, err
@@ -192,9 +185,8 @@ func (rcs *RaftCmdServerImpl) JoinLeader(ctx context.Context, req *pb.JoinLeader
 		}
 		_, err = proto.ResolveResponse(client.AddVoter(ctx, &pb.AddVoterReq{
 			Voters: []*pb.Voter{{
-				Id:        rcs.rf.ID,
-				Address:   rcs.rf.Address,
-				PrevIndex: rcs.rf.Raft.AppliedIndex(),
+				Id:      rcs.rf.ID,
+				Address: rcs.rf.Address,
 			}},
 		}))
 		if err != nil {
