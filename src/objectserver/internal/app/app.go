@@ -1,8 +1,11 @@
 package app
 
 import (
+	"common/cst"
 	"common/graceful"
+	"common/system"
 	"common/util"
+	"fmt"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
 	"objectserver/internal/controller/http"
@@ -15,6 +18,7 @@ func Run(cfg *config.Config) {
 	pool.InitPool(cfg)
 	defer pool.CloseAll()
 	netAddr := util.ServerAddress(cfg.Port)
+	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()))
 	pool.OnOpen(func() {
 		// register service
 		util.PanicErr(pool.Registry.Register())
@@ -25,10 +29,10 @@ func Run(cfg *config.Config) {
 			service.NewLocator(pool.Etcd).StartLocate(netAddr),
 			// cleaning serv
 			service.StartTempRemovalBackground(pool.Cache),
-			// auto save server capacity info
-			pool.ObjectCap.StartAutoSave(cfg.State.SyncInterval),
 			// auto update driver stat
 			pool.DriverManager.StartAutoUpdate(),
+			// system info sync
+			syncer.StartAutoSave(),
 		)
 	})
 	pool.Open()

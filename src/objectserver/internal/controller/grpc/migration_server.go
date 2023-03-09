@@ -53,7 +53,7 @@ func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServ
 				return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
 			}
 		}
-		if err = ms.Service.AppendData(file, data.Data); err != nil {
+		if _, err = file.Write(data.Data); err != nil {
 			return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
 		}
 	}

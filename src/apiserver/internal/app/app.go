@@ -3,12 +3,14 @@ package app
 import (
 	. "apiserver/config"
 	"apiserver/internal/controller/http"
-	"apiserver/internal/usecase/logic"
 	"apiserver/internal/usecase/pool"
 	"apiserver/internal/usecase/repo"
 	"apiserver/internal/usecase/service"
+	"common/cst"
 	"common/graceful"
 	"common/registry"
+	"common/system"
+	"fmt"
 )
 
 func Run(cfg *Config) {
@@ -24,7 +26,8 @@ func Run(cfg *Config) {
 	cfg.Registry.ServerPort = cfg.Port
 	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry).MustRegister().Unregister()
 	// system-info auto saving
-	defer logic.NewSystemStatLogic().StartAutoSave()()
+	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()))
+	defer syncer.StartAutoSave()()
 	//start api server
 	graceful.ListenAndServe(
 		nil,

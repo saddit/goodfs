@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"net"
 	"time"
 )
@@ -21,4 +22,8 @@ func (c *Config) RegisterAddr() (string, bool) {
 		return "", false
 	}
 	return net.JoinHostPort(c.ServerIP, c.ServerPort), true
+}
+
+func (c *Config) RegisterKey() string {
+	return fmt.Sprintf(c.Group, "/", c.Name, "/", c.ServerID)
 }

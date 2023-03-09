@@ -1,7 +1,6 @@
 package service
 
 import (
-	"bytes"
 	"common/cst"
 	"common/datasize"
 	"common/graceful"
@@ -43,13 +42,25 @@ func NewMigrationService(c *db.ObjectCapacity) *MigrationService {
 	return &MigrationService{CapacityDB: c}
 }
 
+// getAllCapacity returns peers capacity info. key=addr,value=cap
+func (ms *MigrationService) getAllCapacity() map[string]int64 {
+	ips := pool.Discovery.GetServices(pool.Config.Registry.Name)
+	res := make(map[string]int64, len(ips))
+	for _, ip := range ips {
+		resp, err := http.Get(fmt.Sprint(ip, "/stat"))
+		if err != nil {
+			msLog.Errorf("get capacity from %s err: %s", ip, err)
+			continue
+		}
+		res[ip] = util.ToInt64(resp.Header.Get("Capacity"))
+	}
+	return res
+}
+
 // DeviationValues calculate the required size of sending to or receiving from others depending on 'join'
 // return map(key=rpc-addr,value=capacity)
 func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error) {
-	capMap, err := ms.CapacityDB.GetAll()
-	if err != nil {
-		return nil, err
-	}
+	capMap := ms.getAllCapacity()
 	size := util.IfElse(join, len(capMap), len(capMap)-1)
 	if size == 0 {
 		return nil, fmt.Errorf("non avaliable object servers")
@@ -58,20 +69,15 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 	for _, v := range capMap {
 		total += float64(v)
 	}
-	avg := uint64(math.Ceil(total / float64(size)))
-	servMap := pool.Discovery.GetServiceMapping(pool.Config.Registry.Name)
-	res := make(map[string]int64, len(servMap))
+	avg := int64(math.Ceil(total / float64(size)))
+	res := make(map[string]int64, len(capMap))
 	for k, v := range capMap {
 		// skip self
 		if k == pool.Config.Registry.ServerID {
 			continue
 		}
 		if v = util.IfElse(join, v-avg, avg-v); v > 0 {
-			rpcAddr, ok := servMap[k]
-			if !ok {
-				return nil, fmt.Errorf("unknown peers '%s'", k)
-			}
-			res[rpcAddr] = int64(v)
+			res[k] = v
 		}
 	}
 	if len(res) == 0 {
@@ -317,9 +323,4 @@ func (ms *MigrationService) OpenFile(name string, size int64) (*os.File, error) 
 		}
 	}
 	return os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
-}
-
-func (ms *MigrationService) AppendData(file *os.File, data []byte) error {
-	_, err := io.CopyBuffer(file, bytes.NewBuffer(data), make([]byte, 16*cst.OS.PageSize))
-	return err
 }
