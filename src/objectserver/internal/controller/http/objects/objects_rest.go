@@ -29,19 +29,19 @@ func Put(c *gin.Context) {
 		return
 	}
 	var reader io.Reader = c.Request.Body
-	var cache []byte
+	var cache bytes.Buffer
 	if uint64(c.Request.ContentLength) <= pool.Config.Cache.MaxItemSize.Byte() {
-		cache = make([]byte, 0, c.Request.ContentLength)
-		reader = &entity.BufferTeeReader{Reader: c.Request.Body, Body: bytes.NewBuffer(cache)}
+		cache.Grow(int(c.Request.ContentLength))
+		reader = io.TeeReader(c.Request.Body, &cache)
 	}
 	if err := service.Put(req.Name, reader, req.Compress); err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	if len(cache) > 0 {
+	if cache.Len() > 0 {
 		go func() {
 			defer graceful.Recover()
-			pool.Cache.Set(req.Name, cache)
+			pool.Cache.Set(req.Name, cache.Bytes())
 		}()
 	}
 	response.Ok(c)
@@ -74,19 +74,19 @@ func Get(c *gin.Context) {
 		offset = rg.FirstBytes().First
 	}
 	var writer io.Writer = c.Writer
-	var buf []byte
+	var buf bytes.Buffer
 	if uint64(req.Size) <= pool.Config.Cache.MaxItemSize.Byte() {
-		buf = make([]byte, 0, req.Size)
-		writer = &entity.BufferTeeWriter{Writer: c.Writer, Body: bytes.NewBuffer(buf)}
+		buf.Grow(int(req.Size))
+		writer = io.MultiWriter(c.Writer, &buf)
 	}
 	if err := service.Get(req.Name, offset, req.Size, req.Compress, writer); err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	if len(buf) > 0 {
+	if buf.Len() > 0 {
 		go func() {
 			defer graceful.Recover()
-			pool.Cache.Set(req.Name, buf)
+			pool.Cache.Set(req.Name, buf.Bytes())
 		}()
 	}
 	c.Status(http.StatusOK)

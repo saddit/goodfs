@@ -12,10 +12,10 @@ func GetFromCache(g *gin.Context) {
 	name := g.Param("name")
 	if bt, ok := pool.Cache.HasGet(name); ok {
 		if _, e := g.Writer.Write(bt); e != nil {
-			logs.Std().Debug("Match file cache %v, but written to response error: %v\n", name, e)
+			logs.Std().Debugf("match file cache %v, but written to response error: %v", name, e)
 			g.AbortWithStatus(http.StatusInternalServerError)
 		} else {
-			logs.Std().Debug("Match file cache %v\n", name)
+			logs.Std().Debugf("match file cache %v", name)
 			g.AbortWithStatus(http.StatusOK)
 		}
 	}
