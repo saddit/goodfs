@@ -151,7 +151,6 @@ func (h *HashSlotService) PrepareMigrationFrom(loc *pb.LocationInfo, slots []str
 		case <-cancelCh:
 			logs.Std().Debug("migration-from timeout-ctx canceled")
 		case <-time.NewTicker(h.Cfg.PrepareTimeout).C:
-			h.startReceive()
 			_ = h.Store.FinishMigrateFrom()
 			logs.Std().Errorf("timeout migrating from %s", loc.GetHost())
 		}
