@@ -82,7 +82,7 @@ func InitPool(cfg *config.Config) {
 	initCache(&cfg.Cache)
 	initEtcd(&cfg.Etcd)
 	initRegister(Etcd, cfg)
-	initObjectCap(Etcd, cfg)
+	initObjectCap()
 	initPathCache(cfg)
 }
 
@@ -124,8 +124,8 @@ func initLog(cfg *logs.Config) {
 	}
 }
 
-func initObjectCap(et *clientv3.Client, cfg *config.Config) {
-	ObjectCap = db.NewObjectCapacity(et, cfg)
+func initObjectCap() {
+	ObjectCap = db.NewObjectCapacity()
 }
 
 func initCache(cfg *config.CacheConfig) {
