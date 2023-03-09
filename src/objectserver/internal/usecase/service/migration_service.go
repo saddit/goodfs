@@ -42,12 +42,17 @@ func NewMigrationService(c *db.ObjectCapacity) *MigrationService {
 	return &MigrationService{CapacityDB: c}
 }
 
-// getAllCapacity returns peers capacity info. key=addr,value=cap
-func (ms *MigrationService) getAllCapacity() map[string]int64 {
+// getPeersCapacity returns peers capacity info expect self. key=addr,value=cap
+func (ms *MigrationService) getPeersCapacity() map[string]int64 {
 	ips := pool.Discovery.GetServices(pool.Config.Registry.Name)
+	selfLoc, _ := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID)
 	res := make(map[string]int64, len(ips))
 	for _, ip := range ips {
-		resp, err := http.Get(fmt.Sprint(ip, "/stat"))
+		// skip self
+		if ip == selfLoc {
+			continue
+		}
+		resp, err := http.Get(fmt.Sprint("http://", ip, "/stat"))
 		if err != nil {
 			msLog.Errorf("get capacity from %s err: %s", ip, err)
 			continue
@@ -60,22 +65,21 @@ func (ms *MigrationService) getAllCapacity() map[string]int64 {
 // DeviationValues calculate the required size of sending to or receiving from others depending on 'join'
 // return map(key=rpc-addr,value=capacity)
 func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error) {
-	capMap := ms.getAllCapacity()
-	size := util.IfElse(join, len(capMap), len(capMap)-1)
+	capMap := ms.getPeersCapacity()
+	size := util.IfElse(join, len(capMap)+1, len(capMap))
 	if size == 0 {
 		return nil, fmt.Errorf("non avaliable object servers")
 	}
-	var total float64
+	total := float64(pool.ObjectCap.Capacity())
 	for _, v := range capMap {
 		total += float64(v)
+	}
+	if total == 0 {
+		return nil, errors.New("total cap is zero")
 	}
 	avg := int64(math.Ceil(total / float64(size)))
 	res := make(map[string]int64, len(capMap))
 	for k, v := range capMap {
-		// skip self
-		if k == pool.Config.Registry.ServerID {
-			continue
-		}
 		if v = util.IfElse(join, v-avg, avg-v); v > 0 {
 			res[k] = v
 		}
@@ -178,72 +182,72 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 	}
 	success := true
 	dg := util.LimitDoneGroup(128)
-	defer dg.Close()
-	// receive all errors
 	go func() {
-		defer graceful.Recover()
-		for err := range dg.WaitError() {
-			msLog.Error(err)
-			success = false
+		defer graceful.Recover(func(string) { success = false })
+		defer dg.Close()
+		cur := slices.First(addrs)
+		slices.RemoveFirst(&addrs)
+		leftSize := sizeMap[cur]
+		var err error
+		for _, mp := range pool.DriverManager.GetAllMountPoint() {
+			err = filepath.Walk(filepath.Join(mp, pool.Config.StoragePath), func(path string, info fs.FileInfo, err error) error {
+				if err != nil {
+					msLog.Errorf("walk path %s err: %s, will skip this path", path, err)
+					return nil
+				}
+				if info.IsDir() {
+					return nil
+				}
+				client := clientMap[cur]
+				// transfer file async
+				dg.Todo()
+				go func(toAddr string) {
+					defer dg.Done()
+					if inner := ms.sendFileTo(path, client, &pb.ObjectInfo{
+						FileName:     info.Name(),
+						Size:         info.Size(),
+						OriginLocate: httpLocate,
+					}); inner != nil {
+						dg.Errors(inner)
+						return
+					}
+					// remove file async if transfer success
+					go func() {
+						defer graceful.Recover()
+						// remove local file
+						if inner := os.Remove(path); inner != nil {
+							msLog.Errorf("migrate %s success, but delete fail: %s", path, err)
+						}
+					}()
+				}(cur)
+				// switch to next server if already exceeds left size
+				if leftSize -= info.Size(); leftSize <= 0 {
+					if len(addrs) > 0 {
+						cur = slices.First(addrs)
+						slices.RemoveFirst(&addrs)
+						leftSize = sizeMap[cur]
+					} else {
+						return io.EOF
+					}
+				}
+				return nil
+			})
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				dg.Errors(err)
+			}
+		}
+		dg.Wait()
+		if err != nil && err != io.EOF {
+			dg.Errors(err)
+			return
 		}
 	}()
-	cur := slices.First(addrs)
-	slices.RemoveFirst(&addrs)
-	leftSize := sizeMap[cur]
-	var err error
-	for _, mp := range pool.DriverManager.GetAllMountPoint() {
-		err = filepath.Walk(filepath.Join(mp, pool.Config.StoragePath), func(path string, info fs.FileInfo, err error) error {
-			if err != nil {
-				msLog.Errorf("walk path %s err: %s, will skip this path", path, err)
-				return nil
-			}
-			if info.IsDir() {
-				return nil
-			}
-			// switch to next server if already exceeds left size
-			if leftSize -= info.Size(); leftSize <= 0 {
-				if len(addrs) > 0 {
-					cur = slices.First(addrs)
-					slices.RemoveFirst(&addrs)
-					leftSize = sizeMap[cur]
-				} else {
-					return io.EOF
-				}
-			}
-			client := clientMap[cur]
-			// transfer file async
-			dg.Todo()
-			go func(toAddr string) {
-				defer dg.Done()
-				if inner := ms.sendFileTo(path, client, &pb.ObjectInfo{
-					FileName:     info.Name(),
-					Size:         info.Size(),
-					OriginLocate: httpLocate,
-				}); inner != nil {
-					dg.Errors(inner)
-					return
-				}
-				// remove file async if transfer success
-				go func() {
-					defer graceful.Recover()
-					// remove local file
-					if inner := os.Remove(path); inner != nil {
-						msLog.Errorf("migrate %s success, but delete fail: %s", path, err)
-					}
-				}()
-			}(cur)
-			return nil
-		})
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			dg.Errors(err)
-		}
-	}
-	dg.Wait()
-	if err != nil && err != io.EOF {
-		return err
+	for err := range dg.WaitError() {
+		msLog.Error(err)
+		success = false
 	}
 	return util.IfElse(success, nil, fmt.Errorf("migration fail, see logs for detail"))
 }
