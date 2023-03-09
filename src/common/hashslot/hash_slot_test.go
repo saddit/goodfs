@@ -123,6 +123,25 @@ func TestRemoveEdges3(t *testing.T) {
 	assert.New(t).EqualValues([]string{"0-7000", "9200-9500"}, RemoveEdges(e1, e2).Strings())
 }
 
+func TestRemoveEdges4(t *testing.T) {
+	slots1 := []string{
+		"0-8000",
+		"9000-9500",
+	}
+	slots2 := []string{
+		"9000-9500",
+	}
+	e1, err := WrapSlotsToEdges(slots1, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e2, err := WrapSlotsToEdges(slots2, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.New(t).EqualValues([]string{"0-8000"}, RemoveEdges(e1, e2).Strings())
+}
+
 func TestFindRangeCurrentData(t *testing.T) {
 	sm := map[string][]string{
 		"A": {"0-100", "110-115"},

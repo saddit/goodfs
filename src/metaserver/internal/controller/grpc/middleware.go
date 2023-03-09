@@ -62,7 +62,7 @@ func CheckWritableUnary(ctx context.Context, req interface{}, info *grpc.UnarySe
 			return nil, status.Error(codes.Unavailable, "server is not writable")
 		}
 		if !pool.HashSlot.IsNormal() {
-			return nil, status.Error(codes.Aborted, "server in migration")
+			return nil, status.Error(codes.Unavailable, "server in migration")
 		}
 	}
 	return handler(ctx, req)
@@ -72,6 +72,9 @@ func CheckWritableStreaming(srv interface{}, ss grpc.ServerStream, info *grpc.St
 	if checkWritableMethods.Contains(info.FullMethod) {
 		if pool.RaftWrapper.Enabled && !pool.RaftWrapper.IsLeader() {
 			return status.Error(codes.Unavailable, "server is not writable")
+		}
+		if !pool.HashSlot.IsNormal() {
+			return status.Error(codes.Unavailable, "server in migration")
 		}
 	}
 	return handler(srv, ss)
