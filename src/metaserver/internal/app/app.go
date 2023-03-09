@@ -1,8 +1,11 @@
 package app
 
 import (
+	"common/cst"
 	"common/graceful"
+	"common/system"
 	"common/util"
+	"fmt"
 	"metaserver/config"
 	"metaserver/internal/controller/grpc"
 	"metaserver/internal/controller/http"
@@ -45,8 +48,9 @@ func Run(cfg *config.Config) {
 			util.LogErr(pool.HashSlot.Remove(cfg.HashSlot.StoreID))
 		}
 	}()
-	// auto save disk-info
-	defer logic.NewSystemStatLogic().StartAutoSave()()
+	// auto sync sys-info
+	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()))
+	defer syncer.StartAutoSave()()
 	// flush config
 	defer cfg.Persist()
 

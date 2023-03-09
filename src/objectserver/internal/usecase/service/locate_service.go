@@ -33,10 +33,6 @@ func WarmUpLocateCache() {
 			return
 		}
 	}
-	if err := pool.ObjectCap.Save(); err != nil {
-		log.Error(err)
-		return
-	}
 }
 
 // StartTempRemovalBackground start a temp file removal thread. watching the eviction of cache.
