@@ -91,7 +91,7 @@ func (ms *MigrationServer) LeaveCommand(c context.Context, _ *pb.EmptyReq) (*pb.
 		return &pb.Response{Success: false, Message: err.Error()}, nil
 	}
 	if err = pool.CloseGraceful(); err != nil {
-		return &pb.Response{Success: false, Message: "close pool fail"}, nil
+		return &pb.Response{Success: false, Message: "close pool fail: " + err.Error()}, nil
 	}
 	if err = ms.Service.SendingTo(curLocate, sizeMap); err != nil {
 		return &pb.Response{Success: false, Message: err.Error()}, nil
@@ -136,12 +136,12 @@ func (ms *MigrationServer) JoinCommand(context.Context, *pb.EmptyReq) (*pb.Respo
 		go func(key string, value int64) {
 			defer graceful.Recover()
 			defer wg.Done()
-			if _, err := cliMap[key].RequireSend(context.Background(), &pb.RequiredInfo{
+			if _, inner := cliMap[key].RequireSend(context.Background(), &pb.RequiredInfo{
 				RequiredSize:  value,
 				TargetAddress: curLocate,
-			}); err != nil {
+			}); inner != nil {
 				success = false
-				logs.Std().Error(err)
+				logs.Std().Error(inner)
 			}
 		}(k, v)
 	}
