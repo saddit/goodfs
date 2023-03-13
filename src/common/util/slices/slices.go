@@ -14,6 +14,26 @@ func StringsReplace(arr []string, origin string, target string) bool {
 	return false
 }
 
+func Fill[T any](arr []T, v T) {
+	// Preload the first value into the array/slice
+	arr[0] = v
+
+	// Incrementally duplicate the value into the rest of the container
+	for j := 1; j < len(arr); j *= 2 {
+		copy(arr[j:], arr[:j])
+	}
+}
+
+func FillPattern[T any](arr []T, pattern []T) {
+	// Copy the pattern into the start of the container
+	copy(arr, pattern)
+
+	// Incrementally duplicate the pattern throughout the container
+	for j := len(pattern); j < len(arr); j *= 2 {
+		copy(arr[j:], arr[:j])
+	}
+}
+
 func First[T any](arr []T) T {
 	return arr[0]
 }
