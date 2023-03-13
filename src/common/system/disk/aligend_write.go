@@ -2,6 +2,7 @@ package disk
 
 import (
 	"common/util/math"
+	"common/util/slices"
 	"errors"
 	"io"
 
@@ -41,9 +42,7 @@ func (ar *AlignedReader) Read(p []byte) (n int, err error) {
 	}
 	// padding zero if needed
 	paddingEnd := math.MinInt(length, AlignedSize(n))
-	for i := n; i < paddingEnd; i++ {
-		p[i] = 0
-	}
+	slices.Fill(p[n:paddingEnd], 0)
 	return paddingEnd, err
 }
 
