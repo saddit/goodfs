@@ -53,15 +53,16 @@ func (p *RSPutStream) Commit(ok bool) error {
 	wg := util.NewDoneGroup()
 	defer wg.Close()
 	for _, w := range p.writers {
-		if util.InstanceOf[Committer](w) {
-			wg.Todo()
-			go func(cm Committer) {
-				defer wg.Done()
-				if e := cm.Commit(ok); e != nil {
-					wg.Error(e)
+		wg.Todo()
+		go func(wt io.WriteCloser) {
+			defer wg.Done()
+			defer wt.Close()
+			if cm, is := wt.(Committer); is {
+				if err := cm.Commit(ok); err != nil {
+					wg.Error(err)
 				}
-			}(w.(Committer))
-		}
+			}
+		}(w)
 	}
 	return wg.WaitUntilError()
 }
