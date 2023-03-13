@@ -223,8 +223,7 @@ func WriteFileWithSize(fullPath string, curSize int64, fileStream io.Reader, buf
 			return 0, err
 		}
 	}
-	// write file and aligned to power of 4KB
-	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(bufSize))
+	return io.CopyBuffer(file, disk.PaddingReader(fileStream), disk.AlignedBlock(bufSize))
 }
 
 // AppendFileAligned will append data to file and work with DIO. make sure size of each write is a multiple of 4096 (except last)
@@ -234,8 +233,7 @@ func AppendFileAligned(fullPath string, fileStream io.Reader, bufSize int) (int6
 		return 0, err
 	}
 	defer file.Close()
-	// write file and aligned to power of 4KB.
-	return io.CopyBuffer(file, disk.NewAlignedReader(fileStream), disk.AlignedBlock(bufSize))
+	return io.CopyBuffer(file, disk.PaddingReader(fileStream), disk.AlignedBlock(bufSize))
 }
 
 // WriteFile will append data to file and work with DIO. make sure size of each write is a multiple of 4096 (except last)
@@ -259,7 +257,7 @@ func GetFileCompress(fullPath string, offset, size int64, writer io.Writer) erro
 		}
 	}
 	bufSize := math.MinNumber(8*cst.OS.PageSize, int(size))
-	_, err = io.CopyBuffer(writer, disk.LimitReader(s2.NewReader(file), size), disk.AlignedBlock(bufSize))
+	_, err = io.CopyBuffer(writer, io.LimitReader(s2.NewReader(file), size), make([]byte, bufSize))
 	return err
 }
 
@@ -305,7 +303,7 @@ func CommitFile(mountPoint, tmpName, fileName string, compress bool) error {
 			return err
 		}
 		bufSize := math.MinInt(4*datasize.MB.Int(), int(tmpStat.Size()))
-		_, err = AppendFileCompress(filePath, tmp, disk.AlignedSize(bufSize))
+		_, err = AppendFileCompress(filePath, tmp, bufSize)
 		return err
 	} else {
 		if err := os.Rename(tempPath, filePath); err != nil {
