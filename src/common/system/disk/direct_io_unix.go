@@ -49,3 +49,9 @@ func DisableDirectIO(f *os.File) error {
 func AlignedBlock(blockSize int) []byte {
 	return directio.AlignedBlock(blockSize)
 }
+
+// LimitReader returns aligned and limited reader for direct-io
+func LimitReader(r io.Reader, n int64) io.Reader { return &AlignedLimitedReader{r, n} }
+
+// PaddingReader returns 4KB padding reader for writing to direct-io
+func PaddingReader(r io.Reader) io.Reader { return NewAlignedReader(r) }

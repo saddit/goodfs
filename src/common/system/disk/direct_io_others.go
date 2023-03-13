@@ -20,6 +20,7 @@
 package disk
 
 import (
+	"io"
 	"os"
 )
 
@@ -54,15 +55,18 @@ func OpenFileDirectIO(filePath string, flag int, perm os.FileMode) (*os.File, er
 }
 
 // DisableDirectIO is a no-op
-func DisableDirectIO(f *os.File) error {
+func DisableDirectIO(*os.File) error {
 	return nil
 }
 
-// AlignedBlock simply returns an unaligned buffer (if less than 4KB it will be 4KB)
+// AlignedBlock simply returns an unaligned buffer
 // for systems that do not support DirectIO.
 func AlignedBlock(BlockSize int) []byte {
-	if BlockSize < 4096 {
-		BlockSize = 4096
-	}
 	return make([]byte, BlockSize)
 }
+
+// LimitReader as same as io.LimitReader for system not support direct-io
+func LimitReader(r io.Reader, n int64) io.Reader { return io.LimitReader(r, n) }
+
+// PaddingReader return r directly for system not support direct-io
+func PaddingReader(r io.Reader) io.Reader { return r }
