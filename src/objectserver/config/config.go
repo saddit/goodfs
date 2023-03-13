@@ -43,6 +43,7 @@ type Config struct {
 	StoragePath        string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"/objects"`            // StoragePath is a path to store object file under different mount points
 	AllowedMountPoints []string        `yaml:"allowed-mount-points" env:"ALLOWED_MOUNT_POINTS" env-separator:","` // AllowedMountPoints limits only these mount points allowed to store object file. Priority over ExcludeMountPoints but not affect BaseMountPoint.
 	ExcludeMountPoints []string        `yaml:"exclude-mount-points" env:"EXCLUDE_MOUNT_POINTS" env-separator:","` // ExcludeMountPoints avoids to store object file under these mount points
+	TempCleaners       int             `yaml:"temp-cleaners" env:"TEMP_CLEANERS" env-default:"3"`
 	Log                logs.Config     `yaml:"log" env-prefix:"LOG"`
 	State              StateConfig     `yaml:"state" env-prefix:"STATE"`
 	Cache              CacheConfig     `yaml:"cache" env-prefix:"CACHE"`

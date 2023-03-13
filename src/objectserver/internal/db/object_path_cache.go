@@ -24,6 +24,7 @@ func NewPathCache(storePath string) (*PathCache, error) {
 		badger.DefaultOptions(storePath).
 			WithNumGoroutines(runtime.NumCPU()).
 			WithCompression(options.ZSTD).
+			WithMetricsEnabled(false).
 			WithLogger(logs.New("path-cache")),
 	)
 	if err != nil {
