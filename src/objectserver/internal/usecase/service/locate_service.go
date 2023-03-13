@@ -35,35 +35,39 @@ func WarmUpLocateCache() {
 	}
 }
 
-// StartTempRemovalBackground start a temp file removal thread. watching the eviction of cache.
+// StartTempRemovalBackground start some temp file removal threads. watching the eviction of cache.
 // return cancel function.
-func StartTempRemovalBackground(cache cache.ICache) func() {
+func StartTempRemovalBackground(cache cache.ICache, threadNum int) func() {
 	ch := cache.NotifyEvicted()
 	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
+	startCleaner := func(tid int) {
 		defer graceful.Recover()
-		log.Info("Start handling temp file removal..")
+		log.Infof("cleaner[%d] start handling temp file removal..", tid)
 		for {
 			select {
 			case entry := <-ch:
-				log.Debugf("cache key %s evicted", entry.Key)
+				log.Debugf("cleaner[%d] cache key %s evicted", tid, entry.Key)
 				if strings.HasPrefix(entry.Key, entity.TempKeyPrefix) {
 					var ti entity.TempInfo
 					if ok := util.GobDecode(entry.Value, &ti); ok {
 						if _, err := DeleteFile(pool.Config.TempPath, ti.Id); err != nil {
-							log.Errorf("Remove temp %v(name=%v) error, %v", ti.Id, ti.Name, err)
+							log.Errorf("cleaner[%d] remove temp %v(name=%v) error, %v", tid, ti.Id, ti.Name, err)
 							break
 						}
-						log.Debugf("Remove temp file %s", ti.Id)
+						log.Debugf("cleaner[%d] remove temp file %s", tid, ti.Id)
 					} else {
-						log.Errorf("Handle evicted key=%v error, value cannot cast to TempInfo", entry.Key)
+						log.Errorf("cleaner[%d] handle evicted key=%v error, value cannot cast to TempInfo", tid, entry.Key)
 					}
 				}
 			case <-ctx.Done():
-				log.Info("Stop handling temp file removal")
+				log.Infof("cleaner[%d] stop handling temp file removal", tid)
 				return
 			}
 		}
-	}()
+	}
+
+	for i := 0; i < threadNum; i++ {
+		go startCleaner(i + 1)
+	}
 	return cancel
 }

@@ -32,6 +32,7 @@ func Patch(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
+	pool.Cache.Refresh(id)
 	response.Ok(g)
 }
 

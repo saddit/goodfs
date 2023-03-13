@@ -28,7 +28,7 @@ func Run(cfg *config.Config) {
 			// locating serv
 			service.NewLocator(pool.Etcd).StartLocate(netAddr),
 			// cleaning serv
-			service.StartTempRemovalBackground(pool.Cache),
+			service.StartTempRemovalBackground(pool.Cache, pool.Config.TempCleaners),
 			// auto update driver stat
 			pool.DriverManager.StartAutoUpdate(),
 			// system info sync
