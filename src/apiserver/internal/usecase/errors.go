@@ -13,4 +13,5 @@ var (
 	ErrMetadataExists     = response.NewError(http.StatusInternalServerError, "metadata exist")
 	ErrInvalidFile        = response.NewError(http.StatusBadRequest, "invalid file")
 	ErrOverRead           = errors.New("read to much data")
+	ErrStreamClosed       = errors.New("stream closed")
 )

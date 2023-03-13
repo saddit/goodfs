@@ -1,16 +1,15 @@
 package service
 
 import (
-	. "apiserver/internal/usecase/webapi"
+	"apiserver/internal/usecase"
+	"apiserver/internal/usecase/webapi"
 	"bytes"
 	"common/graceful"
 	"common/logs"
-	"errors"
 	"sync/atomic"
 )
 
-// PutStream 需要确保调用了Close或者Commit
-// Close() Commit() 可重复调用
+// PutStream transaction put stream
 type PutStream struct {
 	Locate    string
 	name      string
@@ -19,9 +18,9 @@ type PutStream struct {
 	committed *atomic.Bool
 }
 
-// NewPutStream IO: 发送Post请求到数据服务器
+// NewPutStream IO: sending POST request to server
 func NewPutStream(ip, name string, size int64, compress bool) (*PutStream, error) {
-	id, e := PostTmpObject(ip, name, size)
+	id, e := webapi.PostTmpObject(ip, name, size)
 	if e != nil {
 		return nil, e
 	}
@@ -29,7 +28,7 @@ func NewPutStream(ip, name string, size int64, compress bool) (*PutStream, error
 	return res, nil
 }
 
-// newExistedPutStream 不发送Post请求
+// newExistedPutStream skip POST request to continue a transfer
 func newExistedPutStream(ip, name, id string, compress bool) *PutStream {
 	res := &PutStream{Locate: ip, name: name, tmpId: id, committed: &atomic.Bool{}, compress: compress}
 	return res
@@ -42,9 +41,9 @@ func (p *PutStream) Close() error {
 
 func (p *PutStream) Write(b []byte) (n int, err error) {
 	if p.committed.Load() {
-		return 0, errors.New("stream has closed")
+		return 0, usecase.ErrStreamClosed
 	}
-	if err = PatchTmpObject(p.Locate, p.tmpId, bytes.NewBuffer(b)); err != nil {
+	if err = webapi.PatchTmpObject(p.Locate, p.tmpId, bytes.NewBuffer(b)); err != nil {
 		return
 	}
 	return len(b), nil
@@ -56,14 +55,14 @@ func (p *PutStream) Commit(ok bool) error {
 		if !ok {
 			go func() {
 				defer graceful.Recover()
-				if err := DeleteTmpObject(p.Locate, p.tmpId); err != nil {
+				if err := webapi.DeleteTmpObject(p.Locate, p.tmpId); err != nil {
 					logs.Std().Error(err)
 				}
 			}()
 			return nil
 		}
 
-		return PutTmpObject(p.Locate, p.tmpId, p.compress)
+		return webapi.PutTmpObject(p.Locate, p.tmpId, p.compress)
 	}
 	return nil
 }
