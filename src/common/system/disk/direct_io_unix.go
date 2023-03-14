@@ -21,11 +21,11 @@
 package disk
 
 import (
-	"os"
-	"syscall"
-
 	"github.com/ncw/directio"
 	"golang.org/x/sys/unix"
+	"io"
+	"os"
+	"syscall"
 )
 
 // OpenFileDirectIO - bypass kernel cache.
