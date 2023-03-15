@@ -14,3 +14,7 @@ export function invokeInterval(fn: ()=>void, ts: number) {
     fn()
     setInterval(fn, ts)
 }
+
+export function cutStr(s: string, maxLen: number) {
+    return s.substring(0, maxLen - 3) + "..."
+}
