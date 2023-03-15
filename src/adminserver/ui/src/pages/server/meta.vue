@@ -2,7 +2,8 @@
   <div class="text-2xl text-gray-900 font-bold mb-4">{{ $t('overview') }}</div>
   <div v-if="infos.length > 0"
        class="grid gap-y-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 justify-items-center placeholder:py-2">
-    <ServerCard v-for="info in infos" :info="info"></ServerCard>
+    <ServerCard class="cursor-pointer" v-for="info in infos" :info="info"
+                @click="info.isMaster ? openRaftCmdDia(info.serverId) : undefined"></ServerCard>
   </div>
   <div v-else class="w-full my-5 text-center text-gray-600 text-lg font-medium">
     {{ $t('no-servers') }}
@@ -17,7 +18,7 @@
         <button class="btn-pri text-sm" @click="openMigrateDialog = true">{{ t('start-migrate') }}</button>
         <button class="btn-pri text-sm" @click="openRaftCmdDialog = true">{{ t('raft-cmd') }}</button>
       </div>
-      <SlotsCard class="h-28" :value="slotRanges"></SlotsCard>
+      <SlotsCard @click-slots="openMigrateDia" class="h-28" :value="slotRanges"></SlotsCard>
     </div>
   </div>
   <div class="mt-8 text-2xl text-gray-900 font-bold mb-4">{{ $t('monitor') }}</div>
@@ -173,6 +174,11 @@ function joinCluster(masterId: string, servId: string) {
     })
 }
 
+function openMigrateDia(srcId: string) {
+    openMigrateDialog.value = true
+    migrateReq.value.srcServerId = srcId
+}
+
 function closeMigrateDialog() {
     openMigrateDialog.value = false
     formErrMsg.value = ""
@@ -180,6 +186,11 @@ function closeMigrateDialog() {
     migrateReq.value = {srcServerId: "", destServerId: "", slots: [], slotsStr: ""}
 }
 
+function openRaftCmdDia(masterId: string) {
+    openRaftCmdDialog.value = true
+    selectedRaftMaster.value = masterId
+    getSlaves(masterId)
+}
 
 function closeRaftCmdDialog() {
     openRaftCmdDialog.value = false

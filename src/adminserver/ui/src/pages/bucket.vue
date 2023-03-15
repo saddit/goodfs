@@ -44,10 +44,10 @@
     </table>
     <div class="inline-flex items-center space-x-3 my-4">
       <span class="text-gray-900 text-sm">{{ t('total-num')}}: {{dataReq.total}}</span>
-      <select class="select-pri-sm">
+      <select class="select-pri-sm" v-model="dataReq.pageSize">
         <option v-for="v in [10,20,50]" :value="v">{{v}}/page</option>
       </select>
-      <Pagination :max-num="5" :total="dataReq.total" :page-size="dataReq.pageSize"
+      <Pagination :max-num="10" :total="dataReq.total" :page-size="dataReq.pageSize"
                   v-model="dataReq.page"/>
     </div>
   </div>
