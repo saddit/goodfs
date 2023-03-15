@@ -14,23 +14,25 @@ import (
 var registryLog = logs.New("etcd-registry")
 
 type EtcdRegistry struct {
-	cli     *clientv3.Client
-	cfg     Config
-	leaseId clientv3.LeaseID
-	stdName string
-	name    string
-	stopFn  func()
+	cli         *clientv3.Client
+	cfg         Config
+	leaseId     clientv3.LeaseID
+	leaseIdChan chan clientv3.LeaseID
+	stdName     string
+	name        string
+	stopFn      func()
 }
 
 func NewEtcdRegistry(kv *clientv3.Client, cfg Config) *EtcdRegistry {
 	k := fmt.Sprint(cfg.Name, "/", cfg.ServerID)
 	return &EtcdRegistry{
-		cli:     kv,
-		cfg:     cfg,
-		leaseId: -1,
-		stdName: k,
-		name:    k,
-		stopFn:  func() {},
+		cli:         kv,
+		cfg:         cfg,
+		leaseId:     -1,
+		leaseIdChan: make(chan clientv3.LeaseID, 1),
+		stdName:     k,
+		name:        k,
+		stopFn:      func() {},
 	}
 }
 
@@ -47,6 +49,10 @@ func (e *EtcdRegistry) AsMaster() *EtcdRegistry {
 func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
 	e.name = fmt.Sprint(e.stdName, "_", "slave")
 	return e
+}
+
+func (e *EtcdRegistry) LifecycleLease() <-chan clientv3.LeaseID {
+	return e.leaseIdChan
 }
 
 func (e *EtcdRegistry) GetServiceMapping(name string) map[string]string {
@@ -108,6 +114,7 @@ func (e *EtcdRegistry) Register() error {
 	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), addr); err != nil {
 		return err
 	}
+	e.leaseIdChan <- e.leaseId
 	var keepAlive <-chan *clientv3.LeaseKeepAliveResponse
 	keepAlive, e.stopFn, err = e.keepaliveLease(e.leaseId)
 	if err != nil {

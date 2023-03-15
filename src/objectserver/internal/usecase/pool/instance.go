@@ -31,7 +31,7 @@ var (
 	PathDB        *db.PathCache
 	DriverManager *component.DriverManager
 	Cache         cache.ICache
-	Registry      registry.Registry
+	Registry      *registry.EtcdRegistry
 	Discovery     registry.Discovery
 )
 

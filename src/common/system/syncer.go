@@ -11,12 +11,13 @@ import (
 )
 
 type StatSyncer struct {
-	cli clientv3.KV
-	key string
+	cli     clientv3.KV
+	key     string
+	leaseId clientv3.LeaseID
 }
 
-func Syncer(c clientv3.KV, key string) *StatSyncer {
-	return &StatSyncer{c, key}
+func Syncer(c clientv3.KV, key string, lease clientv3.LeaseID) *StatSyncer {
+	return &StatSyncer{c, key, lease}
 }
 
 func (d *StatSyncer) StartAutoSave() func() {
@@ -50,7 +51,7 @@ func (d *StatSyncer) Sync() error {
 	if err != nil {
 		return err
 	}
-	_, err = d.cli.Put(context.Background(), d.key, string(bt))
+	_, err = d.cli.Put(context.Background(), d.key, string(bt), clientv3.WithLease(d.leaseId))
 	return err
 }
 

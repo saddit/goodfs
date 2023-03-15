@@ -25,5 +25,5 @@ func (c *Config) RegisterAddr() (string, bool) {
 }
 
 func (c *Config) RegisterKey() string {
-	return fmt.Sprintf(c.Group, "/", c.Name, "/", c.ServerID)
+	return fmt.Sprint(c.Group, "/", c.Name, "/", c.ServerID)
 }
