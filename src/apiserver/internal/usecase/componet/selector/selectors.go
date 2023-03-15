@@ -48,13 +48,11 @@ func (i *IPSelector) Select() string {
 	if i.used == nil {
 		i.used = make([]string, 0, len(i.IPs))
 	}
-	var ip string
-	if len(i.IPs) > 0 {
-		i.IPs, ip = i.Selector.Pop(i.IPs)
-		i.used = append(i.used, ip)
-	} else {
-		i.used, ip = i.Selector.Pop(i.used)
-		i.IPs = append(i.IPs, ip)
+	if len(i.IPs) == 0 {
+		i.used, i.IPs = i.IPs, i.used
 	}
+	var ip string
+	i.IPs, ip = i.Selector.Pop(i.IPs)
+	i.used = append(i.used, ip)
 	return ip
 }

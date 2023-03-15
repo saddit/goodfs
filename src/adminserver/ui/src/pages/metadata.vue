@@ -195,7 +195,7 @@ function uploadObject(event: any) {
 const dataColumns = [
     dataColumnHelper.accessor('name', {
         header: 'Name',
-        cell: props => props.getValue(),
+        cell: props => pkg.utils.cutStr(props.getValue(), 30),
     }),
     dataColumnHelper.accessor('bucket', {
         header: 'Bucket',
