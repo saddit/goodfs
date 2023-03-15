@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 func ListVersion(ip, name, bucket string, page, pageSize int, token string) ([]byte, int, error) {
@@ -32,6 +33,7 @@ func ListVersion(ip, name, bucket string, page, pageSize int, token string) ([]b
 }
 
 func PutObjects(ip, name, sha256, bucket string, fileIO io.Reader, size int64, token string) error {
+	name = url.PathEscape(name)
 	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s://%s/v1/objects/%s", GetSchema(), ip, name), fileIO)
 	if err != nil {
 		return err
