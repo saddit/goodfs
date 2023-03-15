@@ -49,7 +49,7 @@ func Run(cfg *config.Config) {
 		}
 	}()
 	// auto sync sys-info
-	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()))
+	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()), <-pool.Registry.LifecycleLease())
 	defer syncer.StartAutoSave()()
 	// flush config
 	defer cfg.Persist()

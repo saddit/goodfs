@@ -15,6 +15,15 @@ type Info struct {
 	IoStatus  *disk.IOStats `json:"ioStatus" msg:",inline"`
 }
 
+func ZeroInfo() *Info {
+	return &Info{
+		DiskInfo:  &disk.Info{},
+		MemStatus: &mem.Status{},
+		CpuStatus: &cpu.Stat{},
+		IoStatus:  &disk.IOStats{},
+	}
+}
+
 func NewInfo(diskPath string) (*Info, error) {
 	diskInfo, err := disk.GetInfo(diskPath)
 	if err != nil {

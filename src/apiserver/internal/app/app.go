@@ -24,9 +24,10 @@ func Run(cfg *Config) {
 	objService := service.NewObjectService(metaService, bucketRepo, pool.Etcd)
 	// register
 	cfg.Registry.ServerPort = cfg.Port
-	defer registry.NewEtcdRegistry(pool.Etcd, cfg.Registry).MustRegister().Unregister()
+	reg := registry.NewEtcdRegistry(pool.Etcd, cfg.Registry)
+	defer reg.MustRegister().Unregister()
 	// system-info auto saving
-	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()))
+	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()), <-reg.LifecycleLease())
 	defer syncer.StartAutoSave()()
 	//start api server
 	graceful.ListenAndServe(
