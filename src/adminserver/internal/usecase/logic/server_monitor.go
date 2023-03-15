@@ -45,15 +45,15 @@ func (sm ServerMonitor) ServerStat(servName string) (map[string]*entity.ServerIn
 	if err != nil {
 		return nil, err
 	}
-	for id, sysInfo := range sysMap {
-		mp[id] = &entity.ServerInfo{SysInfo: sysInfo, ServerID: id}
-	}
 	for id, httpAddr := range pool.Discovery.GetServiceMapping(servName) {
-		if s, ok := mp[id]; ok {
-			s.HttpAddr = httpAddr
-		} else {
-			mp[id] = &entity.ServerInfo{ServerID: id, HttpAddr: httpAddr, SysInfo: system.ZeroInfo()}
+		mp[id] = &entity.ServerInfo{ServerID: id, HttpAddr: httpAddr, SysInfo: system.ZeroInfo()}
+	}
+	for id, sysInfo := range sysMap {
+		v, ok := mp[id]
+		if !ok {
+			continue
 		}
+		v.SysInfo = sysInfo
 	}
 	return mp, nil
 }

@@ -15,6 +15,9 @@ func StringsReplace(arr []string, origin string, target string) bool {
 }
 
 func Fill[T any](arr []T, v T) {
+	if len(arr) == 0 {
+		return
+	}
 	// Preload the first value into the array/slice
 	arr[0] = v
 
@@ -25,6 +28,9 @@ func Fill[T any](arr []T, v T) {
 }
 
 func FillPattern[T any](arr []T, pattern []T) {
+	if len(arr) == 0 || len(pattern) == 0 {
+		return
+	}
 	// Copy the pattern into the start of the container
 	copy(arr, pattern)
 

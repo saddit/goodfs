@@ -33,7 +33,7 @@ func NewInfo(diskPath string) (*Info, error) {
 	if err != nil {
 		return nil, err
 	}
-	memStat, err := mem.MemStat()
+	memStat, err := mem.Stat()
 	if err != nil {
 		return nil, err
 	}
