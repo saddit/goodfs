@@ -84,7 +84,11 @@ func (sm ServerMonitor) StatTimeline(servNo int, statType string) map[string][]*
 	tl := pool.StatDB.GetTimeline(sm.NameOfServerNo(servNo))
 	res := make(map[string][]*db.TimeStat, len(tl))
 	for k, v := range tl {
-		res[k] = util.IfElse(statType == "cpu", v.CpuTimeline, v.MemTimeline)
+		if statType == "cpu" {
+			res[k] = v.CPUTimeline()
+		} else {
+			res[k] = v.MEMTimeline()
+		}
 	}
 	return res
 }
@@ -96,8 +100,8 @@ func (sm ServerMonitor) StatTimeLineOverview() (cpu map[string][]*db.TimeStat, m
 		name := sm.NameOfServerNo(v)
 		tl := pool.StatDB.GetTimeline(name)
 		for _, v2 := range tl {
-			cpu[name] = v2.CpuTimeline
-			mem[name] = v2.MemTimeline
+			cpu[name] = v2.CPUTimeline()
+			mem[name] = v2.MEMTimeline()
 		}
 	}
 	return

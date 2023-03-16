@@ -7,7 +7,7 @@ import (
 	"common/logs"
 	"common/system"
 	"common/util"
-	"common/util/slices"
+	"container/list"
 	"context"
 	"math"
 	"sync"
@@ -28,28 +28,48 @@ type TimeStat struct {
 }
 
 type statTimeline struct {
-	CpuTimeline []*TimeStat
-	MemTimeline []*TimeStat
+	cpu *list.List
+	mem *list.List
 }
 
 func newStatTimeline() *statTimeline {
 	return &statTimeline{
-		CpuTimeline: make([]*TimeStat, 0, 60),
-		MemTimeline: make([]*TimeStat, 0, 60),
+		cpu: list.New(),
+		mem: list.New(),
 	}
 }
 
 func (st *statTimeline) Append(cpu *TimeStat, mem *TimeStat) {
-	// limit size
-	if len(st.CpuTimeline) == maxTimeStat {
-		slices.RemoveFirst(&st.CpuTimeline)
+	if st.cpu.Len() == maxTimeStat {
+		elm := st.cpu.Front()
+		elm.Value = cpu
+		st.cpu.MoveToBack(elm)
+	} else {
+		st.cpu.PushBack(cpu)
 	}
-	if len(st.MemTimeline) == maxTimeStat {
-		slices.RemoveFirst(&st.MemTimeline)
+	if st.mem.Len() == maxTimeStat {
+		elm := st.mem.Front()
+		elm.Value = mem
+		st.mem.MoveToBack(elm)
+	} else {
+		st.mem.PushBack(mem)
 	}
-	// add new stat
-	st.CpuTimeline = append(st.CpuTimeline, cpu)
-	st.MemTimeline = append(st.MemTimeline, mem)
+}
+
+func (st *statTimeline) CPUTimeline() []*TimeStat {
+	arr := make([]*TimeStat, 0, st.cpu.Len())
+	for itr := st.cpu.Front(); itr != nil; itr = itr.Next() {
+		arr = append(arr, itr.Value.(*TimeStat))
+	}
+	return arr
+}
+
+func (st *statTimeline) MEMTimeline() []*TimeStat {
+	arr := make([]*TimeStat, 0, st.mem.Len())
+	for itr := st.mem.Front(); itr != nil; itr = itr.Next() {
+		arr = append(arr, itr.Value.(*TimeStat))
+	}
+	return arr
 }
 
 type ServerStatCli struct {
