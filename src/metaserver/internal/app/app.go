@@ -44,7 +44,7 @@ func Run(cfg *config.Config) {
 	defer pool.Registry.Unregister()
 	// remove slots info from etcd if shutdown as a leader
 	defer func() {
-		if raftWrapper.IsLeader() {
+		if raftWrapper.IsLeader() || !raftWrapper.Enabled {
 			util.LogErr(pool.HashSlot.Remove(cfg.HashSlot.StoreID))
 		}
 	}()

@@ -54,8 +54,9 @@ type Config struct {
 
 func (c *Config) initialize() {
 	c.PathCachePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_path-cache")
-	c.TempPath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_temp")
 	c.StoragePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_store")
+	// set to same path to improve writing performance
+	c.TempPath = c.StoragePath
 }
 
 func ReadConfig() Config {

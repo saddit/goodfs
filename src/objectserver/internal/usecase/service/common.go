@@ -22,9 +22,14 @@ func WarmUpLocateCache() {
 			if err != nil {
 				return err
 			}
+			fileName := info.Name()
+			// skip temp file
+			if strings.HasPrefix(fileName, entity.TempKeyPrefix) {
+				return nil
+			}
 			pool.ObjectCap.AddCap(info.Size())
 			if !info.IsDir() {
-				MarkExist(info.Name())
+				MarkExist(fileName)
 			}
 			return nil
 		})
