@@ -3,6 +3,9 @@ package webapi
 import (
 	"common/performance"
 	"common/util"
+	"context"
+	"crypto/tls"
+	"golang.org/x/net/http2"
 	"net"
 	"net/http"
 	"time"
@@ -11,16 +14,15 @@ import (
 var (
 	dialer = &net.Dialer{
 		Timeout:   30 * time.Second,
-		KeepAlive: 5 * time.Minute,
+		KeepAlive: 10 * time.Minute,
 	}
-	httpClient = http.Client{Transport: &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		DialContext:           dialer.DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          2500,
-		IdleConnTimeout:       10 * time.Minute,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+	httpClient = &http.Client{Transport: &http2.Transport{
+		// So http2.Transport doesn't complain the URL scheme isn't 'https'
+		AllowHTTP: true,
+		// Pretend we are dialing a TLS endpoint. (Note, we ignore the passed tls.Config)
+		DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, addr)
+		},
 	}}
 	performCollector performance.Collector
 )
@@ -44,7 +46,7 @@ func perform(written bool) func() {
 }
 
 func keepalive(req *http.Request) {
-	req.Header.Set("Keep-Alive", "timeout=300, max=2500")
+	req.Header.Set("Keep-Alive", "timeout=300, max=6000")
 }
 
 func Close() {
