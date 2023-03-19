@@ -41,20 +41,20 @@ func (l *Locator) StartLocate(ip string) (cancel func()) {
 	ch := l.etcd.Watch(ctx, cst.EtcdPrefix.LocationSubKey)
 	go func() {
 		defer graceful.Recover()
-		log.Info("Start listening locating message...")
+		locatorLog.Info("Start listening locating message...")
 		for {
 			select {
 			case <-ctx.Done():
-				log.Info("Cancel listening locating message")
+				locatorLog.Info("Cancel listening locating message")
 				return
 			case resp, ok := <-ch:
 				if !ok {
-					log.Warn("Locate watching stop! Try watching again...")
+					locatorLog.Warn("Locate watching stop! Try watching again...")
 					ch = l.etcd.Watch(ctx, cst.EtcdPrefix.LocationSubKey)
 					break
 				}
 				if resp.Err() != nil {
-					log.Error(resp.Err())
+					locatorLog.Error(resp.Err())
 					break
 				}
 				for _, event := range resp.Events {

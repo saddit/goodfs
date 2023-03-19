@@ -6,14 +6,13 @@ import (
 	"common/logs"
 	"common/util"
 	"context"
+	"fmt"
 	"io/fs"
 	"objectserver/internal/entity"
 	"objectserver/internal/usecase/pool"
 	"path/filepath"
 	"strings"
 )
-
-var log = logs.New("locate-service")
 
 // WarmUpLocateCache walk all objects under the storage path and save marks to cache
 func WarmUpLocateCache() {
@@ -34,7 +33,7 @@ func WarmUpLocateCache() {
 			return nil
 		})
 		if err != nil {
-			log.Error(err)
+			logs.Std().Error(err)
 			return
 		}
 	}
@@ -47,25 +46,26 @@ func StartTempRemovalBackground(cache cache.ICache, threadNum int) func() {
 	ctx, cancel := context.WithCancel(context.Background())
 	startCleaner := func(tid int) {
 		defer graceful.Recover()
-		log.Infof("cleaner[%d] start handling temp file removal..", tid)
+		logger := logs.New(fmt.Sprintf("cleaner-%d", tid))
+		logger.Info("start handling temp file removal..")
 		for {
 			select {
 			case entry := <-ch:
-				log.Debugf("cleaner[%d] cache key %s evicted", tid, entry.Key)
+				logger.Debugf("cache key %s evicted", entry.Key)
 				if strings.HasPrefix(entry.Key, entity.TempKeyPrefix) {
 					var ti entity.TempInfo
 					if ok := util.GobDecode(entry.Value, &ti); ok {
 						if _, err := DeleteFile(pool.Config.TempPath, ti.Id); err != nil {
-							log.Errorf("cleaner[%d] remove temp %v(name=%v) error, %v", tid, ti.Id, ti.Name, err)
+							logger.Errorf("remove temp %v(name=%v) error, %v", ti.Id, ti.Name, err)
 							break
 						}
-						log.Debugf("cleaner[%d] remove temp file %s", tid, ti.Id)
+						logger.Debugf("remove temp file %s", ti.Id)
 					} else {
-						log.Errorf("cleaner[%d] handle evicted key=%v error, value cannot cast to TempInfo", tid, entry.Key)
+						logger.Errorf("handle evicted key=%v error, value cannot cast to TempInfo", entry.Key)
 					}
 				}
 			case <-ctx.Done():
-				log.Infof("cleaner[%d] stop handling temp file removal", tid)
+				logger.Info("stop handling temp file removal")
 				return
 			}
 		}
