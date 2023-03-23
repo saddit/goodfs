@@ -156,7 +156,7 @@ func (m Metadata) StartMigration(srcID, destID string, slots []string) error {
 }
 
 func (m Metadata) GetSlotsDetail() (map[string]*hashslot.SlotInfo, error) {
-	prefix := cst.EtcdPrefix.FmtHashSlot(pool.Config.Discovery.Group, pool.Config.Discovery.MetaServName, "")
+	prefix := cst.EtcdPrefix.FmtHashSlot(pool.Config.Discovery.Group, "")
 	resp, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err

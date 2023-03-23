@@ -17,7 +17,7 @@ func (h HashSlot) IsKeyOnThisServer(key string) (bool, string) {
 		logs.Std().Error(err)
 		return false, ""
 	}
-	return id == pool.Config.Registry.ServerID, id
+	return id == pool.Config.Registry.SID(), id
 }
 
 func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
@@ -26,7 +26,7 @@ func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
 
 func (h HashSlot) SaveToEtcd(id string, info *hashslot.SlotInfo) error {
 	info.GroupID = id
-	info.ServerID = pool.Config.Registry.ServerID
+	info.ServerID = pool.Config.Registry.SID()
 	go func() {
 		pool.Config.HashSlot.Slots = info.Slots
 		if err := pool.Config.Persist(); err != nil {
@@ -50,7 +50,7 @@ func (HashSlot) GetById(storeId string) (*hashslot.SlotInfo, error) {
 		if storeId == pool.Config.HashSlot.StoreID {
 			return &hashslot.SlotInfo{
 				GroupID:  pool.Config.HashSlot.StoreID,
-				ServerID: pool.Config.Registry.ServerID,
+				ServerID: pool.Config.Registry.SID(),
 				Slots:    pool.Config.HashSlot.Slots,
 			}, nil
 		}

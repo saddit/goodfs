@@ -104,7 +104,7 @@ func TestEtcdRegsitry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	disc := registry.NewEtcdRegistry(etcd, registry.Config{
+	disc := registry.NewEtcdRegistry(etcd, &registry.Config{
 		Group:      "goodfs",
 		Services:   []string{"metaserver"},
 		ServerPort: "8080",
@@ -163,7 +163,7 @@ func TestGetRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := etcd.Get(context.Background(), cst.EtcdPrefix.Registry, clientv3.WithPrefix())
+	resp, err := etcd.Get(context.Background(), "/apisix", clientv3.WithPrefix())
 	if err != nil {
 		t.Fatal(err)
 	}

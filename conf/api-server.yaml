@@ -7,7 +7,6 @@ performance:
   enable: false
   store: local
 registry:
-  server-id: node
   group: "goodfs"
   name: "apiserver"
 etcd:

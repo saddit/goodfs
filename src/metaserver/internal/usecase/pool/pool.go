@@ -66,18 +66,17 @@ func initEtcd(cfg *etcd.Config) {
 func initStorage(cfg *config.Config) {
 	// open db file
 	Storage = db.NewStorage()
-	if err := Storage.Open(filepath.Join(cfg.DataPath, cfg.Registry.ServerID+".db")); err != nil {
+	if err := Storage.Open(filepath.Join(cfg.DataPath, cfg.Registry.SID()+".db")); err != nil {
 		panic(fmt.Errorf("open db err: %v", err))
 	}
 }
 
 func initRegistry(cfg *config.Config, etcd *clientv3.Client) {
-	cfg.Registry.ServerPort = cfg.Port
-	Registry = registry.NewEtcdRegistry(etcd, cfg.Registry)
+	Registry = registry.NewEtcdRegistry(etcd, &cfg.Registry)
 }
 
 func initHashSlot(cfg *registry.Config, etcd *clientv3.Client) {
-	HashSlot = db.NewHashSlotDB(cst.EtcdPrefix.FmtHashSlot(cfg.Group, cfg.Name, ""), etcd)
+	HashSlot = db.NewHashSlotDB(cst.EtcdPrefix.FmtHashSlot(cfg.Group, ""), etcd)
 }
 
 func initCache(cfg config.CacheConfig) {

@@ -153,8 +153,7 @@ func initEtcd(cfg *etcd.Config) {
 }
 
 func initRegister(et *clientv3.Client, cfg *config.Config) {
-	cfg.Registry.ServerPort = cfg.Port
-	er := registry.NewEtcdRegistry(et, cfg.Registry)
+	er := registry.NewEtcdRegistry(et, &cfg.Registry)
 	Registry, Discovery = er, er
 }
 

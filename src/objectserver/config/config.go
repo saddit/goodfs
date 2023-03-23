@@ -53,8 +53,9 @@ type Config struct {
 }
 
 func (c *Config) initialize() {
-	c.PathCachePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_path-cache")
-	c.StoragePath = filepath.Join(c.StoragePath, c.Registry.ServerID+"_store")
+	c.Registry.ServerPort = c.Port
+	c.PathCachePath = filepath.Join(c.StoragePath, c.Registry.SID()+"_path-cache")
+	c.StoragePath = filepath.Join(c.StoragePath, c.Registry.SID()+"_store")
 	// set to same path to improve writing performance
 	c.TempPath = c.StoragePath
 }

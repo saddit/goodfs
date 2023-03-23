@@ -25,21 +25,17 @@ var EtcdPrefix = etcdPrefix{
 }
 
 func (e *etcdPrefix) FmtRegistry(groupName, serviceName string) string {
-	return fmt.Sprintf("%s/%s/%s", e.Registry, groupName, serviceName)
+	return fmt.Sprintf("%s/%s/%s", groupName, e.Registry, serviceName)
 }
 
-func (e *etcdPrefix) FmtHashSlot(groupName, serviceName, id string) string {
-	return fmt.Sprintf("%s/%s/%s/%s", e.HashSlot, groupName, serviceName, id)
-}
-
-func (e *etcdPrefix) FmtObjectCap(groupName, serviceName, name string) string {
-	return fmt.Sprintf("%s/%s/%s/%s", e.ObjectCap, groupName, serviceName, name)
+func (e *etcdPrefix) FmtHashSlot(groupName, id string) string {
+	return fmt.Sprintf("%s/%s/%s", groupName, e.HashSlot, id)
 }
 
 func (e *etcdPrefix) FmtSystemInfo(groupName, serviceName, id string) string {
-	return fmt.Sprintf("%s/%s/%s/%s", e.SystemInfo, groupName, serviceName, id)
+	return fmt.Sprintf("%s/%s/%s/%s", groupName, e.SystemInfo, serviceName, id)
 }
 
-func (e *etcdPrefix) FmtConfigure(groupName, serviceName, id string) string {
-	return fmt.Sprintf("%s/%s/%s/%s", e.Configure, groupName, serviceName, id)
+func (e *etcdPrefix) FmtConfigure(groupName, id string) string {
+	return fmt.Sprintf("%s/%s/%s", groupName, e.Configure, id)
 }
