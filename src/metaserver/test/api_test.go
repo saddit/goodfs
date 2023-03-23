@@ -163,12 +163,12 @@ func TestGetRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := etcd.Get(context.Background(), "/apisix", clientv3.WithPrefix())
+	resp, err := etcd.Get(context.Background(), cst.EtcdPrefix.FmtRegistry("goodfs", ""), clientv3.WithPrefix())
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, kv := range resp.Kvs {
-		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
+		t.Logf("key=%s, value=%s", kv.Key, "nil")
 	}
 }
 
