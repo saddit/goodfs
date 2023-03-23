@@ -37,7 +37,7 @@ func (c *Config) SID() string {
 	if c.ServerID == "" {
 		addr, _ := c.RegisterAddr()
 		addr = strings.ReplaceAll(addr, ".", "")
-		addr = strings.ReplaceAll(addr, ":", "_")
+		addr = strings.ReplaceAll(addr, ":", "-")
 		c.ServerID = fmt.Sprint(c.Name, "-", addr)
 	}
 	return c.ServerID

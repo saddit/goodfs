@@ -69,12 +69,15 @@ func (e *EtcdRegistry) GetServiceMapping(name string) map[string]string {
 	}
 	res := make(map[string]string, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
-		idx := bytes.LastIndexByte(kv.Key, '/')
-		if idx < 0 {
+		idx1 := bytes.LastIndexByte(kv.Key, '/')
+		if idx1 < 0 {
 			continue
 		}
-		sid, _, _ := bytes.Cut(kv.Key[idx+1:], []byte("_"))
-		res[util.BytesToStr(sid)] = util.BytesToStr(kv.Value)
+		idx2 := bytes.LastIndexByte(kv.Key, '_')
+		if idx2 < 0 {
+			idx2 = len(kv.Key)
+		}
+		res[util.BytesToStr(kv.Key[idx1+1:idx2])] = util.BytesToStr(kv.Value)
 	}
 	return res
 }

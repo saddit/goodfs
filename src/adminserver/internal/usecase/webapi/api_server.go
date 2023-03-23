@@ -118,7 +118,7 @@ func UpdateBucket(ip string, b *msg.Bucket, token string) error {
 }
 
 func DeleteBucket(ip, name string, token string) error {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s://%s/v1/bucket/%s", GetSchema(), ip, name), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s://%s/v1/bucket/%s", GetSchema(), ip, name), nil)
 	if err != nil {
 		return err
 	}

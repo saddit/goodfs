@@ -5,7 +5,6 @@ import (
 	"common/graceful"
 	"common/system"
 	"common/util"
-	"fmt"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
 	"objectserver/internal/controller/http"
@@ -21,7 +20,7 @@ func Run(cfg *config.Config) {
 	pool.OnOpen(func() {
 		// register service
 		pool.Registry.MustRegister()
-		syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()), <-pool.Registry.LifecycleLease())
+		syncer := system.Syncer(pool.Etcd, cst.EtcdPrefix.FmtSystemInfo(cfg.Registry.Group, cfg.Registry.Name, cfg.Registry.SID()), <-pool.Registry.LifecycleLease())
 		pool.OnClose(
 			// unregister
 			func() { pool.Registry.Unregister() },

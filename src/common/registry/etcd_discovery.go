@@ -74,7 +74,7 @@ func (e *EtcdDiscovery) asyncWatch(serv, prefix string) {
 					break
 				}
 				for _, event := range res.Events {
-					// Key will be like ${group}/${serv}/${id}_${slave/master}
+					// Key will be like ${group}/registry/${serv}/${id}_${slave/master}
 					key := util.BytesToStr(event.Kv.Key)
 					addr := util.BytesToStr(event.Kv.Value)
 					switch event.Type {
@@ -99,12 +99,15 @@ func (e *EtcdDiscovery) GetServiceMapping(name string) map[string]string {
 	res := make(map[string]string)
 	if sl, ok := e.services[name]; ok {
 		for k, v := range sl.copy() {
-			idx := strings.LastIndexByte(v, '/')
-			if idx < 0 {
+			idx1 := strings.LastIndexByte(v, '/')
+			if idx1 < 0 {
 				continue
 			}
-			sid, _, _ := strings.Cut(v[idx+1:], "_")
-			res[sid] = k
+			idx2 := strings.LastIndexByte(v, '_')
+			if idx2 < 0 {
+				idx2 = len(v)
+			}
+			res[v[idx1+1:idx2]] = k
 		}
 	}
 	return res

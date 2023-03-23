@@ -9,7 +9,7 @@ async function updateBucket(b: Bucket) {
 }
 
 async function removeBucket(name: string) {
-    await axios.delete(`/metadata/delete_bucket?name=${name}`)
+    await axios.delete(`/metadata/delete_bucket/${name}`)
 }
 
 async function bucketPage(req: BucketReq): Promise<PageResult<Bucket>> {

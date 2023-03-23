@@ -5,7 +5,6 @@ import (
 	"common/graceful"
 	"common/system"
 	"common/util"
-	"fmt"
 	"metaserver/config"
 	"metaserver/internal/controller/grpc"
 	"metaserver/internal/controller/http"
@@ -49,7 +48,7 @@ func Run(cfg *config.Config) {
 		}
 	}()
 	// auto sync sys-info
-	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()), <-pool.Registry.LifecycleLease())
+	syncer := system.Syncer(pool.Etcd, cst.EtcdPrefix.FmtSystemInfo(cfg.Registry.Group, cfg.Registry.Name, cfg.Registry.SID()), <-pool.Registry.LifecycleLease())
 	defer syncer.StartAutoSave()()
 	// flush config
 	defer cfg.Persist()

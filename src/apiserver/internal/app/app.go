@@ -10,7 +10,6 @@ import (
 	"common/graceful"
 	"common/registry"
 	"common/system"
-	"fmt"
 )
 
 func Run(cfg *Config) {
@@ -26,7 +25,7 @@ func Run(cfg *Config) {
 	reg := registry.NewEtcdRegistry(pool.Etcd, &cfg.Registry)
 	defer reg.MustRegister().Unregister()
 	// system-info auto saving
-	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()), <-reg.LifecycleLease())
+	syncer := system.Syncer(pool.Etcd, cst.EtcdPrefix.FmtSystemInfo(cfg.Registry.Group, cfg.Registry.Name, cfg.Registry.SID()), <-reg.LifecycleLease())
 	defer syncer.StartAutoSave()()
 	//start api server
 	graceful.ListenAndServe(
