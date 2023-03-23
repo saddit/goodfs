@@ -79,7 +79,7 @@ func initPerform(cfg *performance.Config, logCfg *logs.Config, regCfg *registry.
 		if localPath == "" {
 			localPath = os.TempDir()
 		}
-		performance.SetLocalStore(performance.NewLocalStore(filepath.Join(localPath, regCfg.ServerID+".perf")))
+		performance.SetLocalStore(performance.NewLocalStore(filepath.Join(localPath, regCfg.SID()+".perf")))
 	}
 	if cfg.Enable && cfg.Store == performance.Remote {
 		performance.SetRemoteStore(performance.NewEtcdStore(etcd, []string{

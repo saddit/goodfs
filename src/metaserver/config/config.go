@@ -36,19 +36,20 @@ type Config struct {
 }
 
 func (c *Config) initialize(filePath string) {
+	c.Registry.ServerPort = c.Port
 	c.filePath, _ = filepath.Abs(filePath)
 	c.persistLock = &sync.Mutex{}
 	if c.DataDir == "" {
 		c.DataDir = os.TempDir()
 	}
-	c.DataPath = filepath.Join(c.DataDir, c.Registry.ServerID)
+	c.DataPath = filepath.Join(c.DataDir, c.Registry.SID())
 	c.Cluster.StoreDir = c.DataPath
 	c.Cluster.LogLevel = string(c.Log.Level)
 	if c.Cluster.Enable {
-		c.Cluster.ID = c.Registry.ServerID
+		c.Cluster.ID = c.Registry.SID()
 		c.HashSlot.StoreID = c.Cluster.GroupID
 	} else {
-		c.HashSlot.StoreID = c.Registry.ServerID
+		c.HashSlot.StoreID = c.Registry.SID()
 	}
 }
 

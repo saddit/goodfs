@@ -23,8 +23,7 @@ func Run(cfg *Config) {
 	metaService := service.NewMetaService(metaRepo, versionRepo)
 	objService := service.NewObjectService(metaService, bucketRepo, pool.Etcd)
 	// register
-	cfg.Registry.ServerPort = cfg.Port
-	reg := registry.NewEtcdRegistry(pool.Etcd, cfg.Registry)
+	reg := registry.NewEtcdRegistry(pool.Etcd, &cfg.Registry)
 	defer reg.MustRegister().Unregister()
 	// system-info auto saving
 	syncer := system.Syncer(pool.Etcd, fmt.Sprint(cst.EtcdPrefix.SystemInfo, "/", pool.Config.Registry.RegisterKey()), <-reg.LifecycleLease())

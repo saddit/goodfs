@@ -86,7 +86,7 @@ func (h *HashSlotService) PrepareMigrationTo(loc *pb.LocationInfo, slots []strin
 	if err != nil {
 		return err
 	}
-	edges, err := hashslot.WrapSlotsToEdges(slots, pool.Config.Registry.ServerID)
+	edges, err := hashslot.WrapSlotsToEdges(slots, pool.Config.Registry.SID())
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (h *HashSlotService) PrepareMigrationFrom(loc *pb.LocationInfo, slots []str
 	if err != nil {
 		return err
 	}
-	edges, err := hashslot.WrapSlotsToEdges(slots, pool.Config.Registry.ServerID)
+	edges, err := hashslot.WrapSlotsToEdges(slots, pool.Config.Registry.SID())
 	if err != nil {
 		return err
 	}

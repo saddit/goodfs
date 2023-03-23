@@ -32,6 +32,7 @@ type Config struct {
 }
 
 func (c *Config) initialize() {
+	c.Registry.ServerPort = c.Port
 	if i := c.Object.ReedSolomon.BlockSize() % cst.OS.NetPkgSize; i > 0 {
 		newSize := c.Object.ReedSolomon.BlockSize() - i + cst.OS.NetPkgSize
 		c.Object.ReedSolomon.BlockPerShard = newSize / c.Object.ReedSolomon.DataShards

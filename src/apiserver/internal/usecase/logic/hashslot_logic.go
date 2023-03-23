@@ -21,7 +21,7 @@ func NewHashSlot() *HashSlot {
 // KeySlotLocation find metadata location by hash-slot-algo return master server id, error
 func (HashSlot) KeySlotLocation(name string) (string, error) {
 	slotsMap := make(map[string][]string)
-	prefix := cst.EtcdPrefix.FmtHashSlot(pool.Config.Registry.Group, pool.Config.Discovery.MetaServName, "")
+	prefix := cst.EtcdPrefix.FmtHashSlot(pool.Config.Registry.Group, "")
 	// get slots data from etcd (only master saves into to etcd)
 	res, err := pool.Etcd.Get(context.Background(), prefix, clientv3.WithPrefix())
 	if err != nil {

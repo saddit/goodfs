@@ -20,18 +20,24 @@ type EtcdRegistry struct {
 	leaseIdChan chan clientv3.LeaseID
 	stdName     string
 	name        string
+	addr        string
 	stopFn      func()
 }
 
-func NewEtcdRegistry(kv *clientv3.Client, cfg Config) *EtcdRegistry {
-	k := fmt.Sprint(cfg.Name, "/", cfg.ServerID)
+func NewEtcdRegistry(kv *clientv3.Client, cfg *Config) *EtcdRegistry {
+	if cfg.ServerPort == "" {
+		panic("registry required ServerPort")
+	}
+	addr, _ := cfg.RegisterAddr()
+	k := fmt.Sprint(cfg.Name, "/", cfg.SID())
 	return &EtcdRegistry{
 		cli:         kv,
-		cfg:         cfg,
+		cfg:         *cfg,
 		leaseId:     -1,
 		leaseIdChan: make(chan clientv3.LeaseID, 1),
 		stdName:     k,
 		name:        k,
+		addr:        addr,
 		stopFn:      func() {},
 	}
 }
@@ -106,12 +112,8 @@ func (e *EtcdRegistry) Register() error {
 	}
 	ctx := context.Background()
 	var err error
-	//init registered key
-	addr, ok := e.cfg.RegisterAddr()
-	if !ok {
-		addr = util.ServerAddress(e.cfg.ServerPort)
-	}
-	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), addr); err != nil {
+
+	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), e.addr); err != nil {
 		return err
 	}
 	e.leaseIdChan <- e.leaseId

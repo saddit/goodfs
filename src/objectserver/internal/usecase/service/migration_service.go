@@ -45,7 +45,7 @@ func NewMigrationService(c *db.ObjectCapacity) *MigrationService {
 // getPeersCapacity returns peers capacity info expect self. key=addr,value=cap
 func (ms *MigrationService) getPeersCapacity() map[string]int64 {
 	ips := pool.Discovery.GetServices(pool.Config.Registry.Name)
-	selfLoc, _ := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID)
+	selfLoc, _ := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.SID())
 	res := make(map[string]int64, len(ips))
 	for _, ip := range ips {
 		// skip self
@@ -267,7 +267,7 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	}
 	// add to capacity db
 	pool.ObjectCap.AddCap(data.Size)
-	newLoc, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.ServerID)
+	newLoc, ok := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.SID())
 	if !ok {
 		return fmt.Errorf("server unregister yet")
 	}
