@@ -32,6 +32,7 @@ type MetadataApiClient interface {
 	SaveVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Int32, error)
 	UpdateVersion(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error)
 	SaveBucket(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Empty, error)
+	RemoveVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type metadataApiClient struct {
@@ -132,6 +133,15 @@ func (c *metadataApiClient) SaveBucket(ctx context.Context, in *Metadata, opts .
 	return out, nil
 }
 
+func (c *metadataApiClient) RemoveVersion(ctx context.Context, in *MetaReq, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/proto.MetadataApi/RemoveVersion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetadataApiServer is the server API for MetadataApi service.
 // All implementations must embed UnimplementedMetadataApiServer
 // for forward compatibility
@@ -146,6 +156,7 @@ type MetadataApiServer interface {
 	SaveVersion(context.Context, *Metadata) (*Int32, error)
 	UpdateVersion(context.Context, *Metadata) (*Empty, error)
 	SaveBucket(context.Context, *Metadata) (*Empty, error)
+	RemoveVersion(context.Context, *MetaReq) (*Empty, error)
 	mustEmbedUnimplementedMetadataApiServer()
 }
 
@@ -182,6 +193,9 @@ func (UnimplementedMetadataApiServer) UpdateVersion(context.Context, *Metadata) 
 }
 func (UnimplementedMetadataApiServer) SaveBucket(context.Context, *Metadata) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveBucket not implemented")
+}
+func (UnimplementedMetadataApiServer) RemoveVersion(context.Context, *MetaReq) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveVersion not implemented")
 }
 func (UnimplementedMetadataApiServer) mustEmbedUnimplementedMetadataApiServer() {}
 
@@ -376,6 +390,24 @@ func _MetadataApi_SaveBucket_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetadataApi_RemoveVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetaReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataApiServer).RemoveVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.MetadataApi/RemoveVersion",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataApiServer).RemoveVersion(ctx, req.(*MetaReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MetadataApi_ServiceDesc is the grpc.ServiceDesc for MetadataApi service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -422,6 +454,10 @@ var MetadataApi_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveBucket",
 			Handler:    _MetadataApi_SaveBucket_Handler,
+		},
+		{
+			MethodName: "RemoveVersion",
+			Handler:    _MetadataApi_RemoveVersion_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

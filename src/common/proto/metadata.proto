@@ -36,5 +36,6 @@ service MetadataApi {
   rpc SaveVersion(Metadata) returns (Int32);
   rpc UpdateVersion(Metadata) returns (Empty);
   rpc SaveBucket(Metadata) returns (Empty);
+  rpc RemoveVersion(MetaReq) returns (Empty);
 }
 

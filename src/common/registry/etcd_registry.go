@@ -129,7 +129,7 @@ func (e *EtcdRegistry) Register() error {
 	go func() {
 		defer graceful.Recover()
 		for resp := range keepAlive {
-			registryLog.Tracef("keepalive %s success (%d)", e.Key(), resp.TTL)
+			registryLog.Tracef("keepalive %s, lease-id %d, ttl %d", e.Key(), resp.ID, resp.TTL)
 		}
 		registryLog.Infof("stop keepalive %s", e.Key())
 	}()
