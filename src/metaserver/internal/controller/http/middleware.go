@@ -2,11 +2,10 @@ package http
 
 import (
 	"common/response"
+	"github.com/gin-gonic/gin"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 func isWriteMethod(method string) bool {
