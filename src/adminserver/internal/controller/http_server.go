@@ -58,5 +58,6 @@ func NewHttpServer(port string, webFs static.ServeFileSystem) *HttpServer {
 
 func (s *HttpServer) ListenAndServe() error {
 	logs.New("http-server").Infof("server listening on %s", s.Addr)
+	logs.New("http-server").Infof("visit web-console on http://localhost" + s.Addr)
 	return s.Server.ListenAndServe()
 }
