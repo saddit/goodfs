@@ -36,6 +36,7 @@ var checkWritableMethods = set.OfString([]string{
 	"/proto.MetadataApi/SaveMetadata",
 	"/proto.MetadataApi/UpdateMetadata",
 	"/proto.MetadataApi/SaveBucket",
+	"/proto.MetadataApi/RemoveVersion",
 })
 
 func CheckRaftEnabledUnary(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {

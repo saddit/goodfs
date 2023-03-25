@@ -79,8 +79,10 @@ func (e *EtcdDiscovery) asyncWatch(serv, prefix string) {
 					addr := util.BytesToStr(event.Kv.Value)
 					switch event.Type {
 					case mvccpb.PUT:
+						registryLog.Tracef("%s:%s added", serv, addr)
 						e.addService(serv, addr, key)
 					case mvccpb.DELETE:
+						registryLog.Tracef("%s:%s removed", serv, addr)
 						e.removeService(serv, addr)
 					}
 				}

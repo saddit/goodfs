@@ -156,6 +156,16 @@ func (m *MetadataApiServer) UpdateVersion(_ context.Context, req *pb.Metadata) (
 	return emp, nil
 }
 
+func (m *MetadataApiServer) RemoveVersion(_ context.Context, req *pb.MetaReq) (*pb.Empty, error) {
+	if req.Id == "" || req.Version <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "metadata id and version required")
+	}
+	if err := m.Service.RemoveVersion(req.Id, int(req.Version)); err != nil {
+		return nil, response.GRPCError(err)
+	}
+	return emp, nil
+}
+
 func (m *MetadataApiServer) GetPeers(context.Context, *pb.Empty) (*pb.Strings, error) {
 	peers, err := logic.NewPeers().GetPeers()
 	if err != nil {
