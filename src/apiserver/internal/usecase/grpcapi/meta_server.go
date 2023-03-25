@@ -230,3 +230,13 @@ func ListVersion(ip, id string, page, pageSize int) (arr []*msg.Version, total i
 	arr, err = util.DecodeArrayMsgp(resp.Data, func() *msg.Version { return new(msg.Version) })
 	return
 }
+
+func RemoveVersion(ip, id string, version int32) error {
+	defer perform(true)()
+	conn, err := getConn(ip)
+	if err != nil {
+		return err
+	}
+	_, err = pb.NewMetadataApiClient(conn).RemoveVersion(context.Background(), &pb.MetaReq{Id: id, Version: version})
+	return err
+}

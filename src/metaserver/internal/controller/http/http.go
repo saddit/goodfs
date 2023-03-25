@@ -26,7 +26,7 @@ func NewHttpServer(port string, grpcServer *grpc.Server, service IMetadataServic
 		CheckKeySlot,
 	)
 	engine.UseRawPath = true
-	engine.UnescapePathValues = false
+	engine.UnescapePathValues = true
 	//Http router
 	NewMetadataController(service).RegisterRoute(engine)
 	NewVersionController(service).RegisterRoute(engine)

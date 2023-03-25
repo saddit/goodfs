@@ -4,9 +4,7 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase/grpcapi"
 	"apiserver/internal/usecase/logic"
-	"apiserver/internal/usecase/webapi"
 	"fmt"
-	"net/url"
 )
 
 const (
@@ -64,5 +62,5 @@ func (v *VersionRepo) Delete(name, bucket string, ver int32) error {
 	if err != nil {
 		return err
 	}
-	return webapi.DelVersion(logic.NewDiscovery().GetMetaServerHTTP(masterId), url.PathEscape(name), ver)
+	return grpcapi.RemoveVersion(logic.NewDiscovery().GetMetaServerHTTP(masterId), name, ver)
 }
