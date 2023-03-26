@@ -52,7 +52,7 @@ func (e *EtcdDiscovery) initService(serv string) {
 		// wrap kvs
 		mp := make(map[string]string)
 		for _, kv := range res.Kvs {
-			mp[util.BytesToStr(kv.Value)] = string(kv.Key)
+			mp[util.BytesToStr(kv.Key)] = util.BytesToStr(kv.Value)
 		}
 		// init serv
 		e.services[serv].replace(mp)
@@ -82,8 +82,8 @@ func (e *EtcdDiscovery) asyncWatch(serv, prefix string) {
 						registryLog.Tracef("%s:%s added", serv, addr)
 						e.addService(serv, addr, key)
 					case mvccpb.DELETE:
-						registryLog.Tracef("%s:%s removed", serv, addr)
-						e.removeService(serv, addr)
+						registryLog.Tracef("%s:%s removed", serv, key)
+						e.removeService(serv, key)
 					}
 				}
 			}
@@ -100,16 +100,16 @@ func (e *EtcdDiscovery) asyncWatch(serv, prefix string) {
 func (e *EtcdDiscovery) GetServiceMapping(name string) map[string]string {
 	res := make(map[string]string)
 	if sl, ok := e.services[name]; ok {
-		for k, v := range sl.copy() {
-			idx1 := strings.LastIndexByte(v, '/')
+		for k, addr := range sl.copy() {
+			idx1 := strings.LastIndexByte(k, '/')
 			if idx1 < 0 {
 				continue
 			}
-			idx2 := strings.LastIndexByte(v, '_')
+			idx2 := strings.LastIndexByte(k, '_')
 			if idx2 < 0 {
-				idx2 = len(v)
+				idx2 = len(k)
 			}
-			res[v[idx1+1:idx2]] = k
+			res[k[idx1+1:idx2]] = addr
 		}
 	}
 	return res
@@ -141,18 +141,18 @@ func (e *EtcdDiscovery) GetService(name string, id string) (string, bool) {
 func (e *EtcdDiscovery) GetServiceMappingWith(name string, master bool) map[string]string {
 	if sl, ok := e.services[name]; ok {
 		res := make(map[string]string, len(sl.data))
-		for k, v := range sl.copy() {
-			idx := strings.LastIndexByte(v, '/')
+		for k, addr := range sl.copy() {
+			idx := strings.LastIndexByte(k, '/')
 			if idx < 0 {
 				continue
 			}
-			sid, role, contains := strings.Cut(v[idx+1:], "_")
+			sid, role, contains := strings.Cut(k[idx+1:], "_")
 			if master {
 				if !contains || role == "master" {
-					res[sid] = k
+					res[sid] = addr
 				}
 			} else if role == "slave" {
-				res[sid] = k
+				res[sid] = addr
 			}
 		}
 		return res
@@ -173,6 +173,6 @@ func (e *EtcdDiscovery) addService(name string, value string, key string) {
 	e.services[name].add(value, key)
 }
 
-func (e *EtcdDiscovery) removeService(name string, value string) {
-	e.services[name].remove(value)
+func (e *EtcdDiscovery) removeService(name string, key string) {
+	e.services[name].remove(key)
 }
