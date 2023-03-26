@@ -132,7 +132,7 @@ func DetectServerIP() string {
 			localIP = env
 			return
 		}
-		conn, err := net.Dial("udp", "8.8.8.8:53")
+		conn, err := net.Dial("udp", "223.5.5.5:53")
 		if err != nil {
 			LogErrWithPre("get server ip", err)
 			localIP = "127.0.0.1"
@@ -140,7 +140,8 @@ func DetectServerIP() string {
 		}
 		defer CloseAndLog(conn)
 		localIP, _, _ = net.SplitHostPort(conn.LocalAddr().String())
-		if !IsPublicIP(net.ParseIP(localIP)) {
+		ip := net.ParseIP(localIP)
+		if !ip.IsPrivate() && !IsPublicIP(ip) {
 			localIP = "127.0.0.1"
 			return
 		}
@@ -148,21 +149,12 @@ func DetectServerIP() string {
 	return localIP
 }
 
-func IsPublicIP(IP net.IP) bool {
-	if IP.IsLoopback() || IP.IsLinkLocalMulticast() || IP.IsLinkLocalUnicast() {
+func IsPublicIP(ip net.IP) bool {
+	if ip.IsLoopback() || ip.IsLinkLocalMulticast() || ip.IsLinkLocalUnicast() || ip.IsPrivate() {
 		return false
 	}
-	if ip4 := IP.To4(); ip4 != nil {
-		switch {
-		case ip4[0] == 10:
-			return false
-		case ip4[0] == 172 && ip4[1] >= 16 && ip4[1] <= 31:
-			return false
-		case ip4[0] == 192 && ip4[1] == 168:
-			return false
-		default:
-			return true
-		}
+	if ip4 := ip.To4(); ip4 != nil {
+		return true
 	}
 	return false
 }
