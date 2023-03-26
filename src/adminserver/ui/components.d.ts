@@ -31,6 +31,7 @@ declare module '@vue/runtime-core' {
     Tab: typeof import('@headlessui/vue')['Tab']
     TabGroup: typeof import('@headlessui/vue')['TabGroup']
     TabList: typeof import('@headlessui/vue')['TabList']
+    Tooltip: typeof import('./src/components/Tooltip.vue')['default']
     TransitionChild: typeof import('@headlessui/vue')['TransitionChild']
     TransitionRoot: typeof import('@headlessui/vue')['TransitionRoot']
     UsageLine: typeof import('./src/components/UsageLine.vue')['default']

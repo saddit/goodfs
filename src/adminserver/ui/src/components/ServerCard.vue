@@ -4,7 +4,9 @@
       <div class="inline-flex justify-between items-center px-2 w-full">
         <ServerIcon class="text-indigo-600 w-10 h-10"/>
         <div>
-          <div class="font-bold text-gray-900 text-lg">{{ info.serverId }}</div>
+          <Tooltip :tip="info.serverId">
+            <div class="font-bold text-right max-w-[5rem] text-gray-900 text-lg whitespace-nowrap overflow-ellipsis overflow-hidden">{{ info.serverId }}</div>
+          </Tooltip>
           <div v-if="info.isMaster" class="font-medium text-red-500 text-xs text-right">master</div>
         </div>
       </div>
