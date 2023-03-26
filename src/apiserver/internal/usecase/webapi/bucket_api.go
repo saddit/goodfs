@@ -19,6 +19,7 @@ func GetBucket(ip, name string) (*entity.Bucket, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -35,6 +36,7 @@ func PutBucket(ip string, data *entity.Bucket) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -51,6 +53,7 @@ func PostBucket(ip string, data *entity.Bucket) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -67,6 +70,7 @@ func DeleteBucket(ip, name string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusNoContent {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -83,6 +87,7 @@ func ListBucket(ip, name, prefix string, size int) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
