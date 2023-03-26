@@ -64,6 +64,7 @@ func NewRaft(localAddr string, cfg config.ClusterConfig, fsm raft.FSM) *RaftWrap
 		raftCfg := raft.Configuration{
 			Servers: make([]raft.Server, len(cfg.Nodes)),
 		}
+
 		for i, v := range cfg.Nodes {
 			idAndAddr := strings.Split(v, ",")
 			if len(idAndAddr) != 2 {
@@ -74,6 +75,14 @@ func NewRaft(localAddr string, cfg config.ClusterConfig, fsm raft.FSM) *RaftWrap
 				ID:       raft.ServerID(idAndAddr[0]),
 				Address:  raft.ServerAddress(idAndAddr[1]),
 			}
+		}
+
+		if len(raftCfg.Servers) == 0 {
+			raftCfg.Servers = append(raftCfg.Servers, raft.Server{
+				Suffrage: raft.Voter,
+				ID:       raft.ServerID(cfg.ID),
+				Address:  raft.ServerAddress(localAddr),
+			})
 		}
 
 		go func() {

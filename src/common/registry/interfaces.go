@@ -1,10 +1,6 @@
 package registry
 
 type (
-	Registry interface {
-		Register() error
-		Unregister() error
-	}
 	Discovery interface {
 		// GetServices server addresses
 		GetServices(name string) []string
