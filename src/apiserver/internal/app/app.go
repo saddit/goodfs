@@ -10,6 +10,7 @@ import (
 	"common/graceful"
 	"common/registry"
 	"common/system"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 func Run(cfg *Config) {
@@ -21,12 +22,27 @@ func Run(cfg *Config) {
 	metaRepo := repo.NewMetadataRepo()
 	metaService := service.NewMetaService(metaRepo, versionRepo)
 	objService := service.NewObjectService(metaService, bucketRepo, pool.Etcd)
+
+	// lifecycle
+	lifecycle := registry.NewLifecycle(pool.Etcd, cfg.Registry.Interval)
+	defer lifecycle.Close()
+
 	// register
 	reg := registry.NewEtcdRegistry(pool.Etcd, &cfg.Registry)
-	defer reg.MustRegister().Unregister()
+	lifecycle.Subscribe(reg.Register)
+	defer reg.Unregister()
+
 	// system-info auto saving
-	syncer := system.Syncer(pool.Etcd, cst.EtcdPrefix.FmtSystemInfo(cfg.Registry.Group, cfg.Registry.Name, cfg.Registry.SID()), <-reg.LifecycleLease())
+	syncer := system.Syncer(pool.Etcd, cst.EtcdPrefix.FmtSystemInfo(cfg.Registry.Group, cfg.Registry.Name, cfg.Registry.SID()))
+	lifecycle.Subscribe(func(id clientv3.LeaseID) {
+		syncer.LeaseID = id
+		_ = syncer.Sync()
+	})
 	defer syncer.StartAutoSave()()
+
+	// start lifecycle
+	go lifecycle.DeadLoop()
+
 	//start api server
 	graceful.ListenAndServe(
 		nil,

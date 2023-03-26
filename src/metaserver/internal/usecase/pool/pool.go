@@ -28,6 +28,7 @@ var (
 	RaftWrapper *raftimpl.RaftWrapper
 	Etcd        *clientv3.Client
 	Registry    *registry.EtcdRegistry
+	Lifecycle   *registry.Lifecycle
 )
 
 func InitPool(cfg *config.Config) {
@@ -35,6 +36,7 @@ func InitPool(cfg *config.Config) {
 	initLog(&cfg.Log)
 	initCache(cfg.Cache)
 	initEtcd(&cfg.Etcd)
+	initLifecycle(Etcd, &cfg.Registry)
 	initRegistry(cfg, Etcd)
 	initStorage(cfg)
 	initHashSlot(&cfg.Registry, Etcd)
@@ -47,6 +49,10 @@ func initLog(cfg *logs.Config) {
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
+}
+
+func initLifecycle(c *clientv3.Client, cfg *registry.Config) {
+	Lifecycle = registry.NewLifecycle(c, cfg.Interval)
 }
 
 func initEtcd(cfg *etcd.Config) {
@@ -92,9 +98,10 @@ func initCache(cfg config.CacheConfig) {
 
 func Close() {
 	util.LogErr(Storage.Stop())
-	util.LogErr(Etcd.Close())
+	util.LogErr(Lifecycle.Close())
 	util.LogErr(HashSlot.Close(time.Minute))
 	if RaftWrapper != nil {
 		util.LogErr(RaftWrapper.Close())
 	}
+	util.LogErr(Etcd.Close())
 }

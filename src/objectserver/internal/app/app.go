@@ -3,8 +3,10 @@ package app
 import (
 	"common/cst"
 	"common/graceful"
+	"common/registry"
 	"common/system"
 	"common/util"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"objectserver/config"
 	"objectserver/internal/controller/grpc"
 	"objectserver/internal/controller/http"
@@ -17,11 +19,19 @@ func Run(cfg *config.Config) {
 	pool.InitPool(cfg)
 	defer pool.CloseAll()
 	netAddr := util.ServerAddress(cfg.Port)
+	// init components
+	lifecycle := registry.NewLifecycle(pool.Etcd, cfg.Registry.Interval)
+	syncer := system.Syncer(pool.Etcd, cst.EtcdPrefix.FmtSystemInfo(cfg.Registry.Group, cfg.Registry.Name, cfg.Registry.SID()))
+	// lifecycle event
+	lifecycle.Subscribe(pool.Registry.Register)
+	lifecycle.Subscribe(func(id clientv3.LeaseID) {
+		syncer.LeaseID = id
+		_ = syncer.Sync()
+	})
 	pool.OnOpen(func() {
-		// register service
-		pool.Registry.MustRegister()
-		syncer := system.Syncer(pool.Etcd, cst.EtcdPrefix.FmtSystemInfo(cfg.Registry.Group, cfg.Registry.Name, cfg.Registry.SID()), <-pool.Registry.LifecycleLease())
+		go lifecycle.DeadLoop()
 		pool.OnClose(
+			func() { lifecycle.Close() },
 			// unregister
 			func() { pool.Registry.Unregister() },
 			// locating serv

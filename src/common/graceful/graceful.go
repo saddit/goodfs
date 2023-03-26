@@ -37,14 +37,14 @@ func ListenAndServe(ctx context.Context, srvs ...Server) {
 	defer func() {
 		wg := sync.WaitGroup{}
 		// The context is used to inform the servers it has 15 seconds to finish the request it is currently handling
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		for _, s := range srvs {
 			wg.Add(1)
 			go func(srv Server) {
 				defer Recover()
 				defer wg.Done()
-				if err := srv.Shutdown(ctx); err != nil {
+				if err := srv.Shutdown(timeoutCtx); err != nil {
 					log.Errorf("server shutdown err: %s", err)
 				}
 			}(s)

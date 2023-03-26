@@ -13,26 +13,25 @@ import (
 type StatSyncer struct {
 	cli     clientv3.KV
 	key     string
-	leaseId clientv3.LeaseID
+	LeaseID clientv3.LeaseID
 }
 
-func Syncer(c clientv3.KV, key string, lease clientv3.LeaseID) *StatSyncer {
-	return &StatSyncer{c, key, lease}
+func Syncer(c clientv3.KV, key string) *StatSyncer {
+	return &StatSyncer{cli: c, key: key}
 }
 
 func (d *StatSyncer) StartAutoSave() func() {
 	ctx, cancel := context.WithCancel(context.Background())
 	tk := time.NewTicker(time.Minute)
-	util.LogErrWithPre("auto save sys-info", d.Sync())
 	go func() {
 		defer graceful.Recover()
 		for {
 			select {
 			case <-ctx.Done():
-				logs.Std().Info("stop auto save sys-info")
+				logs.Std().Info("stop sync sys-info")
 				return
 			case <-tk.C:
-				util.LogErrWithPre("auto save sys-info", d.Sync())
+				util.LogErrWithPre("sync sys-info", d.Sync())
 			}
 		}
 	}()
@@ -51,7 +50,7 @@ func (d *StatSyncer) Sync() error {
 	if err != nil {
 		return err
 	}
-	_, err = d.cli.Put(context.Background(), d.key, string(bt), clientv3.WithLease(d.leaseId))
+	_, err = d.cli.Put(context.Background(), d.key, string(bt), clientv3.WithLease(d.LeaseID))
 	return err
 }
 

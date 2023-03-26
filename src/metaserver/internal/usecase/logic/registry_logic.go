@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"common/util"
 	"metaserver/internal/usecase/pool"
 )
 
@@ -10,10 +9,9 @@ type Registry struct{}
 func NewRegistry() Registry { return Registry{} }
 
 func (Registry) OnLeaderChanged(isLeader bool) {
-	util.LogErr(pool.Registry.Unregister())
 	if isLeader {
-		util.LogErr(pool.Registry.AsMaster().Register())
+		pool.Registry.AsMaster().Register(pool.Lifecycle.Lease())
 	} else {
-		util.LogErr(pool.Registry.AsSlave().Register())
+		pool.Registry.AsSlave().Register(pool.Lifecycle.Lease())
 	}
 }

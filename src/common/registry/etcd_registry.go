@@ -9,19 +9,18 @@ import (
 	"context"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"sync"
+	"time"
 )
 
 var registryLog = logs.New("etcd-registry")
 
 type EtcdRegistry struct {
-	cli         *clientv3.Client
-	cfg         Config
-	leaseId     clientv3.LeaseID
-	leaseIdChan chan clientv3.LeaseID
-	stdName     string
-	name        string
-	addr        string
-	stopFn      func()
+	cli     *clientv3.Client
+	cfg     Config
+	stdName string
+	name    string
+	addr    string
 }
 
 func NewEtcdRegistry(kv *clientv3.Client, cfg *Config) *EtcdRegistry {
@@ -30,16 +29,14 @@ func NewEtcdRegistry(kv *clientv3.Client, cfg *Config) *EtcdRegistry {
 	}
 	addr, _ := cfg.RegisterAddr()
 	k := fmt.Sprint(cfg.Name, "/", cfg.SID())
-	return &EtcdRegistry{
-		cli:         kv,
-		cfg:         *cfg,
-		leaseId:     -1,
-		leaseIdChan: make(chan clientv3.LeaseID, 1),
-		stdName:     k,
-		name:        k,
-		addr:        addr,
-		stopFn:      func() {},
+	reg := &EtcdRegistry{
+		cli:     kv,
+		cfg:     *cfg,
+		stdName: k,
+		name:    k,
+		addr:    addr,
 	}
+	return reg
 }
 
 func (e *EtcdRegistry) Key() string {
@@ -47,7 +44,6 @@ func (e *EtcdRegistry) Key() string {
 }
 
 func (e *EtcdRegistry) AsMaster() *EtcdRegistry {
-	// metaserver/node1_master
 	e.name = fmt.Sprint(e.stdName, "_", "master")
 	return e
 }
@@ -55,10 +51,6 @@ func (e *EtcdRegistry) AsMaster() *EtcdRegistry {
 func (e *EtcdRegistry) AsSlave() *EtcdRegistry {
 	e.name = fmt.Sprint(e.stdName, "_", "slave")
 	return e
-}
-
-func (e *EtcdRegistry) LifecycleLease() <-chan clientv3.LeaseID {
-	return e.leaseIdChan
 }
 
 func (e *EtcdRegistry) GetServiceMapping(name string) map[string]string {
@@ -101,79 +93,98 @@ func (e *EtcdRegistry) GetService(name string, id string) (string, bool) {
 	return v, ok
 }
 
-func (e *EtcdRegistry) MustRegister() *EtcdRegistry {
-	if err := e.Register(); err != nil {
-		panic(err)
+func (e *EtcdRegistry) Register(id clientv3.LeaseID) {
+	if _, err := e.cli.Put(context.Background(), e.Key(), e.addr, clientv3.WithLease(id)); err != nil {
+		registryLog.Errorf("register %s fails: %s", e.addr, err)
+		return
 	}
-	return e
-}
-
-func (e *EtcdRegistry) Register() error {
-	// skip if already register
-	if e.leaseId != -1 {
-		return nil
-	}
-	ctx := context.Background()
-	var err error
-
-	if e.leaseId, err = e.makeKvWithLease(ctx, e.Key(), e.addr); err != nil {
-		return err
-	}
-	e.leaseIdChan <- e.leaseId
-	var keepAlive <-chan *clientv3.LeaseKeepAliveResponse
-	keepAlive, e.stopFn, err = e.keepaliveLease(e.leaseId)
-	if err != nil {
-		return err
-	}
-	//listen the heartbeat response
-	go func() {
-		defer graceful.Recover()
-		for resp := range keepAlive {
-			registryLog.Tracef("keepalive %s, lease-id %d, ttl %d", e.Key(), resp.ID, resp.TTL)
-		}
-		registryLog.Infof("stop keepalive %s", e.Key())
-	}()
-	registryLog.Infof("registry %s success", e.Key())
-	return nil
+	registryLog.Infof("register %s success", e.Key())
 }
 
 func (e *EtcdRegistry) Unregister() error {
-	registryLog.Tracef("manual unregister %s", e.Key())
-	e.stopFn()
-	if e.leaseId != -1 {
-		ctx, cancel := context.WithTimeout(context.Background(), e.cfg.Timeout)
-		defer cancel()
-		_, err := e.cli.Delete(ctx, e.Key())
-		if err != nil {
-			return err
-		}
-		_, err = e.cli.Revoke(ctx, e.leaseId)
-		if err != nil {
-			return err
-		}
-		e.leaseId = -1
-	}
-	return nil
+	_, err := e.cli.Delete(context.Background(), e.Key())
+	return err
 }
 
-func (e *EtcdRegistry) makeKvWithLease(ctx context.Context, key string, value string) (clientv3.LeaseID, error) {
-	//grant a lease
-	lease, err := e.cli.Grant(ctx, int64(e.cfg.Interval.Seconds()))
-	if err != nil {
-		return -1, fmt.Errorf("Register interval heartbeat: grant lease error, %v", err)
-	}
-	//create a key with lease
-	if _, err = e.cli.Put(ctx, key, value, clientv3.WithLease(lease.ID)); err != nil {
-		return -1, fmt.Errorf("Register interval heartbeat: send heartbeat error, %v", err)
-	}
-	return lease.ID, nil
+type Lifecycle struct {
+	Client      clientv3.Lease
+	mux         sync.RWMutex
+	lease       clientv3.LeaseID
+	ttl         time.Duration
+	ctx         context.Context
+	cancel      func()
+	notifyLease []func(id clientv3.LeaseID)
 }
 
-func (e *EtcdRegistry) keepaliveLease(id clientv3.LeaseID) (<-chan *clientv3.LeaseKeepAliveResponse, func(), error) {
+func NewLifecycle(cli clientv3.Lease, ttl time.Duration) *Lifecycle {
 	ctx, cancel := context.WithCancel(context.Background())
-	ch, err := e.cli.KeepAlive(ctx, id)
-	return ch, func() {
-		defer cancel()
-		e.stopFn = func() {}
-	}, err
+	return &Lifecycle{
+		Client: cli,
+		mux:    sync.RWMutex{},
+		ttl:    ttl,
+		ctx:    ctx,
+		cancel: cancel,
+	}
+}
+
+func (lc *Lifecycle) notifying() {
+	for _, f := range lc.notifyLease {
+		go func(fn func(id clientv3.LeaseID)) {
+			defer graceful.Recover()
+			fn(lc.lease)
+		}(f)
+	}
+}
+
+func (lc *Lifecycle) Lease() clientv3.LeaseID {
+	lc.mux.RLock()
+	defer lc.mux.RUnlock()
+	return lc.lease
+}
+
+func (lc *Lifecycle) DeadLoop() {
+	defer graceful.Recover()
+	for {
+		// lock to update lease
+		lc.mux.Lock()
+		leaseResp, err := lc.Client.Grant(context.Background(), int64(lc.ttl.Seconds()))
+		if err != nil {
+			registryLog.Errorf("grant lifecycle lease err: %s", err)
+			continue
+		}
+		lc.lease = leaseResp.ID
+		lc.mux.Unlock()
+
+		// notify lease change
+		lc.notifying()
+
+		// keepalive new lease
+		response, err := lc.Client.KeepAlive(lc.ctx, lc.lease)
+		if err != nil {
+			registryLog.Errorf("could not keepalive for lifecycle lease %d, err: %s", lc.lease, err)
+			continue
+		}
+		for r := range response {
+			registryLog.Tracef("keepalive lease %d success: ttl=%d", r.ID, r.TTL)
+		}
+
+		// break loop if closed
+		select {
+		case <-lc.ctx.Done():
+			_, _ = lc.Client.Revoke(context.Background(), lc.lease)
+			registryLog.Infof("stop keepalive lifecycle lease")
+			return
+		default:
+			registryLog.Warnf("lifecycle lease revoked, start grant a new lease")
+		}
+	}
+}
+
+func (lc *Lifecycle) Subscribe(fn func(id clientv3.LeaseID)) {
+	lc.notifyLease = append(lc.notifyLease, fn)
+}
+
+func (lc *Lifecycle) Close() error {
+	lc.cancel()
+	return nil
 }
