@@ -21,6 +21,7 @@ func DeleteTmpObject(locate, id string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -40,6 +41,7 @@ func PostTmpObject(ip, name string, size int64) (string, error) {
 	if e != nil {
 		return "", fmt.Errorf("post temp object name=%v, return error response body, status=%v", name, resp.StatusCode)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("post temp object name=%v, return code=%v, content=%s", name, resp.Status, string(res))
 	}
@@ -54,6 +56,7 @@ func PatchTmpObject(ip, id string, body io.Reader) error {
 	if e != nil {
 		return e
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusBadRequest {
 		content, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -80,6 +83,7 @@ func PutTmpObject(ip, id string, compress bool) error {
 	if e != nil {
 		return e
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusBadRequest {
 		content, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -95,10 +99,15 @@ func PutTmpObject(ip, id string, compress bool) error {
 
 func HeadTmpObject(ip, id string) (int64, error) {
 	defer perform(false)()
-	resp, e := http.Head(tempRest(ip, id))
-	if e != nil {
-		return 0, e
+	req, err := http.NewRequest(http.MethodHead, tempRest(ip, id), nil)
+	if err != nil {
+		return 0, err
 	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusBadRequest {
 		if content, e := io.ReadAll(resp.Body); e == nil {
 			return 0, fmt.Errorf("patch temp object id=%v, return content=%v", id, string(content))
@@ -145,10 +154,15 @@ func GetObject(ip, name string, offset int, size int64, compress bool) (*http.Re
 
 func HeadObject(ip, id string) error {
 	defer perform(false)()
-	resp, err := http.Head(objectRest(ip, id))
+	req, err := http.NewRequest(http.MethodHead, objectRest(ip, id), nil)
 	if err != nil {
 		return err
 	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
 		return nil
 	}
@@ -171,6 +185,7 @@ func PutObject(ip, id string, compress bool, body io.Reader) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("put object id=%v, return code=%v, %s", id, resp.Status, response.MessageFromJSONBody(resp.Body))
 	}
@@ -183,6 +198,7 @@ func PingObject(ip string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -195,6 +211,7 @@ func StatObject(ip string) (hd http.Header, err error) {
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		err = response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 		return
