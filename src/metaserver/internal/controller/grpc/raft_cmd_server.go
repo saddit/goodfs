@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"metaserver/config"
 	"metaserver/internal/usecase/logic"
 	"metaserver/internal/usecase/pool"
@@ -149,7 +150,7 @@ func (rcs *RaftCmdServerImpl) RemoveFollower(_ context.Context, req *pb.RemoveFo
 		}
 	}
 	if idx > 0 {
-		pool.Config.Cluster.Nodes[0], pool.Config.Cluster.Nodes[idx] = pool.Config.Cluster.Nodes[idx], pool.Config.Cluster.Nodes[idx]
+		pool.Config.Cluster.Nodes[0], pool.Config.Cluster.Nodes[idx] = pool.Config.Cluster.Nodes[idx], pool.Config.Cluster.Nodes[0]
 		slices.RemoveFirst(&pool.Config.Cluster.Nodes)
 		// persist config async
 		go func() {
@@ -216,5 +217,10 @@ func (rcs *RaftCmdServerImpl) Peers(_ context.Context, _ *pb.EmptyReq) (*pb.Resp
 	for _, serv := range servers {
 		res = append(res, string(serv.Address))
 	}
-	return &pb.Response{Success: true, Message: strings.Join(res, ",")}, nil
+	m := gin.H{
+		"peers":    res,
+		"leaderId": rcs.rf.LeaderID(),
+	}
+	bt, _ := json.MarshalIndent(&m, "", "  ")
+	return &pb.Response{Success: true, Message: util.BytesToStr(bt)}, nil
 }

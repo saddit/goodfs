@@ -26,7 +26,9 @@ func ResolveErr(err error) error {
 	switch s.Code() {
 	case codes.OK:
 		return nil
-	case codes.InvalidArgument, codes.Aborted, codes.NotFound:
+	case codes.NotFound:
+		return response.NewError(404, s.Message())
+	case codes.InvalidArgument, codes.Aborted:
 		return response.NewError(400, s.Message())
 	default:
 		return response.NewError(500, s.Message())

@@ -6,7 +6,6 @@ import (
 	"common/datasize"
 	"common/hashslot"
 	"common/proto/msg"
-	"common/registry"
 	"common/system"
 	"common/util"
 	"context"
@@ -95,27 +94,6 @@ func TestGetMeta(t *testing.T) {
 	t.Log(string(res))
 }
 
-func TestEtcdRegsitry(t *testing.T) {
-	etcd, err := clientv3.New(clientv3.Config{
-		Endpoints: []string{"pressed.top:2379"},
-		Username:  "root",
-		Password:  "xianka",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	disc := registry.NewEtcdRegistry(etcd, &registry.Config{
-		Group:      "goodfs",
-		Services:   []string{"metaserver"},
-		ServerPort: "8080",
-	})
-	defer disc.MustRegister().Unregister()
-	httpList := disc.GetServices("metaserver")
-	rpcList := disc.GetServices("metaserver")
-	t.Log(httpList, len(httpList))
-	t.Log(rpcList, len(rpcList))
-}
-
 func TestGetObjectCaps(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},
@@ -142,7 +120,7 @@ func TestGetHashSlot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	key := cst.EtcdPrefix.HashSlot
+	key := cst.EtcdPrefix.FmtHashSlot("goodfs", "")
 	resp, err := etcd.Get(context.Background(), key, clientv3.WithPrefix())
 	if err != nil {
 		t.Fatal(err)

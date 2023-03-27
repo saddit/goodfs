@@ -3,7 +3,7 @@ module metaserver
 go 1.20
 
 require (
-	github.com/Jille/raft-grpc-transport v1.1.1
+	github.com/Jille/raft-grpc-transport v1.4.0
 	github.com/allegro/bigcache v1.2.1
 	github.com/gin-gonic/gin v1.8.1
 	github.com/ilyakaznacheev/cleanenv v1.4.1
@@ -14,6 +14,8 @@ require (
 
 require (
 	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 )
@@ -50,7 +52,7 @@ require (
 )
 
 require (
-	github.com/armon/go-metrics v0.3.0 // indirect
+	github.com/armon/go-metrics v0.3.9 // indirect
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/go-hclog v0.16.2

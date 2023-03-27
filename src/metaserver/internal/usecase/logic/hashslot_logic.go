@@ -17,7 +17,7 @@ func (h HashSlot) IsKeyOnThisServer(key string) (bool, string) {
 		logs.Std().Error(err)
 		return false, ""
 	}
-	return id == pool.Config.Registry.SID(), id
+	return id == pool.Config.Registry.SID() || id == pool.RaftWrapper.LeaderID(), id
 }
 
 func (HashSlot) GetSlotsProvider() (hashslot.IEdgeProvider, error) {
