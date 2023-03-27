@@ -83,9 +83,8 @@ func (c *Cache) Delete(k string) {
 }
 
 func (c *Cache) Close() error {
-	for _, ch := range c.notifyEvicted {
-		close(ch)
-	}
+	// make it closing by GC
+	c.notifyEvicted = nil
 	return c.cache.Close()
 }
 

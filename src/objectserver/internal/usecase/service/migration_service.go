@@ -87,7 +87,7 @@ func (ms *MigrationService) DeviationValues(join bool) (map[string]int64, error)
 	if len(res) == 0 {
 		return nil, fmt.Errorf("non avaliable object servers")
 	}
-	logs.Std().Debugf("DeviationValues: %+v", res)
+	msLog.Debugf("DeviationValues: %+v", res)
 	return res, nil
 }
 
@@ -97,9 +97,11 @@ func (ms *MigrationService) writeStream(stream pb.ObjectMigration_ReceiveDataCli
 		var inner error
 		// if err is io.EOF, means stream has been closed by receiver
 		if errors.Is(err, io.EOF) {
+			msLog.Debugf("write %s to stream abort, recv reason...", name)
 			err, resp = nil, new(pb.Response)
-			inner = stream.RecvMsg(resp)
+			resp, inner = stream.CloseAndRecv()
 		} else {
+			msLog.Debugf("write %s to stream finished, close and recv...", name)
 			resp, inner = stream.CloseAndRecv()
 		}
 		if inner != nil {
@@ -153,7 +155,7 @@ func (ms *MigrationService) sendFileTo(path string, client pb.ObjectMigrationCli
 	}
 	// finish an object
 	if _, err = proto.ResolveResponse(client.FinishReceive(context.Background(), info)); err != nil {
-		return fmt.Errorf("finish send file %s err: %w", info.FileName, err)
+		return fmt.Errorf("fails send file %s: %w", info.FileName, err)
 	}
 	return nil
 }
@@ -170,6 +172,7 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 			util.LogErr(cc.Close())
 		}
 	}()
+	metric := make(map[string]*atomic.Int32, len(clientMap))
 	for k := range sizeMap {
 		// dail connection to all servers
 		cc, err := grpc.Dial(k, grpc.WithInsecure())
@@ -179,6 +182,7 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 		conns = append(conns, cc)
 		addrs = append(addrs, k)
 		clientMap[k] = pb.NewObjectMigrationClient(cc)
+		metric[k] = &atomic.Int32{}
 	}
 	success := true
 	dg := util.LimitDoneGroup(128)
@@ -214,8 +218,9 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 					// remove file async if transfer success
 					go func() {
 						defer graceful.Recover()
+						metric[toAddr].Add(1)
 						// remove local file
-						if inner := os.Remove(path); inner != nil {
+						if inner := Delete(info.Name()); inner != nil {
 							msLog.Errorf("migrate %s success, but delete fail: %s", path, err)
 						}
 					}()
@@ -249,6 +254,11 @@ func (ms *MigrationService) SendingTo(httpLocate string, sizeMap map[string]int6
 		msLog.Error(err)
 		success = false
 	}
+	resultStr := strings.Builder{}
+	for k, v := range metric {
+		resultStr.WriteString(fmt.Sprintf("\t'%s': %d\n", k, v.Load()))
+	}
+	msLog.Infof("migration result (nums of success files):\n%s", resultStr.String())
 	return util.IfElse(success, nil, fmt.Errorf("migration fail, see logs for detail"))
 }
 
@@ -277,16 +287,11 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 	// get metadata locations of file
 	var wg sync.WaitGroup
 	failNum := atomic.Int32{}
-	var total float64
-	servs := pool.Discovery.GetServiceMapping(pool.Config.Discovery.MetaServName)
+	servs := pool.Discovery.GetServiceMappingWith(pool.Config.Discovery.MetaServName, true)
 	if len(servs) == 0 {
 		return fmt.Errorf("not exist meta-server")
 	}
-	for id, addr := range servs {
-		if strings.HasSuffix(id, "slave") {
-			continue
-		}
-		total++
+	for _, addr := range servs {
 		wg.Add(1)
 		go func(ip string) {
 			defer graceful.Recover()
@@ -297,15 +302,16 @@ func (ms *MigrationService) FinishObject(data *pb.ObjectInfo) error {
 				return
 			}
 			if inner != nil {
-				logs.Std().Errorf("update locate of %s in %s fail: %s", data.FileName, ip, inner)
+				msLog.Errorf("update locate of %s in %s fail: %s", data.FileName, ip, inner)
 				failNum.Add(1)
 			}
 		}(addr)
 	}
 	wg.Wait()
-	if fails := failNum.Load(); fails >= int32(math.Ceil(total/2)) {
-		return fmt.Errorf("too much failures when updating metadata (%d/%.0f)", fails, total)
+	if fails := failNum.Load(); fails >= int32(xmath.CeilDiv(len(servs), 2)) {
+		return fmt.Errorf("too much failures when updating metadata (%d/%d)", fails, len(servs))
 	}
+	msLog.Debugf("success finish object %s", data.FileName)
 	return nil
 }
 
@@ -313,7 +319,7 @@ func (ms *MigrationService) OpenFile(name string, size int64) (*os.File, error) 
 	path, ok := FindRealStoragePath(name)
 	if !ok {
 		path = filepath.Join(pool.DriverManager.SelectMountPointFallback(pool.Config.BaseMountPoint), pool.Config.StoragePath, name)
-		util.LogErr(pool.PathDB.Put(name, path))
+		util.LogErrWithPre("path-cache update", pool.PathDB.Put(name, path))
 	}
 	stat, err := os.Stat(path)
 	if err == nil {

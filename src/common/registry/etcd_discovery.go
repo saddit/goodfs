@@ -33,6 +33,9 @@ func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 	for _, s := range cfg.Services {
 		d.initService(s)
 	}
+	// save self
+	addr, _ := cfg.RegisterAddr()
+	d.addService(cfg.Name, addr, cfg.RegisterKey())
 	return d
 }
 
@@ -55,7 +58,7 @@ func (e *EtcdDiscovery) initService(serv string) {
 			mp[util.BytesToStr(kv.Key)] = util.BytesToStr(kv.Value)
 		}
 		// init serv
-		e.services[serv].replace(mp)
+		e.services[serv].combine(mp)
 		// start watch change
 		e.asyncWatch(serv, prefix)
 	}()

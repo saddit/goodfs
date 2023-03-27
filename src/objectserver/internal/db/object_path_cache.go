@@ -20,12 +20,14 @@ type PathCache struct {
 }
 
 func NewPathCache(storePath string) (*PathCache, error) {
+	lg := logs.New("path-cache")
+	lg.Level = logs.ToLogLevel(logs.Warn)
 	db, err := badger.Open(
 		badger.DefaultOptions(storePath).
 			WithNumGoroutines(runtime.NumCPU()).
 			WithCompression(options.ZSTD).
 			WithMetricsEnabled(false).
-			WithLogger(logs.New("path-cache")),
+			WithLogger(lg),
 	)
 	if err != nil {
 		return nil, err

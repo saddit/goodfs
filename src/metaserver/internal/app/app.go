@@ -53,6 +53,7 @@ func Run(cfg *config.Config) {
 		pool.Registry.AsSlave()
 	} else {
 		pool.Registry.AsMaster()
+		hsService.OnLeaderChanged(true)
 	}
 	pool.Lifecycle.Subscribe(pool.Registry.Register)
 	// unregister service
@@ -65,8 +66,12 @@ func Run(cfg *config.Config) {
 	raftWrapper.RegisterLeaderChangedEvent(hsService)
 	raftWrapper.RegisterLeaderChangedEvent(logic.NewRegistry())
 
-	// remove slots info from etcd if shutdown as a leader
+	// remove and update slots info from etcd if shutdown as a leader
 	defer func() {
+		slot, _, err := pool.HashSlot.Get(cfg.HashSlot.StoreID)
+		if err == nil {
+			cfg.HashSlot.Slots = slot.Slots
+		}
 		if raftWrapper.IsLeader() || !raftWrapper.Enabled {
 			util.LogErr(pool.HashSlot.Remove(cfg.HashSlot.StoreID))
 		}

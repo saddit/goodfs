@@ -146,7 +146,7 @@ func TestGetRegistry(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, kv := range resp.Kvs {
-		t.Logf("key=%s, value=%s", kv.Key, "nil")
+		t.Logf("key=%s, value=%s", kv.Key, kv.Value)
 	}
 }
 

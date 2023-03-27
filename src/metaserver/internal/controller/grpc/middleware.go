@@ -62,10 +62,14 @@ func CheckWritableUnary(ctx context.Context, req interface{}, info *grpc.UnarySe
 		if pool.RaftWrapper.Enabled && !pool.RaftWrapper.IsLeader() {
 			return nil, status.Error(codes.Unavailable, "server is not writable")
 		}
+		if info.FullMethod == "/proto.HashSlot/StreamingReceive" {
+			goto RETURNS
+		}
 		if !pool.HashSlot.IsNormal() {
 			return nil, status.Error(codes.Unavailable, "server in migration")
 		}
 	}
+RETURNS:
 	return handler(ctx, req)
 }
 
@@ -74,10 +78,14 @@ func CheckWritableStreaming(srv interface{}, ss grpc.ServerStream, info *grpc.St
 		if pool.RaftWrapper.Enabled && !pool.RaftWrapper.IsLeader() {
 			return status.Error(codes.Unavailable, "server is not writable")
 		}
+		if info.FullMethod == "/proto.HashSlot/StreamingReceive" {
+			goto RETURNS
+		}
 		if !pool.HashSlot.IsNormal() {
 			return status.Error(codes.Unavailable, "server in migration")
 		}
 	}
+RETURNS:
 	return handler(srv, ss)
 }
 

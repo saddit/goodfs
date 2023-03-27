@@ -1,5 +1,7 @@
 package math
 
+import "math"
+
 func LogicMod(a, b int) int {
 	if a < 0 || b < 0 {
 		return b + (a % b)
@@ -12,6 +14,10 @@ func MinNumber[T Number](i, j T) T {
 		return i
 	}
 	return j
+}
+
+func CeilDiv(a, b int) int {
+	return int(math.Ceil(float64(a) / float64(b)))
 }
 
 func MaxNumber[T Number](i, j T) T {
