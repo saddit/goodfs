@@ -27,36 +27,39 @@ func NewMigrationServer(service *service.MigrationService) *MigrationServer {
 	return &MigrationServer{Service: service}
 }
 
-func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServer) error {
-	var file *os.File
-	defer func() {
-		if file != nil {
-			_ = file.Close()
-		}
-	}()
+func (ms *MigrationServer) ReceiveData(stream pb.ObjectMigration_ReceiveDataServer) (err error) {
+	var file io.WriteCloser
+	var data *pb.ObjectData
+	defer util.CloseAndLog(file)
+	logs.Std().Debug("start receive data...")
 	for {
-		data, err := stream.Recv()
+		data, err = stream.Recv()
 		if err == io.EOF {
 			return stream.SendMsg(&pb.Response{Success: true})
 		}
 		if err != nil {
-			return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
+			break
 		}
+		logs.Std().Debugf("received filename chunk %s", data.FileName)
 		if file == nil {
 			if data.FileName == "" {
-				return stream.SendAndClose(&pb.Response{Success: false, Message: "FileName should not be empty"})
+				err = errors.New("received FileName should not be empty")
+				break
 			}
 			if file, err = ms.Service.OpenFile(data.FileName, data.Size); err != nil {
 				if os.IsExist(err) {
+					logs.Std().Debugf("receive duplicate data %s success, close but send success result", data.FileName)
 					return stream.SendAndClose(&pb.Response{Success: true})
 				}
-				return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
+				break
 			}
 		}
 		if _, err = file.Write(data.Data); err != nil {
-			return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
+			break
 		}
 	}
+	logs.Std().Errorf("receive data err: %s", err.Error())
+	return stream.SendAndClose(&pb.Response{Success: false, Message: err.Error()})
 }
 
 func (ms *MigrationServer) FinishReceive(_ context.Context, info *pb.ObjectInfo) (*pb.Response, error) {

@@ -6,6 +6,7 @@ type (
 		GetServices(name string) []string
 		// GetServiceMapping server id to address mapping
 		GetServiceMapping(name string) map[string]string
+		GetServiceMappingWith(name string, master bool) map[string]string
 		GetService(name string, id string) (string, bool)
 	}
 )

@@ -26,7 +26,8 @@ etcd:
   password: xianka
 hash-slot:
   slots:
-    - 0-16384
+    - 1200-1300
+    - 5000-10000
   prepare-timeout: 1m0s
 cache:
   ttl: 1h0m0s

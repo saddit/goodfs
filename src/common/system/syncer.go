@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+var (
+	syncLog = logs.New("sys-sync")
+)
+
 type StatSyncer struct {
 	cli     clientv3.KV
 	key     string
@@ -28,16 +32,20 @@ func (d *StatSyncer) StartAutoSave() func() {
 		for {
 			select {
 			case <-ctx.Done():
-				logs.Std().Info("stop sync sys-info")
+				syncLog.Info("stop sync sys-info")
 				return
 			case <-tk.C:
-				util.LogErrWithPre("sync sys-info", d.Sync())
+				if err := d.Sync(); err != nil {
+					syncLog.Warnf("sync err: %s", err)
+				}
 			}
 		}
 	}()
 	return func() {
 		cancel()
-		util.LogErrWithPre("remove sys-info", d.Clear())
+		if err := d.Clear(); err != nil {
+			syncLog.Warnf("clear err: %s", err)
+		}
 	}
 }
 

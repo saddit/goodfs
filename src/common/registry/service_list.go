@@ -15,8 +15,10 @@ func newServiceListOf(mp map[string]string) *serviceList {
 	return &serviceList{mp, &sync.RWMutex{}}
 }
 
-func (s *serviceList) replace(mp map[string]string) {
-	s.data = mp
+func (s *serviceList) combine(mp map[string]string) {
+	for k, v := range mp {
+		s.data[k] = v
+	}
 }
 
 func (s *serviceList) add(ip string, key string) {

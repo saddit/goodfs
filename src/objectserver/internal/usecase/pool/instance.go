@@ -153,8 +153,9 @@ func initEtcd(cfg *etcd.Config) {
 }
 
 func initRegister(et *clientv3.Client, cfg *config.Config) {
-	er := registry.NewEtcdRegistry(et, &cfg.Registry)
-	Registry, Discovery = er, er
+	cfg.Registry.Services = []string{cfg.Discovery.MetaServName, cfg.Registry.Name}
+	Registry = registry.NewEtcdRegistry(et, &cfg.Registry)
+	Discovery = registry.NewEtcdDiscovery(et, &cfg.Registry)
 }
 
 func CloseAll() {

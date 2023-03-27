@@ -166,7 +166,7 @@ func (h *HashSlotDB) Get(id string) (*hashslot.SlotInfo, bool, error) {
 	}
 	var info hashslot.SlotInfo
 	if err = util.DecodeMsgp(&info, resp.Kvs[0].Value); err != nil {
-		return nil, false, nil
+		return nil, false, err
 	}
 	return &info, true, nil
 }

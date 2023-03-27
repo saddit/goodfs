@@ -164,7 +164,7 @@ func Delete(name string) error {
 	go func() {
 		defer graceful.Recover()
 		global.ObjectCap.SubCap(size)
-		util.LogErr(global.PathDB.Remove(name, fullPath))
+		util.LogErrWithPre("path-db remove", global.PathDB.Remove(name, fullPath))
 		UnMarkExist(name)
 	}()
 	return nil

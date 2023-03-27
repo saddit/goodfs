@@ -7,6 +7,7 @@ import (
 	"common/util"
 	"context"
 	"fmt"
+	"objectserver/internal/usecase/pool"
 	"strings"
 	"time"
 
@@ -35,7 +36,7 @@ func NewLocator(etcd *clientv3.Client) *Locator {
 
 // StartLocate start a thread to subscribe a special key on ETCD.
 // reply object position to publisher
-func (l *Locator) StartLocate(ip string) (cancel func()) {
+func (l *Locator) StartLocate() (cancel func()) {
 	ctx := context.Background()
 	ctx, cancel = context.WithCancel(ctx)
 	ch := l.etcd.Watch(ctx, cst.EtcdPrefix.LocationSubKey)
@@ -58,6 +59,11 @@ func (l *Locator) StartLocate(ip string) (cancel func()) {
 					break
 				}
 				for _, event := range resp.Events {
+					ip, online := pool.Discovery.GetService(pool.Config.Registry.Name, pool.Config.Registry.SID())
+					if !online {
+						locatorLog.Error("server doesn't online but receive locate event")
+						ip = util.ServerAddress(pool.Config.Port)
+					}
 					go l.handlerLocate(event.Kv.Value, ip)
 				}
 			}
