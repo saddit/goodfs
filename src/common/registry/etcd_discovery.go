@@ -31,6 +31,7 @@ func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 		Close:    cancel,
 	}
 	for _, s := range cfg.Services {
+		d.services[s] = newServiceList()
 		d.initService(s)
 	}
 	// save self
@@ -40,7 +41,6 @@ func NewEtcdDiscovery(cli *clientv3.Client, cfg *Config) *EtcdDiscovery {
 }
 
 func (e *EtcdDiscovery) initService(serv string) {
-	e.services[serv] = newServiceList()
 	go func() {
 		defer graceful.Recover()
 		// fetch kvs
@@ -173,9 +173,15 @@ func (e *EtcdDiscovery) GetServicesWith(name string, master bool) []string {
 }
 
 func (e *EtcdDiscovery) addService(name string, value string, key string) {
+	if e.services[name] == nil {
+		e.services[name] = newServiceList()
+	}
 	e.services[name].add(value, key)
 }
 
 func (e *EtcdDiscovery) removeService(name string, key string) {
+	if e.services[name] == nil {
+		return
+	}
 	e.services[name].remove(key)
 }
