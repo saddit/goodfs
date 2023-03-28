@@ -32,31 +32,11 @@ func TestClearEtcd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := etcd.Delete(context.Background(), cst.EtcdPrefix.HashSlot, clientv3.WithPrefix())
+	resp, err := etcd.Delete(context.Background(), "goodfs", clientv3.WithPrefix())
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(cst.EtcdPrefix.HashSlot, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.Registry, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.Registry, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.ObjectCap, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.ObjectCap, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.ApiCredential, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.ApiCredential, resp.Deleted)
-	resp, err = etcd.Delete(context.Background(), cst.EtcdPrefix.SystemInfo, clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cst.EtcdPrefix.SystemInfo, resp.Deleted)
+	t.Logf("removed keys: %d", resp.Deleted)
 }
 
 func TestPostAPI(t *testing.T) {
