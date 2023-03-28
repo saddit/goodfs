@@ -16,5 +16,8 @@ export function invokeInterval(fn: ()=>void, ts: number) {
 }
 
 export function cutStr(s: string, maxLen: number) {
+    if (s.length <= maxLen) {
+        return s
+    }
     return s.substring(0, maxLen - 3) + "..."
 }

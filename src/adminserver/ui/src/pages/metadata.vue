@@ -109,6 +109,7 @@
 <script setup lang="ts">
 import {createColumnHelper, FlexRender, getCoreRowModel, useVueTable} from '@tanstack/vue-table'
 import {MagnifyingGlassIcon} from '@heroicons/vue/20/solid'
+import Tooltip from '@/components/Tooltip.vue'
 
 const defPage: Pageable = {page: 1, total: 0, pageSize: 10}
 
@@ -195,7 +196,11 @@ function uploadObject(event: any) {
 const dataColumns = [
     dataColumnHelper.accessor('name', {
         header: 'Name',
-        cell: props => pkg.utils.cutStr(props.getValue(), 30),
+        cell: props => h(Tooltip, {
+            pos: 'top-5 left-5',
+            tip: props.getValue(),
+            enable: props.getValue().length > 40,
+        }, h('div', pkg.utils.cutStr(props.getValue(), 40))),
     }),
     dataColumnHelper.accessor('bucket', {
         header: 'Bucket',
