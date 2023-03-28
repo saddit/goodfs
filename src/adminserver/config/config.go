@@ -21,14 +21,15 @@ type DiscoveryConfig struct {
 
 type Config struct {
 	Port          string          `yaml:"port" env:"PORT" env-default:"80"`
-	Log           logs.Config     `yaml:"log" env-prefix:"LOG"`
-	Discovery     DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
-	Etcd          etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
 	EnabledApiTLS bool            `yaml:"enabled-api-tls" env:"ENABLED_API_TLS"`
-	registry      registry.Config `yaml:"registry" env-prefix:"REGISTRY"`
+	Discovery     DiscoveryConfig `yaml:"discovery" env-prefix:"DISCOVERY"`
+	Log           logs.Config     `yaml:"log" env-prefix:"LOG"`
+	Etcd          etcd.Config     `yaml:"etcd" env-prefix:"ETCD"`
+	registry      registry.Config `yaml:"-" env-prefix:"-"`
 }
 
 func (c *Config) init() {
+	c.registry.ServerPort = c.Port
 	c.registry.Group = c.Discovery.Group
 }
 

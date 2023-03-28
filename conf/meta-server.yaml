@@ -14,6 +14,7 @@ cluster:
     - meta-0,localhost:4090
     - meta-1,localhost:4091
 registry:
+  server-ip: ""
   server-id: meta-0
   group: goodfs
   name: metaserver
@@ -26,8 +27,7 @@ etcd:
   password: xianka
 hash-slot:
   slots:
-    - 1200-1300
-    - 5000-10000
+    - 0-16384
   prepare-timeout: 1m0s
 cache:
   ttl: 1h0m0s
