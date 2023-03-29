@@ -7,7 +7,7 @@ option go_package = "./pb";
 import "message.proto";
 
 message ConfigResp {
-  bytes jsonEncode = 1;
+  bytes yamlEncode = 1;
 }
 
 service ConfigService {

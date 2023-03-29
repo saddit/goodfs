@@ -24,6 +24,7 @@ func ListVersion(ip, name, bucket string, page, pageSize int, token string) ([]b
 	if err != nil {
 		return nil, 0, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -46,6 +47,7 @@ func PutObjects(ip, name, sha256, bucket string, fileIO io.Reader, size int64, t
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -63,6 +65,7 @@ func GetObjects(ip, name, bucket string, version int, token string) (io.ReadClos
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -79,6 +82,7 @@ func CheckToken(ip, token string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -95,6 +99,7 @@ func CreateBucket(ip string, b *msg.Bucket, token string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -111,6 +116,7 @@ func UpdateBucket(ip string, b *msg.Bucket, token string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -127,8 +133,27 @@ func DeleteBucket(ip, name string, token string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusNoContent {
 		return response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
 	return nil
+}
+
+func GetAPIConfig(ip, token string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s://%s/config", GetSchema(), ip), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+	resp, err := pool.Http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
+	}
+	bt, err := io.ReadAll(resp.Body)
+	return bt, err
 }
