@@ -87,12 +87,12 @@ func (oc *ObjectsController) GetConfig(c *gin.Context) {
 		response.BadRequestMsg("unknown serverId", c)
 		return
 	}
-	jsonData, err := logic.NewObjects().GetConfig(ip)
+	data, err := logic.ConfigLogic{}.GetConfig(ip)
 	if err != nil {
 		response.FailErr(err, c)
 		return
 	}
-	if _, err = c.Writer.Write(jsonData); err != nil {
+	if _, err = c.Writer.Write(data); err != nil {
 		response.FailErr(err, c)
 		return
 	}

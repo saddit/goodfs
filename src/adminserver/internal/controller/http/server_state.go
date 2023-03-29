@@ -23,7 +23,8 @@ func (ss *ServerStateController) Register(r gin.IRouter) {
 		GET("/stat", ss.Stat).
 		GET("/overview", ss.Overview).
 		GET("/etcdstat", ss.EtcdStat).
-		GET("/:type/timeline", ss.UsageTimeline)
+		GET("/:type/timeline", ss.UsageTimeline).
+		GET("/config", ss.ServerConfig)
 }
 
 func (ss *ServerStateController) Overview(c *gin.Context) {
@@ -113,4 +114,40 @@ func (ss *ServerStateController) EtcdStat(c *gin.Context) {
 		return
 	}
 	response.OkJson(res, c)
+}
+
+func (ss *ServerStateController) ServerConfig(c *gin.Context) {
+	id, ok := c.GetQuery("serverId")
+	if !ok {
+		response.BadRequestMsg("serverId required", c)
+		return
+	}
+	ip, ok := pool.Discovery.GetService(pool.Config.Discovery.MetaServName, id)
+	if !ok {
+		ip, ok = pool.Discovery.GetService(pool.Config.Discovery.DataServName, id)
+	}
+	// get from grpc client
+	if ok {
+		data, err := logic.ConfigLogic{}.GetConfig(ip)
+		if err != nil {
+			response.FailErr(err, c)
+			return
+		}
+		_, _ = c.Writer.Write(data)
+		response.Ok(c)
+		return
+	}
+	// get from api server
+	ip, ok = pool.Discovery.GetService(pool.Config.Discovery.ApiServName, id)
+	if !ok {
+		response.BadRequestMsg("unknown server id", c)
+		return
+	}
+	data, err := logic.GetAPIConfig(ip, GetAuthToken(c))
+	if err != nil {
+		response.FailErr(err, c)
+		return
+	}
+	_, _ = c.Writer.Write(data)
+	response.Ok(c)
 }

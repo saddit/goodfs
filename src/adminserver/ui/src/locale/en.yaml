@@ -3,6 +3,7 @@ home: 'Home'
 about: 'About'
 setting: 'Setting'
 metadata: 'Metadata'
+config: 'Config'
 bucket: 'Bucket'
 not-found: "Not Found"
 server: 'Server'

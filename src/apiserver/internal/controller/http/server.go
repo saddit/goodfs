@@ -27,7 +27,8 @@ func NewHttpServer(port string, o IObjectService, m IMetaService, b repo.IBucket
 	eng.UseRawPath = true
 	eng.UnescapePathValues = false
 
-	eng.GET("/ping", func(c *gin.Context) { _, _ = c.Writer.Write([]byte("pong")) })
+	eng.GET("/ping", Ping)
+	eng.GET("/config", Config)
 
 	authRoute := eng.Group("/v1", authMid...)
 	{

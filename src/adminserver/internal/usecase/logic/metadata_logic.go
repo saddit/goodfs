@@ -243,19 +243,6 @@ func (m Metadata) GetPeers(servId string) ([]*entity.ServerInfo, error) {
 	return infoList, nil
 }
 
-func (Metadata) GetConfig(ip string) ([]byte, error) {
-	cc, err := getConn(ip)
-	if err != nil {
-		return nil, err
-	}
-	client := pb.NewConfigServiceClient(cc)
-	resp, err := client.GetConfig(context.Background(), new(pb.EmptyReq))
-	if err != nil {
-		return nil, response.NewError(400, err.Error())
-	}
-	return resp.JsonEncode, nil
-}
-
 func (m Metadata) TotalBuckets() (int, error) {
 	_, total, err := m.BucketPaging(&BucketCond{
 		Page:     1,
