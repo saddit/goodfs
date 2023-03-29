@@ -18,6 +18,7 @@ func ListMetadata(ip, prefix string, pageSize int) ([]*msg.Metadata, int, error)
 	if err != nil {
 		return nil, 0, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
@@ -34,6 +35,7 @@ func ListBuckets(ip, prefix string, pageSize int) ([]*msg.Bucket, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, 0, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}

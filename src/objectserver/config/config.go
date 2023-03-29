@@ -37,7 +37,7 @@ type innerConf struct {
 }
 
 type Config struct {
-	innerConf
+	innerConf          `yaml:"-"`
 	Port               string          `yaml:"port" env-default:"8100"`                                           // Port is port which the http server will listen to
 	BaseMountPoint     string          `yaml:"base-mount-point" env:"BASE_MOUNT_POINT" env-required:"true"`       // BaseMountPoint refers a mount point to store central data also as a fallback choice.
 	StoragePath        string          `yaml:"storage-path" env:"STORAGE_PATH" env-default:"/objects"`            // StoragePath is a path to store object file under different mount points

@@ -20,9 +20,15 @@ async function etcdStat(): Promise<EtcdStatus[]> {
     return resp.data
 }
 
+async function config(serverId: string): Promise<string> {
+    let resp = await axios.get(`/server/config?serverId=${serverId}`)
+    return resp.data
+}
+
 export {
     stat,
     timeline,
     overview,
-    etcdStat
+    etcdStat,
+    config,
 }
