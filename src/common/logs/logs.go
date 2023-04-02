@@ -23,7 +23,7 @@ func init() {
 	logrus.SetFormatter(&nested.Formatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 		HideKeys:        true,
-		FieldsOrder:     []string{"component"},
+		FieldsOrder:     []string{"component", "caller"},
 	})
 }
 
@@ -47,6 +47,10 @@ func ToLogLevel(l Level) logrus.Level {
 
 func SetLevel(l Level) {
 	logrus.SetLevel(ToLogLevel(l))
+}
+
+func EnableNotify(hook *ErrorNotifyHook) {
+	logrus.AddHook(hook)
 }
 
 func SetOutput(w io.Writer) {
