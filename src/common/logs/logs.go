@@ -1,10 +1,12 @@
 package logs
 
 import (
+	"fmt"
 	nested "github.com/antonfisher/nested-logrus-formatter"
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -23,8 +25,22 @@ func init() {
 	logrus.SetFormatter(&nested.Formatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 		HideKeys:        true,
-		FieldsOrder:     []string{"component", "caller"},
+		CallerFirst:     true,
+		CustomCallerFormatter: func(frame *runtime.Frame) string {
+			return fmt.Sprint(" at ", frame.File, ":", frame.Line, "\r\n")
+		},
+		FieldsOrder: []string{"component"},
 	})
+}
+
+func WithConfig(cfg *Config) {
+	SetLevel(cfg.Level)
+	EnableNotify(&ErrorNotifyHook{EmailConfig: cfg.Email})
+	WithCaller(cfg.Caller)
+}
+
+func WithCaller(t bool) {
+	logrus.SetReportCaller(t)
 }
 
 func ToLogLevel(l Level) logrus.Level {
@@ -50,6 +66,10 @@ func SetLevel(l Level) {
 }
 
 func EnableNotify(hook *ErrorNotifyHook) {
+	if !hook.EmailConfig.IsValid() {
+		println("enable error notify fail, required value is empty")
+		return
+	}
 	logrus.AddHook(hook)
 }
 
