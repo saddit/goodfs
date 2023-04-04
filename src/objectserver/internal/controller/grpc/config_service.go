@@ -15,6 +15,7 @@ func (o *ConfigServiceServer) GetConfig(context.Context, *pb.EmptyReq) (*pb.Conf
 	conf := *pool.Config
 	conf.Etcd.Username = "*****"
 	conf.Etcd.Password = "*****"
+	conf.Log.Email.Password = "*****"
 	bt, err := yaml.Marshal(&conf)
 	if err != nil {
 		return nil, err

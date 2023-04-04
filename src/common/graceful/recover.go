@@ -19,7 +19,7 @@ func Recover(fn ...func(msg string)) {
 }
 
 func PrintStacks(msg any) {
-	logger.Errorf("%s\n%s", msg, GetStacks())
+	logger.Panicf("%s\n%s", msg, GetStacks())
 }
 
 func GetStacks() string {
