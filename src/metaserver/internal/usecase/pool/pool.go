@@ -43,7 +43,7 @@ func InitPool(cfg *config.Config) {
 }
 
 func initLog(cfg *logs.Config) {
-	logs.SetLevel(cfg.Level)
+	logs.WithConfig(cfg)
 	if logs.IsDebug() || logs.IsTrace() {
 		gin.SetMode(gin.DebugMode)
 	} else {

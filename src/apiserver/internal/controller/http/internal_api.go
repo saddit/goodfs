@@ -18,6 +18,7 @@ func Config(c *gin.Context) {
 	conf.Etcd.Password = "*****"
 	conf.Auth.Password.Password = "*****"
 	conf.Auth.Password.Username = "*****"
+	conf.Log.Email.Password = "*****"
 	out, err := yaml.Marshal(&conf)
 	if err != nil {
 		response.FailErr(err, c)
