@@ -29,9 +29,6 @@ func NewHttpServer(port string, o IObjectService, m IMetaService, b repo.IBucket
 
 	eng.GET("/ping", Ping)
 	eng.GET("/config", Config)
-	eng.GET("/testerror", func(c *gin.Context) {
-		logs.Std().Error("error happened")
-	})
 
 	authRoute := eng.Group("/v1", authMid...)
 	{
