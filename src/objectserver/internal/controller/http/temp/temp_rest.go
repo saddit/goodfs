@@ -1,7 +1,6 @@
 package temp
 
 import (
-	"common/cache"
 	"common/cst"
 	"common/response"
 	"common/util"
@@ -15,12 +14,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/google/uuid"
 )
 
 func Patch(g *gin.Context) {
 	id := g.Param("name")
-	ti, ok := cache.GetGob[entity.TempInfo](pool.Cache, id)
+	ti, ok := service.GetTempInfo(id)
 	if !ok {
 		response.BadRequestMsg("file has been removed", g)
 		return
@@ -37,7 +35,7 @@ func Patch(g *gin.Context) {
 
 func Delete(g *gin.Context) {
 	id := g.Param("name")
-	defer pool.Cache.Delete(id)
+	defer service.RemoveTempInfo(id)
 	response.Ok(g)
 }
 
@@ -50,11 +48,11 @@ func Post(g *gin.Context) {
 	tmpInfo := &entity.TempInfo{
 		Name:       req.Name,
 		Size:       req.Size,
-		Id:         entity.TempKeyPrefix + uuid.NewString(),
+		Id:         service.GenerateTempID(),
 		MountPoint: pool.DriverManager.SelectMountPointFallback(pool.Config.BaseMountPoint),
 	}
 	tmpInfo.FullPath = filepath.Join(tmpInfo.MountPoint, pool.Config.TempPath, tmpInfo.Id)
-	if !pool.Cache.SetGob(tmpInfo.Id, tmpInfo) {
+	if !service.SetTempInfo(tmpInfo) {
 		g.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -71,7 +69,7 @@ func Put(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	ti, ok := cache.GetGob[entity.TempInfo](pool.Cache, req.ID)
+	ti, ok := service.GetTempInfo(req.ID)
 	if !ok {
 		response.BadRequestMsg("file has been removed", g)
 		return
@@ -80,21 +78,16 @@ func Put(g *gin.Context) {
 		response.FailErr(err, g)
 		return
 	}
-	pool.Cache.Delete(req.ID)
+	service.RemoveTempInfo(req.ID)
 	response.Ok(g)
 }
 
 // Head 获取分片临时对象的大小
 func Head(g *gin.Context) {
 	id := g.Param("name")
-	bt, ok := pool.Cache.HasGet(id)
+	ti, ok := service.GetTempInfo(id)
 	if !ok {
 		g.Status(http.StatusNotFound)
-		return
-	}
-	var ti entity.TempInfo
-	if ok = util.GobDecode(bt, &ti); !ok {
-		g.Status(http.StatusInternalServerError)
 		return
 	}
 	fi, err := os.Stat(ti.FullPath)
@@ -122,7 +115,7 @@ func Get(g *gin.Context) {
 		response.BadRequestErr(err, g)
 		return
 	}
-	ti, ok := cache.GetGob[entity.TempInfo](pool.Cache, req.Name)
+	ti, ok := service.GetTempInfo(req.Name)
 	if !ok {
 		response.BadRequestMsg("file has been removed", g)
 		return

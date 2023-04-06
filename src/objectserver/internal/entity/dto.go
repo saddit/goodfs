@@ -8,10 +8,6 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
-const (
-	SyncInsert = "insert"
-)
-
 const TempKeyPrefix = "TempInfo_"
 
 type TempPostReq struct {
