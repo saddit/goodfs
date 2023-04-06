@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/allegro/bigcache"
+	"github.com/allegro/bigcache/v3"
 	"github.com/gin-gonic/gin"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )

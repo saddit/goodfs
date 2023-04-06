@@ -3,14 +3,16 @@ package cache
 import (
 	"common/graceful"
 	"common/util"
+	"context"
 	"log"
 
-	"github.com/allegro/bigcache"
+	"github.com/allegro/bigcache/v3"
 )
 
 type Cache struct {
 	cache         *bigcache.BigCache
 	notifyEvicted []chan Entry
+	close         func()
 }
 
 type Entry struct {
@@ -22,7 +24,9 @@ type Entry struct {
 func NewCache(config bigcache.Config) *Cache {
 	res := &Cache{notifyEvicted: make([]chan Entry, 0, 16)}
 	config.OnRemoveWithReason = res.onRemove
-	b, e := bigcache.NewBigCache(config)
+	ctx, cancel := context.WithCancel(context.Background())
+	res.close = cancel
+	b, e := bigcache.New(ctx, config)
 	if e != nil {
 		panic(e)
 	}
@@ -83,6 +87,7 @@ func (c *Cache) Delete(k string) {
 }
 
 func (c *Cache) Close() error {
+	defer c.close()
 	// make it closing by GC
 	c.notifyEvicted = nil
 	return c.cache.Close()
