@@ -23,6 +23,24 @@ var (
 	url    = "http://codespaces-409403:8010"
 )
 
+func TestAllKeyEtcd(t *testing.T) {
+	etcd, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{"pressed.top:2379"},
+		Username:  "root",
+		Password:  "xianka",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := etcd.Get(context.Background(), "", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range resp.Kvs {
+		t.Log(string(resp.Kvs[i].Key))
+	}
+}
+
 func TestClearEtcd(t *testing.T) {
 	etcd, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"pressed.top:2379"},

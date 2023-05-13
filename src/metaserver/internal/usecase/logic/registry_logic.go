@@ -9,6 +9,7 @@ type Registry struct{}
 func NewRegistry() Registry { return Registry{} }
 
 func (Registry) OnLeaderChanged(isLeader bool) {
+	pool.Registry.Unregister()
 	if isLeader {
 		pool.Registry.AsMaster().Register(pool.Lifecycle.Lease())
 	} else {

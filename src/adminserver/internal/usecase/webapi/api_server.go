@@ -65,7 +65,6 @@ func GetObjects(ip, name, bucket string, version int, token string) (io.ReadClos
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, response.NewError(resp.StatusCode, response.MessageFromJSONBody(resp.Body))
 	}
