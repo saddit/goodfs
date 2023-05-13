@@ -4,6 +4,7 @@ import (
 	"apiserver/internal/entity"
 	"apiserver/internal/usecase"
 	"common/datasize"
+	"common/logs"
 	"common/response"
 	"common/util"
 	"github.com/gin-gonic/gin"
@@ -83,7 +84,7 @@ func (oc *ObjectsController) Get(c *gin.Context) {
 	// copy to response
 	n, err := io.Copy(c.Writer, stream)
 	if err != nil {
-		response.FailErr(err, c)
+		logs.Std().Error(err)
 		return
 	}
 	response.OkHeader(gin.H{
