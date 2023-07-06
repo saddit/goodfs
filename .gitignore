@@ -1,4 +1,6 @@
 *.exe
 .vscode
 test_conf
+conf
 bin
+/src/metaserver/test/config-test.yaml
