@@ -127,6 +127,13 @@ func GetExtra(id string, extra *msg.Extra) TxFunc {
 func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, name); bucket != nil {
+			var byUniqueId []string
+			if err := NewUniqueHashIndex().GetIndex(data.UniqueId, &byUniqueId)(tx); err != nil {
+				return err
+			}
+			if (len(byUniqueId) > 0) {
+				return ErrExists
+			}
 			// only if data is migrated from others will do sequence updating
 			if data.Sequence > bucket.Sequence() {
 				if err := bucket.SetSequence(data.Sequence); err != nil {
