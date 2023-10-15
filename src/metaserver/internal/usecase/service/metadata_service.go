@@ -1,6 +1,7 @@
 package service
 
 import (
+	"metaserver/internal/usecase/logic"
 	"common/proto/msg"
 	"common/util"
 	"errors"
@@ -38,6 +39,7 @@ func (m *MetadataService) AddMetadata(id string, data *msg.Metadata) error {
 }
 
 func (m *MetadataService) AddVersion(name string, data *msg.Version) (int, error) {
+	data.UniqueId = logic.GenerateUniqueId()
 	data.Ts = time.Now().UnixMilli()
 	if ok, resp, err := m.ApplyRaft(&entity.RaftData{
 		Type:    entity.LogInsert,
@@ -67,7 +69,7 @@ func (m *MetadataService) ReceiveVersion(name string, data *msg.Version) error {
 		return err
 	}
 
-	if err := m.repo.AddVersionWithSequence(name, data); err != nil {
+	if err := m.repo.AddVersionFromRaft(name, data); err != nil {
 		return err
 	}
 	return nil

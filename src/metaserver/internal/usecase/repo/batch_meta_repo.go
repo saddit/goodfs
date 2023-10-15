@@ -57,7 +57,7 @@ func (br *BatchMetaRepo) RemoveMetadata(name string) error {
 	return br.Storage.Batch(logic.RemoveMeta(name))
 }
 
-func (br *BatchMetaRepo) AddVersionWithSequence(id string, data *msg.Version) error {
+func (br *BatchMetaRepo) AddVersionFromRaft(id string, data *msg.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}

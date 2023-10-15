@@ -7,8 +7,8 @@ import (
 	"common/logs"
 	"common/proto/msg"
 	"common/util"
+	"errors"
 	"fmt"
-	bolt "go.etcd.io/bbolt"
 	"io"
 	"metaserver/internal/usecase"
 	"metaserver/internal/usecase/db"
@@ -16,6 +16,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	bolt "go.etcd.io/bbolt"
 )
 
 type MetadataRepo struct {
@@ -91,6 +93,12 @@ func (m *MetadataRepo) AddVersion(id string, data *msg.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
+	if (data.Hash == "") {
+		return errors.New("version doesn't contains Hash value")
+	}
+	if (data.UniqueId == "") {
+		return errors.New("version doesn't contains UniqueId value")
+	}
 	if err := m.MainDB.Update(logic.AddVer(id, data)); err != nil {
 		return err
 	}
@@ -102,16 +110,22 @@ func (m *MetadataRepo) AddVersion(id string, data *msg.Version) error {
 	return nil
 }
 
-func (m *MetadataRepo) AddVersionWithSequence(id string, data *msg.Version) error {
+func (m *MetadataRepo) AddVersionFromRaft(id string, data *msg.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
+	}
+	if (data.Hash == "") {
+		return errors.New("version doesn't contains Hash value")
+	}
+	if (data.UniqueId == "") {
+		return errors.New("version doesn't contains UniqueId value")
 	}
 	if err := m.MainDB.Update(logic.AddVerWithSequence(id, data)); err != nil {
 		return err
 	}
 	go func() {
 		defer graceful.Recover()
-		err := m.Cache.AddVersionWithSequence(id, data)
+		err := m.Cache.AddVersionFromRaft(id, data)
 		util.LogErrWithPre("metadata cache", err)
 	}()
 	return nil
@@ -394,4 +408,12 @@ func (m *MetadataRepo) UpdateLocateByHash(hash string, index int, value string) 
 		}
 		return nil
 	})
+}
+
+func (m *MetadataRepo) ExistsByUniqueId(uniqueId string) (bool, error) {
+	var res []string
+	if err := m.MainDB.View(logic.NewUniqueHashIndex().GetIndex(uniqueId, &res)); err != nil {
+		return false, err
+	}
+	return len(res) > 0, nil
 }

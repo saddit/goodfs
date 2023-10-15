@@ -35,6 +35,7 @@ type Version struct {
 	Ts            int64    `json:"ts" msg:"ts"`
 	Sequence      uint64   `json:"sequence" msg:"sequence"` // Sequence version number auto generated on saving
 	Hash          string   `json:"hash" msg:"hash" binding:"required"`
+	UniqueId      string   `json:"uniqueId" msg:"uniqueId"`
 	Locate        []string `json:"locate" msg:"locate" binding:"min=1"`
 }
 

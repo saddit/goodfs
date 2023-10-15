@@ -42,7 +42,7 @@ type (
 		UpdateVersion(string, *msg.Version) error
 		RemoveMetadata(string) error
 		RemoveVersion(string, uint64) error
-		AddVersionWithSequence(string, *msg.Version) error
+		AddVersionFromRaft(string, *msg.Version) error
 		RemoveAllVersion(string) error
 	}
 

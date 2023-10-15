@@ -9,6 +9,7 @@ import (
 	"fmt"
 	. "metaserver/internal/usecase"
 
+	"github.com/google/uuid"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -152,8 +153,16 @@ func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 func AddVer(name string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, name); bucket != nil {
+			var byUniqueId []string
+			if err := NewUniqueHashIndex().GetIndex(data.UniqueId, &byUniqueId)(tx); err != nil {
+				return err
+			}
+			if (len(byUniqueId) > 0) {
+				return ErrExists
+			}
 			data.Sequence, _ = bucket.NextSequence()
-			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
+			keyStr := fmt.Sprint(name, Sep, data.Sequence)
+			key := util.StrToBytes(keyStr)
 			if bucket.Get(key) != nil {
 				return ErrExists
 			}
@@ -164,7 +173,10 @@ func AddVer(name string, data *msg.Version) TxFunc {
 			if err = bucket.Put(key, bt); err != nil {
 				return err
 			}
-			return NewHashIndexLogic().AddIndex(data.Hash, util.BytesToStr(key))(tx)
+			if err = NewHashIndexLogic().AddIndex(data.Hash, keyStr)(tx); err != nil {
+				return err
+			}
+			return NewUniqueHashIndex().AddIndex(data.UniqueId, keyStr)(tx)
 		}
 		return ErrNotFound
 	}
@@ -305,4 +317,10 @@ func getMeta(b *bolt.Bucket, name string, dest *msg.Metadata) error {
 		return ErrNotFound
 	}
 	return util.DecodeMsgp(dest, bt)
+}
+
+// GenerateUniqueId generate an unique id by UUID
+// In a single writable cluster, uuid is safe
+func GenerateUniqueId() string {
+	return uuid.NewString()
 }
