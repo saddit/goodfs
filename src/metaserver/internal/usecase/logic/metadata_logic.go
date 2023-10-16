@@ -124,15 +124,22 @@ func GetExtra(id string, extra *msg.Extra) TxFunc {
 	}
 }
 
+func ExistsByUniqueId(tx *bolt.Tx, uniqueId string) error {
+	var byUniqueId []string
+	if err := NewUniqueHashIndex().GetIndex(uniqueId, &byUniqueId)(tx); err != nil {
+		return err
+	}
+	if (len(byUniqueId) > 0) {
+		return ErrExists
+	}
+	return nil
+}
+
 func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, name); bucket != nil {
-			var byUniqueId []string
-			if err := NewUniqueHashIndex().GetIndex(data.UniqueId, &byUniqueId)(tx); err != nil {
+			if err := ExistsByUniqueId(tx, data.UniqueId); err != nil {
 				return err
-			}
-			if (len(byUniqueId) > 0) {
-				return ErrExists
 			}
 			// only if data is migrated from others will do sequence updating
 			if data.Sequence > bucket.Sequence() {
@@ -160,12 +167,8 @@ func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 func AddVer(name string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, name); bucket != nil {
-			var byUniqueId []string
-			if err := NewUniqueHashIndex().GetIndex(data.UniqueId, &byUniqueId)(tx); err != nil {
+			if err := ExistsByUniqueId(tx, data.UniqueId); err != nil {
 				return err
-			}
-			if (len(byUniqueId) > 0) {
-				return ErrExists
 			}
 			data.Sequence, _ = bucket.NextSequence()
 			keyStr := fmt.Sprint(name, Sep, data.Sequence)
