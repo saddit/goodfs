@@ -310,17 +310,17 @@ func (m *MetadataRepo) Restore(r io.Reader) (err error) {
 	// open new db file
 	newFile, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE, cst.OS.ModeUser)
 	if err != nil {
-		logs.Std().Error("restore fail on open new file: %v", err)
+		logs.Std().Errorf("restore fail on open new file: %v", err)
 		return err
 	}
 	// save new db data
 	n, err := io.Copy(newFile, r)
 	if err != nil {
-		logs.Std().Error("restore fail on copy data to new file: %v, written %d", err, n)
+		logs.Std().Errorf("restore fail on copy data to new file: %v, written %d", err, n)
 		return err
 	}
 	if err := newFile.Close(); err != nil {
-		logs.Std().Error("close new db file err: %s", err)
+		logs.Std().Errorf("close new db file err: %s", err)
 		return err
 	}
 	// reopen db

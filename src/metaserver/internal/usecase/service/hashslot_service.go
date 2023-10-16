@@ -212,11 +212,10 @@ func (h *HashSlotService) ReceiveItem(item *pb.MigrationItem) error {
 			return err
 		}
 		err = h.BucketService.Create(&i)
+	default:
+		hsLog.Errorf("unknown migration item: %d", item.Dest)
 	}
-	if err != nil {
-		if errors.Is(err, usecase.ErrExists) {
-			return nil
-		}
+	if err != nil && !errors.Is(err, usecase.ErrExists) {
 		return err
 	}
 	return nil
