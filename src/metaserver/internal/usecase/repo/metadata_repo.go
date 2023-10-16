@@ -93,10 +93,10 @@ func (m *MetadataRepo) AddVersion(id string, data *msg.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
-	if (data.Hash == "") {
+	if data.Hash == "" {
 		return errors.New("version doesn't contains Hash value")
 	}
-	if (data.UniqueId == "") {
+	if data.UniqueId == "" {
 		return errors.New("version doesn't contains UniqueId value")
 	}
 	if err := m.MainDB.Update(logic.AddVer(id, data)); err != nil {
@@ -114,10 +114,10 @@ func (m *MetadataRepo) AddVersionFromRaft(id string, data *msg.Version) error {
 	if data == nil {
 		return usecase.ErrNilData
 	}
-	if (data.Hash == "") {
+	if data.Hash == "" {
 		return errors.New("version doesn't contains Hash value")
 	}
-	if (data.UniqueId == "") {
+	if data.UniqueId == "" {
 		return errors.New("version doesn't contains UniqueId value")
 	}
 	if err := m.MainDB.Update(logic.AddVerWithSequence(id, data)); err != nil {
@@ -412,7 +412,7 @@ func (m *MetadataRepo) UpdateLocateByHash(hash string, index int, value string) 
 
 func (m *MetadataRepo) ExistsByUniqueId(uniqueId string) (bool, error) {
 	var res []string
-	if err := m.MainDB.View(logic.NewUniqueHashIndex().GetIndex(uniqueId, &res)); err != nil {
+	if err := m.MainDB.View(logic.NewUniqueIdIndex().GetIndex(uniqueId, &res)); err != nil {
 		return false, err
 	}
 	return len(res) > 0, nil

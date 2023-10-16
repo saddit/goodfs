@@ -126,10 +126,10 @@ func GetExtra(id string, extra *msg.Extra) TxFunc {
 
 func ExistsByUniqueId(tx *bolt.Tx, uniqueId string) error {
 	var byUniqueId []string
-	if err := NewUniqueHashIndex().GetIndex(uniqueId, &byUniqueId)(tx); err != nil {
+	if err := NewUniqueIdIndex().GetIndex(uniqueId, &byUniqueId)(tx); err != nil {
 		return err
 	}
-	if (len(byUniqueId) > 0) {
+	if len(byUniqueId) > 0 {
 		return ErrExists
 	}
 	return nil
@@ -158,7 +158,11 @@ func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 			if err := bucket.Put(key, bt); err != nil {
 				return err
 			}
-			return NewHashIndexLogic().AddIndex(data.Hash, util.BytesToStr(key))(tx)
+			keyStr := util.BytesToStr(key)
+			if err = NewUniqueIdIndex().AddIndex(data.Hash, keyStr)(tx); err != nil {
+				return err
+			}
+			return NewHashIndexLogic().AddIndex(data.Hash, keyStr)(tx)
 		}
 		return ErrNotFound
 	}
@@ -186,7 +190,7 @@ func AddVer(name string, data *msg.Version) TxFunc {
 			if err = NewHashIndexLogic().AddIndex(data.Hash, keyStr)(tx); err != nil {
 				return err
 			}
-			return NewUniqueHashIndex().AddIndex(data.UniqueId, keyStr)(tx)
+			return NewUniqueIdIndex().AddIndex(data.UniqueId, keyStr)(tx)
 		}
 		return ErrNotFound
 	}
@@ -204,8 +208,12 @@ func RemoveVer(name string, ver uint64) TxFunc {
 			return err
 		}
 		// remove index
-		if err := NewHashIndexLogic().RemoveIndex(data.Hash, util.BytesToStr(key))(tx); err != nil {
+		keyStr := util.BytesToStr(key)
+		if err := NewHashIndexLogic().RemoveIndex(data.Hash, keyStr)(tx); err != nil {
 			return fmt.Errorf("remove hash-index err: %w", err)
+		}
+		if err := NewUniqueIdIndex().RemoveIndex(data.Hash, keyStr)(tx); err != nil {
+			return fmt.Errorf("remove uniqueId-index err: %w", err)
 		}
 		return b.Delete(key)
 	}
@@ -225,6 +233,7 @@ func UpdateVer(id string, data *msg.Version) TxFunc {
 				return ErrOldData
 			}
 			// those updating are not allowed
+			data.UniqueId = origin.UniqueId
 			data.Sequence = origin.Sequence
 			data.Hash = origin.Hash
 			// encode to bytes

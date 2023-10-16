@@ -13,7 +13,7 @@ const (
 
 type UniqueIdIndex struct{}
 
-func NewUniqueHashIndex() UniqueIdIndex {
+func NewUniqueIdIndex() UniqueIdIndex {
 	return UniqueIdIndex{}
 }
 
