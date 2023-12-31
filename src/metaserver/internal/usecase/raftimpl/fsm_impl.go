@@ -5,11 +5,13 @@ import (
 	"common/response"
 	"common/util"
 	"compress/gzip"
+	"errors"
 	"fmt"
-	"github.com/hashicorp/raft"
 	"io"
 	"metaserver/internal/entity"
 	. "metaserver/internal/usecase"
+
+	"github.com/hashicorp/raft"
 )
 
 var (
@@ -66,7 +68,7 @@ func (f *FSMImpl) applyVersion(data *entity.RaftData) *FSMResponse {
 	repo := util.IfElse[WritableRepo](data.Batch, f.metaBatch, f.metaRepo)
 	switch data.Type {
 	case entity.LogMigrate:
-		resp := FSMResult(repo.AddVersionWithSequence(data.Name, data.Version))
+		resp := FSMResult(repo.AddVersionFromRaft(data.Name, data.Version))
 		return resp
 	case entity.LogInsert:
 		resp := FSMResult(repo.AddVersion(data.Name, data.Version))
@@ -100,19 +102,6 @@ func (f *FSMImpl) Apply(lg *raft.Log) (r any) {
 		return fmt.Errorf("drop recieved fsmLog type %v", lg.Type)
 	}
 
-	lst, err := f.snapshot.LastAppliedIndex()
-	if err != nil {
-		return err
-	}
-	fsmLog.Debugf("apply log index %d and recorded index is %d", lg.Index, lst)
-	if lst >= lg.Index {
-		return nil
-	}
-
-	defer func() {
-		util.LogErrWithPre("fsm record apply index", f.snapshot.ApplyIndex(lg.Index))
-	}()
-
 	var data entity.RaftData
 	if err := util.DecodeMsgp(&data, lg.Data); err != nil {
 		return err
@@ -135,14 +124,6 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 	var data entity.RaftData
 	res := make([]any, len(lgs))
 
-	lastAppliedIndex, err := f.snapshot.LastAppliedIndex()
-	if err != nil {
-		for i := range res {
-			res[i] = err
-		}
-		return res
-	}
-	var maxIndex uint64
 	for i, lg := range lgs {
 		if lg == nil || len(lg.Data) == 0 {
 			res[i] = FSMResult(ErrNilData)
@@ -152,11 +133,7 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 			res[i] = fmt.Errorf("drop recieved fsmLog type %v", lg.Type)
 			continue
 		}
-		fsmLog.Debugf("apply log index %d and recorded index is %d", lg.Index, lastAppliedIndex)
-		if lastAppliedIndex >= lg.Index {
-			continue
-		}
-		if err = util.DecodeMsgp(&data, lg.Data); err != nil {
+		if err := util.DecodeMsgp(&data, lg.Data); err != nil {
 			res[i] = err
 			continue
 		}
@@ -173,21 +150,15 @@ func (f *FSMImpl) ApplyBatch(lgs []*raft.Log) []any {
 		default:
 			res[i] = ErrUnknownRaftLog
 		}
-
-		if lg.Index > maxIndex {
-			maxIndex = lg.Index
-		}
 	}
 	//NOTICE: metaBatch Sync and bucketBatch Sync it's same for now.
-	if err = f.metaBatch.Sync(); err != nil {
+	if err := f.metaBatch.Sync(); err != nil {
 		err = fmt.Errorf("sync fail: %s", err)
 		for i := range res {
 			if res[i] == nil {
 				res[i] = err
 			}
 		}
-	} else if maxIndex > lastAppliedIndex {
-		util.LogErrWithPre("fsm record apply index", f.snapshot.ApplyIndex(maxIndex))
 	}
 	return res
 }
@@ -234,6 +205,10 @@ type FSMResponse struct {
 }
 
 func FSMResult(err error) *FSMResponse {
+	// ignore thie exists check eror
+	if errors.Is(err, ErrExists) {
+		return &FSMResponse{&response.Err{Status: 200}, nil}
+	}
 	switch err := err.(type) {
 	case *response.Err:
 		return &FSMResponse{err, nil}

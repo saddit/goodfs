@@ -9,6 +9,7 @@ import (
 	"fmt"
 	. "metaserver/internal/usecase"
 
+	"github.com/google/uuid"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -123,9 +124,23 @@ func GetExtra(id string, extra *msg.Extra) TxFunc {
 	}
 }
 
+func ExistsByUniqueId(tx *bolt.Tx, uniqueId string) error {
+	var byUniqueId []string
+	if err := NewUniqueIdIndex().GetIndex(uniqueId, &byUniqueId)(tx); err != nil {
+		return err
+	}
+	if len(byUniqueId) > 0 {
+		return ErrExists
+	}
+	return nil
+}
+
 func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, name); bucket != nil {
+			if err := ExistsByUniqueId(tx, data.UniqueId); err != nil {
+				return err
+			}
 			// only if data is migrated from others will do sequence updating
 			if data.Sequence > bucket.Sequence() {
 				if err := bucket.SetSequence(data.Sequence); err != nil {
@@ -143,7 +158,11 @@ func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 			if err := bucket.Put(key, bt); err != nil {
 				return err
 			}
-			return NewHashIndexLogic().AddIndex(data.Hash, util.BytesToStr(key))(tx)
+			keyStr := util.BytesToStr(key)
+			if err = NewUniqueIdIndex().AddIndex(data.Hash, keyStr)(tx); err != nil {
+				return err
+			}
+			return NewHashIndexLogic().AddIndex(data.Hash, keyStr)(tx)
 		}
 		return ErrNotFound
 	}
@@ -152,8 +171,12 @@ func AddVerWithSequence(name string, data *msg.Version) TxFunc {
 func AddVer(name string, data *msg.Version) TxFunc {
 	return func(tx *bolt.Tx) error {
 		if bucket := GetVersionBucket(tx, name); bucket != nil {
+			if err := ExistsByUniqueId(tx, data.UniqueId); err != nil {
+				return err
+			}
 			data.Sequence, _ = bucket.NextSequence()
-			key := util.StrToBytes(fmt.Sprint(name, Sep, data.Sequence))
+			keyStr := fmt.Sprint(name, Sep, data.Sequence)
+			key := util.StrToBytes(keyStr)
 			if bucket.Get(key) != nil {
 				return ErrExists
 			}
@@ -164,7 +187,10 @@ func AddVer(name string, data *msg.Version) TxFunc {
 			if err = bucket.Put(key, bt); err != nil {
 				return err
 			}
-			return NewHashIndexLogic().AddIndex(data.Hash, util.BytesToStr(key))(tx)
+			if err = NewHashIndexLogic().AddIndex(data.Hash, keyStr)(tx); err != nil {
+				return err
+			}
+			return NewUniqueIdIndex().AddIndex(data.UniqueId, keyStr)(tx)
 		}
 		return ErrNotFound
 	}
@@ -182,8 +208,12 @@ func RemoveVer(name string, ver uint64) TxFunc {
 			return err
 		}
 		// remove index
-		if err := NewHashIndexLogic().RemoveIndex(data.Hash, util.BytesToStr(key))(tx); err != nil {
+		keyStr := util.BytesToStr(key)
+		if err := NewHashIndexLogic().RemoveIndex(data.Hash, keyStr)(tx); err != nil {
 			return fmt.Errorf("remove hash-index err: %w", err)
+		}
+		if err := NewUniqueIdIndex().RemoveIndex(data.Hash, keyStr)(tx); err != nil {
+			return fmt.Errorf("remove uniqueId-index err: %w", err)
 		}
 		return b.Delete(key)
 	}
@@ -203,6 +233,7 @@ func UpdateVer(id string, data *msg.Version) TxFunc {
 				return ErrOldData
 			}
 			// those updating are not allowed
+			data.UniqueId = origin.UniqueId
 			data.Sequence = origin.Sequence
 			data.Hash = origin.Hash
 			// encode to bytes
@@ -305,4 +336,10 @@ func getMeta(b *bolt.Bucket, name string, dest *msg.Metadata) error {
 		return ErrNotFound
 	}
 	return util.DecodeMsgp(dest, bt)
+}
+
+// GenerateUniqueId generate an unique id by UUID
+// In a single writable cluster, uuid is safe
+func GenerateUniqueId() string {
+	return uuid.NewString()
 }

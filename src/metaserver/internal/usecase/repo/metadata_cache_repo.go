@@ -125,6 +125,6 @@ func (m *MetadataCacheRepo) RemoveAllVersion(string) error {
 	panic("not impl RemoveAllVersion")
 }
 
-func (m *MetadataCacheRepo) AddVersionWithSequence(s string, version *msg.Version) error {
+func (m *MetadataCacheRepo) AddVersionFromRaft(s string, version *msg.Version) error {
 	return m.AddVersion(s, version)
 }

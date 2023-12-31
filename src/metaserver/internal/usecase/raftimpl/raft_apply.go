@@ -28,16 +28,14 @@ func (r *raftApplier) ApplyRaft(data *entity.RaftData) (bool, any, error) {
 		}
 		resp := feat.Response()
 		if resp == nil {
-			goto Unknown
+			return true, nil, fmt.Errorf("unknown response from fsm: %v", resp)
 		}
 		if rp, ok := resp.(*FSMResponse); ok {
 			return true, rp.Data, rp.ToError()
 		}
 		if rp, ok := resp.(error); ok {
 			return true, nil, rp
-		}
-	Unknown:
-		return true, nil, fmt.Errorf("unknown response from fsm: %v", resp)
+		}		
 	}
 	return false, nil, nil
 }

@@ -971,6 +971,12 @@ func (z *Version) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "Hash")
 				return
 			}
+		case "uniqueId":
+			z.UniqueId, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "UniqueId")
+				return
+			}
 		case "locate":
 			var zb0002 uint32
 			zb0002, err = dc.ReadArrayHeader()
@@ -1003,9 +1009,9 @@ func (z *Version) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Version) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 10
+	// map header, size 11
 	// write "compress"
-	err = en.Append(0x8a, 0xa8, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73)
+	err = en.Append(0x8b, 0xa8, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73)
 	if err != nil {
 		return
 	}
@@ -1094,6 +1100,16 @@ func (z *Version) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Hash")
 		return
 	}
+	// write "uniqueId"
+	err = en.Append(0xa8, 0x75, 0x6e, 0x69, 0x71, 0x75, 0x65, 0x49, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.UniqueId)
+	if err != nil {
+		err = msgp.WrapError(err, "UniqueId")
+		return
+	}
 	// write "locate"
 	err = en.Append(0xa6, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x65)
 	if err != nil {
@@ -1117,9 +1133,9 @@ func (z *Version) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Version) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 10
+	// map header, size 11
 	// string "compress"
-	o = append(o, 0x8a, 0xa8, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73)
+	o = append(o, 0x8b, 0xa8, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73)
 	o = msgp.AppendBool(o, z.Compress)
 	// string "store_strategy"
 	o = append(o, 0xae, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x65, 0x67, 0x79)
@@ -1145,6 +1161,9 @@ func (z *Version) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "hash"
 	o = append(o, 0xa4, 0x68, 0x61, 0x73, 0x68)
 	o = msgp.AppendString(o, z.Hash)
+	// string "uniqueId"
+	o = append(o, 0xa8, 0x75, 0x6e, 0x69, 0x71, 0x75, 0x65, 0x49, 0x64)
+	o = msgp.AppendString(o, z.UniqueId)
 	// string "locate"
 	o = append(o, 0xa6, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x65)
 	o = msgp.AppendArrayHeader(o, uint32(len(z.Locate)))
@@ -1226,6 +1245,12 @@ func (z *Version) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "Hash")
 				return
 			}
+		case "uniqueId":
+			z.UniqueId, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "UniqueId")
+				return
+			}
 		case "locate":
 			var zb0002 uint32
 			zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
@@ -1259,7 +1284,7 @@ func (z *Version) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Version) Msgsize() (s int) {
-	s = 1 + 9 + msgp.BoolSize + 15 + msgp.Int8Size + 12 + msgp.Int32Size + 14 + msgp.Int32Size + 11 + msgp.Int64Size + 5 + msgp.Int64Size + 3 + msgp.Int64Size + 9 + msgp.Uint64Size + 5 + msgp.StringPrefixSize + len(z.Hash) + 7 + msgp.ArrayHeaderSize
+	s = 1 + 9 + msgp.BoolSize + 15 + msgp.Int8Size + 12 + msgp.Int32Size + 14 + msgp.Int32Size + 11 + msgp.Int64Size + 5 + msgp.Int64Size + 3 + msgp.Int64Size + 9 + msgp.Uint64Size + 5 + msgp.StringPrefixSize + len(z.Hash) + 9 + msgp.StringPrefixSize + len(z.UniqueId) + 7 + msgp.ArrayHeaderSize
 	for za0001 := range z.Locate {
 		s += msgp.StringPrefixSize + len(z.Locate[za0001])
 	}
