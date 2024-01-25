@@ -2,8 +2,9 @@ package disk
 
 import (
 	"common/logs"
-	"github.com/shirou/gopsutil/v3/disk"
 	"testing"
+
+	"github.com/shirou/gopsutil/v3/disk"
 )
 
 func init() {
@@ -15,7 +16,7 @@ func TestGetInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("total=%dGB, free=%dGB", info.Total.GigaByte(), info.Total.GigaByte())
+	t.Logf("total=%dGB, free=%dGB, used=%dGB", info.Total.GigaByte(), info.Free.GigaByte(), info.Used.GigaByte())
 }
 
 func TestAllMountPoints(t *testing.T) {
